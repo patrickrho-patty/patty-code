@@ -1,10 +1,10 @@
 # Patty Code Platform Rebrand, Korean-First UX, and Harness Architecture
 
-**Status:** Approved design draft  
-**Date:** 2026-08-08  
-**Repository:** `github.com/patrickrho-patty/patty-code`  
-**Base product:** Patty Code  
-**First derived harness:** GongCode / 공코드  
+**Status:** Plan-reviewed design and umbrella execution plan; detailed workstream plans pending written approval
+**Date:** 2026-08-08
+**Repository:** `github.com/patrickrho-patty/patty-code`
+**Base product:** Patty Code
+**First derived harness:** GongCode / 공코드
 **Related authority:** `docs/GongCode_Master_Plan.md`
 
 ## 1. Purpose
@@ -428,7 +428,133 @@ The renderer selects full-color, limited-color, monochrome, and narrow variants 
 
 ## 13. Methodical Rebrand
 
-### 13.1 Inventory categories
+### 13.1 Measured repository baseline
+
+The plan-review scan on 2026-08-08 found the following case-insensitive literal baseline in tracked files:
+
+| Surface | Files with matches | Matches |
+|---|---:|---:|
+| `internal/` | 1,037 | 6,856 |
+| `desktop/` | 307 | 2,728 |
+| `docs/` | 79 | 1,567 |
+| `site/` | 45 | 544 |
+| `release-notes/` | 2 | 379 |
+| `scripts/` | 31 | 349 |
+| `workers/` | 47 | 247 |
+| Repository-root files | 16 | 238 |
+| `cmd/` | 18 | 96 |
+| `.github/` | 12 | 96 |
+| `sdk/` | 13 | 46 |
+| `npm/` | 5 | 42 |
+| `benchmarks/` | 3 | 17 |
+| `.signpath/` | 3 | 14 |
+| `tools/` | 4 | 9 |
+| **Total** | **1,622** | **13,228** |
+
+This snapshot is evidence of scope, not a fixed completion number. Implementation may expose generated, ignored, binary, or semantic identities that the initial literal scan cannot see. The final gate is zero unauthorized identity, not “13,228 replacements.”
+
+The highest-volume ownership areas are:
+
+| Ownership area | Files | Matches | Primary contract |
+|---|---:|---:|---|
+| `internal/cli` | 153 | 1,054 | CLI, TUI, commands, help, diagnostics |
+| `internal/config` | 54 | 720 | paths, environment, credentials, defaults, serialization |
+| `internal/repair` | 25 | 655 | update, recovery, handoff, debris, transactions |
+| `desktop/frontend` | 79 | 573 | UI, localization, assets, bridges, snapshots |
+| `internal/boot` | 51 | 545 | composition, prompts, extension startup, safe mode |
+| `site/src` | 39 | 534 | public website, accounts, downloads, community |
+| `internal/agent` | 138 | 469 | sessions, messages, model requests, persistence |
+| `internal/control` | 79 | 464 | slash resolution, events, lifecycle, approvals |
+| `desktop/cmd` | 15 | 251 | signing, update helpers, Windows resources |
+| `desktop/build` | 7 | 245 | Linux/Windows packaging and app identity |
+| `internal/i18n` | 6 | 241 | English/Chinese catalog and locale detection |
+| `internal/acp` | 20 | 232 | protocol-facing names and user-facing messages |
+| `internal/hook` | 10 | 217 | global/project roots and environment |
+| `internal/tool` | 57 | 198 | tool metadata, managed paths, runtime messages |
+| `internal/skill` | 15 | 192 | built-ins, guide identity, discovery |
+| `internal/extension` | 64 | 186 | protocol, sidecars, fixtures, conformance |
+| `workers/crash-report` | 30 | 175 | hosted release, crash, registry, auth services |
+
+The initial extension count by file type includes 1,265 Go files, 78 Markdown files, 70 TypeScript files, 30 TSX files, 27 JSON files, 25 MJS files, 20 Astro files, 16 shell files, 15 SVG files, 14 SQL files, 13 YAML/YML files, and platform-specific NSIS, PowerShell, Objective-C, XML, TOML, CSS, Python, and policy files.
+
+### 13.2 Required match ledger
+
+Before changing identity, generate a complete machine-readable ledger outside the distributable source tree. Use tracked-file and working-tree scans so committed, newly generated, ignored build, and untracked implementation outputs are all covered.
+
+Each ledger row contains:
+
+| Field | Meaning |
+|---|---|
+| Path | Exact current path or generated-artifact coordinate |
+| Line or member | Source line, archive member, symbol, schema field, or binary offset |
+| Matched identity | Exact old brand, organization, domain, package, service, or locale marker |
+| Semantic category | One category from section 13.4 |
+| Owning workstream | The detailed plan responsible for the row |
+| Disposition | Rename, neutralize, delete, regenerate, preserve legally, or investigate |
+| Replacement | Exact new value or profile field |
+| Dependency | Change that must land first |
+| Verification | Test or inspection proving completion |
+| Status | Unclassified, planned, changed, verified, or legal exception |
+
+Required inventory commands begin with:
+
+```bash
+git ls-files -z |
+  xargs -0 rg -i --count-matches --no-messages --text 'reasonix'
+
+git ls-files |
+  rg -i 'reasonix|esengine|(^|[._/-])(zh|zh-cn|zh-tw|chinese)([._/-]|$)'
+
+rg -i --hidden --no-ignore \
+  --glob '!.git/**' \
+  'reasonix|esengine|reasonix\.io|urn:reasonix|@reasonix|REASONIX_'
+```
+
+The detailed inventory plan must add product-specific URL, package, signing, app-ID, cookie, keyring, registry, database-binding, user-agent, protocol, and asset scans. Inventory is complete only when:
+
+- Every discovered row has an owner and disposition.
+- No row remains `unclassified` or `planned` at its workstream’s completion gate.
+- Every generated artifact has been scanned after a clean build.
+- Every legal exception matches an exact file, exact string, and documented reason.
+
+### 13.3 Branded path disposition
+
+The initial scan found 28 tracked paths containing the old product identity. Their required dispositions are:
+
+| Current path | Disposition |
+|---|---|
+| `.reasonix/commands/review.md` | Move to `.patty/commands/review.md`; update command-root discovery and tests |
+| `REASONIX.md` | Rename to `PATTY.md`; rewrite as Patty instructions |
+| `cmd/reasonix/main.go` | Move to `cmd/patty/main.go`; preserve CLI entry behavior |
+| `cmd/reasonix/main_test.go` | Move with the entry point and update identity assertions |
+| `cmd/reasonix-launcher/main.go` | Move to `cmd/patty-launcher/main.go`; source names from the profile |
+| `cmd/reasonix-launcher/main_test.go` | Move with the launcher and verify profile-generated names |
+| `cmd/reasonix-legacy-migrator/main.go` | Delete; Patty performs no upstream-data migration |
+| `cmd/reasonix-legacy-migrator/main_test.go` | Delete or replace with clean-install/no-legacy tests |
+| `cmd/reasonix-plugin-example/main.go` | Move to `cmd/patty-plugin-example/main.go` and update manifests |
+| `desktop/build/linux/icons/hicolor/16x16/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/24x24/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/32x32/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/48x48/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/64x64/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/128x128/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/256x256/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/512x512/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/scalable/apps/reasonix-desktop.svg` | Regenerate from the Patty profile and inspect SVG text/metadata |
+| `desktop/build/linux/io.reasonix.desktop.update.policy` | Replace with the final owned-domain PolicyKit ID; release-blocked until selected |
+| `desktop/build/linux/reasonix.desktop` | Generate a Patty desktop entry from the compiled profile |
+| `desktop/frontend/src/components/rehypeReasonixKatex.ts` | Rename semantically to `rehypeSafeKatex.ts`; update imports and tests |
+| `internal/skill/builtincontent/reasonix-guide/SKILL.md` | Replace with `patty-guide/SKILL.md`; rewrite product instructions |
+| `internal/skill/reasonix_guide_test.go` | Rename to `patty_guide_test.go`; update expected skill identity |
+| `npm/reasonix/package.json` | Replace with the Patty package directory and package coordinate |
+| `npm/reasonix/bin/reasonix.js` | Replace with the `patty` launcher and platform-package resolver |
+| `reasonix.example.toml` | Rename to `patty.example.toml`; remove legacy keys and examples |
+| `sdk/go/examples/fullsidecar/reasonix-plugin.json` | Rename to a Patty plugin manifest and update SDK docs/tests |
+| `sdk/go/examples/starterextension/reasonix-plugin.json` | Rename to a Patty plugin manifest and update SDK docs/tests |
+
+No file move is complete until imports, build scripts, packaging manifests, embedded paths, documentation links, tests, and generated archives use the new path.
+
+### 13.4 Inventory categories
 
 Before editing, inventory every Reasonix reference and classify it as:
 
@@ -444,24 +570,165 @@ Before editing, inventory every Reasonix reference and classify it as:
 10. UI, localization, accessibility, or asset identity.
 11. Documentation, example, test, fixture, or snapshot.
 12. Legal notice or Git metadata.
+13. Upstream organization or maintainer identity used operationally.
+14. Binary, image, video, font, embedded metadata, or generated resource.
+15. Hosted-service binding, secret name, cookie, OAuth client, email sender, or DNS identity.
+16. OS integration identity: bundle, registry, shortcut, mutex, service, keyring, desktop entry, PolicyKit, MIME, or protocol handler.
 
 Inventory tools may enumerate strings mechanically. Engineers must edit each semantic category with its owning contract and tests.
 
-### 13.2 Dependency order
+### 13.5 Upstream organization markers
+
+The initial scan found 426 `esengine` occurrences across 68 tracked files. They include:
+
+- GitHub CODEOWNERS, issue templates, workflow repositories, acknowledgements, and stale-report automation.
+- GoReleaser, SignPath contracts, signing commands, and release workflows.
+- Desktop updater owners, release channels, package metadata, and tests.
+- NPM package ownership and publication.
+- SDK module coordinates and examples.
+- Public website accounts, community links, contributor data, release downloads, and headers.
+- Crash-report worker release endpoints.
+
+Every occurrence must be classified:
+
+- Operational ownership, URL, package, signing, update, or support coordinates are replaced with Patty-controlled values.
+- Upstream authorship that must be retained is moved to the appropriate legal or attribution notice.
+- Third-party vendored authorship is preserved in the third party’s own notice.
+- No operational system continues to authenticate, publish, download, sign, report, or link through an upstream-owned coordinate.
+
+### 13.6 Platform identity coverage
+
+The platform and packaging plan must resolve every row below:
+
+| Platform | Required identity surfaces |
+|---|---|
+| Shared CLI | process name, argv help, shell completions, user agent, temp files, locks, PID/port files, diagnostics, config discovery |
+| macOS | `.app` name, bundle ID, executable, Info.plist, URL schemes, keychain service, notifications, updater helper, launcher, icons, DMG metadata, signing and notarization |
+| Windows | executable/resource names, assembly identity, AppUserModelID, registry keys, shortcuts, Start Menu, uninstall keys, mutexes, named pipes, updater/launcher/guard helpers, portable layout, installer art, SignPath inputs |
+| Linux | binary, desktop file, icon names, reverse-DNS app ID, PolicyKit action, packages, MIME/protocol registration, updater/launcher units |
+| Go packages | root, desktop, and SDK module paths; imports; generated bindings; examples; tests; module-aware scripts |
+| NPM | package scopes, platform packages, `bin` name, metadata keys, provenance fields, registry publication, recovery/finalization scripts |
+| Hosted services | worker names, D1/KV/R2 bindings, routes, domains, cookies, CORS/CSP, OAuth clients, email senders, metrics, dashboard links, health checks |
+
+The plan may not mark a platform complete based only on a successful source build. It must inspect the installed result on that platform or a faithful packaging environment.
+
+### 13.7 Persistence, database, and wire coverage
+
+The persistence plan must inventory and decide:
+
+- `.reasonix` project and user directories, OS application-support directories, config filenames, attachment paths, session paths, memory paths, plugin state, hook roots, cache roots, logs, crash data, update state, and recovery debris.
+- `REASONIX_*` variables, dotenv behavior, child-process environments, shell integration, test environments, and provider isolation.
+- Keyring service/account names, key migration markers, credential-helper protocol, and remote credential storage.
+- JSON, JSONL, TOML, SQL, event-wire, extension-protocol, ACP, telemetry, evidence, and provider schema identities.
+- Database names, D1 bindings, tables, columns such as `enabled_reasonix`, indexes, migration comments, registry metadata, deployment commands, and dashboard queries.
+- Metrics, tracing resources, log attributes, user agents, HTTP headers, cookies, cache keys, URNs, URL schemes, and correlation IDs.
+- Update manifests, version pointers, release unit layouts, signature payloads, checksum/provenance fields, and rollback state.
+
+Because Patty Code is a clean break:
+
+- New Patty state uses only Patty or neutral schema identities.
+- No runtime fallback reads upstream paths or fields.
+- Upstream migration binaries and compatibility payloads are removed.
+- Tests use empty temporary roots and assert that upstream state is ignored.
+- GongCode and other profiles wrap state in signed harness-bound envelopes before sensitive decoding.
+
+### 13.8 Hosted-service and network coverage
+
+The hosted-service plan covers, at minimum:
+
+- `workers/accounts`: identity routes, cookies, OAuth, email, service names, domains, tests, and Wrangler bindings.
+- `workers/crash-report`: crash ingestion, release distribution, registry, authentication, schema and migration files, metrics, dashboards, package metadata, and bindings.
+- `workers/forum`: identity, anti-spam, schemas, routes, domains, bindings, and tests.
+- `site`: page titles, metadata, structured data, account/community flows, downloads, release channels, robots, auth redirects, contributor/publication feeds, social cards, and analytics.
+- Crash, update, registry, forum, identity, documentation, telemetry, and support endpoint defaults in Go, desktop, scripts, and examples.
+
+Every external coordinate receives one of four dispositions:
+
+1. Replace with an owned Patty endpoint.
+2. Derive from the compiled harness profile.
+3. Remove because the service is not part of Patty.
+4. Block release until the owned endpoint exists.
+
+Silent fallback to an upstream service is prohibited.
+
+### 13.9 Non-text assets and generated outputs
+
+Text search is insufficient. The asset and release plans must inspect:
+
+- PNG, SVG, ICO, ICNS, installer bitmaps, favicons, social cards, screenshots, videos, and theme packs.
+- SVG/XML text, image metadata, embedded profiles, filenames, alt text, captions, thumbnails, and archive member names.
+- Windows resources and manifests.
+- Wails bindings, frontend bundles, source maps, embedded docs, generated JSON schemas, and golden fixtures.
+- Go, desktop, helper, and sidecar binaries.
+- NPM tarballs, Linux packages, Windows installers/portable archives, macOS application bundles and disk images.
+- Update bundles, SBOMs, provenance attestations, release manifests, and signatures.
+
+Required inspection uses the appropriate combination of:
+
+- Filename and archive-member listing.
+- `strings -a` for binaries.
+- XML/SVG parsing.
+- Metadata inspection.
+- Visual inspection and OCR for rendered brand artwork.
+- Clean-build and clean-package reproduction.
+
+No artifact is released merely because its source directory passed a text scan.
+
+### 13.10 Chinese-removal coverage
+
+The initial scan found 35 explicitly Chinese-named tracked files:
+
+- `README.zh-CN.md`.
+- `desktop/frontend/src/locales/zh.ts` and `zh-TW.ts`.
+- Thirty Chinese documentation translations under `docs/`.
+- `internal/i18n/messages_zh.go` and `messages_zh_tw.go`.
+- `sdk/go/examples/starterextension/README.zh-CN.md`.
+
+Removal also covers non-filename surfaces:
+
+- Locale types, defaults, normalization, detection, and persisted preferences.
+- Response-language and reasoning-language policies.
+- Chinese-specific formatting, token units, pricing, dates, and number formats.
+- Chinese keywords, command arguments, language aliases, and help.
+- Documentation generation, language navigation, SEO locale routing, sitemaps, and release-note translation.
+- Chinese catalog parity, snapshots, fixtures, golden prompts, workflow labels, and tests.
+- Simplified/traditional fallback behavior in desktop, CLI, embedded docs, agents, and providers.
+
+The replacement sequence is:
+
+1. Add complete Korean catalogs and Korean locale plumbing.
+2. Make Korean the default and completeness source.
+3. Add or retain complete English parity.
+4. Migrate tests and stored default assumptions to Korean/English.
+5. Delete Chinese resources and code branches.
+6. Run forbidden-locale and forbidden-resource scans.
+
+Deleting Chinese files before Korean parity exists is prohibited because it would create untranslated or broken surfaces.
+
+### 13.11 Dependency order
 
 1. Establish the product-profile schema and generated API.
 2. Move current hard-coded identities behind the API without changing behavior.
 3. Add profile and module validation tests.
-4. Rename the Go module and imports as one controlled mechanical change.
-5. Rename shared identity symbols semantically.
-6. Replace Patty storage, environment, configuration, wire, and database identities.
-7. Replace packaging, release, signing, service, and endpoint identities.
-8. Replace UI, localization, documentation, assets, examples, and snapshots.
-9. Add derived GongCode profile and isolation tests.
-10. Sanitize transitional design and planning documents to use “upstream project,” or remove them from the distributable current tree, so they do not create permanent brand-gate exceptions.
-11. Run brand, behavior, package, and clean-install gates.
+4. Freeze the baseline behavior suite and generate the complete match ledger.
+5. Rename all Go module graphs and imports as one controlled, build-green change.
+6. Rename shared identity symbols semantically while keeping behavior green.
+7. Replace Patty filesystem, environment, configuration, credential, session, cache, lock, and schema identities.
+8. Replace event, protocol, metric, log, HTTP, user-agent, and wire identities.
+9. Add complete Korean catalogs and Korean-first locale plumbing while English remains functional.
+10. Replace Korean built-in command surfaces and multi-keyword resolution.
+11. Remove Chinese resources and language branches after Korean/English parity passes.
+12. Replace desktop UI identity, TUI layout, launch artwork, assets, examples, docs, snapshots, and accessibility text.
+13. Replace platform packaging, OS integration, updater, signing, and release identities.
+14. Replace hosted-service, website, worker, database-deployment, domain, and operational identities.
+15. Add derived GongCode profile, required-module trust chain, state isolation, and fail-closed tests.
+16. Rebuild every supported artifact from a clean checkout and inspect its installed/package contents.
+17. Sanitize transitional design and planning documents to use “upstream project,” or remove them from the distributable current tree.
+18. Run whole-tree brand, locale, behavior, package, install, and clean-state gates.
 
-### 13.3 Clean break
+Each numbered boundary is a checkpoint. The repository must compile and its proportionate tests must pass before work advances to the next boundary. A failed boundary is repaired before later identity surfaces are changed.
+
+### 13.12 Clean break
 
 The final product contains:
 
@@ -473,6 +740,23 @@ The final product contains:
 - No current schema fields named for Reasonix.
 
 Clean installation tests must begin with empty temporary user and application roots.
+
+### 13.13 Completion accounting
+
+The rebrand is not complete when a search command returns zero in source. It is complete only when all of the following are true:
+
+- The current-tree ledger has zero unresolved rows.
+- The 28 branded paths have their recorded disposition.
+- Operational `esengine` coordinates are gone or profile-controlled; legal authorship is in notices.
+- Korean and English parity pass and all Chinese surfaces are removed.
+- Root, desktop, and SDK modules build with Patty coordinates.
+- macOS, Windows, and Linux packaged identities pass platform inspection.
+- Hosted Patty services use only owned or explicitly release-blocked coordinates.
+- Databases, metrics, schemas, logs, cookies, URNs, headers, and wire formats contain no unauthorized upstream identity.
+- Non-text assets and generated archives pass string, metadata, visual, and member-name inspection.
+- Clean installs do not read upstream state.
+- GongCode rejects Patty state and unsigned/modified mandatory modules.
+- Only exact legal notices and Git history contain the upstream identity.
 
 ## 14. License and Attribution
 
@@ -487,6 +771,20 @@ Legal review must confirm the final notice placement before distribution.
 ## 15. Verification and Acceptance Gates
 
 ### 15.1 Brand gate
+
+The scanner treats the following first-party identity families as forbidden unless an exact legal exception applies:
+
+| Identity family | Examples the implementation scanner must cover |
+|---|---|
+| Product spelling and casing | `Reasonix`, `reasonix`, uppercase forms, joined/split display variants |
+| Filesystem and configuration | `.reasonix`, `reasonix.toml`, `REASONIX_*`, application-support roots, cache and lock names |
+| Code and package coordinates | old Go modules/imports, NPM names/scopes, binary names, command packages, SDK examples |
+| Network and protocol | `reasonix.io`, old subdomains, `urn:reasonix`, URL schemes, user agents, headers, cookies, OAuth IDs |
+| OS integration | `io.reasonix.*`, bundle/app IDs, desktop entries, PolicyKit actions, registry keys, services, keyring names |
+| Operational organization | `esengine` repositories, owners, signers, publishers, downloads, support links, hosted bindings |
+| Generated and visual identity | archive members, binary strings, metadata, icons, screenshots, banners, installer art |
+
+The inventory plan must expand each family into exact case-sensitive and case-insensitive patterns after inspecting the repository’s real forms. A zero result for only the word `reasonix` is not a passing brand gate.
 
 CI and release verification scan:
 
@@ -555,32 +853,77 @@ Every implementation phase produces:
 
 ## 16. Planning Decomposition
 
-After this design is approved in writing, implementation planning will be split into independently executable documents:
+This file is the architecture specification and umbrella execution plan. It is not a substitute for the requested junior-executable plans. After written approval, implementation planning is split into the following complete documents:
 
-1. Repository inventory and acceptance-baseline plan.
-2. Product-profile and module-contract foundation plan.
-3. Core semantic rebrand plan.
-4. Storage, configuration, schema, and cross-harness isolation plan.
-5. Korean-first localization and Chinese-removal plan.
-6. Korean slash-command and keyword-resolution plan.
-7. TUI redesign and startup artwork plan.
-8. Desktop, website, documentation, and asset rebrand plan.
-9. Packaging, installer, release, signing, and service-identity plan.
-10. GongCode profile, mandatory-module, and Control integration foundation plan.
-11. Whole-repository brand audit and release qualification plan.
-12. GongCode master-plan reconciliation plan.
+| # | Plan document | Required repository ownership |
+|---:|---|---|
+| 01 | `01-inventory-and-baseline.md` | Literal and semantic inventory, match ledger, behavior baseline, test matrix, build matrix, protected legal exceptions |
+| 02 | `02-product-profile-and-module-foundation.md` | New product-profile schema/API/generator, Patty profile, inheritance, validation, capability registration, optional/required module contracts |
+| 03 | `03-go-module-and-core-semantic-rebrand.md` | Root/desktop/SDK modules, imports, `cmd/`, neutral shared symbols, URNs, schemas, built-ins, examples, compile checkpoints |
+| 04 | `04-storage-config-schema-and-isolation.md` | `internal/config`, credentials/keyring, sessions, memory, hooks, plugins, caches, locks, telemetry, SQL, workers’ schemas, signed harness envelopes |
+| 05 | `05-korean-localization-and-chinese-removal.md` | Go and frontend i18n, product docs, response/reasoning policy, formatting, Korean parity, English parity, all Chinese resources and branches |
+| 06 | `06-korean-slash-command-system.md` | Stable command IDs, Korean names, 초성 generation, Korean/English keywords, aliases, collision resolution, CLI/desktop completion/help, all built-ins |
+| 07 | `07-tui-redesign-and-launch-art.md` | Bubble Tea TUI layout, transcript, contextual pickers, inline approvals/diffs, Korean IME/width, selected visual direction, profile banner renderer |
+| 08 | `08-desktop-site-docs-and-assets.md` | Wails desktop identity/UI, frontend, public site, docs, embedded docs, release notes, accessibility, logos/icons/media/theme assets |
+| 09 | `09-packaging-release-signing-and-os-integration.md` | GoReleaser, NPM, GitHub Actions, SignPath, update/repair/launcher helpers, macOS/Windows/Linux packages and installed identities |
+| 10 | `10-hosted-services-and-network-identities.md` | Accounts, crash report, registry, forum, workers, databases/bindings, domains, OAuth/cookies/email, CORS/CSP, metrics, endpoints |
+| 11 | `11-gongcode-profile-and-mandatory-modules.md` | GongCode profile, trust roots, required module graph, attestation, fail-closed runtime, Control envelope, cross-harness rejection |
+| 12 | `12-release-qualification-and-master-plan-reconciliation.md` | Whole-tree and binary audit, clean builds/packages/installs, legal notices, transitional-doc sanitation, GongCode master-plan updates, evidence bundle |
+
+Plans 01–04 establish identity and state foundations. Plans 05–08 change user-facing behavior and presentation. Plans 09–10 change distribution and external systems. Plan 11 builds the first derived secure harness. Plan 12 is the only plan allowed to declare release qualification.
+
+### 16.1 Required structure of every detailed plan
 
 Each plan must provide:
 
 - Purpose, scope, and exclusions.
 - Dependencies and required prior gates.
-- Exact files when known; otherwise a prescribed semantic-discovery query.
-- Small tasks with one responsible surface.
+- Measured baseline for its owned surface.
+- Exact files and symbols already known from the inventory.
+- A prescribed Semble query for semantic discovery and an exact-literal scan for completeness.
+- Small ordered tasks, each with one responsible surface and one observable outcome.
 - Test-first steps where behavior changes.
-- Commands and expected results.
+- Exact edit intent: what is renamed, neutralized, deleted, generated, or preserved.
+- Commands, expected exit status, and expected result.
 - Cross-platform considerations.
 - Rollback or recovery instructions.
 - Definition of done and evidence artifacts.
+- Ledger rows closed by the task and rows deliberately handed to another plan.
+
+### 16.2 Junior task template
+
+Every implementation task uses this structure:
+
+1. **Objective:** one concrete behavior or identity outcome.
+2. **Preconditions:** prior plan/task IDs and required green gates.
+3. **Read first:** exact source, callers, tests, docs, and generated consumers.
+4. **Inventory rows:** exact ledger rows owned by the task.
+5. **Failing proof:** test, assertion, or inspection demonstrating the old state.
+6. **Implementation:** ordered file-level edits with semantic rationale.
+7. **Focused validation:** smallest relevant unit/contract tests.
+8. **Broader validation:** package, subsystem, or platform suite.
+9. **Artifact inspection:** generated/binary/package checks where applicable.
+10. **Expected evidence:** files, logs, hashes, screenshots, manifests, or reports.
+11. **Rollback:** safe reversal boundary that preserves unrelated work.
+12. **Done:** exact statements that must all be true.
+
+Tasks may not say “replace remaining occurrences,” “update related files,” or “run relevant tests” without enumerating the owned paths, discovery command, and expected verification.
+
+### 16.3 Cross-plan gates
+
+| Gate | Required proof |
+|---|---|
+| G0 Baseline | Current behavior suites recorded; full ledger generated; legal exceptions frozen |
+| G1 Profile foundation | Patty profile resolves deterministically; invalid inheritance/module graphs fail |
+| G2 Core identity | All Go module graphs compile; core tests pass; no mixed import namespace |
+| G3 State identity | Clean Patty state works; upstream state is ignored; harness envelope tests pass |
+| G4 Language | Korean completeness and English parity pass; Chinese resources and branches are absent |
+| G5 Command UX | Every built-in resolves by Korean, 초성, and keywords; ambiguity never executes |
+| G6 TUI/desktop | Korean-first TUI and desktop smoke tests pass at supported widths/platforms |
+| G7 Distribution | Every platform package installs with correct names and no upstream operational coordinates |
+| G8 Services | Patty-owned endpoints and service bindings pass integration tests; upstream fallback is impossible |
+| G9 GongCode | Modified profile/module/state is rejected; mandatory-service outage blocks protected actions |
+| G10 Qualification | Whole-tree, generated, binary, package, install, locale, legal, and master-plan gates pass |
 
 ## 17. Reconciliation with GongCode Master Plan
 
