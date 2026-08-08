@@ -1,0 +1,110 @@
+# Patty Code — Base Product Profile
+# This file is the authoritative definition for the patty harness.
+# Derived profiles (gongcode, etc.) extend this via the inheritance engine.
+
+harnessID: patty
+editionID: "1.0.0"
+
+displayName:
+  ko: "Patty Code"
+  en: "Patty Code"
+
+artifactName: patty-code
+executableName: patty
+
+userRoot: .patty
+configFilename: patty.toml
+envPrefix: PATTY_
+dataRoot: "" # resolved at runtime via os.UserConfigDirectory() + userRoot
+
+websiteURL: ""        # release-blocked until owned domain exists
+docsURL: ""           # release-blocked
+supportURL: ""        # release-blocked
+updateURL: ""         # release-blocked
+registryURL: ""       # release-blocked
+telemetryURL: ""      # no telemetry by default
+apiBaseURL: ""        # no API by default
+
+desktopAppID: ""      # release-blocked until owned domain exists
+protocolHandler: patty
+keychainService: PATTY_CODE_KEYCHAIN
+desktopEntryName: patty
+
+colorPalette:
+  name: hanji-workstation
+  foreground: "#E8E4DF"
+  background: "#1A1714"
+  accentBlue: "#4A90D9"
+  accentRed: "#D94A4A"
+  monochrome: [7, 0]
+
+bannerArtwork:
+  path: assets/banner.txt
+  digest: ""          # populated at build time by go generate
+
+launchArtwork:
+  path: assets/launch.png
+  digest: ""          # populated at build time
+
+defaultLocale: ko
+supportedLocales:
+  - ko
+  - en
+
+requiredModules:
+  - id: core.tui
+    version: ">=1.0.0"
+    signed: false
+  - id: core.i18n
+    version: ">=1.0.0"
+    signed: false
+  - id: core.agent
+    version: ">=1.0.0"
+    signed: false
+  - id: core.config
+    version: ">=1.0.0"
+    signed: false
+  - id: core.extension
+    version: ">=1.0.0"
+    signed: false
+
+optionalModules:
+  - id: feature.autoresearch
+    version: ">=1.0.0"
+    signed: false
+  - id: feature.bot
+    version: ">=1.0.0"
+    signed: false
+  - id: feature.checkpoints
+    version: ">=1.0.0"
+    signed: false
+  - id: service.crash-report
+    version: ">=1.0.0"
+    signed: false
+
+prohibitedModules: []
+
+trustRoots: []
+acceptedPublishers: []
+
+securityBaseline:
+  degradedMode: blockAll  # fail-closed default
+  protectedOperations:
+    - name: governed_edit
+      description:
+        ko: "거버넌스 보호 편집 작업 — 필수 서비스 필요"
+        en: "Governance-protected edit — requires mandatory services"
+      failClosed: true
+    - name: export_sensitive
+      description:
+        ko: "민감 데이터 내보내기 — 필수 서비스 필요"
+        en: "Sensitive data export — requires mandatory services"
+      failClosed: true
+
+storageNamespace: patty
+
+# The following are optional and typically overridden by derived profiles
+# governanceURL: ""
+# auditURL: ""
+# scannerURL: ""
+# modelApprovalURL: ""

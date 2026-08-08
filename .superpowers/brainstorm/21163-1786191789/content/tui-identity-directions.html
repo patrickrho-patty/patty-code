@@ -1,0 +1,109 @@
+<style>
+  .direction-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:22px; }
+  .direction { border:1px solid #334155; border-radius:14px; overflow:hidden; background:#0a0f16; cursor:pointer; transition:.18s ease; }
+  .direction:hover { transform:translateY(-2px); border-color:#94a3b8; }
+  .direction.selected { outline:3px solid #38bdf8; outline-offset:2px; }
+  .terminal { height:410px; color:#dce4ec; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .terminal-bar { height:28px; display:flex; align-items:center; justify-content:space-between; padding:0 11px; border-bottom:1px solid rgba(255,255,255,.12); font-size:10px; letter-spacing:.05em; }
+  .term-body { height:382px; display:grid; }
+  .rail { padding:12px 9px; border-right:1px solid rgba(255,255,255,.1); }
+  .rail div { margin:0 0 13px; opacity:.68; }
+  .rail .active { opacity:1; color:#fff; }
+  .workspace { padding:15px; overflow:hidden; }
+  .eyebrow { font-size:9px; letter-spacing:.18em; opacity:.58; margin-bottom:9px; }
+  .hangul-title { font-family:system-ui,sans-serif; font-size:19px; font-weight:720; letter-spacing:-.04em; margin-bottom:13px; }
+  .rule { height:1px; background:rgba(255,255,255,.12); margin:9px 0 13px; }
+  .msg { padding:10px 11px; margin:0 0 9px; border-left:2px solid; background:rgba(255,255,255,.035); }
+  .prompt { margin-top:13px; padding:10px; border:1px solid rgba(255,255,255,.16); }
+  .caption { padding:15px 16px 17px; background:#fff; color:#172033; min-height:116px; }
+  .caption h3 { margin:0 0 6px; font-size:16px; }
+  .caption p { margin:0; color:#64748b; font-size:12px; line-height:1.45; }
+  .recommended { display:inline-block; margin-top:9px; padding:3px 7px; border-radius:999px; background:#e0f2fe; color:#075985; font-size:10px; font-weight:700; }
+  .a { background:#161813; color:#e8e3d5; }
+  .a .terminal-bar { background:#20231d; color:#b8b09d; }
+  .a .term-body { grid-template-columns:74px 1fr; }
+  .a .msg { border-color:#b54235; }
+  .a .prompt { border-color:#506d86; background:#11140f; }
+  .taegeuk { font-size:21px; color:#c94b3b; text-shadow:9px 0 #3a658a; }
+  .b { background:#07111c; color:#d5e4ec; }
+  .b .terminal-bar { background:#0b1d2b; color:#7dd3c7; }
+  .b .term-body { grid-template-columns:1fr; grid-template-rows:62px 1fr; }
+  .b .rail { display:flex; align-items:center; gap:18px; padding:13px 15px; border-right:0; border-bottom:1px solid rgba(255,255,255,.1); }
+  .b .rail div { margin:0; }
+  .b .msg { border-color:#4c8d86; }
+  .b .prompt { border-color:#b88942; background:#06101a; }
+  .c { background:#f0ede5; color:#232722; }
+  .c .terminal-bar { background:#d9d3c6; color:#4b5149; border-color:#c5beaf; }
+  .c .term-body { grid-template-columns:112px 1fr; }
+  .c .rail { border-color:#cec7b8; background:#e5e0d5; }
+  .c .msg { background:#e5e0d5; border-color:#285b4f; }
+  .c .prompt { border-color:#a04439; background:#f7f4ed; }
+  .ascii { white-space:pre; font-size:9px; line-height:1.1; opacity:.72; margin:8px 0 14px; }
+  @media (max-width:1000px) { .direction-grid { grid-template-columns:1fr; } }
+</style>
+
+<h2>질문 7 · Patty Code의 새로운 TUI 시각 언어</h2>
+<p class="subtitle">세 방향 모두 기존 Reasonix 레이아웃을 복제하지 않습니다. 태극·한지·단청의 원리를 장식이 아니라 비례, 여백, 대비, 흐름으로 번역했습니다.</p>
+
+<div class="direction-grid">
+  <div class="direction" data-choice="a-hanji-editorial" onclick="toggleSelect(this)">
+    <div class="terminal a">
+      <div class="terminal-bar"><span>PATTY CODE · 작업 03</span><span class="taegeuk">●</span></div>
+      <div class="term-body">
+        <div class="rail"><div class="active">ㅇ<br>요청</div><div>ㅍ<br>파일</div><div>ㄱ<br>기록</div><div>ㅁ<br>모듈</div></div>
+        <div class="workspace">
+          <div class="eyebrow">오늘의 작업 · 서울 14:32</div>
+          <div class="hangul-title">코드와 대화를 한 흐름으로</div>
+          <div class="rule"></div>
+          <div class="msg">사용자 · 로그인 흐름을 점검해 주세요.</div>
+          <div class="msg">Patty · 인증 경계와 세션 저장소를 살펴보고 있습니다.</div>
+          <div class="ascii">┌ 변경 제안 ─────────────────┐
+│  internal/auth/session.go  │
+│  + 만료 검증을 한곳으로 통합 │
+└───────────────────────────┘</div>
+          <div class="prompt">› 다음 요청을 입력하세요  /도움말 · /ㄷ</div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><h3>A · 한지 편집실</h3><p>비대칭 세로 길잡이, 넉넉한 여백, 먹색 바탕과 절제된 청·홍 포인트. 차분하고 독자적인 공공·전문 도구의 인상.</p><span class="recommended">추천</span></div>
+  </div>
+
+  <div class="direction" data-choice="b-seoul-night-control" onclick="toggleSelect(this)">
+    <div class="terminal b">
+      <div class="terminal-bar"><span>서울 / 보안 연결됨</span><span>14:32:08 KST</span></div>
+      <div class="term-body">
+        <div class="rail"><div class="active">작업</div><div>변경</div><div>위험</div><div>감사</div><div>모듈</div></div>
+        <div class="workspace">
+          <div class="eyebrow">PATTY CONTROL SURFACE</div>
+          <div class="hangul-title">흐름 중심 관제 화면</div>
+          <div class="msg">● 모델 요청 준비 · 위험도 낮음</div>
+          <div class="msg">◆ 도구 실행 대기 · 파일 2개</div>
+          <div class="msg">○ 검증 명령 예약 · 테스트 14개</div>
+          <div class="rule"></div>
+          <div class="prompt">명령 또는 질문  /명령어 · /ㅁ</div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><h3>B · 서울 야간 관제</h3><p>상단 기능대와 실시간 상태 흐름. 보안·감사 가시성이 강해 GongCode에 잘 맞지만, 일반 개발자용으로는 다소 긴장감이 큼.</p></div>
+  </div>
+
+  <div class="direction" data-choice="c-sarangbang" onclick="toggleSelect(this)">
+    <div class="terminal c">
+      <div class="terminal-bar"><span>Patty Code</span><span>한국어 ▾</span></div>
+      <div class="term-body">
+        <div class="rail"><div class="active">마당<br>새 작업</div><div>사랑방<br>대화</div><div>서고<br>파일</div><div>기록실<br>이력</div></div>
+        <div class="workspace">
+          <div class="eyebrow">작업 마당</div>
+          <div class="hangul-title">무엇을 함께 만들까요?</div>
+          <div class="msg">최근 작업 · 결제 화면 개선</div>
+          <div class="msg">최근 작업 · API 오류 조사</div>
+          <div class="msg">최근 작업 · 배포 문서 정리</div>
+          <div class="prompt">새 요청을 적어 주세요</div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><h3>C · 디지털 사랑방</h3><p>밝은 한지색, 친근한 공간 은유, 한국어 중심 탐색. 접근성은 좋지만 국제 사용자에게 용어 학습이 필요할 수 있음.</p></div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px">하나를 클릭하거나, “A의 구조 + B의 상태 표시”처럼 조합 의견을 터미널에 알려 주세요.</p>

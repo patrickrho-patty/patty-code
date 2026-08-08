@@ -1,0 +1,120 @@
+<style>
+  .stack { display:flex; flex-direction:column; gap:34px; margin-top:24px; }
+  .choice { width:100%; border:1px solid #334155; border-radius:12px; overflow:hidden; cursor:pointer; background:#0b1017; transition:.18s ease; }
+  .choice:hover { border-color:#94a3b8; transform:translateY(-1px); }
+  .choice.selected { outline:3px solid #38bdf8; outline-offset:3px; }
+  .terminal-shell { overflow-x:auto; background:#080c11; padding:0; }
+  .terminal-chrome { min-width:860px; display:flex; align-items:center; justify-content:space-between; height:32px; padding:0 14px; font:11px ui-monospace,SFMono-Regular,Menlo,monospace; border-bottom:1px solid rgba(255,255,255,.13); }
+  pre.tui { min-width:860px; min-height:485px; box-sizing:border-box; margin:0; padding:18px 22px 20px; white-space:pre; overflow:visible; font:13px/1.43 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:0; }
+  .description { background:#fff; color:#162033; padding:17px 20px 19px; }
+  .description h3 { margin:0 0 6px; font-size:18px; }
+  .description p { margin:0; color:#64748b; line-height:1.5; }
+  .badge { display:inline-block; margin-left:8px; padding:3px 8px; border-radius:999px; background:#dff4ff; color:#075985; font-size:10px; vertical-align:2px; }
+  .hanji .terminal-chrome { background:#1d211a; color:#c3baa6; }
+  .hanji pre { background:#141711; color:#e7e1d2; }
+  .night .terminal-chrome { background:#092031; color:#7ecdc3; }
+  .night pre { background:#07131e; color:#d5e6ed; }
+  .sarang .terminal-chrome { background:#d7d1c4; color:#424a43; border-color:#bdb5a6; }
+  .sarang pre { background:#eeeae1; color:#222822; }
+  .legend { margin-top:16px; padding:12px 14px; border-left:3px solid #38bdf8; background:#eef8ff; color:#365268; font-size:13px; }
+</style>
+
+<h2>질문 7 · 실제 터미널 비율로 다시 설계한 Patty Code TUI</h2>
+<p class="subtitle">각 안은 약 100열 터미널을 기준으로 독립된 전체 화면입니다. 아래로 스크롤해 세 안을 차례로 비교해 주세요.</p>
+
+<div class="stack">
+  <section class="choice hanji" data-choice="a-hanji-workbench-v2" onclick="toggleSelect(this)">
+    <div class="terminal-shell">
+      <div class="terminal-chrome"><span>●  patty · ~/projects/patty-code</span><span>한국어  |  14:32 KST  |  ◒</span></div>
+      <pre class="tui">┌─ PATTY CODE ───────────────────────────────────────────────────────────────────────────┐
+│  ㅇ 요청       작업 03 · 인증 흐름 점검                                      상태: 진행 중  │
+│  ㅍ 파일     ─────────────────────────────────────────────────────────────────────────  │
+│  ㄱ 기록       사용자                                                              │
+│  ㅁ 모듈       로그인 흐름에서 세션 만료 검증이 빠진 곳을 찾아 주세요.                       │
+│  ㅅ 설정                                                                             │
+│             Patty                                                               │
+│             인증 경계와 세션 저장소를 따라가고 있습니다. 기존 검증기를 재사용할 수 있는지       │
+│             먼저 확인하겠습니다.                                                   │
+│                                                                                     │
+│             ┌─ 살펴보는 중 ─────────────────────────────────────────────────────┐   │
+│             │  internal/auth/session.go        읽음                              │   │
+│             │  internal/http/middleware.go     읽음                              │   │
+│             │  internal/auth/session_test.go   관련 테스트 발견                   │   │
+│             └───────────────────────────────────────────────────────────────────┘   │
+│                                                                                     │
+│             변경 제안                                                               │
+│             ┌ internal/http/middleware.go ──────────────────────────────────────┐   │
+│             │  71  session, err := store.Load(token)                             │   │
+│             │+ 72  if session.Expired(clock.Now()) { return ErrSessionExpired }  │   │
+│             └───────────────────────────────────────────────────────────────────┘   │
+│                                                                                     │
+│             검증  go test ./internal/auth ./internal/http                   대기     │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│ › 다음 요청을 입력하세요                                           /도움말 · /ㄷ     │
+└─────────────────────────────────────────────────────────────────────────────────────┘</pre>
+    </div>
+    <div class="description"><h3>A · 한지 작업대 <span class="badge">추천</span></h3><p>고정 세로 초성 탐색, 대화와 변경 사항을 하나의 작업 흐름으로 연결합니다. 먹색에 청·홍을 상태색으로만 제한해 한국적이지만 관광 상품처럼 보이지 않습니다.</p></div>
+  </section>
+
+  <section class="choice night" data-choice="b-seoul-control-v2" onclick="toggleSelect(this)">
+    <div class="terminal-shell">
+      <div class="terminal-chrome"><span>◆ PATTY / CONTROL SURFACE</span><span>연결 정상 · 위험도 낮음 · 14:32:08.412 KST</span></div>
+      <pre class="tui">╔═ 작업 ════════════ 변경 ════════════ 위험 ════════════ 검증 ════════════ 기록 ═════════╗
+║ SESSION  8A2F-19C0       MODEL  sonnet       BRANCH  feature/auth       ◐ RUNNING       ║
+╠═════════════════════════════════════════════════════════════════════════════════════════╣
+║  EVENT STREAM                                      │  ACTIVE CHANGE                      ║
+║                                                    │                                     ║
+║  14:31:54  INPUT                                   │  internal/http/middleware.go         ║
+║  로그인 흐름에서 세션 검증을 확인해 주세요.          │  ─────────────────────────────────  ║
+║                                                    │   70  token := readCookie(req)       ║
+║  14:31:56  CONTEXT                         PASS    │   71  session := store.Load(token)   ║
+║  관련 파일 3 · 예상 토큰 8.2k                       │ + 72  validateExpiry(session)        ║
+║                                                    │                                     ║
+║  14:32:01  TOOL/read                       PASS    │  FILE RISK                  LOW      ║
+║  internal/auth/session.go                          │  PROMPT INJECTION            NONE     ║
+║                                                    │  SECRET EXPOSURE             NONE     ║
+║  14:32:05  TOOL/edit                       HELD    │                                     ║
+║  승인 정책을 확인하는 중                            │  NEXT GATE                           ║
+║                                                    │  [1] 변경 승인   [2] 차이 보기        ║
+║  ────────────────────────────────────────────────  │  [3] 취소       [4] 정책 설명        ║
+║  검사  5/6 통과 · 1개 승인 대기                     │                                     ║
+╠═════════════════════════════════════════════════════════════════════════════════════════╣
+║ 명령 또는 질문 ›                                                /명령어 · /ㅁ           ║
+╚═════════════════════════════════════════════════════════════════════════════════════════╝</pre>
+    </div>
+    <div class="description"><h3>B · 서울 야간 관제</h3><p>이벤트 흐름과 활성 변경을 양분한 밀도 높은 관제형 TUI입니다. GongCode의 감사·위험·승인 가시성에는 강하지만 공개용 Patty Code에는 다소 무거울 수 있습니다.</p></div>
+  </section>
+
+  <section class="choice sarang" data-choice="c-madang-v2" onclick="toggleSelect(this)">
+    <div class="terminal-shell">
+      <div class="terminal-chrome"><span>Patty Code · 작업 마당</span><span>한국어 ▾    도움말 ?</span></div>
+      <pre class="tui">┌──────────────────────┬──────────────────────────────────────────────────────────────────┐
+│  PATTY CODE          │                                                                  │
+│      ╲  ◒  ╱         │  안녕하세요. 무엇을 함께 만들까요?                                │
+│   ──  ╳  ──         │  ──────────────────────────────────────────────────────────────  │
+│      ╱     ╲         │                                                                  │
+│                      │  최근 작업                                                       │
+│  ● 마당              │                                                                  │
+│    새 작업           │  ┌ 01  결제 화면 개선                                           │
+│                      │  │     frontend · 18분 전 · 변경 4개                            │
+│  ○ 사랑방            │  └────────────────────────────────────────────────────────────  │
+│    대화              │                                                                  │
+│                      │  ┌ 02  API 오류 조사                                             │
+│  ○ 서고              │  │     backend · 어제 · 원인 확인                              │
+│    파일              │  └────────────────────────────────────────────────────────────  │
+│                      │                                                                  │
+│  ○ 기록실            │  ┌ 03  배포 문서 정리                                           │
+│    이력              │  │     docs · 3일 전 · 완료                                    │
+│                      │  └────────────────────────────────────────────────────────────  │
+│  ○ 연장함            │                                                                  │
+│    모듈              │  ┌─ 새 요청 ─────────────────────────────────────────────────┐  │
+│                      │  │  만들거나 고치고 싶은 내용을 적어 주세요…                  │  │
+│  ───────────────     │  └───────────────────────────────────────────────────────────┘  │
+│  연결됨 · v2.0       │                                    Enter 시작 · Ctrl+K 명령     │
+└──────────────────────┴──────────────────────────────────────────────────────────────────┘</pre>
+    </div>
+    <div class="description"><h3>C · 디지털 마당</h3><p>밝은 화면과 공간 은유로 진입 장벽을 낮춘 시작 중심 TUI입니다. 친근하지만 “사랑방·서고” 같은 은유가 외국인 작업자에게 추가 학습을 요구할 수 있습니다.</p></div>
+  </section>
+</div>
+
+<div class="legend">하나를 클릭하거나 조합을 말씀해 주세요. 예: “A를 기본으로 하고, 작업 중에는 B의 오른쪽 위험 패널을 열 수 있게.”</div>
