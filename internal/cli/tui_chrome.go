@@ -17,7 +17,7 @@ const (
 	compactTerminalRows        = 7
 	minimalTerminalRows        = 4
 	composerCursorChromeOffset = 2
-	launchStageMaxRows         = 28
+	launchStageMaxRows         = 34
 )
 
 var approvedTaegeukgiRows, approvedPattyRows = loadApprovedLaunchRows()

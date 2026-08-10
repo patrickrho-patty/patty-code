@@ -3677,7 +3677,7 @@ func (m chatTUI) launchStageHeight(width int) int {
 	}
 	extra := 0
 	if m.height >= 30 {
-		extra = 4
+		extra = min(max((m.height-24)/2, 4), 10)
 	}
 	return min(max(rows+extra, 14), launchStageMaxRows)
 }

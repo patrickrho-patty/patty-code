@@ -357,7 +357,7 @@ func TestIdleStartupUsesNaturalTranscriptHeight(t *testing.T) {
 		}
 	})
 
-	t.Run("tall startup notice keeps composer near masthead", func(t *testing.T) {
+	t.Run("tall startup notice keeps composer within expanded launch frame", func(t *testing.T) {
 		m := newChatTUI(control.New(control.Options{}), "", make(chan event.Event, 1), 140)
 		m0, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
 		m = m0.(chatTUI)
@@ -381,12 +381,24 @@ func TestIdleStartupUsesNaturalTranscriptHeight(t *testing.T) {
 		if noticeRow < 0 || composerRow < 0 {
 			t.Fatalf("tall startup frame missing notice/composer rows:\n%s", ansi.Strip(m.View().Content))
 		}
-		if gap := composerRow - noticeRow; gap > 3 {
-			t.Fatalf("tall startup notice/composer gap = %d rows, want <= 3:\n%s", gap, ansi.Strip(m.View().Content))
+		if gap := composerRow - noticeRow; gap > 6 {
+			t.Fatalf("tall startup notice/composer gap = %d rows, want <= 6 inside expanded launch frame:\n%s", gap, ansi.Strip(m.View().Content))
 		}
 	})
 
-	t.Run("tall startup notice before resize keeps composer near masthead", func(t *testing.T) {
+	t.Run("tall startup uses expanded inline height without filling terminal", func(t *testing.T) {
+		m := newChatTUI(control.New(control.Options{}), `provider "deepseek-flash": missing env DEEPSEEK_API_KEY`, make(chan event.Event, 1), 140)
+		m0, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
+		m = m0.(chatTUI)
+		m0, _ = m.Update(agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "Selected model is missing its API key."}))
+		m = m0.(chatTUI)
+		lines := strings.Count(m.View().Content, "\n") + 1
+		if lines < 34 || lines >= 40 {
+			t.Fatalf("tall startup rendered %d rows, want expanded inline height in [34, 39]:\n%s", lines, ansi.Strip(m.View().Content))
+		}
+	})
+
+	t.Run("tall startup notice before resize keeps composer within expanded launch frame", func(t *testing.T) {
 		m := newChatTUI(control.New(control.Options{}), "", make(chan event.Event, 1), 140)
 		m0, _ := m.Update(agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "Selected model is missing its API key."}))
 		m = m0.(chatTUI)
@@ -410,12 +422,12 @@ func TestIdleStartupUsesNaturalTranscriptHeight(t *testing.T) {
 		if noticeRow < 0 || composerRow < 0 {
 			t.Fatalf("pre-resize startup frame missing notice/composer rows:\n%s", ansi.Strip(m.View().Content))
 		}
-		if gap := composerRow - noticeRow; gap > 3 {
-			t.Fatalf("pre-resize startup notice/composer gap = %d rows, want <= 3:\n%s", gap, ansi.Strip(m.View().Content))
+		if gap := composerRow - noticeRow; gap > 6 {
+			t.Fatalf("pre-resize startup notice/composer gap = %d rows, want <= 6 inside expanded launch frame:\n%s", gap, ansi.Strip(m.View().Content))
 		}
 	})
 
-	t.Run("missing provider startup keeps composer near masthead", func(t *testing.T) {
+	t.Run("missing provider startup keeps composer within expanded launch frame", func(t *testing.T) {
 		m := newChatTUI(control.New(control.Options{}), `provider "deepseek-flash": missing env DEEPSEEK_API_KEY`, make(chan event.Event, 1), 140)
 		m.label = "deepseek-v4-flash"
 		m0, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
@@ -443,8 +455,8 @@ func TestIdleStartupUsesNaturalTranscriptHeight(t *testing.T) {
 		if plain := ansi.Strip(m.View().Content); !strings.Contains(plain, "notice  Selected model is missing its API key.") && !strings.Contains(plain, "setup  Selected model is missing its API key.") {
 			t.Fatalf("missing provider startup notice used legacy transcript styling:\n%s", plain)
 		}
-		if gap := composerRow - noticeRow; gap > 3 {
-			t.Fatalf("missing provider startup notice/composer gap = %d rows, want <= 3:\n%s", gap, ansi.Strip(m.View().Content))
+		if gap := composerRow - noticeRow; gap > 6 {
+			t.Fatalf("missing provider startup notice/composer gap = %d rows, want <= 6 inside expanded launch frame:\n%s", gap, ansi.Strip(m.View().Content))
 		}
 	})
 }
