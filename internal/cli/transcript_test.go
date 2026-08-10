@@ -177,6 +177,19 @@ func TestSelectedTextMultiLine(t *testing.T) {
 	}
 }
 
+func TestSelectionStyleUsesExplicitThemeContrast(t *testing.T) {
+	defer restoreThemeForTest(activeColorProfile, activeCLITheme)
+	activeColorProfile = colorprofile.ANSI256
+	configureCLITheme("seoul-night")
+
+	rendered := selStyle.Render("selected")
+	for _, want := range []string{"38;5;233", "48;5;179", "selected"} {
+		if !strings.Contains(rendered, want) {
+			t.Fatalf("selection style missing %q in %q", want, rendered)
+		}
+	}
+}
+
 func TestSelectedTextRestoresMathWithoutReusingRawColumns(t *testing.T) {
 	defer restoreThemeForTest(activeColorProfile, activeCLITheme)
 	activeColorProfile = colorprofile.NoTTY

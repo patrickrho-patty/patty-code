@@ -17,7 +17,7 @@ const (
 	compactTerminalRows        = 7
 	minimalTerminalRows        = 4
 	composerCursorChromeOffset = 2
-	launchStageMaxRows         = 22
+	launchStageMaxRows         = 28
 )
 
 var approvedTaegeukgiRows, approvedPattyRows = loadApprovedLaunchRows()
@@ -40,13 +40,10 @@ func loadApprovedLaunchRows() ([]string, []string) {
 }
 
 var taegeukRedCells = map[int]int{
-	5:  7,
-	6:  10,
-	7:  10,
-	8:  9,
-	9:  5,
-	10: 3,
-	11: 1,
+	5: 7,
+	6: 8,
+	7: 6,
+	8: 3,
 }
 
 // renderLaunchArtwork keeps the two approved marks unsquashed. Standard and
@@ -86,7 +83,7 @@ func renderLaunchMasthead(m chatTUI, missing string, width int) string {
 	b.WriteString(dim(i18n.M.ChatTip))
 	if strings.TrimSpace(missing) != "" {
 		b.WriteByte('\n')
-		b.WriteString(wrapForViewport("! "+missing, width, activeCLITheme.warn))
+		b.WriteString(wrapForViewport("! "+localizedMissingProviderWarning(missing), width, activeCLITheme.warn))
 	}
 	return b.String()
 }
@@ -108,7 +105,7 @@ func (m chatTUI) shouldCompactLaunchArtwork() bool {
 func renderCompactLaunchMasthead(m chatTUI, missing string, width int) string {
 	lines := []string{ansi.Truncate(dim(i18n.M.ChatTip), width, "")}
 	if strings.TrimSpace(missing) != "" {
-		lines = append(lines, wrapForViewport("! "+missing, width, activeCLITheme.warn))
+		lines = append(lines, wrapForViewport("! "+localizedMissingProviderWarning(missing), width, activeCLITheme.warn))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -354,11 +351,11 @@ func renderSessionFacts(m chatTUI, width int) string {
 }
 
 func sessionFactPill(label, value string) string {
-	return themeFg(activeCLITheme.border, "╎ ") +
+	return themeFg(activeCLITheme.border, "[ ") +
 		footerLabel(label) +
 		" " +
 		value +
-		themeFg(activeCLITheme.border, " ╎")
+		themeFg(activeCLITheme.border, " ]")
 }
 
 func localizedModeFact(m chatTUI) string {

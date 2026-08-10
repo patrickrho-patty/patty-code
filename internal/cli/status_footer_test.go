@@ -121,8 +121,8 @@ func TestTurnReceiptAdaptsContrastAcrossThemes(t *testing.T) {
 	for _, tt := range []struct {
 		mode, borderSGR, labelSGR, valueSGR string
 	}{
-		{mode: "dark", borderSGR: "\033[38;5;236m", labelSGR: "\033[38;5;250m", valueSGR: "\033[38;5;253m"},
-		{mode: "light", borderSGR: "\033[38;5;250m", labelSGR: "\033[38;5;240m", valueSGR: "\033[38;5;235m"},
+		{mode: "dark", borderSGR: "\033[38;5;66m", labelSGR: "\033[38;5;250m", valueSGR: "\033[38;5;253m"},
+		{mode: "light", borderSGR: "\033[38;5;242m", labelSGR: "\033[38;5;240m", valueSGR: "\033[38;5;235m"},
 	} {
 		t.Run(tt.mode, func(t *testing.T) {
 			configureCLITheme(tt.mode)
@@ -206,8 +206,8 @@ func TestStatusFooterGitAndDividerAdaptToTheme(t *testing.T) {
 	for _, tt := range []struct {
 		mode, gitSGR, borderSGR string
 	}{
-		{mode: "dark", gitSGR: "\033[38;5;179m", borderSGR: "\033[38;5;236m"},
-		{mode: "light", gitSGR: "\033[38;5;136m", borderSGR: "\033[38;5;250m"},
+		{mode: "dark", gitSGR: "\033[38;5;179m", borderSGR: "\033[38;5;66m"},
+		{mode: "light", gitSGR: "\033[38;5;136m", borderSGR: "\033[38;5;242m"},
 	} {
 		t.Run(tt.mode, func(t *testing.T) {
 			configureCLITheme(tt.mode)
@@ -278,7 +278,7 @@ func TestStatusFooterUsesReadableLocalizedHintAndWrapsCleanly(t *testing.T) {
 		lang, compact string
 	}{
 		{lang: "en", compact: "Shift+Tab ask/auto/plan · Ctrl+Y YOLO"},
-		{lang: "ko", compact: "Shift+Tab 물어보기/자동/계획 · Ctrl+Y YOLO"},
+		{lang: "ko", compact: "Shift+Tab 일반/자동/계획 · Ctrl+Y YOLO"},
 		{lang: "en-US", compact: "Shift+Tab ask/auto/plan · Ctrl+Y YOLO"},
 	} {
 		t.Run(tt.lang, func(t *testing.T) {

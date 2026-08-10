@@ -48,7 +48,13 @@ func renderNoticeLine(glyph, text string) string {
 	if glyph == "!" {
 		label = themeFg(activeCLITheme.warn, "setup")
 	}
-	return statusFooterIndent + themeFg(activeCLITheme.accent, "◆") + " " + label + "  " + themeFg(activeCLITheme.strong, text)
+	if i18n.CurrentLanguage() == "ko" {
+		label = footerLabel("알림")
+		if glyph == "!" {
+			label = themeFg(activeCLITheme.warn, "설정")
+		}
+	}
+	return statusFooterIndent + themeFg(activeCLITheme.accent, "◆") + " " + label + "  " + themeFg(activeCLITheme.strong, localizedStartupDiagnostic(text))
 }
 
 func isStartupDiagnosticNotice(text string) bool {
@@ -61,6 +67,51 @@ func isStartupDiagnosticNotice(text string) bool {
 	default:
 		return false
 	}
+}
+
+func localizedStartupDiagnostic(text string) string {
+	text = strings.TrimSpace(text)
+	if i18n.CurrentLanguage() != "ko" {
+		return text
+	}
+	switch text {
+	case "Selected model is missing its API key.":
+		return "선택한 모델의 API 키가 설정되어 있지 않습니다."
+	case "Config migration did not complete.":
+		return "구성 마이그레이션이 완료되지 않았습니다."
+	case "An MCP server failed to start.":
+		return "MCP 서버를 시작하지 못했습니다."
+	case "Some MCP servers failed to start; run /mcp for details.":
+		return "일부 MCP 서버를 시작하지 못했습니다. 자세한 내용은 /mcp를 실행하세요."
+	default:
+		return text
+	}
+}
+
+func localizedMissingProviderWarning(text string) string {
+	text = strings.TrimSpace(text)
+	if i18n.CurrentLanguage() != "ko" {
+		return text
+	}
+	providerName, keyName, ok := parseMissingProviderEnv(text)
+	if !ok {
+		return text
+	}
+	return fmt.Sprintf("제공자 %q에 필요한 환경 변수 %s가 설정되어 있지 않습니다.", providerName, keyName)
+}
+
+func parseMissingProviderEnv(text string) (string, string, bool) {
+	const prefix = `provider "`
+	const middle = `": missing env `
+	if !strings.HasPrefix(text, prefix) {
+		return "", "", false
+	}
+	rest := strings.TrimPrefix(text, prefix)
+	providerName, keyName, ok := strings.Cut(rest, middle)
+	if !ok || strings.TrimSpace(providerName) == "" || strings.TrimSpace(keyName) == "" {
+		return "", "", false
+	}
+	return providerName, keyName, true
 }
 
 // renderTurnReceipt attaches the completed turn's token and cost breakdown to
@@ -264,6 +315,9 @@ func (m chatTUI) renderStatusBlock(primary string, width int) string {
 // stays visible and stable facts remain in the compact masthead. At the most
 // constrained sizes the composer and masthead take precedence over the footer.
 func (m chatTUI) renderFrameStatusBlock(primary string, width int) string {
+	if m.isNaturalStartupFrame() {
+		return m.renderStartupInstructionBlock(primary, width)
+	}
 	if !m.isCompactTerminal() {
 		return m.renderStatusBlock(primary, width)
 	}
@@ -271,6 +325,34 @@ func (m chatTUI) renderFrameStatusBlock(primary string, width int) string {
 		return ""
 	}
 	return wrapStatusGroups(hideStatusHintWhenKeyNamesCannotFit(primary, width), width)
+}
+
+func (m chatTUI) renderStartupInstructionBlock(primary string, width int) string {
+	width = max(width, 1)
+	primary = hideStatusHintWhenKeyNamesCannotFit(primary, width)
+	primary = strings.TrimSpace(primary)
+	git := strings.TrimSpace(m.layoutGitTelemetry(width))
+	line := primary
+	if git != "" {
+		if line != "" {
+			line += " · "
+		}
+		line += git
+	}
+	if strings.TrimSpace(ansi.Strip(line)) == "" {
+		return ""
+	}
+	line = ansi.Truncate(line, width, "")
+	if m.height >= 30 {
+		return "\n" + alignRightStatusLine(line, width)
+	}
+	return alignRightStatusLine(line, width)
+}
+
+func alignRightStatusLine(line string, width int) string {
+	width = max(width, 1)
+	line = ansi.Truncate(line, width, "")
+	return strings.Repeat(" ", max(width-visibleWidth(line), 0)) + line
 }
 
 // hideStatusHintWhenKeyNamesCannotFit keeps the readable Shift+Tab/Ctrl+Y

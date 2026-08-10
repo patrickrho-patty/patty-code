@@ -216,7 +216,7 @@ func TestComposerChromeIsKoreanFirstBorderlessAndComplete(t *testing.T) {
 	plain := ansi.Strip(renderComposerChrome(m, 80))
 	for _, want := range []string{
 		"입력",
-		"명령 또는 질문을 입력하세요",
+		"명령 또는 질문을 입력해보세요",
 		"/ 명령어",
 		"@ 파일",
 		"! 셸",

@@ -1659,7 +1659,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.markFollowTail()
 				return m, nil
 			}
-			if line == "exit" || line == "quit" || line == ":q" {
+			if line == "exit" || line == "quit" || line == ":q" || line == "종료" {
 				return m, shutdownNow
 			}
 			m.rememberSubmittedInput(line)
@@ -3640,7 +3640,7 @@ func (m chatTUI) renderNaturalStartupTranscript(width, height int) string {
 		blocks = append(blocks, ansi.Truncate(dim(tip), width, ""))
 	}
 	if missing := strings.TrimSpace(m.missing); missing != "" {
-		blocks = append(blocks, renderStartupWarning("! "+missing, width))
+		blocks = append(blocks, renderStartupWarning("! "+localizedMissingProviderWarning(missing), width))
 	}
 	for i, source := range m.transcriptSources {
 		if source.kind != transcriptSourceStartupNotice {
@@ -3668,14 +3668,18 @@ func (m chatTUI) launchStageHeight(width int) int {
 		rows++
 	}
 	if missing := strings.TrimSpace(m.missing); missing != "" {
-		rows += strings.Count(renderStartupWarning("! "+missing, width), "\n") + 1
+		rows += strings.Count(renderStartupWarning("! "+localizedMissingProviderWarning(missing), width), "\n") + 1
 	}
 	for _, source := range m.transcriptSources {
 		if source.kind == transcriptSourceStartupNotice && strings.TrimSpace(ansi.Strip(source.raw)) != "" {
 			rows += strings.Count(source.raw, "\n") + 1
 		}
 	}
-	return min(max(rows, 8), launchStageMaxRows)
+	extra := 0
+	if m.height >= 30 {
+		extra = 4
+	}
+	return min(max(rows+extra, 14), launchStageMaxRows)
 }
 
 func centerBlock(block string, width, height int) string {

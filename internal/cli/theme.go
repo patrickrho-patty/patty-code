@@ -77,7 +77,7 @@ var (
 		danger:       cliColor{"#e5484d", 167},
 		info:         cliColor{"#5cb2c0", 80},
 		secondary:    cliColor{"#5cb2c0", 80},
-		border:       cliColor{"#17333e", 236},
+		border:       cliColor{"#5f7f89", 66},
 		selection:    cliColor{"#d1a653", 179},
 		userBubbleBG: cliColor{"#0a1b24", 234},
 		diffAddBG:    cliColor{"#14351d", 22},
@@ -103,7 +103,7 @@ var (
 		danger:       cliColor{"#a83e42", 131},
 		info:         cliColor{"#285f85", 24},
 		secondary:    cliColor{"#285f85", 24},
-		border:       cliColor{"#c8beaa", 250},
+		border:       cliColor{"#756f64", 242},
 		selection:    cliColor{"#986b2d", 136},
 		userBubbleBG: cliColor{"#e3dccd", 253},
 		diffAddBG:    cliColor{"#dce9d9", 254},
@@ -129,7 +129,7 @@ var (
 		danger:       cliColor{"#e05a60", 167},
 		info:         cliColor{"#7295ad", 67},
 		secondary:    cliColor{"#7295ad", 67},
-		border:       cliColor{"#353229", 236},
+		border:       cliColor{"#6f685d", 242},
 		selection:    cliColor{"#bc9450", 179},
 		userBubbleBG: cliColor{"#1b1914", 234},
 		diffAddBG:    cliColor{"#1b321e", 22},
@@ -155,7 +155,7 @@ var (
 		danger:       cliColor{"#e05a60", 167},
 		info:         cliColor{"#55bca3", 79},
 		secondary:    cliColor{"#55bca3", 79},
-		border:       cliColor{"#1b3a2f", 236},
+		border:       cliColor{"#4f7a68", 65},
 		selection:    cliColor{"#d5ad5d", 179},
 		userBubbleBG: cliColor{"#0c211a", 234},
 		diffAddBG:    cliColor{"#123821", 22},
@@ -470,12 +470,17 @@ func init() {
 
 func refreshCLIStyles() {
 	composerInputStyle = lipgloss.NewStyle().PaddingLeft(1)
+	selStyle = lipgloss.NewStyle().Reverse(true)
 	if colorOn() {
 		// The composer is rendered as an ANSI string, not a cell buffer. A
 		// full-width background here is unsafe because nested textarea/foreground
 		// spans emit resets that would punch holes through the surface. Keep the
 		// canvas terminal-native and style only the input text.
 		composerInputStyle = composerInputStyle.Foreground(themeLipColor(activeCLITheme.strong))
+		selStyle = lipgloss.NewStyle().
+			Foreground(themeLipColor(activeCLITheme.background)).
+			Background(themeLipColor(activeCLITheme.selection)).
+			Bold(true)
 	}
 	todoPanelStyle = withThemeBorderFG(lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), true, false, false, false), activeCLITheme.border).

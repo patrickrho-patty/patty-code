@@ -3835,7 +3835,7 @@ func TestFreshApprovalSessionChoiceIsLimitedToSandboxEscape(t *testing.T) {
 
 // TestSlashQuitExit verifies that /quit and /exit slash commands quit through
 // the shutdown path (tuiShutdownMsg → snapshot → tea.Quit, #5879), providing an
-// alternative to Ctrl+D and the bare "quit"/"exit" text commands.
+// alternative to Ctrl+D and the bare "종료"/"quit"/"exit" text commands.
 func TestSlashQuitExit(t *testing.T) {
 	m := newTestChatTUI()
 	for _, cmd := range []string{"/quit", "/exit"} {
@@ -3848,6 +3848,18 @@ func TestSlashQuitExit(t *testing.T) {
 		if _, ok := msg.(tuiShutdownMsg); !ok {
 			t.Errorf("%s cmd should produce tuiShutdownMsg, got %T", cmd, msg)
 		}
+	}
+}
+
+func TestBareKoreanExitCommandQuits(t *testing.T) {
+	m := newTestChatTUI()
+	m.input.SetValue("종료")
+	_, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("bare 종료 should return a quit cmd, got nil")
+	}
+	if msg := cmd(); msg != (tuiShutdownMsg{}) {
+		t.Fatalf("bare 종료 command = %T, want tuiShutdownMsg", msg)
 	}
 }
 

@@ -4137,7 +4137,7 @@ func TestPlanModeReadOnlyTrustApprovalPersistsBashCommandTrust(t *testing.T) {
 	if err != nil || !allow || reason != "" {
 		t.Fatalf("CheckPlanModeReadOnlyTrust = (%v,%q,%v), want allow", allow, reason, err)
 	}
-	if approval.Tool != agent.PlanModeReadOnlyCommandApprovalTool || !strings.Contains(approval.Subject, `읽기 전용 명령 접두사로 신뢰`) || !strings.Contains(approval.Subject, "gh issue view 5867") || !strings.Contains(approval.Reason, "Auto/YOLO") {
+	if approval.Tool != agent.PlanModeReadOnlyCommandApprovalTool || !strings.Contains(approval.Subject, `읽기 전용 명령 접두사로 신뢰`) || !strings.Contains(approval.Subject, "gh issue view 5867") || !strings.Contains(approval.Reason, "자동/YOLO") {
 		t.Fatalf("approval = %+v, want plan-mode bash read-only command trust prompt", approval)
 	}
 	if rememberedPrefix != "gh issue view" {

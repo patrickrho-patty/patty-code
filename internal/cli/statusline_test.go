@@ -173,7 +173,7 @@ func TestStatuslineCycleHintFollowsLanguage(t *testing.T) {
 
 	content := renderStatuslineView(t, false)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "준비") || !strings.Contains(plain, i18n.M.ChatStatusCycleHintCompact) {
+	if !strings.Contains(plain, "대기") || !strings.Contains(plain, i18n.M.ChatStatusCycleHintCompact) {
 		t.Fatalf("status line hint missing after ko-KR detection:\n%s", plain)
 	}
 }

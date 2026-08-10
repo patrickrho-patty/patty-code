@@ -39,6 +39,20 @@ func TestCatalogsAgreeOnPlaceholders(t *testing.T) {
 	}
 }
 
+func TestKoreanCatalogContainsNoHanCharacters(t *testing.T) {
+	ko := reflect.ValueOf(Korean)
+	typ := ko.Type()
+	for i := range typ.NumField() {
+		name := typ.Field(i).Name
+		value := ko.Field(i).String()
+		for _, r := range value {
+			if r >= '\u4e00' && r <= '\u9fff' {
+				t.Fatalf("%s contains Han character %q in %q", name, r, value)
+			}
+		}
+	}
+}
+
 func TestPlanApprovalChoicesExposeThreeExplicitActions(t *testing.T) {
 	tests := []struct {
 		tag   string
@@ -158,7 +172,7 @@ func TestSeoulFlowChromeCopyIsCompleteInKoreanAndEnglish(t *testing.T) {
 			name: "korean-default",
 			lang: "ko",
 			want: []string{
-				"명령 / 메시지", "명령 또는 질문을 입력하세요",
+				"명령 / 메시지", "명령 또는 질문을 입력해보세요",
 				"/ 명령어", "@ 파일", "! 셸", "? 단축키",
 				"작업", "모델", "추론", "여유", "자동", "보통",
 			},
