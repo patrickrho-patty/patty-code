@@ -238,10 +238,10 @@ func (m chatTUI) mouseOverComposer(screenX, screenY int) bool {
 	if !ok {
 		return false
 	}
-	// Include the heading and every localized hint row so a wheel gesture
-	// anywhere over the complete composer chrome has the same target.
-	lastHintY := contentY + m.input.Height() + m.composerHintRowCount(max(m.width, 10)) - 1
-	return screenY >= contentY-1 && screenY <= lastHintY
+	// Include the rounded input frame and every localized hint row so a wheel
+	// gesture anywhere over the complete composer chrome has the same target.
+	lastComposerY := contentY + m.composerRowCount() - 2
+	return screenY >= contentY-1 && screenY <= lastComposerY
 }
 
 // composerCursor maps the textarea's real insertion cursor into the manually

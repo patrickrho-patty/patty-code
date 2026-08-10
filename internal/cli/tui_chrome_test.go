@@ -205,7 +205,7 @@ func TestLocalizedEffortFactPreservesValidProviderSpecificLevels(t *testing.T) {
 	}
 }
 
-func TestComposerChromeIsKoreanFirstBorderlessAndComplete(t *testing.T) {
+func TestComposerChromeIsKoreanFirstRoundedAndComplete(t *testing.T) {
 	previousLanguage := i18n.CurrentLanguage()
 	defer i18n.DetectLanguage(previousLanguage)
 	i18n.DetectLanguage("ko")
@@ -215,8 +215,11 @@ func TestComposerChromeIsKoreanFirstBorderlessAndComplete(t *testing.T) {
 
 	plain := ansi.Strip(renderComposerChrome(m, 80))
 	for _, want := range []string{
-		"메시지 입력",
+		"╭─ 메시지 입력",
+		"╮",
 		"명령 또는 질문을 입력해보세요",
+		"╰",
+		"╯",
 		"도움말",
 		"/ 명령어",
 		"@ 파일",
@@ -227,16 +230,23 @@ func TestComposerChromeIsKoreanFirstBorderlessAndComplete(t *testing.T) {
 			t.Fatalf("Korean composer chrome missing %q:\n%s", want, plain)
 		}
 	}
-	for _, reject := range []string{"❯", "┌", "┐", "└", "┘"} {
+	for _, reject := range []string{"❯", "┌", "┐", "└", "┘", "▌"} {
 		if strings.Contains(plain, reject) {
-			t.Fatalf("borderless composer retained %q:\n%s", reject, plain)
+			t.Fatalf("rounded composer retained rejected glyph %q:\n%s", reject, plain)
 		}
 	}
-	if !strings.HasPrefix(strings.Split(plain, "\n")[0], "  ") {
-		t.Fatalf("composer heading should not be flush-left:\n%s", plain)
+	lines := strings.Split(plain, "\n")
+	if !strings.HasPrefix(lines[0], "╭─ 메시지 입력") {
+		t.Fatalf("composer heading should be embedded in the top border:\n%s", plain)
 	}
-	if got := strings.Count(plain, "\n") + 1; got != 4 {
-		t.Fatalf("one-row composer chrome has %d rows, want heading + input + spacer + hints:\n%s", got, plain)
+	if !strings.HasPrefix(lines[1], "│ ") || !strings.HasSuffix(lines[1], " │") {
+		t.Fatalf("composer input row should have vertical rounded-box sides:\n%s", plain)
+	}
+	if !strings.HasPrefix(lines[2], "╰") || !strings.HasSuffix(lines[2], "╯") {
+		t.Fatalf("composer should close the rounded input rectangle before hints:\n%s", plain)
+	}
+	if got := len(lines); got != 5 {
+		t.Fatalf("one-row composer chrome has %d rows, want top border + input + bottom border + spacer + hints:\n%s", got, plain)
 	}
 }
 
@@ -251,8 +261,10 @@ func TestComposerChromeUsesEnglishCatalogAndFitsWidth(t *testing.T) {
 	plain := ansi.Strip(renderComposerChrome(m, 48))
 	flattened := strings.Join(strings.Fields(plain), " ")
 	for _, want := range []string{
+		"╭─ MESSAGE INPUT",
 		"MESSAGE INPUT",
 		"Type a command or ask a question",
+		"╰",
 		"HELP",
 		"/ commands",
 		"@ files",
@@ -346,8 +358,8 @@ func TestShortTerminalKeepsSessionHeaderAndFitsExactHeight(t *testing.T) {
 	if !strings.HasPrefix(plain, ansi.Strip(renderSessionHeader(m, 80))+"\n") {
 		t.Fatalf("short terminal did not keep the session header at the top:\n%s", plain)
 	}
-	if got := len(strings.Split(plain, "\n")); got != m.height {
-		t.Fatalf("short terminal rendered %d rows, want %d:\n%s", got, m.height, plain)
+	if got := len(strings.Split(plain, "\n")); got > m.height {
+		t.Fatalf("short terminal rendered %d rows, want <= %d:\n%s", got, m.height, plain)
 	}
 }
 

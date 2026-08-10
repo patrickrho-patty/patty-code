@@ -2203,12 +2203,12 @@ func (m chatTUI) composerRowCount() int {
 		return 1
 	}
 	if m.isCompactTerminal() {
-		return 1 + m.input.Height()
+		return 2 + m.input.Height()
 	}
 	if m.isNaturalStartupFrame() && !m.completion.active {
-		return 1 + m.input.Height()
+		return 2 + m.input.Height()
 	}
-	return 1 + m.input.Height() + m.composerHintRowCount(max(m.width, 10))
+	return 2 + m.input.Height() + m.composerHintRowCount(max(m.width, 10))
 }
 
 // hideComposer is the single ownership gate for the bottom composer.
@@ -2364,7 +2364,7 @@ func (m chatTUI) transcriptHeight() int {
 		if available <= 1 {
 			return 1
 		}
-		return min(available, m.launchStageHeight(max(m.width, 1)))
+		return min(available-1, m.launchStageHeight(max(m.width, 1)))
 	}
 	if !m.shouldFillTranscriptViewport() {
 		return 1
@@ -4194,7 +4194,7 @@ func (m chatTUI) computeStatusLineCount(width int) int {
 const maxInputRows = 8
 
 const (
-	composerChromeRows = 2
+	composerChromeRows = 3
 	minTranscriptRows  = 1
 )
 const foldedPasteMinChars = 1000
@@ -4222,9 +4222,10 @@ func (m chatTUI) inputHeightLimit() int {
 
 	limit := maxInputRows
 	composerRows := m.composerRowCount()
-	decorativeRows := max(composerRows-m.input.Height(), composerChromeRows)
-	// The heading and hint row are part of the half-screen budget, not extra rows
-	// added afterward.
+	decorativeRows := composerChromeRows
+	// Only the rounded input frame is mandatory chrome for growth budgeting.
+	// Secondary help hints are allowed to disappear on tight screens instead of
+	// preventing a multiline draft from showing its first lines.
 	halfScreen := max(1, m.height/2-decorativeRows)
 	limit = min(limit, halfScreen)
 

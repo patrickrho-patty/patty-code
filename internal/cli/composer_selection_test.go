@@ -83,11 +83,10 @@ func TestComposerMouseRegionIncludesWrappedHintRows(t *testing.T) {
 	if !ok {
 		t.Fatal("composer should expose a mouse origin")
 	}
-	hintRows := m.composerHintRowCount(m.width)
-	if hintRows < 2 {
+	if hintRows := m.composerHintRowCount(m.width); hintRows < 2 {
 		t.Fatalf("test width produced %d hint rows, want wrapped hints", hintRows)
 	}
-	lastHintY := contentY + m.input.Height() + hintRows - 1
+	lastHintY := contentY + m.composerRowCount() - 2
 	if !m.mouseOverComposer(2, lastHintY) {
 		t.Fatalf("last hint row y=%d is outside composer mouse region", lastHintY)
 	}

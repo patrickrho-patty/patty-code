@@ -288,8 +288,8 @@ func TestTranscriptViewportSizing(t *testing.T) {
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	m = m0.(chatTUI)
 
-	if got := m.bottomRows(); got != 3 {
-		t.Fatalf("startup bottomRows with an empty composer = %d, want 3 (input 1 + title 1 + status 1)", got)
+	if got := m.bottomRows(); got != 4 {
+		t.Fatalf("startup bottomRows with an empty composer = %d, want 4 (input 1 + rounded frame 2 + status 1)", got)
 	}
 	if got := m.sessionHeaderRowCount(); got != 3 {
 		t.Fatalf("sessionHeaderRowCount = %d, want 3 (titlebar + facts + border)", got)

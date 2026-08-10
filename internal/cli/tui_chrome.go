@@ -416,6 +416,7 @@ func contextHeadroom(used, window int) string {
 }
 
 const composerChromeInset = 2
+const minTranscriptRowsWithComposerHints = 3
 
 // renderComposerChrome gives the input a padded label and a secondary
 // capability legend without drawing a box around the conversation. The textarea
@@ -428,46 +429,73 @@ func renderComposerChrome(m chatTUI, width int) string {
 		titleText = "MESSAGE INPUT"
 	}
 	title := themeStyle(activeCLITheme.signal).Bold(true).Render(titleText)
-	header := insetComposerLine(title, width)
-	if remaining := width - visibleWidth(header) - 1; remaining > 0 {
-		header += " " + themedRule(remaining, activeCLITheme.border)
-	}
+	header := renderComposerTopBorder(title, width)
 
-	bodyWidth := max(width-composerChromeInset, 1)
-	inputWidth := bodyWidth
+	inputWidth := max(width-4, 1)
 	inputRows := strings.Split(m.renderComposerInput(), "\n")
+	if h := max(m.input.Height(), 1); len(inputRows) > h {
+		inputRows = inputRows[:h]
+	}
 	for row := range inputRows {
 		// The textarea owns soft wrapping and its visible height. Lip Gloss must
 		// not create additional unaccounted rows from a long placeholder.
 		inputRows[row] = ansi.Truncate(inputRows[row], inputWidth, "")
 	}
 	input := renderComposerInputPlate(strings.Join(inputRows, "\n"), inputWidth)
+	bottom := renderComposerBottomBorder(width)
 	if m.isMinimalTerminal() {
 		return ansi.Truncate(title+"  "+ansi.Strip(input), width, "")
 	}
 	if m.isCompactTerminal() {
-		return header + "\n" + input
+		return header + "\n" + input + "\n" + bottom
 	}
 	if m.isNaturalStartupFrame() && !m.completion.active {
-		return header + "\n" + input
+		return header + "\n" + input + "\n" + bottom
+	}
+	if m.composerHintRowCount(width) == 0 {
+		return header + "\n" + input + "\n" + bottom
 	}
 	hints := renderComposerHints(width)
 	if m.composerHintSpacerRows(width) == 0 {
-		return header + "\n" + input + "\n" + hints
+		return header + "\n" + input + "\n" + bottom + "\n" + hints
 	}
-	return header + "\n" + input + "\n" + strings.Repeat(" ", min(composerChromeInset, width)) + "\n" + hints
+	return header + "\n" + input + "\n" + bottom + "\n" + strings.Repeat(" ", min(composerChromeInset, width)) + "\n" + hints
 }
 
 func renderComposerInputPlate(input string, width int) string {
 	width = max(width, 1)
 	lines := strings.Split(input, "\n")
 	for i, line := range lines {
-		line = composerInputStyle.Width(width).Render(line)
+		line = composerInputStyle.Render(line)
 		line = ansi.Truncate(line, width, "")
 		padding := strings.Repeat(" ", max(width-visibleWidth(line), 0))
-		lines[i] = strings.Repeat(" ", composerChromeInset) + line + padding
+		if width <= 1 {
+			lines[i] = themeFg(activeCLITheme.border, "│") + ansi.Truncate(ansi.Strip(line), 1, "") + themeFg(activeCLITheme.border, "│")
+			continue
+		}
+		lines[i] = themeFg(activeCLITheme.border, "│") + " " + line + padding + " " + themeFg(activeCLITheme.border, "│")
 	}
 	return strings.Join(lines, "\n")
+}
+
+func renderComposerTopBorder(title string, width int) string {
+	width = max(width, 1)
+	if width < 4 {
+		return ansi.Truncate("╭"+ansi.Strip(title), width, "")
+	}
+	left := themeFg(activeCLITheme.border, "╭─")
+	right := themeFg(activeCLITheme.border, "╮")
+	title = " " + title + " "
+	fillWidth := max(width-visibleWidth(left)-visibleWidth(title)-visibleWidth(right), 0)
+	return left + title + themedRule(fillWidth, activeCLITheme.border) + right
+}
+
+func renderComposerBottomBorder(width int) string {
+	width = max(width, 1)
+	if width < 3 {
+		return ansi.Truncate("╰╯", width, "")
+	}
+	return themeFg(activeCLITheme.border, "╰") + themedRule(max(width-2, 0), activeCLITheme.border) + themeFg(activeCLITheme.border, "╯")
 }
 
 func renderComposerHints(width int) string {
@@ -498,7 +526,16 @@ func renderComposerHints(width int) string {
 
 func (m chatTUI) composerHintRowCount(width int) int {
 	width = max(width, 1)
-	return m.composerHintSpacerRows(width) + strings.Count(renderComposerHints(width), "\n") + 1
+	hintRows := strings.Count(renderComposerHints(width), "\n") + 1
+	if m.height > 0 {
+		fixedBottom := m.bottomRowsWithoutComposer()
+		headerRows := strings.Count(renderSessionHeader(m, max(m.width, 10)), "\n") + 1
+		composerRowsWithHints := 2 + m.input.Height() + hintRows
+		if headerRows+fixedBottom+composerRowsWithHints+minTranscriptRowsWithComposerHints > m.height {
+			return 0
+		}
+	}
+	return m.composerHintSpacerRows(width) + hintRows
 }
 
 func (m chatTUI) composerHintSpacerRows(width int) int {
@@ -507,13 +544,10 @@ func (m chatTUI) composerHintSpacerRows(width int) int {
 		return 1
 	}
 	hintRows := strings.Count(renderComposerHints(width), "\n") + 1
-	composerRowsWithSpacer := 1 + m.input.Height() + hintRows + 1
+	composerRowsWithSpacer := 2 + m.input.Height() + hintRows + 1
 	fixedBottom := m.bottomRowsWithoutComposer()
 	headerRows := strings.Count(renderSessionHeader(m, max(m.width, 10)), "\n") + 1
-	if headerRows+fixedBottom+composerRowsWithSpacer+minTranscriptRows > m.height {
-		headerRows = 0
-	}
-	if headerRows+fixedBottom+composerRowsWithSpacer+minTranscriptRows > m.height {
+	if headerRows+fixedBottom+composerRowsWithSpacer+minTranscriptRowsWithComposerHints > m.height {
 		return 0
 	}
 	return 1
