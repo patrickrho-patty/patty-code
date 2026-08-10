@@ -25,12 +25,12 @@ import { ThemeGallery } from "./ThemeGallery";
 import { TypographySettings } from "./TypographySettings";
 
 const STYLE_NAME_KEY: Record<ThemeStyle, DictKey> = {
-  graphite: "settings.style.graphite.zh",
-  aurora: "settings.style.aurora.zh",
-  slate: "settings.style.slate.zh",
-  carbon: "settings.style.carbon.zh",
-  nocturne: "settings.style.nocturne.zh",
-  amber: "settings.style.amber.zh",
+  graphite: "settings.style.graphite.ko",
+  aurora: "settings.style.aurora.ko",
+  slate: "settings.style.slate.ko",
+  carbon: "settings.style.carbon.ko",
+  nocturne: "settings.style.nocturne.ko",
+  amber: "settings.style.amber.ko",
 };
 
 function textSizeLabel(size: TextSize, t: (key: never) => string): string {

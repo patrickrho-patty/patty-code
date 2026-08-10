@@ -124,7 +124,7 @@ console.log("\nstatus bar workspace");
 {
   const html = renderStatusBar({ items: ["model"] });
   ok(!html.includes("YOLO"), "status bar renders only configured status items, not mode indicators");
-  ok(!html.includes("后台作业") && !html.includes("Background jobs"), "status bar hides the operational jobs entry while idle");
+  ok(!html.includes("백그라운드작업") && !html.includes("Background jobs"), "status bar hides the operational jobs entry while idle");
 }
 
 {

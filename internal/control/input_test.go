@@ -621,10 +621,10 @@ func TestComposeReasoningLanguagePreference(t *testing.T) {
 		t.Fatalf("StripComposePrefixes = %q, want hi", stripped)
 	}
 
-	autoZh := New(Options{ReasoningLanguage: "auto"})
-	got = autoZh.Compose("AuthHandler 說明 整理 檢討")
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") || !strings.HasSuffix(got, "AuthHandler 說明 整理 檢討") {
-		t.Fatalf("auto reasoning language should infer Korean from a Hanja user prompt, got %q", got)
+	autoKorean := New(Options{ReasoningLanguage: "auto"})
+	got = autoKorean.Compose("AuthHandler 설명 정리 검토")
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") || !strings.HasSuffix(got, "AuthHandler 설명 정리 검토") {
+		t.Fatalf("auto reasoning language should infer Korean from a Hangul user prompt, got %q", got)
 	}
 }
 
@@ -1011,8 +1011,8 @@ func TestMemoryQuickAddNoteRequiresWhitespace(t *testing.T) {
 		{in: "#issue needs work", ok: false},
 		{in: "# Heading", note: "Heading", ok: true},
 		{in: "#", ok: false},
-// Multi-line input is NOT a quick-add — it's a Markdown heading (# Context)
-// hit this when the first line starts with "# ".
+		// Multi-line input is NOT a quick-add — it's a Markdown heading (# Context)
+		// hit this when the first line starts with "# ".
 		{in: "# Context\n\n- file.go\n", ok: false},
 		{in: "# Heading\nmore text", ok: false},
 		{in: "  # Context\n  - file.go  ", ok: false},
@@ -1129,7 +1129,7 @@ func TestSubmitBlockCommentPrefixStartsTurn(t *testing.T) {
 		}),
 	})
 
-	input := "/**\n * 아밍\n */"
+	input := "/**\n * explain this\n */"
 	c.Submit(input)
 	waitForTurnDone(t, events)
 
@@ -1150,7 +1150,7 @@ func TestSubmitUnknownSlashCommandStillReportsNotice(t *testing.T) {
 
 	c.Submit("/definitely-not-a-command")
 
-// Unknown slash input is sent as a regular message (5756); the notice
+	// Unknown slash input is sent as a regular message (5756); the notice
 	var noticeText string
 	deadline := time.After(30 * time.Second)
 	for noticeText == "" {
@@ -1280,7 +1280,7 @@ func TestSubmitUserTurnBypassesCommandDispatch(t *testing.T) {
 	for _, input := range []string{"!echo should stay a prompt", "/clear"} {
 		c.SubmitUserTurn(input, input)
 		waitForTurnDone(t, events)
-// silently dropped by runGuarded  see waitIdle.
+		// silently dropped by runGuarded  see waitIdle.
 		waitIdle(t, c)
 	}
 

@@ -1665,11 +1665,11 @@ console.log("\ncomposer goal toggle");
   });
   const { root, calls, rerender } = await renderComposer();
 
-  const initialText = "请用/writing-plans检查";
+  const initialText = "이걸/writing-plans검토";
   await replaceComposerDraft(rerender, 1900, initialText);
   let textarea = document.querySelector("textarea") as HTMLTextAreaElement | null;
   if (!textarea) throw new Error("composer textarea did not render for middle slash completion");
-  const slashCaret = "请用/writ".length;
+  const slashCaret = "이걸/writ".length;
   await act(async () => {
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     await flushTimers();
@@ -1695,7 +1695,7 @@ console.log("\ncomposer goal toggle");
   let richInput = document.querySelector(".composer__rich-input") as HTMLDivElement | null;
   let tokens = richInput?.querySelectorAll<HTMLElement>(".composer-invocation-token");
   if (!richInput || !tokens?.[0]) throw new Error("middle skill invocation did not render");
-  eq(richComposerTaskText(richInput), "请用检查", "first middle skill selection preserves surrounding text");
+  eq(richComposerTaskText(richInput), "이걸검토", "first middle skill selection preserves surrounding text");
   eq(
     document.querySelector<HTMLElement>(".invocation-display--composer")?.style.getPropertyValue("--invocation-color"),
     "#d59a2f",
@@ -1708,12 +1708,12 @@ console.log("\ncomposer goal toggle");
   document.getSelection()?.removeAllRanges();
   document.getSelection()?.addRange(afterFirstToken);
   await act(async () => {
-    dispatchPasteText(richInput!, "更多");
+    dispatchPasteText(richInput!, "더보기");
     await flushTimers();
   });
   richInput = document.querySelector(".composer__rich-input") as HTMLDivElement | null;
   if (!richInput) throw new Error("rich input disappeared after middle-skill paste");
-  eq(richComposerTaskText(richInput), "请用更多检查", "paste after a middle skill preserves the entity and suffix");
+  eq(richComposerTaskText(richInput), "이걸더보기검토", "paste after a middle skill preserves the entity and suffix");
   eq(
     richInput.querySelectorAll(".composer-invocation-token").length,
     1,
@@ -1751,7 +1751,7 @@ console.log("\ncomposer goal toggle");
     sendButton.click();
     await flushTimers();
   });
-  eq(calls.structured[0]?.input, "请用更多检查", "middle skills submit the surrounding task text without slash tokens");
+  eq(calls.structured[0]?.input, "이걸더보기검토", "middle skills submit the surrounding task text without slash tokens");
   eq(
     calls.structured[0]?.invocations.map((item) => item.name).join(","),
     "writing-plans,review",
@@ -1981,15 +1981,15 @@ console.log("\ncomposer goal toggle");
   if (!subagentInput) throw new Error("rich composer did not render for colored subagent");
   await appendRichComposerInput(subagentInput, "Inspect ");
   eq(richComposerTaskText(subagentInput), "Inspect ", "rich composer does not duplicate ordinary browser input");
-  await appendRichComposerInput(subagentInput, "仓库做了什么？", true);
-  eq(richComposerTaskText(subagentInput), "Inspect 仓库做了什么？", "rich composer does not duplicate committed IME input");
+  await appendRichComposerInput(subagentInput, "저장소에서무엇을했어?", true);
+  eq(richComposerTaskText(subagentInput), "Inspect 저장소에서무엇을했어?", "rich composer does not duplicate committed IME input");
 
   await replaceComposerDraft(rerender, 2006, "");
   const resetSubagentInput = document.querySelector(".composer__rich-input") as HTMLDivElement | null;
   if (!resetSubagentInput) throw new Error("rich composer disappeared after external text replacement");
   eq(richComposerTaskText(resetSubagentInput), "", "external replacement can restore the initially rendered rich-composer text");
   await appendRichComposerInput(resetSubagentInput, "Inspect ");
-  await appendRichComposerInput(resetSubagentInput, "仓库做了什么？", true);
+  await appendRichComposerInput(resetSubagentInput, "저장소에서무엇을했어?", true);
 
   sendButton = document.querySelector(".composer__btn--send") as HTMLButtonElement | null;
   if (!sendButton) throw new Error("composer send button did not render after subagent task input");
@@ -1997,8 +1997,8 @@ console.log("\ncomposer goal toggle");
     sendButton.click();
     await flushTimers();
   });
-  eq(calls.send[2], "Inspect 仓库做了什么？", "subagent task is sent exactly once after rich input");
-  eq(calls.structured[2]?.input, "Inspect 仓库做了什么？", "structured subagent input contains one task copy");
+  eq(calls.send[2], "Inspect 저장소에서무엇을했어?", "subagent task is sent exactly once after rich input");
+  eq(calls.structured[2]?.input, "Inspect 저장소에서무엇을했어?", "structured subagent input contains one task copy");
 
   await act(async () => {
     root.unmount();
@@ -2324,7 +2324,7 @@ console.log("\ncomposer goal toggle");
   };
   await act(async () => {
     compositionRichInput.dispatchEvent(new window.Event("compositionstart", { bubbles: true }));
-    compositionRichInput.appendChild(document.createTextNode("拼"));
+    compositionRichInput.appendChild(document.createTextNode("한"));
     compositionRichInput.dispatchEvent(new window.Event("input", { bubbles: true }));
     await flushTimers();
   });
@@ -2341,7 +2341,7 @@ console.log("\ncomposer goal toggle");
     compositionSendButton.click();
     await flushTimers();
   });
-  eq(calls.structured[0]?.input, "拼", "compositionend commits the composed text to the model exactly once");
+  eq(calls.structured[0]?.input, "한", "compositionend commits the composed text to the model exactly once");
 
   await act(async () => {
     root.unmount();

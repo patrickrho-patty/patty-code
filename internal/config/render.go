@@ -500,7 +500,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	b.WriteString("\n")
 
 	if shouldRenderBot(c, defaults, scope) {
-		b.WriteString("# Bot gateway: multi-channel IM bot for QQ, Feishu/Lark, and WeChat.\n")
+		b.WriteString("# Bot gateway: legacy multi-channel IM bot surface.\n")
 		b.WriteString("[bot]\n")
 		fmt.Fprintf(&b, "enabled = %v\n", c.Bot.Enabled)
 		if c.Bot.Model != "" {

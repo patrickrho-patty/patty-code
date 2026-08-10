@@ -129,7 +129,7 @@ const failedPSExecution: WireShellExecution = {
   state: "failed",
   failurePhase: "execution",
   exitCode: 1,
-  outputTail: "Select-String : 找不到路径“C:\\中文\\app.ps1”。\nAt line:1 char:1",
+  outputTail: "Select-String : 경로를찾을수없음“C:\\한국어\\app.ps1”。\nAt line:1 char:1",
   mutationRisk: "may_be_partial",
   verification: "not_verification",
   durationMs: 42,
@@ -157,7 +157,7 @@ console.log("\ntool card shell execution");
       tool: {
         id: "live-ps",
         name: "bash",
-        args: `{"command":"Get-Content .\\\\中文\\\\app.ps1"}`,
+        args: `{"command":"Get-Content .\\\\한국어\\\\app.ps1"}`,
         readOnly: false,
       },
     },
@@ -190,10 +190,10 @@ console.log("\ntool card shell execution");
   const duration = document.querySelector(".tool__duration")?.textContent ?? "";
   ok(duration.includes("exit 1") || duration.includes("execution"), `live path: summary shows exit/phase (got ${JSON.stringify(duration)})`);
   const risk = document.body.textContent ?? "";
-  ok(risk.includes("partially modified") || risk.includes("部分"), "live path: partial mutation risk visible");
+  ok(risk.includes("partially modified") || risk.includes("일부"), "live path: partial mutation risk visible");
   // Execution failure must not claim the command never ran.
   ok(
-    !(risk.includes("did not run") || risk.includes("command did not run") || risk.includes("命令未执行") || risk.includes("未执行")),
+    !(risk.includes("did not run") || risk.includes("command did not run") || risk.includes("명령실행안됨") || risk.includes("실행안됨")),
     "live path: execution failure must not show not-run label",
   );
 
@@ -209,7 +209,7 @@ console.log("\ntool card shell execution");
   }
   const afterExpand = document.body.textContent ?? "";
   ok(
-    afterExpand.includes("中文") || afterExpand.includes("找不到路径"),
+    afterExpand.includes("한국어") || afterExpand.includes("경로를찾을수없음"),
     "live path: Chinese stderr from execution.outputTail is visible in the DOM",
   );
 
@@ -241,11 +241,11 @@ console.log("\ntool card shell execution");
     const ui = await renderCard(item);
     const body = document.body.textContent ?? "";
     ok(
-      body.includes("partially modified") || body.includes("部分"),
+      body.includes("partially modified") || body.includes("일부"),
       `${state}: shows partial mutation risk`,
     );
     ok(
-      !(body.includes("did not run") || body.includes("命令未执行")),
+      !(body.includes("did not run") || body.includes("명령실행안됨")),
       `${state}: does not claim command never ran`,
     );
     await ui.cleanup();
@@ -280,11 +280,11 @@ console.log("\ntool card shell execution");
   ok(name === "bash" || name.includes("bash"), `history path: shell name bash (got ${JSON.stringify(name)})`);
   const body = document.body.textContent ?? "";
   ok(
-    body.includes("did not run") || body.includes("not run") || body.includes("未执行") || body.includes("命令未执行"),
+    body.includes("did not run") || body.includes("not run") || body.includes("실행안됨") || body.includes("명령실행안됨"),
     "history path: preflight shows command-not-run (not partial)",
   );
   ok(
-    !(body.includes("partially modified") || body.includes("部分修改文件")),
+    !(body.includes("partially modified") || body.includes("일부수정파일")),
     "history path: preflight must not claim partial file modification",
   );
   await ui.cleanup();
@@ -324,7 +324,7 @@ console.log("\ntool card shell execution");
   const ui = await renderCard(item!);
   ok((document.querySelector(".tool__name")?.textContent ?? "").includes("Windows PowerShell"),
     "archive path: card still shows Windows PowerShell without re-fetch");
-  ok((document.body.textContent ?? "").includes("partially modified") || (document.body.textContent ?? "").includes("部分"),
+  ok((document.body.textContent ?? "").includes("partially modified") || (document.body.textContent ?? "").includes("일부"),
     "archive path: partial risk still visible when execution retained");
   await ui.cleanup();
 }
@@ -352,7 +352,7 @@ console.log("\ntool card shell execution");
     main: {
       App: {
         ToolResultForTab: async () => ({
-          args: `{"command":"Get-Content .\\\\中文\\\\app.ps1"}`,
+          args: `{"command":"Get-Content .\\\\한국어\\\\app.ps1"}`,
           output: "error: command exited: exit status 1\nSelect-String failed",
           execution: failedPSExecution,
         }),
@@ -389,7 +389,7 @@ console.log("\ntool card shell execution");
       `archive rehydrate: exit/phase after expand (got ${JSON.stringify(duration)})`,
     );
     const body = document.body.textContent ?? "";
-    ok(body.includes("partially modified") || body.includes("部分"), "archive rehydrate: partial risk after expand");
+    ok(body.includes("partially modified") || body.includes("일부"), "archive rehydrate: partial risk after expand");
   } finally {
     await act(async () => {
       root.unmount();

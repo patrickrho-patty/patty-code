@@ -35,7 +35,7 @@ func TestSaveBoundsLongNames(t *testing.T) {
 // TestSlugShortNamesUnchanged: short names keep their historical slug so
 // existing memory files keep resolving after upgrade.
 func TestSlugShortNamesUnchanged(t *testing.T) {
-	if got := slug("My Setting: prefer 機能整理檢討"); got != "my-setting-prefer-機能整理檢討" {
+	if got := slug("My Setting: prefer 기능정리검토"); got != "my-setting-prefer-기능정리검토" {
 		t.Fatalf("short slug changed: %q", got)
 	}
 }

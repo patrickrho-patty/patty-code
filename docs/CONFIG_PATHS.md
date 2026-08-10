@@ -114,7 +114,7 @@ the same provider keeps using the same credential slot after restart.
 Patty Code derives the default from the provider name. Names that normalize to
 ASCII keep readable env names such as `LOCAL_GATEWAY_API_KEY`; names made
 entirely of non-ASCII characters get a stable hash suffix such as
-`CUSTOM_d39b9067_API_KEY` so two Chinese provider names do not share
+`CUSTOM_d39b9067_API_KEY` so two non-ASCII provider names do not share
 `CUSTOM_API_KEY`. Names beginning with a digit get a `CUSTOM_` prefix so the
 generated environment variable remains valid; for example, `9router` becomes
 `CUSTOM_9ROUTER_API_KEY`.

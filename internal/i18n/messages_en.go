@@ -158,7 +158,7 @@ var English = Messages{
 	ThemeChangedFmt:           "theme switched to %s / %s",
 	ThemeUnknownFmt:           "unknown theme %q",
 	LanguageHeader:            "languages:",
-	LanguageHint:              "switch with /language <auto|en|zh>",
+	LanguageHint:              "switch with /language <auto|en|ko-KR>",
 	LanguageChangedFmt:        "language set to %s (resolved: %s)",
 	CurrencyHeader:            "pricing currency:",
 	CurrencyHint:              "switch with /currency <auto|CNY|USD>",

@@ -41,9 +41,9 @@ func TestWithReasoningLanguageOnlySkipsLeadingInjectedBlock(t *testing.T) {
 	}
 }
 
-func TestReasoningLanguageBlockZhStaysImperative(t *testing.T) {
+func TestReasoningLanguageBlockKoreanStaysImperative(t *testing.T) {
 	// The imperative form measurably outperforms soft "선호" phrasing on
-	// Chinese prompts that embed English logs/code; keep it from regressing
+	// Korean prompts that embed English logs/code; keep it from regressing.
 	block := ReasoningLanguageBlock("ko-KR")
 	for _, want := range []string{"반드시 한국어로 작성해야 합니다", "전체 턴", "사용자가 최종 답변 언어에 대해 명시적으로 요청한 내용을 덮어쓰지 않습니다"} {
 		if !strings.Contains(block, want) {
@@ -54,8 +54,8 @@ func TestReasoningLanguageBlockZhStaysImperative(t *testing.T) {
 
 func TestWithReasoningLanguageAutoInfersFromSource(t *testing.T) {
 	korean := WithReasoningLanguage("AuthHandler의 panic을 설명해 주세요", "auto")
-	if korean != "AuthHandler의 panic을 설명해 주세요" {
-		t.Fatalf("auto reasoning language should keep Korean prompts unwrapped, got %q", korean)
+	if !strings.HasPrefix(korean, "<reasoning-language>") || !strings.Contains(korean, "한국어로 작성해야 합니다") || !strings.HasSuffix(korean, "AuthHandler의 panic을 설명해 주세요") {
+		t.Fatalf("auto reasoning language should infer Korean from a Hangul prompt, got %q", korean)
 	}
 
 	english := WithReasoningLanguage("explain this module", "auto")
@@ -73,8 +73,8 @@ func TestWithReasoningLanguageAutoUsesRawSourceOverReferencedContext(t *testing.
 	expanded := "Referenced context:\n\n<file path=\"auth.go\">\npackage main\nfunc AuthHandler() error { return errors.New(\"not authorized\") }\n</file>\n\n@auth.go의 오류를 설명해 주세요"
 
 	got := WithReasoningLanguageForSource(expanded, "auto", "@auth.go의 오류를 설명해 주세요")
-	if got != expanded {
-		t.Fatalf("auto reasoning language should keep Korean prompts unwrapped, got %q", got)
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") || !strings.HasSuffix(got, expanded) {
+		t.Fatalf("auto reasoning language should infer Korean from the raw Hangul prompt, got %q", got)
 	}
 	if strings.Contains(got, "use English") {
 		t.Fatalf("referenced English code should not make auto prefer English:\n%s", got)

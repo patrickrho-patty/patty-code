@@ -70,7 +70,7 @@ ok(
 );
 ok(findCodeMatches("x x", "x").matches.length === 2, "counts occurrences rather than matching lines");
 ok(
-  findCodeMatches("猫 猫咪 猫", "猫", false, true).matches.length === 2,
+  findCodeMatches("고양 고양이 고양", "고양", false, true).matches.length === 2,
   "whole-word matching respects Unicode word characters",
 );
 ok(

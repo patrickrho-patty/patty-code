@@ -1146,8 +1146,8 @@ func TestBuildRequestTemperatureSerialization(t *testing.T) {
 
 func TestBuildRequestKimiK3OfficialWireShape(t *testing.T) {
 	p, err := New(provider.Config{
-		Name:    "kimi-cn",
-		BaseURL: "https://api.moonshot.cn/v1",
+		Name:    "kimi-global",
+		BaseURL: "https://api.moonshot.ai/v1",
 		Model:   "kimi-k3",
 		APIKey:  "k",
 		Extra: map[string]any{
@@ -1376,7 +1376,7 @@ func TestBuildRequestMiniMaxThinking(t *testing.T) {
 // "disabled". Anything else is a config bug, surfaced now (not at request
 // time) for an actionable error.
 func TestNewMiniMaxEffortValidation(t *testing.T) {
-	base := provider.Config{Name: "m3", BaseURL: "https://api.minimaxi.com/v1", Model: "MiniMax-M3", APIKey: "k"}
+	base := provider.Config{Name: "m3", BaseURL: "https://api.minimax.io/v1", Model: "MiniMax-M3", APIKey: "k"}
 	// happy path: auto (empty effort) and both explicit values are accepted
 	for _, ok := range []string{"", "adaptive", "disabled"} {
 		if _, err := New(withEffort(base, ok)); err != nil {
@@ -1392,12 +1392,12 @@ func TestNewMiniMaxEffortValidation(t *testing.T) {
 }
 
 // TestNewMiniMaxSetsFlag is a smoke test for base-URL detection: the factory
-// must set the `minimax` flag when the base URL points at api.minimaxi.com
+// must set the `minimax` flag when the base URL points at api.minimax.io
 // (with or without the /v1 suffix) so buildRequest picks the right wire shape.
 func TestNewMiniMaxSetsFlag(t *testing.T) {
 	for _, baseURL := range []string{
-		"https://api.minimaxi.com/v1",
-		"https://api.minimaxi.com",
+		"https://api.minimax.io/v1",
+		"https://api.minimax.io",
 	} {
 		p, err := New(provider.Config{Name: "m3", BaseURL: baseURL, Model: "MiniMax-M3", APIKey: "k"})
 		if err != nil {
@@ -1439,7 +1439,7 @@ func TestBuildRequestZhipuThinking(t *testing.T) {
 // The config effort layer remaps depth levels, so by the time effort reaches the
 // factory it must be one of: "", "enabled", "disabled".
 func TestNewZhipuEffortValidation(t *testing.T) {
-	base := provider.Config{Name: "glm", BaseURL: "https://open.bigmodel.cn/api/paas/v4", Model: "glm-4.5-air", APIKey: "k"}
+	base := provider.Config{Name: "glm", BaseURL: "https://api.z.ai/api/paas/v4", Model: "glm-4.5-air", APIKey: "k"}
 	for _, ok := range []string{"", "enabled", "disabled"} {
 		if _, err := New(withEffort(base, ok)); err != nil {
 			t.Errorf("effort=%q should be accepted: %v", ok, err)
@@ -1452,12 +1452,12 @@ func TestNewZhipuEffortValidation(t *testing.T) {
 	}
 }
 
-// TestNewZhipuSetsFlag is a smoke test for base-URL detection across both the
-// China (bigmodel.cn) and international (z.ai) GLM endpoints.
+// TestNewZhipuSetsFlag is a smoke test for base-URL detection on the remaining
+// international Z.AI GLM endpoint family.
 func TestNewZhipuSetsFlag(t *testing.T) {
 	for _, baseURL := range []string{
-		"https://open.bigmodel.cn/api/paas/v4",
 		"https://api.z.ai/api/paas/v4",
+		"https://open.z.ai/api/paas/v4",
 	} {
 		p, err := New(provider.Config{Name: "glm", BaseURL: baseURL, Model: "glm-4.5-air", APIKey: "k"})
 		if err != nil {

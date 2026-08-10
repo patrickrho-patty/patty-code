@@ -29,19 +29,19 @@ const reasoning = (tabId: string, t: string): StreamDeltaEntry => ({ tabId, e: {
 // --- consecutive same-kind deltas merge into ordered segments, one batch per tab ---
 {
   const batches = coalesceStreamDeltas([
-    reasoning("a", "我"), reasoning("a", "需要"), reasoning("a", "检查"), reasoning("a", "一下"),
-    text("a", "发现"), text("a", "问题"),
+    reasoning("a", "나"), reasoning("a", "필요해"), reasoning("a", "확인"), reasoning("a", "잠깐"),
+    text("a", "발견"), text("a", "문제"),
     text("b", "other"),
-    text("a", "如下"),
-    reasoning("a", "再想"),
+    text("a", "다음"),
+    reasoning("a", "다시"),
   ]);
   eq(batches.length, 2, "one stream_batch per tab");
   eq(batches[0].tabId, "a", "first-seen tab comes first");
   eq(batches[0].segments.length, 3, "tab a: reasoning, text, reasoning segments");
   eq(batches[0].segments[0].kind, "reasoning", "segment order preserved");
-  eq(batches[0].segments[0].delta, "我需要检查一下", "reasoning run concatenates in order");
-  eq(batches[0].segments[1].delta, "发现问题如下", "text run spans the other tab's interleave");
-  eq(batches[0].segments[2].delta, "再想", "reasoning after text stays a separate segment");
+  eq(batches[0].segments[0].delta, "나필요해확인잠깐", "reasoning run concatenates in order");
+  eq(batches[0].segments[1].delta, "발견문제다음", "text run spans the other tab's interleave");
+  eq(batches[0].segments[2].delta, "다시", "reasoning after text stays a separate segment");
   eq(batches[1].segments[0].delta, "other", "tab b keeps its own batch");
 }
 
@@ -76,7 +76,7 @@ const reasoning = (tabId: string, t: string): StreamDeltaEntry => ({ tabId, e: {
 // --- the reasoning→text boundary completes reasoning inside one batch ---
 {
   let s = { ...initialState, running: true, turnActive: true };
-  s = reducer(s, { type: "stream_batch", segments: [{ kind: "reasoning", delta: "想" }, { kind: "text", delta: "答" }] } as never);
+  s = reducer(s, { type: "stream_batch", segments: [{ kind: "reasoning", delta: "한" }, { kind: "text", delta: "답" }] } as never);
   eq(s.live?.reasoningComplete, true, "text segment after reasoning completes it");
   eq(s.live?.reasoningCompletedAt !== undefined, true, "completion is timestamped");
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"patty/internal/event"
 	"patty/internal/provider"
@@ -84,7 +85,7 @@ func hasStrongMatch(d RouteDecision) bool {
 
 func semanticPool(text string, entries []Entry) []Entry {
 	var scored []Entry
-	crossLanguageFallback := containsHan(text)
+	crossLanguageFallback := containsKoreanOrHan(text)
 	for _, e := range entries {
 		if e.Status == StatusDisabled || e.Status == StatusFailed {
 			continue
@@ -102,7 +103,7 @@ func semanticPool(text string, entries []Entry) []Entry {
 		if blob == "" {
 			continue
 		}
-		// Prefer a cheap lexical match. For Han-script tasks, also admit the
+		// Prefer a cheap lexical match. For Korean- or Han-script tasks, also admit the
 		// bounded built-in/high-policy Skill set so English metadata does not make
 		// the semantic router blind to Korean requests.
 		matched := false
@@ -126,9 +127,9 @@ func semanticPool(text string, entries []Entry) []Entry {
 	return scored
 }
 
-func containsHan(text string) bool {
+func containsKoreanOrHan(text string) bool {
 	for _, r := range text {
-		if r >= '\u3400' && r <= '\u9fff' {
+		if unicode.In(r, unicode.Hangul, unicode.Han) {
 			return true
 		}
 	}

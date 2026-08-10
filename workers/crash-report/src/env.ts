@@ -19,8 +19,8 @@ export interface Env {
   // Browsers allowed to call the registry API with credentials (comma-separated).
   ALLOWED_ORIGINS?: string;
   // Optional incident webhook for the ingest sentinel, mirrored from the
-  // GitHub repo secret of the same name by deploy-crash-worker.yml. Feishu/
-  // Lark bot URLs get their native payload shape; any other receiver gets
-  // Slack-style {"text": ...}. Unset = log-only.
+  // GitHub repo secret of the same name by deploy-crash-worker.yml. Receivers
+  // that expect a native text envelope are handled automatically; other
+  // receivers get Slack-style {"text": ...}. Unset = log-only.
   ALERT_WEBHOOK?: string;
 }

@@ -167,8 +167,8 @@ func TestComposerMouseLayoutRoundTripsTextareaCursor(t *testing.T) {
 	}{
 		{40, ""},
 		{20, "hello world and wrapped words"},
-		{16, "1234567890機能"},
-		{18, "alpha  beta\n機能整理檢討 mixed\n\nlast"},
+		{16, "1234567890기능"},
+		{18, "alpha  beta\n기능정리검토 mixed\n\nlast"},
 		{18, "one\ntwo\nthree\nfour\nfive\nsix\nseven"},
 	}
 	for _, tc := range cases {
@@ -250,14 +250,14 @@ func TestComposerMouseSelectionSnapsToGraphemeClusters(t *testing.T) {
 
 func TestComposerSelectionTracksSoftWrapAndNewlines(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 16, 14)
-	m.input.SetValue("1234567890機能\nsecond")
+	m.input.SetValue("1234567890기능\nsecond")
 	x, y, _ := m.composerOrigin()
 
 	m = updateComposerMouseTestTUI(t, m, tea.MouseClickMsg{X: x + 10, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseMotionMsg{X: x + 3, Y: y + 2, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseReleaseMsg{X: x + 3, Y: y + 2, Button: tea.MouseLeft})
 
-	if got, want := m.selectedComposerText(), "機能\nsec"; got != want {
+	if got, want := m.selectedComposerText(), "기능\nsec"; got != want {
 		t.Fatalf("wrapped multi-line selection = %q, want %q", got, want)
 	}
 

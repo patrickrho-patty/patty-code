@@ -2,16 +2,16 @@
   "tasks": [
     {
       "id": "greeting_hello_001",
-      "title": "打个招呼",
-      "prompt": "你好！请用一段友好的话介绍一下你自己，然后用한국어打个招呼。",
+      "title": "인사하기",
+      "prompt": "안녕하세요! 친근한 한 단락으로 자기소개를 한 뒤, 한국어로 따뜻하게 인사해 주세요.",
       "interval": "2m",
       "enabled": true,
       "createdAt": 1718550000000
     },
     {
       "id": "daily_check_002",
-      "title": "每日检查",
-      "prompt": "检查当前项目的最新改动和状态，总结需要关注的事项。",
+      "title": "일일 점검",
+      "prompt": "현재 프로젝트의 최신 변경 사항과 상태를 점검하고, 주의해서 볼 내용을 요약해 주세요.",
       "interval": "1h",
       "enabled": true,
       "createdAt": 1718550000000

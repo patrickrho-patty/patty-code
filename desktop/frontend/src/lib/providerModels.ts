@@ -99,7 +99,7 @@ export function apiKeyEnvFromProviderName(name: string): string {
     const validStem = /^[0-9]/.test(stem) ? `CUSTOM_${stem}` : stem;
     return `${validStem}_API_KEY`;
   }
-  // When the provider name is entirely non-ASCII (e.g. Chinese characters),
+  // When the provider name is entirely non-ASCII (for example Hangul),
   // generate a stable hash suffix so each custom provider gets a unique slot.
   const hash = fnv1a32(name.trim());
   return `CUSTOM_${hash}_API_KEY`;

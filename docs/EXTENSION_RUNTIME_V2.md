@@ -1,6 +1,6 @@
 # Extension Runtime v2 (Spatiotemporal Composability)
 
-English overview of the Patty Code plugin/runtime v2 model. Chinese: [EXTENSION_RUNTIME_V2.ko-KR.md](./EXTENSION_RUNTIME_V2.ko-KR.md).
+English overview of the Patty Code plugin/runtime v2 model. Korean: [EXTENSION_RUNTIME_V2.ko-KR.md](./EXTENSION_RUNTIME_V2.ko-KR.md).
 
 ## Protocol and manifest
 

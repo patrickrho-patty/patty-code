@@ -45,7 +45,7 @@ const mutations = ["PickStorageFolder", "MigrateStorage", "SetDefaultWorkspace"]
 ok(mutations.every((name) => !storagePage.includes(name) && !bridge.includes(name) && !backend.includes(name)), "Storage mutation methods are absent from UI and Wails surfaces");
 ok(!styles.includes("settings-path-control"), "Storage page contains no migration-only styling");
 ok(!storagePage.includes("storageReadOnlyHint") && locales.every((locale) => !locale.includes("settings.storageReadOnlyHint")), "Storage page omits the redundant read-only notice");
-ok(locales.every((locale) => !/Windows.*(?:迁移|移動|migrat)/i.test(locale.match(/"settings\.pageDesc\.storage":\s*"[^"]*"/)?.[0] ?? "")), "Storage page descriptions do not advertise Windows migration");
+ok(locales.every((locale) => !/Windows.*(?:이전|migrat)/i.test(locale.match(/"settings\.pageDesc\.storage":\s*"[^"]*"/)?.[0] ?? "")), "Storage page descriptions do not advertise Windows migration");
 ok(!/\b(?:Walk|sizeBytes|availableBytes|models)\b/.test(backend), "Storage query performs no recursive size scan and exposes no synthetic models path");
 ok(!types.includes("storage: StorageSettingsView"), "General SettingsView no longer owns storage data");
 ok(!settings.match(/const needsSettings[^;]+/)?.[0].includes('tab === "storage"'), "Storage remains available when the general settings request fails");

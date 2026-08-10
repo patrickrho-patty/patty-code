@@ -212,7 +212,7 @@ check("cycle notation $(12)$ → math", () => isLikelyInlineMath("(12)") === tru
 check("cycle notation $(12)(34)$ → math", () => isLikelyInlineMath("(12)(34)") === true);
 check("$S$ (set name) → math", () => isLikelyInlineMath("S") === true);
 check("$S$ with surrounding prose (regression)", () => {
-  return normalizeMath("$S$ 非空\n$S$ 有上界") === "$S$ 非空\n$S$ 有上界";
+  return normalizeMath("$S$ 공집합 아님\n$S$ 상계가 있음") === "$S$ 공집합 아님\n$S$ 상계가 있음";
 });
 check("one-sided comparison $< B$ → math", () => isLikelyInlineMath("< B") === true);
 check("one-sided comparison $<= 0$ → math", () => isLikelyInlineMath("<= 0") === true);
@@ -222,7 +222,7 @@ check("one-sided equality $=1$ → math", () => isLikelyInlineMath("=1") === tru
 check("one-sided signed equality $=-1$ → math", () => isLikelyInlineMath("=-1") === true);
 check("one-sided equality is fully anchored", () => isLikelyInlineMath("=1 dollar") === false);
 check("$< B$ with surrounding prose", () => {
-  return normalizeMath("A 的每个元素 $< B$ 的每个元素") === "A 的每个元素 $< B$ 的每个元素";
+  return normalizeMath("A의 모든 원소는 $< B$의 모든 원소") === "A의 모든 원소는 $< B$의 모든 원소";
 });
 
 // ── KaTeX end-to-end rendering ────────────────────────────────────────────────

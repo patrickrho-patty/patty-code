@@ -213,15 +213,15 @@ eq(
 eq(
   [
     apiKeyEnvFromProviderName("9router"),
-    apiKeyEnvFromProviderName("商汤"),
-    apiKeyEnvFromProviderName("通义千问"),
+    apiKeyEnvFromProviderName("센스타임"),
+    apiKeyEnvFromProviderName("큐원"),
   ],
   ["CUSTOM_9ROUTER_API_KEY", "CUSTOM_d39b9067_API_KEY", "CUSTOM_e995c4c9_API_KEY"],
   "generates valid stable key envs for digit-leading and non-ASCII provider names",
 );
 
 eq(
-  providerApiKeyEnvForSave("商汤", "CUSTOM_API_KEY", "sk-test"),
+  providerApiKeyEnvForSave("센스타임", "CUSTOM_API_KEY", "sk-test"),
   "CUSTOM_API_KEY",
   "preserves an explicitly configured legacy custom key env",
 );

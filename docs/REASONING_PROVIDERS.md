@@ -15,14 +15,14 @@ get a tailored request shape automatically — no extra config needed.
 |----------|----------|-------------------|------------------|-------|
 | DeepSeek V4 Flash | `api.deepseek.com`, `*.deepseek.com` | `thinking.type` + `reasoning_effort` (depth) | `auto`, `disabled`, `low`, `high`, `max` | Thinking on by default; `disabled` turns it off via `thinking.type=disabled`. Compatibility input `medium` normalizes to `high`, while `xhigh` normalizes to `high`. |
 | DeepSeek V4 Pro | `api.deepseek.com`, `*.deepseek.com` | `thinking.type` + `reasoning_effort` (depth) | `auto`, `disabled`, `high`, `max` | Thinking on by default; `disabled` turns it off via `thinking.type=disabled`. Compatibility inputs `low`/`medium` normalize to `high`, while `xhigh` normalizes to `max`. |
-| MiniMax M3 | `api.minimaxi.com`, `*.minimaxi.com` | `thinking.type` (`adaptive`\|`disabled`) | `auto`, `adaptive`, `disabled` | No depth scale; `reasoning_effort` is omitted. |
-| Zhipu GLM | `open.bigmodel.cn` / `*.bigmodel.cn`, `api.z.ai` / `*.z.ai` | `thinking.type` (`enabled`\|`disabled`) | `auto`, `enabled`, `disabled` | **`reasoning_effort` is silently ignored** by the endpoint, so reasoning is driven purely through `thinking.type`. |
+| MiniMax M3 | `api.minimax.io`, `*.minimax.io` | `thinking.type` (`adaptive`\|`disabled`) | `auto`, `adaptive`, `disabled` | No depth scale; `reasoning_effort` is omitted. |
+| Z.AI GLM | `api.z.ai`, `*.z.ai` | `thinking.type` (`enabled`\|`disabled`) | `auto`, `enabled`, `disabled` | **`reasoning_effort` is silently ignored** by the endpoint, so reasoning is driven purely through `thinking.type`. |
 
 ## Explicit per-model scales
 
 | Provider/model | Base URL | Patty Code control | `/effort` levels | Notes |
 |----------------|----------|-------------------|------------------|-------|
-| Kimi CN/Global `kimi-k3` | `api.moonshot.cn/v1`, `api.moonshot.ai/v1` | `reasoning_effort` | `low`, `high`, `max` | Always thinks; defaults to `max`. Patty Code replays the complete assistant message, uses `max_completion_tokens`, and omits K3's fixed sampling fields. |
+| Kimi official API `kimi-k3` | `api.moonshot.ai/v1` | `reasoning_effort` | `low`, `high`, `max` | Always thinks; defaults to `max`. Patty Code replays the complete assistant message, uses `max_completion_tokens`, and omits K3's fixed sampling fields. |
 | Custom Kimi K3 gateway | Any OpenAI-compatible K3 endpoint | `reasoning_effort` | `low`, `high`, `max` | Select `patty_code_protocol = "kimi-k3"` to opt into K3's complete-message replay and request shape. |
 | OpenCode Go `kimi-k3` | `opencode.ai/zen/go/v1` | `reasoning_effort` | `high`, `max` | Relay-specific scale; defaults to `max` and keeps the relay's standard OpenAI-compatible request shape. |
 | Token Rhythm DeepSeek V4 | `tokenrhythm.studio/v1` | DeepSeek `thinking.type` + `reasoning_effort` | Model-specific DeepSeek scale | Selected through the preset's model override, independent of the gateway host. |
@@ -90,8 +90,8 @@ shown above.
 Surveyed popular providers that need **no special handling** because they
 already follow the standard convention:
 
-Qwen (`dashscope.aliyuncs.com`), Yi
-(`api.01.ai`), SiliconFlow (`api.siliconflow.cn`), Stepfun (`api.stepfun.com`),
+Qwen (`dashscope-intl.aliyuncs.com`), Yi
+(`api.01.ai`), Stepfun (`api.stepfun.com`),
 Groq (`api.groq.com`), Together (`api.together.xyz`), OpenRouter
 (`openrouter.ai`), Perplexity (`api.perplexity.ai`), xAI (`api.x.ai`).
 

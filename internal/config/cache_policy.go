@@ -13,7 +13,7 @@ import (
 // unknown vendors: DeepSeek's Context Caching on Disk retains prefixes for
 // "several hours to days", so the long-standing 24h threshold is correct for
 // it and must not regress. Only vendors with a documented, much shorter
-// cache TTL (DashScope 5m, Anthropic 5m) override it.
+// cache TTL (international DashScope 5m, Anthropic 5m) override it.
 //
 // Values are deliberately conservative: too small burns a live cache (the user
 // pays full price for a prefix that was still cached server-side), too large
@@ -52,7 +52,7 @@ func (e *ProviderEntry) EffectiveCacheTTL() time.Duration {
 func detectCacheVendor(baseURL string) string {
 	host := officialProviderHost(baseURL)
 	switch {
-	case host == "dashscope.aliyuncs.com", strings.HasSuffix(host, ".dashscope.aliyuncs.com"), strings.HasSuffix(host, ".maas.aliyuncs.com"):
+	case host == "dashscope-intl.aliyuncs.com", strings.HasSuffix(host, ".dashscope-intl.aliyuncs.com"):
 		return "dashscope"
 	case host == "api.deepseek.com", strings.HasSuffix(host, ".deepseek.com"):
 		return "deepseek"

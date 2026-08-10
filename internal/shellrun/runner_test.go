@@ -160,7 +160,7 @@ func TestRunForegroundLaunchFailure(t *testing.T) {
 }
 
 func TestRunForegroundOutputTailBounded(t *testing.T) {
-	payload := strings.Repeat("機能整理檢討", 3000)
+	payload := strings.Repeat("기능정리검토", 3000)
 	// Keep the command under typical argv length limits.
 	if len(payload) > 4000 {
 		payload = payload[:4000]
@@ -182,7 +182,7 @@ func TestRunForegroundOutputTailBounded(t *testing.T) {
 	if len(res.OutputTail) > tool.OutputTailMaxBytes {
 		t.Fatalf("output tail %d > %d", len(res.OutputTail), tool.OutputTailMaxBytes)
 	}
-	if !strings.Contains(res.Combined, "機能整理檢討") && !strings.Contains(res.OutputTail, "機能整理檢討") {
+	if !strings.Contains(res.Combined, "기능정리검토") && !strings.Contains(res.OutputTail, "기능정리검토") {
 		t.Fatalf("UTF-8 Korean lost: combined=%q tail=%q", trim(res.Combined, 80), trim(res.OutputTail, 80))
 	}
 }

@@ -129,7 +129,7 @@ func TestSendWithRetryPreservesProviderTraceID(t *testing.T) {
 	cl := &http.Client{Transport: rtFunc(func(r *http.Request) (*http.Response, error) {
 		return statusResp(422, map[string]string{"trace_id": "minimax-trace-123"}), nil
 	})}
-	_, err := SendWithRetry(context.Background(), cl, SendOptions{Provider: "minimax-cn-api"}, newDummyReq)
+	_, err := SendWithRetry(context.Background(), cl, SendOptions{Provider: "minimax-global-api"}, newDummyReq)
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("want *APIError, got %T: %v", err, err)

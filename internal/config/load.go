@@ -1221,9 +1221,9 @@ const (
 )
 
 func normalizeLegacyStepFunBaseURLs(c *Config) bool {
-	// Both stepfun.ai (global) and stepfun.com (China) are official endpoints.
-	// BaseURL is user-owned provider configuration, so neither runtime loading
-	// nor an unrelated settings save may infer a region and rewrite it.
+	// Both historical and current StepFun endpoints are user-owned provider
+	// configuration, so neither runtime loading nor an unrelated settings save
+	// may rewrite them.
 	return false
 }
 
@@ -1305,10 +1305,7 @@ func qwenPresetIDForMigration(p ProviderEntry) string {
 		presetID = strings.TrimSpace(p.Name)
 	}
 	switch presetID {
-	case "qwen-cn",
-		"qwen-global",
-		"qwen-coding-plan-cn",
-		"qwen-coding-plan-cn-anthropic",
+	case "qwen-global",
 		"qwen-coding-plan-global",
 		"qwen-coding-plan-global-anthropic":
 		return presetID
@@ -1341,7 +1338,7 @@ func mergeMissingQwenContextOverrides(p *ProviderEntry, defaults map[string]Prov
 }
 
 // normalizeLegacyKimiK3Catalog upgrades only untouched Kimi direct-API model
-// catalogs on the official regional endpoints. Custom model lists, endpoints,
+// catalogs on the remaining official endpoint. Custom model lists, endpoints,
 // defaults, credentials, and provider-wide settings remain user-owned.
 func normalizeLegacyKimiK3Catalog(c *Config) bool {
 	if c == nil {
@@ -1354,8 +1351,6 @@ func normalizeLegacyKimiK3Catalog(c *Config) bool {
 		name := strings.TrimSpace(p.Name)
 		var baseURL string
 		switch {
-		case presetID == "kimi-cn" || (presetID == "" && name == "kimi-cn"):
-			baseURL = "https://api.moonshot.cn/v1"
 		case presetID == "kimi-global" || (presetID == "" && name == "kimi-global"):
 			baseURL = "https://api.moonshot.ai/v1"
 		default:

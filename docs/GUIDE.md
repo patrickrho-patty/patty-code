@@ -52,7 +52,7 @@ For the desktop and CLI usage of visible reasoning language, see
 
 ```toml
 default_model = "deepseek-flash"   # executor; set [agent].planner_model to add a planner
-# language    = "zh"               # ui language; empty = auto-detect from $LANG / $PATTY_LANG
+# language    = "ko-KR"            # UI language; empty = Korean default; set en for English
 
 [ui]
 # shortcut_layout = "desktop"      # classic|desktop; compatibility setting
@@ -359,37 +359,17 @@ For common providers, choose **Add model service -> Recommended preset** instead
 The official DeepSeek service continues to use its specially adapted OpenAI Chat
 Completions path by default; add the optional **DeepSeek Anthropic** preset only
 when Anthropic Messages compatibility is needed. The two entries do not replace
-each other. Patty Code can prefill editable custom-provider entries for Kimi CN,
-Kimi Global,
-Kimi Coding Plan, MiMo API, MiMo Anthropic, MiMo Token Plan CN/SGP/AMS and their
-Anthropic-compatible variants, MiniMax CN/Global API, MiniMax CN/Global
-Anthropic, GLM CN, Z.AI Global, GLM/Z.AI Coding Plan OpenAI-compatible and
-Anthropic-compatible endpoints, OpenCode Go, OpenCode Go Anthropic, OpenCode Zen
-Anthropic, Qwen/DashScope CN/Global, Qwen Coding Plan CN/Global
-OpenAI-compatible and Anthropic-compatible endpoints, StepFun OpenAI-compatible
-and Anthropic-compatible endpoints, NovitaAI, GMI Cloud, Vercel AI Gateway,
-HuggingFace Router, NVIDIA NIM, KiloCode, and Ollama Cloud. Plan names describe
-the access/payment route; they include CN/Global only when the provider exposes
-distinct regional endpoints. Kimi Coding Plan is therefore a dedicated plan
-endpoint, while Kimi direct API is split into CN and Global. The preset path
-usually needs only the provider API key: the key value is stored in Patty Code home
-`.env`, while `config.toml` stores the endpoint, model list, key
-environment-variable name, context window, vision model metadata, proxy bypass
-for China-only endpoints, MiniMax `reasoning_split`, GLM/MiniMax thinking
-heuristics, Anthropic-compatible Bearer auth where needed, Ollama Cloud
-max-effort support, and OpenCode Go per-model reasoning overrides. The OpenCode
-Go preset includes its native `kimi-k3` subscription route with image input,
-`high`/`max` reasoning effort, and a 1,048,576-token context window. Existing untouched
-OpenCode Go preset installs are upgraded automatically; edited model catalogs
-are preserved. The Kimi CN and Kimi Global direct-API presets also include
-`kimi-k3` with image input, a 1,048,576-token context window, and the official
-`low`/`high`/`max` effort scale (default `max`). For the official K3 endpoints,
-Patty Code preserves complete assistant messages across turns, sends output limits
-as `max_completion_tokens`, and omits K3's fixed sampling parameters. Untouched
-legacy Kimi direct-API catalogs are upgraded automatically without changing the
-default model; custom catalogs and endpoints are preserved. After adding a
-preset, open its provider card if you need to change models, headers, endpoint,
-or compatibility settings.
+each other. Patty Code can prefill editable custom-provider entries for the
+supported curated presets, including DeepSeek, LongCat, OpenCode Go,
+OpenCode Go Anthropic, OpenCode Zen Anthropic, Vercel AI Gateway,
+HuggingFace Router, NVIDIA NIM, KiloCode, Ollama Cloud, and other selected
+OpenAI-compatible services. The preset path usually needs only the provider API
+key: the key value is stored in Patty Code home `.env`, while `config.toml`
+stores the endpoint, model list, key environment-variable name, context window,
+vision model metadata, Bearer-auth compatibility where needed, and any per-model
+reasoning overrides exposed by that preset. After adding a preset, open its
+provider card if you need to change models, headers, endpoint, or compatibility
+settings.
 
 Fill **API address** with the provider endpoint that should receive the standard
 chat path. In this mode Patty Code previews and sends chat requests to:
@@ -427,7 +407,7 @@ For Anthropic-compatible services, such as some coding-plan endpoints, choose
 | `models_url` | The URL used only for model discovery. Chat requests still use the API address or Full URL above. | Set it when `/models` or `/v1/models` is not where the gateway exposes its model list. |
 | Extra request headers | Static HTTP headers, one `Header: value` per line. | Use for gateways such as OpenRouter that require `HTTP-Referer`, `X-Title`, or similar site headers. Keep bearer/API keys in the key field instead of duplicating them here. |
 | Extra request body | A JSON object merged into the top-level chat request body. | Use only for provider-specific flags such as `{"enable_thinking": true}`. Patty Code still owns core fields such as `model`, `messages`, `tools`, `stream`, and `thinking`, and null values are rejected. |
-| Authorization: Bearer | For Anthropic-compatible providers, sends the saved API key as `Authorization: Bearer <key>` instead of `x-api-key`. | Enable it only when the gateway documents Bearer auth, such as MiniMax Global or Vercel AI Gateway. |
+| Authorization: Bearer | For Anthropic-compatible providers, sends the saved API key as `Authorization: Bearer <key>` instead of `x-api-key`. | Enable it only when the gateway documents Bearer auth, such as Vercel AI Gateway. |
 | Model capability mode | Which patty code request protocol Patty Code should use for this provider. | Keep **Auto-detect** unless the gateway is misdetected or the model docs require a specific patty code format. |
 | Thinking override | Provider-specific override for `thinking.type`. | Keep **Auto** unless the backend documents `enabled`, `disabled`, or `adaptive`. Unsupported values can make some OpenAI-compatible gateways reject the request. |
 | Balance URL | Optional endpoint for wallet/balance lookup. | Set it when the provider exposes a balance endpoint and you want the desktop status bar to show it. |
@@ -458,18 +438,18 @@ Thinking override options:
 | Auto (provider default) | Does not write an explicit provider-level `thinking` override. Patty Code uses the provider/model default behavior. |
 | Enabled | Sends `thinking.type = "enabled"` for compatible providers. |
 | Disabled | Sends `thinking.type = "disabled"` for compatible providers. On DeepSeek-style providers this also avoids sending a reasoning depth hint. |
-| Adaptive (self-adjusting) | Sends or preserves `thinking.type = "adaptive"` only for providers that document adaptive thinking, such as MiniMax-M3-style endpoints. |
+| Adaptive (self-adjusting) | Sends or preserves `thinking.type = "adaptive"` only for providers that explicitly document adaptive thinking. |
 
 Some OpenAI-compatible gateways require non-standard top-level request body
 fields. Add them with `extra_body` on the provider entry:
 
 ```toml
 [[providers]]
-name        = "spark"
+name        = "custom-gateway"
 kind        = "openai"
-base_url    = "https://maas-coding-api.cn-huabei-1.xf-yun.com/v2"
-models      = ["xopglm52"]
-api_key_env = "SPARK_API_KEY"
+base_url    = "https://gateway.example.com/v1"
+models      = ["example-model"]
+api_key_env = "EXAMPLE_API_KEY"
 extra_body  = { enable_thinking = true }
 ```
 
@@ -496,7 +476,7 @@ events.
 The injected hook context is dynamic current-turn context. It does not change
 the stable system prompt, memory prefix, or tool schema, though dynamic content
 can still reduce cache reuse for that turn. The detailed desktop hook schema and
-loading model are documented in [the Chinese desktop hooks guide](./DESKTOP_HOOKS.ko-KR.md).
+loading model are documented in [the Korean desktop hooks guide](./DESKTOP_HOOKS.ko-KR.md).
 
 ## Keyboard shortcuts
 

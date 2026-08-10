@@ -218,9 +218,9 @@ const METRIC_SIGNALS = [
   "settings_bot_tool_approval",
   "settings_bot_allowlist",
   "settings_bot_allow_all",
-  "settings_bot_qq_enabled",
-  "settings_bot_feishu_enabled",
-  "settings_bot_weixin_enabled",
+  "settings_bot_channel_a_enabled",
+  "settings_bot_channel_b_enabled",
+  "settings_bot_channel_c_enabled",
   "settings_bot_connection_count",
   "settings_bot_connection_provider",
   "settings_bot_connection_enabled",
@@ -1485,8 +1485,7 @@ async function sendAlert(env: Env, text: string): Promise<void> {
   if (!env.ALERT_WEBHOOK) return;
   try {
     const webhook = new URL(env.ALERT_WEBHOOK);
-    const feishu = webhook.hostname === "open.feishu.cn" || webhook.hostname === "open.larksuite.com";
-    const body = feishu ? { msg_type: "text", content: { text } } : { text };
+    const body = { text };
     const res = await fetch(webhook.toString(), {
       method: "POST",
       headers: { "content-type": "application/json" },

@@ -49,8 +49,7 @@ func TestDetectVendorAndModeDefaults(t *testing.T) {
 		{"https://api.deepseek.com", "deepseek", "stateless"},
 		{"https://eu.deepseek.com/v1", "deepseek", "stateless"},
 		{"https://api.xiaomimimo.com/v1", "mimo", "stateless"},
-		{"https://dashscope.aliyuncs.com/compatible-mode/v1", "dashscope", "stateful"},
-		{"https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1", "dashscope", "stateful"},
+		{"https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "dashscope", "stateful"},
 		{"https://api.deepseek.com.attacker.example/v1", "", "stateful"},
 		{"https://example.com/api.deepseek.com/v1", "", "stateful"},
 		{"https://example.com/v1", "", "stateful"},
@@ -582,7 +581,7 @@ func TestVendorCapabilityTableCoversKnownEndpoints(t *testing.T) {
 	}{
 		{"https://api.deepseek.com", "deepseek", true, true, false, false},
 		{"https://api.xiaomimimo.com/v1", "mimo", true, true, true, true},
-		{"https://dashscope.aliyuncs.com/compatible-mode/v1", "dashscope", false, false, false, false},
+		{"https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "dashscope", false, false, false, false},
 		{"https://example.com/v1", "", false, false, false, false},
 	}
 	for _, test := range tests {
@@ -814,7 +813,7 @@ func TestAllZeroUsageCompletedEmitsCompletionSemantics(t *testing.T) {
 func TestMessagesToInputIncludesSummaryOnReasoningItems(t *testing.T) {
 	// DashScope is the only vendor whose schema requires the summary list;
 	// use its base URL so the capability table opts in.
-	client := New(Config{Name: "dashscope", BaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1", Model: "qwen3"}).(*client)
+	client := New(Config{Name: "dashscope", BaseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", Model: "qwen3"}).(*client)
 	body, _, _ := client.buildRequestBody(provider.Request{Messages: []provider.Message{
 		{Role: provider.RoleUser, Content: "run"},
 		{Role: provider.RoleAssistant, ReasoningContent: "think step by step", Content: "answer"},
@@ -1025,7 +1024,7 @@ func TestConversationDigestMirrorsWireKnobs(t *testing.T) {
 	}
 
 	// DashScope summary knob: wire includes summary, digest must too.
-	ds := New(Config{Name: "dashscope", APIKey: "k", BaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1", Model: "qwen3"}).(*client)
+	ds := New(Config{Name: "dashscope", APIKey: "k", BaseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", Model: "qwen3"}).(*client)
 	ds.caps = capabilitiesFor("dashscope")
 	if ds.caps.summaryRequired && ds.conversationDigest(messages) == plain.conversationDigest(messages) {
 		t.Fatal("dashscope summary must change the digest (wire sends summary)")
@@ -1040,7 +1039,7 @@ func TestSingleSegmentReasoningWiredIntoWarningPolicy(t *testing.T) {
 		want                 bool
 	}{
 		{"mimo 단일 세그먼트 경고 없음", "https://api.xiaomimimo.com/v1", "mimo-v2.5-pro", false},
-		{"dashscope 콜백 계약 없음 경고 안 함", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3", false},
+		{"dashscope 콜백 계약 없음 경고 안 함", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "qwen3", false},
 		{"deepseek pro 다중 세그먼트 경고", "https://api.deepseek.com", "deepseek-v4-pro", true},
 		{"deepseek flash 면제", "https://api.deepseek.com", "deepseek-v4-flash", false},
 	}

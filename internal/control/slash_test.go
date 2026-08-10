@@ -158,7 +158,7 @@ func TestSlashArgItems(t *testing.T) {
 	}
 	// /reasoning-language
 	items, _ = SlashArgItems("/reasoning-language ", data)
-	if !has(items, "auto") || !has(items, "ko-KR") || !has(items, "en") || has(items, "機能整理檢討") {
+	if !has(items, "auto") || !has(items, "ko-KR") || !has(items, "en") || has(items, "기능정리검토") {
 		t.Errorf("/reasoning-language should offer only auto/ko-KR/en; got %v", labelsOf(items))
 	}
 	// /currency

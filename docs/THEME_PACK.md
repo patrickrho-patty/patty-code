@@ -6,7 +6,7 @@ the home and task/workspace scenes. They **cannot** run CSS, JavaScript, fonts,
 remote URLs, or SVG scripts. V1 packs remain valid and use the home image in
 both scenes.
 
-> Chinese: [THEME_PACK.ko-KR.md](./THEME_PACK.ko-KR.md)
+> Korean: [THEME_PACK.ko-KR.md](./THEME_PACK.ko-KR.md)
 
 ## Goals (first release)
 

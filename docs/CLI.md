@@ -96,10 +96,10 @@ patcode config currency CNY
 patcode config currency USD
 ```
 
-`auto` resolves Simplified or Traditional Chinese locales to CNY and English or
-other locales to USD. An explicit `CNY` or `USD` selection remains independent
-from the UI language. This preference is stored in the user config and cannot
-be overridden by project `patty.toml`; `--local` is therefore not supported.
+`auto` resolves Korean and English locales to USD by default. An explicit `CNY`
+or `USD` selection remains independent from the UI language. This preference is
+stored in the user config and cannot be overridden by project `patty.toml`;
+`--local` is therefore not supported.
 Custom provider prices are preserved.
 
 In an interactive session, `/currency` shows the saved and resolved values, and

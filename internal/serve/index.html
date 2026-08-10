@@ -1320,7 +1320,7 @@ function showAsk(ask) {
     qDiv.appendChild(opts);
     const submit=el('button','ask__submit',__('submit')); submit.disabled=true;
     opts.addEventListener('click',()=>{submit.disabled=selected.size===0;});
-    submit.onclick=()=>{const answers=ask.questions.map(qq=>({questionId:qq.id,selected:Array.from(selected).map(i=>qq.options[i].label)}));post('/answer',{id:ask.id,answers});cleanup();};
+    submit.onclick=()=>{const answers=ask.questions.map(question=>({questionId:question.id,selected:Array.from(selected).map(i=>question.options[i].label)}));post('/answer',{id:ask.id,answers});cleanup();};
     qDiv.appendChild(submit); d.appendChild(qDiv);
   });
   log.appendChild(d);scrollDown(true);

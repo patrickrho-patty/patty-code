@@ -37,8 +37,8 @@ import (
 // has no Wails dependency so the logic is unit-tested directly; updater_app.go is
 // the thin Wails binding that wires these into App methods and progress events.
 
-// Manifest endpoints — R2 CDN first (fast, especially in CN), then the crash
-// worker release gateway, then GitHub as the stable channel's last resort. The
+// Manifest endpoints — R2 CDN first, then the crash worker release gateway,
+// then GitHub as the stable channel's last resort. The
 // selected update channel picks the rolling pointer; it is user-configurable and
 // independent from the build channel embedded for diagnostics/backcompat. The
 // gateway still avoids GitHub's repository-wide /releases/latest shortcut so the
@@ -751,7 +751,7 @@ func readVerifiedCachedUpdateForChannel(selected string) (*cachedUpdate, []byte,
 }
 
 // downloadAttempts caps how many times a transient transport failure (connection
-// reset, read timeout, gateway 5xx) is retried before the update gives up. CN IPv6
+// reset, read timeout, gateway 5xx) is retried before the update gives up. IPv6
 // routes to Cloudflare reset mid-transfer often enough that a retry or two usually
 // completes the download instead of surfacing a "forcibly closed" error.
 const downloadAttempts = 3

@@ -28,8 +28,8 @@ func TestFixCJKEmphasis(t *testing.T) {
 		},
 		{
 			name:  "non-punctuation cjk unchanged",
-			input: "**機能整理檢討**단어",
-			want:  "**機能整理檢討**단어",
+			input: "**기능정리검토**단어",
+			want:  "**기능정리검토**단어",
 		},
 		{
 			name:  "english unchanged",
@@ -43,8 +43,8 @@ func TestFixCJKEmphasis(t *testing.T) {
 		},
 		{
 			name:  "inline code untouched",
-			input: "`a**機能整理檢討**b`",
-			want:  "`a**機能整理檢討**b`",
+			input: "`a**기능정리검토**b`",
+			want:  "`a**기능정리검토**b`",
 		},
 		{
 			name:  "fenced code untouched",
@@ -108,13 +108,13 @@ func TestFixCJKEmphasisRenderIntegration(t *testing.T) {
 		},
 		{
 			name:     "non-punctuation cjk already renders",
-			input:    "**機能整理檢討**단어",
-			wantText: "機能整理檢討",
+			input:    "**기능정리검토**단어",
+			wantText: "기능정리검토",
 		},
 		{
 			name:     "inline code preserved",
-			input:    "`a**機能整理檢討**b`",
-			wantText: "a**機能整理檢討**b",
+			input:    "`a**기능정리검토**b`",
+			wantText: "a**기능정리검토**b",
 		},
 	}
 

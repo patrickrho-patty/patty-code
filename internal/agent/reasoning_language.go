@@ -66,11 +66,13 @@ func InferReasoningLanguageFromText(source string) string {
 	if source == "" {
 		return "auto"
 	}
-	han, cjkPunct := reasoningLanguageScriptCounts(source)
+	hangul, han, cjkPunct := reasoningLanguageScriptCounts(source)
 	switch {
+	case hangul > 0:
+		return "ko-KR"
 	case han >= 4:
 		return "ko-KR"
-	case han >= 2 && (cjkPunct > 0 || hasChineseReasoningCue(source)):
+	case han >= 2 && (cjkPunct > 0 || hasKoreanReasoningCue(source)):
 		return "ko-KR"
 	default:
 		return "auto"
@@ -108,16 +110,18 @@ func reasoningLanguageSourceText(source string) string {
 	}
 }
 
-func reasoningLanguageScriptCounts(source string) (han, cjkPunct int) {
+func reasoningLanguageScriptCounts(source string) (hangul, han, cjkPunct int) {
 	for _, r := range source {
 		switch {
+		case unicode.In(r, unicode.Hangul):
+			hangul++
 		case unicode.In(r, unicode.Han):
 			han++
 		case isCJKPunctuation(r):
 			cjkPunct++
 		}
 	}
-	return han, cjkPunct
+	return hangul, han, cjkPunct
 }
 
 func isCJKPunctuation(r rune) bool {
@@ -131,8 +135,8 @@ func isCJKPunctuation(r rune) bool {
 	}
 }
 
-func hasChineseReasoningCue(source string) bool {
-	for _, cue := range chineseReasoningLanguageCues {
+func hasKoreanReasoningCue(source string) bool {
+	for _, cue := range koreanReasoningLanguageCues {
 		if strings.Contains(source, cue) {
 			return true
 		}
@@ -140,7 +144,7 @@ func hasChineseReasoningCue(source string) bool {
 	return false
 }
 
-var chineseReasoningLanguageCues = []string{
+var koreanReasoningLanguageCues = []string{
 	"안녕", "부탁", "도와줘", "도움", "봐 줘", "확인해 줘", "설명", "요약", "분석",
 	"복구", "구현", "최적화", "추적", "처리", "계속", "왜", "어떻게",
 	"여부", "가능한지", "지원", "설정", "사고", "문제", "오류 보고",

@@ -31,7 +31,7 @@ export function composerEnterAction(event: ComposerEnterKeyLike, platform: Short
   // soon as the user explicitly chooses a send chord.
   if (!loadCustomShortcuts()["composer.send"] && !event.shiftKey) return "send";
   // Plain Enter bound to neither chord (send moved to e.g. Ctrl+Enter) still
-  // breaks the line — the WeChat/DingTalk-style layout users expect there.
+  // breaks the line — the chat-style layout users expect there.
   if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) return "newline-insert";
   return "none";
 }

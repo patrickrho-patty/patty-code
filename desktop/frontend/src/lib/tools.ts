@@ -160,8 +160,8 @@ function nonEmptyLines(s: string): number {
   return s.split("\n").filter((l) => l.trim() !== "").length;
 }
 
-// countOf renders a localized "N <noun>" using the singular/plural key pair (zh
-// collapses both to one form). Lives here, not the dict, so the counted phrasing
+// countOf renders a localized "N <noun>" using the singular/plural key pair.
+// It lives here, not the dict, so the counted phrasing
 // stays a translation concern.
 function countOf(n: number, one: DictKey, other: DictKey): string {
   return t(n === 1 ? one : other, { n });

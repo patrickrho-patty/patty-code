@@ -43,7 +43,7 @@ type ProxySpec struct {
 
 // TransportOptions lets callers keep their existing network timeouts while
 // sharing proxy behavior. ForceIPv4 pins the dialer to tcp4 — the desktop updater
-// uses it to retry over IPv4 when an IPv6 route (CN → Cloudflare) resets mid-transfer.
+// uses it to retry over IPv4 when an IPv6 route to the download edge resets mid-transfer.
 type TransportOptions struct {
 	DialTimeout           time.Duration
 	KeepAlive             time.Duration
@@ -183,8 +183,9 @@ func baseProxyFunc(spec ProxySpec) (func(*http.Request) (*url.URL, error), error
 
 // withDirectHosts makes the listed hosts (and their subdomains) bypass the proxy
 // in every mode. The caller decides which hosts are direct — netclient stays
-// provider-agnostic. A China-only endpoint reached through a foreign-exit proxy
-// resets the TLS handshake (SSL_ERROR_SYSCALL, #2803), so its provider marks it.
+// provider-agnostic. Some region-sensitive endpoints reset the TLS handshake
+// (SSL_ERROR_SYSCALL, #2803) when routed through the wrong proxy path, so the
+// provider can mark them direct.
 func withDirectHosts(pf func(*http.Request) (*url.URL, error), hosts []string) func(*http.Request) (*url.URL, error) {
 	if pf == nil || len(hosts) == 0 {
 		return pf

@@ -123,12 +123,12 @@ func TestLoadDotEnvDecodesGB18030Credentials(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(cred), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(cred, fileencoding.Encode("PINNED_CN=機能整理檢討\n", fileencoding.GB18030), 0o600); err != nil {
+	if err := os.WriteFile(cred, fileencoding.Encode("PINNED_CN=기능정리검토\n", fileencoding.GB18030), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	loadDotEnv()
-	if got := os.Getenv("PINNED_CN"); got != "機能整理檢討" {
+	if got := os.Getenv("PINNED_CN"); got != "기능정리검토" {
 		t.Fatalf("PINNED_CN = %q, want decoded Korean value", got)
 	}
 }

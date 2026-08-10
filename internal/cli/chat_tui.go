@@ -856,13 +856,27 @@ func (m *chatTUI) prompts() []plugin.Prompt {
 }
 
 func (m chatTUI) Init() tea.Cmd {
-	return tea.Batch(
-		textarea.Blink,
-		waitForAgentEvent(m.eventCh),
-		fetchBalance(m.ctrl),
-		m.runStatusline(), // nil (no-op) unless a custom status line is configured
-		m.refreshGitStatus(),
+	// The renderer enables keyboard modes before it runs Init. Reset the
+	// redundant xterm mode first, then start independent background commands;
+	// tea.Batch alone offers no ordering guarantee.
+	return tea.Sequence(
+		imeKeyboardCompatibilityCommand(),
+		tea.Batch(
+			textarea.Blink,
+			waitForAgentEvent(m.eventCh),
+			fetchBalance(m.ctrl),
+			m.runStatusline(), // nil (no-op) unless a custom status line is configured
+			m.refreshGitStatus(),
+		),
 	)
+}
+
+func imeKeyboardCompatibilityCommand() tea.Cmd {
+	// Bubble Tea v2 enables xterm modifyOtherKeys level 2 alongside the Kitty
+	// keyboard protocol. The duplicate mode can make terminals/tmux commit an
+	// active Korean IME preedit jamo instead of consuming the final Backspace.
+	// Kitty remains enabled for Shift+Enter disambiguation.
+	return tea.Raw(ansi.ResetModifyOtherKeys)
 }
 
 func suspendWithMouseReset() tea.Cmd {
@@ -1035,6 +1049,11 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commitLaunchAndReplay(m.missing, history)
 			m.history = nil
 		}
+
+	case tea.ResumeMsg:
+		// Restoring Bubble Tea's renderer re-enables modifyOtherKeys. Reset it
+		// again so IME Backspace keeps the same behavior after Ctrl+Z/resume.
+		return m, imeKeyboardCompatibilityCommand()
 
 	case tea.FocusMsg:
 		// Terminal regained focus — ConPTY may have dropped mouse tracking

@@ -1,7 +1,7 @@
 // English UI strings — the canonical dictionary. Keys are dotted by area; values
-// may contain {placeholders} filled at call time (see lib/i18n.tsx). zh.ts must
-// mirror this key set exactly (its `Record<DictKey, string>` annotation enforces
-// it at compile time), so adding a key here makes the build fail until zh has it.
+// may contain {placeholders} filled at call time (see lib/i18n.tsx). Any
+// secondary locale catalog must mirror this key set exactly so localized UI
+// surfaces stay in lock-step with the English baseline.
 
 export const en = {
   // shared verbs / chrome
@@ -2116,22 +2116,22 @@ export const en = {
   "settings.conversationWidth": "Conversation width",
   "settings.conversationWidthStandard": "Standard",
   "settings.conversationWidthFull": "Full width",
-  "settings.style.graphite.zh": "Graphite",
+  "settings.style.graphite.ko": "Graphite",
   "settings.style.graphite.note": "Crisp",
   "settings.style.graphite.desc": "Paper white, graphite text, and orange accents — restrained, editor-like workbench.",
-  "settings.style.aurora.zh": "Soft Aurora",
+  "settings.style.aurora.ko": "Soft Aurora",
   "settings.style.aurora.note": "Warm",
   "settings.style.aurora.desc": "Misty violet surfaces with aurora blue-green accents, translucent panels, and springy radii.",
-  "settings.style.slate.zh": "Refined",
+  "settings.style.slate.ko": "Refined",
   "settings.style.slate.note": "Native",
   "settings.style.slate.desc": "Cool gray workbench with brand blue and crisp hairlines for dense professional scanning.",
-  "settings.style.carbon.zh": "Deep",
+  "settings.style.carbon.ko": "Deep",
   "settings.style.carbon.note": "Premium",
   "settings.style.carbon.desc": "Warm charcoal and linen-gray surfaces with teal accents, richer texture, and long-focus contrast.",
-  "settings.style.nocturne.zh": "Soft",
+  "settings.style.nocturne.ko": "Soft",
   "settings.style.nocturne.note": "Calm",
   "settings.style.nocturne.desc": "Soft violet night and cloud-light surfaces with generous radii for calmer reading.",
-  "settings.style.amber.zh": "Amber",
+  "settings.style.amber.ko": "Amber",
   "settings.style.amber.note": "Warm",
   "settings.style.amber.desc": "Warm orange accent — bright and friendly (dark variant included).",
   "settings.themeAuto": "auto",

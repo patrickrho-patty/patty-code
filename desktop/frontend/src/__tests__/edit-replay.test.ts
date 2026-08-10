@@ -65,13 +65,13 @@ const mixedInvocations: ComposerInvocation[] = [
   { id: "skill", offset: 2, command: { name: "activity-dynamic-debug", description: "", kind: "skill" } },
   { id: "explore", offset: 3, command: { name: "explore", description: "", kind: "subagent" } },
 ];
-const mixedSubmit = serializeInvocationSubmit("你是再做", mixedInvocations);
+const mixedSubmit = serializeInvocationSubmit("이건또해", mixedInvocations);
 eq(
   mixedSubmit,
-  "/general-purpose 你是 /activity-dynamic-debug 再 /explore 做",
+  "/general-purpose 이 /activity-dynamic-debug 건 /explore 또해",
   "multiple abilities serialize in visual order",
 );
-const mixedSegments = invocationSegmentsFromMessage("你是再做", mixedSubmit);
+const mixedSegments = invocationSegmentsFromMessage("이건또해", mixedSubmit);
 eq(
   mixedSegments.filter((segment) => segment.type === "invocation").map((segment) => segment.type === "invocation" ? segment.invocation.name : "").join(","),
   "general-purpose,activity-dynamic-debug,explore",
@@ -79,13 +79,13 @@ eq(
 );
 eq(
   mixedSegments.filter((segment) => segment.type === "text").map((segment) => segment.type === "text" ? segment.content : "").join(""),
-  "你是再做",
+  "이건또해",
   "restored ability segments preserve visible task text",
 );
 
 eq(
-  replaySubmitText(mixedSubmit, "你是再做", "请开发并检查", "请开发并检查"),
-  "/general-purpose 请开发 /activity-dynamic-debug 并检 /explore 查",
+  replaySubmitText(mixedSubmit, "이건또해", "개발하고검토", "개발하고검토"),
+  "/general-purpose 개 /activity-dynamic-debug 발하 /explore 고검토",
   "editing a mixed ability message preserves every invocation",
 );
 

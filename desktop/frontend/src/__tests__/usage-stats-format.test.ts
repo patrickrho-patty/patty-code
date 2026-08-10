@@ -16,7 +16,7 @@ function ok(value: boolean, label: string) {
 
 const english = formatUsageTokens(10_000, "en");
 
-ok(!english.includes("万") && !english.includes("亿"), "English token totals do not use Chinese units");
+ok(!english.includes("만") && !english.includes("억"), "English token totals do not use Chinese units");
 ok(en["settings.modelTab.stats"] === "Usage stats", "English stats tab has a dedicated label");
 
 if (failed > 0) process.exit(1);

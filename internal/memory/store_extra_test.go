@@ -92,7 +92,7 @@ func TestSlug(t *testing.T) {
 		{"hello_world", "hello-world"},
 		{"중국어제목", "중국어제목"},
 		{"HÉLLO", "héllo"},
-		{"日本語123", "日本語123"},
+		{"한국어123", "한국어123"},
 	}
 	for _, c := range cases {
 		got := slug(c.input)

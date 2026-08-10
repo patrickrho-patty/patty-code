@@ -337,7 +337,7 @@ console.log("\ncomposer run strip");
   const { root, calls } = await renderComposer({
     running: true,
     turnStartAt: Date.now(),
-    guidanceQueuePreviewItems: ["数到一半改用英文", "最后给出一句总结"],
+    guidanceQueuePreviewItems: ["중간부터영어로", "마지막에한줄요약"],
   });
 
   ok(document.querySelector(".composer-guidance-shelf") !== null, "queued guidance renders in the shelf");
@@ -351,7 +351,7 @@ console.log("\ncomposer run strip");
 
   eq(calls.cancel, 1, "stop cancels the running turn");
   const ta = document.querySelector("textarea") as HTMLTextAreaElement;
-  eq(ta.value, "数到一半改用英文\n最后给出一句总结", "stop folds unconsumed queued guidance back into the draft");
+  eq(ta.value, "중간부터영어로\n마지막에한줄요약", "stop folds unconsumed queued guidance back into the draft");
   eq(document.querySelector(".composer-guidance-shelf"), null, "restored queue clears the shelf");
 
   await act(async () => {

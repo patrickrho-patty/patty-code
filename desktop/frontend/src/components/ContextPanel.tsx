@@ -45,8 +45,7 @@ interface MetricTokenDisplay {
 }
 
 function numberLocale(locale: Locale | string): string {
-  if (locale === "zh") return "zh-CN";
-  if (locale === "zh-TW") return "zh-TW";
+  if (locale === "ko" || locale === "ko-KR") return "ko-KR";
   return "en";
 }
 

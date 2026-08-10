@@ -2,7 +2,7 @@
 
 <a href="./GUIDE.md">Guide</a>
 &nbsp;·&nbsp;
-<a href="./TASK_CONTRACT.ko-KR.md">Simplified Chinese</a>
+<a href="./TASK_CONTRACT.ko-KR.md">Korean</a>
 
 Patty Code works best when nontrivial work is described as a **task contract**:
 what the work is for, what action is requested, how the result should be

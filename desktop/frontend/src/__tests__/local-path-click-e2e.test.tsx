@@ -86,16 +86,16 @@ console.log("\nheadless click-to-open e2e");
 
 // 1. Issue #7426 scenario: plain Windows path in chat text, CJK dirs.
 {
-  const anchors = await renderClick("文件在 D:\\Project\\Jhtj\\20250804_000000_001_中停时分析\\05-静态验收.md 已生成");
+  const anchors = await renderClick("파일은 D:\\Project\\Jhtj\\20250804_000000_001_중단시간분석\\05-정적검수.md 생성됨");
   ok(anchors.length === 1, "exactly one anchor rendered");
   const href = anchors[0]?.getAttribute("href") ?? "";
-  ok(href === "file:///D:/Project/Jhtj/20250804_000000_001_%E4%B8%AD%E5%81%9C%E6%97%B6%E5%88%86%E6%9E%90/05-%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md",
+  ok(href === "file:///D:/Project/Jhtj/20250804_000000_001_%EC%A4%91%EB%8B%A8%EC%8B%9C%EA%B0%84%EB%B6%84%EC%84%9D/05-%EC%A0%95%EC%A0%81%EA%B2%80%EC%88%98.md",
     `anchor href is the encoded file URL (${href})`);
   await act(async () => {
     anchors[0].dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
   });
   ok(opened.length === 1, "click invoked OpenLocalPath once");
-  ok(opened[0] === "D:/Project/Jhtj/20250804_000000_001_中停时分析/05-静态验收.md",
+  ok(opened[0] === "D:/Project/Jhtj/20250804_000000_001_중단시간분석/05-정적검수.md",
     `OpenLocalPath received the decoded CJK path (${opened[0]})`);
   ok(browsed.length === 0, "system browser was not involved");
 }
@@ -103,7 +103,7 @@ console.log("\nheadless click-to-open e2e");
 // 2. UNC path (markdown folds \\ into \, linkify restores it; the href uses
 // forward slashes, which Windows accepts as a UNC form).
 {
-  const anchors = await renderClick("共享盘 \\\\nas\\share\\docs\\report.md 已生成");
+  const anchors = await renderClick("공유드라이브 \\\\nas\\share\\docs\\report.md 생성됨");
   await act(async () => {
     anchors[0].dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
   });
@@ -112,7 +112,7 @@ console.log("\nheadless click-to-open e2e");
 
 // 3. Explicit markdown link to a local file keeps working through the same path.
 {
-  const anchors = await renderClick("[验收单](file:///D:/docs/acceptance.md)");
+  const anchors = await renderClick("[검수서](file:///D:/docs/acceptance.md)");
   await act(async () => {
     anchors[0].dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
   });
@@ -121,7 +121,7 @@ console.log("\nheadless click-to-open e2e");
 
 // 4. Plain http link must NOT hit OpenLocalPath.
 {
-  const anchors = await renderClick("见 https://example.com/page 文档");
+  const anchors = await renderClick("참조 https://example.com/page 문서");
   await act(async () => {
     anchors[0].dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
   });
@@ -131,7 +131,7 @@ console.log("\nheadless click-to-open e2e");
 
 // 5. Non-path text renders no anchors and no clicks.
 {
-  const anchors = await renderClick("版本 1.2.3 已发布");
+  const anchors = await renderClick("버전 1.2.3 릴리스됨");
   ok(anchors.length === 0, "no anchors for plain text");
 }
 

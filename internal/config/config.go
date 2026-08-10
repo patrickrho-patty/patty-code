@@ -199,7 +199,7 @@ type CLIConfig struct {
 }
 
 type DesktopConfig struct {
-	Language                string   `toml:"language"`                   // auto|en|zh; empty/auto = browser/OS auto-detect
+	Language                string   `toml:"language"`                   // auto|en|ko-KR; empty/auto = browser/OS auto-detect
 	Currency                string   `toml:"currency"`                   // user-global auto|CNY|USD pricing preference shared by desktop and CLI
 	LayoutStyle             string   `toml:"layout_style"`               // classic|workbench|creation; desktop layout style
 	Theme                   string   `toml:"theme"`                      // auto|dark|light; empty resolves to auto
@@ -722,8 +722,8 @@ type BotAccessConfig struct {
 
 type BotConnectionConfig struct {
 	ID               string                        `toml:"id"`
-	Provider         string                        `toml:"provider"` // qq|feishu|weixin
-	Domain           string                        `toml:"domain"`   // feishu|lark|weixin|qq
+	Provider         string                        `toml:"provider"`
+	Domain           string                        `toml:"domain"`
 	Label            string                        `toml:"label"`
 	Enabled          bool                          `toml:"enabled"`
 	Status           string                        `toml:"status"` // disconnected|pending|connected|error
@@ -1620,7 +1620,7 @@ func (e *ProviderEntry) RequiresAPIKey() bool {
 
 func providerBaseURLRequiresAPIKey(raw string) bool {
 	switch officialProviderHost(raw) {
-	case "api.deepseek.com", "api.xiaomimimo.com", "token-plan-cn.xiaomimimo.com", "api.minimaxi.com", "api.openai.com":
+	case "api.deepseek.com", "api.xiaomimimo.com", "api.openai.com":
 		return true
 	default:
 		return false

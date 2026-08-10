@@ -1,7 +1,7 @@
 // Package encoding detects and converts file encodings for the built-in
 // file tools. The detection cascade (BOM → strict UTF-8 → GB18030 → lossy
-// UTF-8) mirrors v1's file-encoding.ts and keeps CJK Windows files editable
-// without silently mangling their bytes.
+// UTF-8) mirrors v1's file-encoding.ts and keeps legacy Windows text files
+// editable without silently mangling their bytes.
 package encoding
 
 import (
@@ -26,7 +26,7 @@ const (
 	UTF16LE
 	// UTF16BE is UTF-16 Big-Endian with a BOM (FE FF).
 	UTF16BE
-	// GB18030 is the Chinese national standard charset (superset of GBK).
+	// GB18030 is a legacy East Asian charset (superset of GBK).
 	GB18030
 	// LossyUTF8 is not valid UTF-8 and not valid GB18030 — decoded lossily
 	// as UTF-8 with replacement characters so the model sees something.

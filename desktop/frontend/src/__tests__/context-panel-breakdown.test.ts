@@ -234,7 +234,7 @@ eq(
   "no data renders as empty, not NaN",
 );
 eq(formatMoney(infoCost.amount, infoCost.currency, "dash"), "$0.1759", "USD panel cost renders with dollar sign");
-eq(currencySymbol("楼"), "¥", "unexpected currency text does not leak into money values");
+eq(currencySymbol("층"), "¥", "unexpected currency text does not leak into money values");
 eq(currencySymbol("aud"), "AUD ", "unknown ISO currency codes stay readable");
 eq(currencySymbol("A$"), "A$", "compact multi-character currency symbols are preserved");
 const usdLocalized = formatMoneyLocalized(0.1759, "USD", { locale: "en" });

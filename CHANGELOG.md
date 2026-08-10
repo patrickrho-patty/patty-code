@@ -237,9 +237,8 @@ multiple Desktop stability improvements.
   stdio tools reuse one persistent process so browser sessions survive across
   calls without repeated startup latency. The former trust/reverify/catalog
   management UI and CLI are removed.
-- Localized persistent-footer labels and displayed work-mode values in English,
-  Simplified Chinese, and Traditional Chinese, while keeping command arguments
-  stable.
+- Localized persistent-footer labels and displayed work-mode values in English
+  and Korean, while keeping command arguments stable.
 - Restored the `0.53` content boundary: model output, tool output, session
   transcripts, recovery branches, and background-job artifacts retain their
   original text instead of being rewritten by heuristic secret redaction.

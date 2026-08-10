@@ -254,7 +254,7 @@
             "en": "ACP Guide"
           },
           "body": {
-            "en": "Chinese version of the ACP guide."
+            "en": "Korean version of the ACP guide."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/ACP.ko-KR.md"
         },
@@ -281,7 +281,7 @@
             "en": "User Guide"
           },
           "body": {
-            "en": "Chinese version of the user guide."
+            "en": "Korean version of the user guide."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/GUIDE.ko-KR.md"
         },
@@ -299,7 +299,7 @@
             "en": "Plugin Packages"
           },
           "body": {
-            "en": "Chinese version of the plugin packages documentation."
+            "en": "Korean version of the plugin packages documentation."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/PLUGIN_PACKAGES.ko-KR.md"
         },
@@ -317,7 +317,7 @@
             "en": "Recovery Guide"
           },
           "body": {
-            "en": "Chinese version of the recovery guide."
+            "en": "Korean version of the recovery guide."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/RECOVERY.ko-KR.md"
         },
@@ -1074,7 +1074,7 @@
             "en": "Goal Enforcement"
           },
           "body": {
-            "en": "Read the Chinese guide to the new update_goal tool and fail-closed completion flow."
+            "en": "Read the Korean guide to the new update_goal tool and fail-closed completion flow."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/73bc4e0c1a8fd859b2b1c648d1f2c019e4a5c448/docs/GOAL_ENFORCEMENT.ko-KR.md"
         },
@@ -2064,7 +2064,7 @@
               "en": "Recovery notices kept out of IM chats"
             },
             "body": {
-              "en": "Internal recovery notices are no longer forwarded to WeChat, QQ, or Feishu conversations."
+              "en": "Internal recovery notices are no longer forwarded to legacy IM conversations."
             },
             "refs": [
               7421
@@ -2728,7 +2728,7 @@
             "en": "Patty Code Specification"
           },
           "body": {
-            "en": "Refer to the Chinese version of the Patty Code specification."
+            "en": "Refer to the Korean version of the Patty Code specification."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/26e004f4bad2a51b635793dc7f0531222c6700f3/docs/SPEC.ko-KR.md"
         }
@@ -3940,7 +3940,7 @@
             "en": "CLI Guide"
           },
           "body": {
-            "en": "Command-line interface usage and options in Chinese."
+            "en": "Command-line interface usage and options in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/CLI.ko-KR.md"
         },
@@ -3958,7 +3958,7 @@
             "en": "User Guide"
           },
           "body": {
-            "en": "General usage guide in Chinese."
+            "en": "General usage guide in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/GUIDE.ko-KR.md"
         },
@@ -3994,7 +3994,7 @@
             "en": "Remote Workbench"
           },
           "body": {
-            "en": "Guide for using Remote Workbench in Chinese."
+            "en": "Guide for using Remote Workbench in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/REMOTE_WORKBENCH.ko-KR.md"
         },
@@ -4021,7 +4021,7 @@
             "en": "Specification"
           },
           "body": {
-            "en": "Technical specification in Chinese."
+            "en": "Technical specification in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/SPEC.ko-KR.md"
         },
@@ -4039,7 +4039,7 @@
             "en": "Tool Approval Modes"
           },
           "body": {
-            "en": "Documentation for tool approval modes in Chinese."
+            "en": "Documentation for tool approval modes in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/TOOL_APPROVAL_MODES.ko-KR.md"
         }
@@ -4771,7 +4771,7 @@
             "en": "CLI Guide"
           },
           "body": {
-            "en": "Command-line interface usage and options in Chinese."
+            "en": "Command-line interface usage and options in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/CLI.ko-KR.md"
         },
@@ -4789,7 +4789,7 @@
             "en": "User Guide"
           },
           "body": {
-            "en": "General usage guide in Chinese."
+            "en": "General usage guide in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/GUIDE.ko-KR.md"
         },
@@ -4825,7 +4825,7 @@
             "en": "Remote Workbench"
           },
           "body": {
-            "en": "Guide for using Remote Workbench in Chinese."
+            "en": "Guide for using Remote Workbench in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/REMOTE_WORKBENCH.ko-KR.md"
         },
@@ -4852,7 +4852,7 @@
             "en": "Specification"
           },
           "body": {
-            "en": "Technical specification in Chinese."
+            "en": "Technical specification in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/SPEC.ko-KR.md"
         },
@@ -4870,7 +4870,7 @@
             "en": "Tool Approval Modes"
           },
           "body": {
-            "en": "Documentation for tool approval modes in Chinese."
+            "en": "Documentation for tool approval modes in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/TOOL_APPROVAL_MODES.ko-KR.md"
         }
@@ -5348,7 +5348,7 @@
             "en": "Patty Code User Guide"
           },
           "body": {
-            "en": "Comprehensive guide for using Patty Code in Chinese."
+            "en": "Comprehensive guide for using Patty Code in Korean."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ba2c4d31b7ad39cd635b153dc015f454ed14ee1a/docs/GUIDE.ko-KR.md"
         },
@@ -5431,7 +5431,7 @@
               "en": "Kimi K3 for official APIs and OpenCode Go"
             },
             "body": {
-              "en": "Kimi K3 is available through Kimi CN, Kimi Global, and OpenCode Go. Official APIs include native vision, a 1,048,576-token context window, and model-specific reasoning controls."
+              "en": "Kimi K3 is available through the official Kimi API and OpenCode Go. Official APIs include native vision, a 1,048,576-token context window, and model-specific reasoning controls."
             },
             "refs": [
               6921
@@ -5637,7 +5637,7 @@
             "en": "User Guide"
           },
           "body": {
-            "en": "The Chinese user guide for Patty Code Desktop."
+            "en": "The Korean user guide for Patty Code Desktop."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/dcca564ec87e96632a65a8332455ee3f6c1370d7/docs/GUIDE.ko-KR.md"
         },
@@ -5655,7 +5655,7 @@
             "en": "Specification"
           },
           "body": {
-            "en": "The Chinese Patty Code specification."
+            "en": "The Korean Patty Code specification."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/dcca564ec87e96632a65a8332455ee3f6c1370d7/docs/SPEC.ko-KR.md"
         }
@@ -7079,7 +7079,7 @@
             "en": "Remote SSH guide"
           },
           "body": {
-            "en": "Chinese guide for Remote SSH host setup, connections, files, and port forwarding."
+            "en": "Korean guide for Remote SSH host setup, connections, files, and port forwarding."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/43993f5a10cd4afa46febf53ed9f7ab2a1ceab5b/docs/GUIDE.ko-KR.md"
         },
@@ -7532,7 +7532,7 @@
             "en": "Theme Pack guide"
           },
           "body": {
-            "en": "Chinese guide for creating and distributing Theme Pack V2 themes."
+            "en": "Korean guide for creating and distributing Theme Pack V2 themes."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/8a36da8db87fc688d854f59b6897268995190bf7/docs/THEME_PACK.ko-KR.md"
         },
@@ -7550,7 +7550,7 @@
             "en": "CLI guide"
           },
           "body": {
-            "en": "Chinese reference for the updated CLI workflow."
+            "en": "Korean reference for the updated CLI workflow."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/8a36da8db87fc688d854f59b6897268995190bf7/docs/CLI.ko-KR.md"
         }
@@ -7836,7 +7836,7 @@
             "en": "Plugin Packages"
           },
           "body": {
-            "en": "Chinese guide for creating, configuring, and distributing Patty Code plugins."
+            "en": "Korean guide for creating, configuring, and distributing Patty Code plugins."
           },
           "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/cc9b1f52e6bc787719b78e70db8d7e487fe2fdd1/docs/PLUGIN_PACKAGES.ko-KR.md"
         },
@@ -7857,7 +7857,7 @@
             "en": "Bilingual changelog"
           },
           "body": {
-            "en": "Release notes are now reviewed and published in English and Chinese, with dedicated version pages. Desktop update banners link directly to the matching release."
+            "en": "Release notes are now reviewed and published in English and Korean, with dedicated version pages. Desktop update banners link directly to the matching release."
           },
           "refs": [
             6576

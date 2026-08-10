@@ -1383,9 +1383,9 @@ func TestNewProviderAppliesOfficialKimiK3RequestContract(t *testing.T) {
 	defer srv.Close()
 
 	p, err := NewProvider(&config.ProviderEntry{
-		Name:              "kimi-cn",
+		Name:              "kimi-global",
 		Kind:              "openai",
-		BaseURL:           "https://api.moonshot.cn/v1",
+		BaseURL:           "https://api.moonshot.ai/v1",
 		ChatURL:           srv.URL,
 		Model:             "kimi-k3",
 		ReasoningProtocol: config.ReasoningProtocolOpenAI,

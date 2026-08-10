@@ -1,7 +1,7 @@
 // Run: tsx src/__tests__/memory-compiler-display.test.ts
 //
 // Display-boundary safety net for #5361: a corrupted/accreted Memory v5 contract
-// from the pre-fix goal loop (#5342) must never render as raw JSON "乱码".
+// from the pre-fix goal loop (#5342) must never render as raw JSON "깨진문자열".
 
 import { stripMemoryCompilerExecution } from "../lib/memoryCompilerDisplay";
 

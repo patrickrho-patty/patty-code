@@ -125,7 +125,7 @@ func TestNativeManifestRejectsUnsupportedHookShell(t *testing.T) {
 }
 
 func FuzzHookJSONExecFormRoundTrip(f *testing.F) {
-	for _, seed := range []string{"", " spaced ", "$HOME", `%PATH%`, `a && b | c`, `quote"'`, "機能整理檢討🧪"} {
+	for _, seed := range []string{"", " spaced ", "$HOME", `%PATH%`, `a && b | c`, `quote"'`, "기능정리검토🧪"} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, arg string) {

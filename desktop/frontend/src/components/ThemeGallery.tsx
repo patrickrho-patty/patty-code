@@ -1047,7 +1047,7 @@ function ThemeEditorInline({
                 <span>{t("settings.themeLibrary.fieldBase")}</span>
                 <div className="set-seg theme-editor__base-styles">
                   {THEME_STYLES.map((s) => (
-                    <button key={s} type="button" className={`set-seg__btn${state.baseStyle === s ? " set-seg__btn--on" : ""}`} disabled={busy} onClick={() => onChange({ baseStyle: s })}>{t(`settings.style.${s}.zh` as never)}</button>
+                    <button key={s} type="button" className={`set-seg__btn${state.baseStyle === s ? " set-seg__btn--on" : ""}`} disabled={busy} onClick={() => onChange({ baseStyle: s })}>{t(`settings.style.${s}.ko` as never)}</button>
                   ))}
                 </div>
               </div>

@@ -111,30 +111,25 @@ func TestUsesGeminiThoughtSignatures(t *testing.T) {
 	}
 }
 
-// TestIsMiniMax pins the host-matching rule for MiniMax. The spelling is
-// `minimaxi`, not `minimax` — the latter is reserved for any future
-// minimax-branded gateway so the two never collide.
+// TestIsMiniMax pins the host-matching rule for MiniMax's international API.
 func TestIsMiniMax(t *testing.T) {
 	for _, tc := range []struct {
 		baseURL string
 		want    bool
 	}{
 		// Canonical
-		{"https://api.minimaxi.com", true},
-		{"https://api.minimaxi.com/v1", true},
-		{"https://api.minimaxi.com/anthropic", true},
+		{"https://api.minimax.io", true},
+		{"https://api.minimax.io/v1", true},
+		{"https://api.minimax.io/anthropic", true},
 		// Regional subdomains under the apex
-		{"https://eu.minimaxi.com/v1", true},
-		{"https://us.minimaxi.com/v1", true},
+		{"https://eu.minimax.io/v1", true},
+		{"https://us.minimax.io/v1", true},
 		// Apex rejected
-		{"https://minimaxi.com/v1", false},
-		{"https://minimaxi.com", false},
+		{"https://minimax.io/v1", false},
+		{"https://minimax.io", false},
 		// Other vendors must not match
 		{"https://api.deepseek.com", false},
 		{"https://api.openai.com/v1", false},
-		// Wrong spelling — minimax, not minimaxi — must not match
-		{"https://api.minimax.com/v1", false},
-		{"https://api.minimax.example.com", false},
 		// Garbage
 		{"", false},
 		{"not-a-url", false},
@@ -165,29 +160,23 @@ func TestIsMiMo(t *testing.T) {
 	}
 }
 
-// TestIsZhipu pins the host-matching rule for Zhipu GLM across both the China
-// (bigmodel.cn) and international (z.ai) endpoints.
+// TestIsZhipu pins the host-matching rule for the remaining international
+// Z.AI GLM endpoint family.
 func TestIsZhipu(t *testing.T) {
 	for _, tc := range []struct {
 		baseURL string
 		want    bool
 	}{
-		// Canonical China endpoint
-		{"https://open.bigmodel.cn/api/paas/v4", true},
-		{"https://open.bigmodel.cn", true},
-		// Subdomains under the China apex
-		{"https://api.bigmodel.cn/v1", true},
 		// Canonical international endpoint
 		{"https://api.z.ai/api/paas/v4", true},
 		{"https://api.z.ai", true},
 		// Subdomain under the z.ai apex
 		{"https://open.z.ai/v1", true},
-		// Bare apexes rejected (misconfiguration)
-		{"https://bigmodel.cn/v1", false},
+		// Bare apex rejected (misconfiguration)
 		{"https://z.ai", false},
 		// Other vendors must not match
 		{"https://api.deepseek.com", false},
-		{"https://api.minimaxi.com/v1", false},
+		{"https://api.minimax.io/v1", false},
 		{"https://api.openai.com/v1", false},
 		// Garbage
 		{"", false},
@@ -241,11 +230,10 @@ func TestIsKimiAPI(t *testing.T) {
 		baseURL string
 		want    bool
 	}{
-		{"https://api.moonshot.cn/v1", true},
 		{"https://api.moonshot.ai/v1", true},
-		{"https://API.MOONSHOT.CN/v1/chat/completions", true},
-		{"https://moonshot.cn/v1", false},
-		{"https://gateway.moonshot.cn/v1", false},
+		{"https://API.MOONSHOT.AI/v1/chat/completions", true},
+		{"https://moonshot.ai/v1", false},
+		{"https://gateway.moonshot.ai/v1", false},
 		{"https://opencode.ai/zen/go/v1", false},
 		{"", false},
 		{"not-a-url", false},

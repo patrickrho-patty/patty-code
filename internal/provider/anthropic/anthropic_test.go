@@ -231,7 +231,7 @@ func TestNewDetectsMiMoSchemaDialect(t *testing.T) {
 		{"https://token-plan-sgp.xiaomimimo.com/anthropic", true},
 		{"https://token-plan-ams.xiaomimimo.com/anthropic", true},
 		{"https://api.anthropic.com", false},
-		{"https://api.minimaxi.com/anthropic", false},
+		{"https://api.minimax.io/anthropic", false},
 	} {
 		p, err := New(provider.Config{Name: "test", BaseURL: tc.baseURL, Model: "model"})
 		if err != nil {

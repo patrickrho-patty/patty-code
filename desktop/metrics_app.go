@@ -256,7 +256,7 @@ func (m *metricsAggregator) observeBotSettingsSnapshot(c *config.Config) {
 	m.inc("settings_bot_allow_all", boolBucket(bot.Allowlist.AllowAll))
 	m.inc("settings_bot_connection_count", countBucket(len(bot.Connections)))
 	for _, conn := range bot.Connections {
-		provider := knownBucket(conn.Provider, "qq", "feishu", "weixin")
+		provider := knownBucket(conn.Provider, "other")
 		m.inc("settings_bot_connection_provider", provider)
 		m.inc("settings_bot_connection_enabled", boolBucket(conn.Enabled))
 		m.inc("settings_bot_connection_status", knownBucket(conn.Status, "disconnected", "pending", "connected", "error"))

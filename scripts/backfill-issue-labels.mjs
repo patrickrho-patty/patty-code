@@ -48,7 +48,7 @@ const SYSTEM = [
   '  crash: app crashes, hangs, or freezes',
   '  data-loss: loss of sessions, config, or history',
   '  security: credential/secret exposure or a security flaw',
-  'Be conservative: omit a label when unsure. The issue may be in Chinese.',
+  'Be conservative: omit a label when unsure. The issue may be in Korean or another language.',
   'Reply with JSON only: {"area":[],"platform":[],"severity":[]}',
 ].join('\n');
 

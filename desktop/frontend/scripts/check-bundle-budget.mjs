@@ -38,7 +38,7 @@ const initialCSSGzip = initialCSS.reduce((total, path) => total + gzipBytes(path
 const largestInitialJS = Math.max(...initialJS.map(gzipBytes));
 const largestInitialJSRaw = Math.max(...initialJS.map((path) => statSync(path).size));
 const localeChunks = readdirSync(resolve(distDir, "assets"))
-  .filter((name) => /^(?:zh|en-US)-.+\.js$/.test(name))
+  .filter((name) => /^(?:ko-KR|en-US)-.+\.js$/.test(name))
   .map((name) => resolve(distDir, "assets", name));
 
 console.log("\nbundle budgets");
@@ -48,7 +48,7 @@ assertBudget("largest initial JavaScript chunk gzip", largestInitialJS, 295 * 10
 // always-loaded shell. Keep their combined allowance bounded to 113 KiB gzip.
 assertBudget("initial CSS gzip", initialCSSGzip, 113 * 1024);
 // English is the only shipped locale and loads eagerly, so no on-demand
-// locale chunks may exist; a zh/zh-TW chunk would mean the removal regressed.
+// locale chunks may exist; a ko-KR or legacy locale chunk would mean the build regressed.
 if (localeChunks.length !== 0) {
   throw new Error(`expected no on-demand locale chunks (English only), found ${localeChunks.length}`);
 }

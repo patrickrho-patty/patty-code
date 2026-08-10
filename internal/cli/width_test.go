@@ -12,7 +12,7 @@ func TestVisibleWidthGraphemeClusters(t *testing.T) {
 		want int
 	}{
 		{"ascii", "abc", 3},
-		{"cjk", "機能", 4},
+		{"cjk", "기능", 4},
 		{"emoji", "🔥", 2},
 		// x/ansi counts the VS16 keycap as 2 (emoji presentation). Terminals
 		// disagree on VS16 width, but the point is consistency: wrapAnsi /
@@ -32,7 +32,7 @@ func TestVisibleWidthGraphemeClusters(t *testing.T) {
 }
 
 func TestClampWidthHardwrap(t *testing.T) {
-	for line := range strings.SplitSeq(clampWidth("機能한", 4), "\n") {
+	for line := range strings.SplitSeq(clampWidth("기능한", 4), "\n") {
 		if visibleWidth(line) > 4 {
 			t.Errorf("cjk line %q exceeds width 4 (got %d)", line, visibleWidth(line))
 		}

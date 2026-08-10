@@ -38,7 +38,7 @@ func TestMemorySuggestionsAcceptMemoryCandidate(t *testing.T) {
 	sessionDir := t.TempDir()
 	store := memory.StoreFor(userDir, cwd)
 	writeSuggestionSession(t, sessionDir, "pref.jsonl",
-		provider.Message{Role: provider.RoleUser, Content: "앞으로는 항상 機能整理檢討로 답변해 주세요. 명시적으로 영어를 요청하지 않는 한요."},
+		provider.Message{Role: provider.RoleUser, Content: "앞으로는 항상 기능정리검토로 답변해 주세요. 명시적으로 영어를 요청하지 않는 한요."},
 		provider.Message{Role: provider.RoleAssistant, Content: "좋아요."},
 	)
 
@@ -64,7 +64,7 @@ func TestMemorySuggestionsAcceptMemoryCandidate(t *testing.T) {
 		t.Fatal("AcceptMemorySuggestion returned empty path")
 	}
 	got := store.List()
-	if len(got) != 1 || got[0].Scope != memory.FactScopeProject || !strings.Contains(got[0].Body, "機能整理檢討로 답변해 주세요") {
+	if len(got) != 1 || got[0].Scope != memory.FactScopeProject || !strings.Contains(got[0].Body, "기능정리검토로 답변해 주세요") {
 		t.Fatalf("saved memories = %+v, want confirmed candidate body", got)
 	}
 }
@@ -80,7 +80,7 @@ func TestMemorySuggestionsForTabUsesSelectedTab(t *testing.T) {
 	activeStore := memory.StoreFor(activeUserDir, activeCwd)
 	selectedStore := memory.StoreFor(selectedUserDir, selectedCwd)
 	writeSuggestionSession(t, selectedSessionDir, "selected.jsonl",
-		provider.Message{Role: provider.RoleUser, Content: "앞으로는 항상 機能整理檢討로 답변해 주세요. 명시적으로 영어를 요청하지 않는 한요."},
+		provider.Message{Role: provider.RoleUser, Content: "앞으로는 항상 기능정리검토로 답변해 주세요. 명시적으로 영어를 요청하지 않는 한요."},
 		provider.Message{Role: provider.RoleAssistant, Content: "좋아요."},
 	)
 
@@ -120,7 +120,7 @@ func TestMemorySuggestionsForTabUsesSelectedTab(t *testing.T) {
 		t.Fatalf("active store should remain untouched, got %+v", got)
 	}
 	got := selectedStore.List()
-	if len(got) != 1 || !strings.Contains(got[0].Body, "機能整理檢討로 답변해 주세요") {
+	if len(got) != 1 || !strings.Contains(got[0].Body, "기능정리검토로 답변해 주세요") {
 		t.Fatalf("selected store = %+v, want confirmed candidate body", got)
 	}
 
@@ -306,7 +306,7 @@ func TestHistoryMemoryCandidateNamesStableAcrossRefreshes(t *testing.T) {
 	sessionDir := t.TempDir()
 	store := memory.StoreFor(userDir, cwd)
 	writeSuggestionSession(t, sessionDir, "pref.jsonl",
-		provider.Message{Role: provider.RoleUser, Content: "앞으로는 항상 機能整理檢討로 답변해 주세요. 명시적으로 영어를 요청하지 않는 한요."},
+		provider.Message{Role: provider.RoleUser, Content: "앞으로는 항상 기능정리검토로 답변해 주세요. 명시적으로 영어를 요청하지 않는 한요."},
 		provider.Message{Role: provider.RoleAssistant, Content: "좋아요."},
 	)
 

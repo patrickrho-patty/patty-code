@@ -37,8 +37,8 @@ function pathCount(text: string): number {
 
 console.log("\nlinkifyLocalPaths — drive paths");
 
-eq(firstPath("文件在 D:\\Project\\Jhtj\\20250804_000000_001_中停时分析\\05-静态验收.md 已生成"),
-  "D:\\Project\\Jhtj\\20250804_000000_001_中停时分析\\05-静态验收.md",
+eq(firstPath("파일은 D:\\Project\\Jhtj\\20250804_000000_001_중단시간분석\\05-정적검수.md 생성됨"),
+  "D:\\Project\\Jhtj\\20250804_000000_001_중단시간분석\\05-정적검수.md",
   "issue case: Chinese dirs and underscores survive");
 eq(firstPath("see D:\\a\\b c.md note"), "D:\\a\\b", "unescaped space still ends the path");
 eq(firstPath("see D:\\a\\b\\ c.md"), "D:\\a\\b c.md", "escaped space unescapes to the real path");
@@ -48,17 +48,17 @@ eq(firstPath("see D:\\x\\y.md. done"), "D:\\x\\y.md", "trailing period stripped"
 eq(firstPath("path D:\\x\\y.md, ok"), "D:\\x\\y.md", "trailing comma stripped");
 eq(firstPath("see D:\\x\\y.md) done"), "D:\\x\\y.md", "trailing closing paren stripped");
 eq(firstPath("see D:\\x\\y.md... done"), "D:\\x\\y.md", "trailing ellipsis stripped");
-eq(firstPath("see D:\\x\\y.md。打开它"), "D:\\x\\y.md", "CJK period stops the path");
-eq(firstPath("见 D:\\x\\y.md，查看详情"), "D:\\x\\y.md", "CJK comma stops the path");
-eq(firstPath("打开 D:\\x\\y.md; 完成"), "D:\\x\\y.md", "semicolon stops the path");
-eq(firstPath("见 D:\\x\\y.md（已生成）"), "D:\\x\\y.md", "full-width parens stop the path");
-eq(firstPath("报告 D:\\x\\y.md（终版）完成"), "D:\\x\\y.md", "full-width paren group after path");
+eq(firstPath("see D:\\x\\y.md。열기"), "D:\\x\\y.md", "CJK period stops the path");
+eq(firstPath("참조 D:\\x\\y.md, 자세히 보기"), "D:\\x\\y.md", "comma stops the path");
+eq(firstPath("열기 D:\\x\\y.md; 완료"), "D:\\x\\y.md", "semicolon stops the path");
+eq(firstPath("참조 D:\\x\\y.md(생성됨)"), "D:\\x\\y.md", "parens stop the path");
+eq(firstPath("보고서 D:\\x\\y.md(최종본)완료"), "D:\\x\\y.md", "paren group after path");
 
 console.log("\nlinkifyLocalPaths — file:/// and UNC");
 
 eq(firstPath("see file:///D:/Project/report/05-final.md"), "file:///D:/Project/report/05-final.md",
   "file URL matched whole, drive part not double-matched");
-eq(firstPath("见 file:///D:/Project/中停时分析/05-静态验收.md"), "file:///D:/Project/中停时分析/05-静态验收.md",
+eq(firstPath("참조 file:///D:/Project/중단시간분석/05-정적검수.md"), "file:///D:/Project/중단시간분석/05-정적검수.md",
   "file URL with CJK dirs");
 eq(firstPath("see file:///D:/x/y.md. done"), "file:///D:/x/y.md", "file URL trailing period stripped");
 eq(firstPath("see \\nas\\share\\docs\\report.md done"), "\\\\nas\\share\\docs\\report.md",
@@ -69,28 +69,28 @@ console.log("\nlinkifyLocalPaths — lookalikes and non-paths");
 eq(pathCount("C: drive"), 0, "bare drive letter is not a path");
 eq(pathCount("at 10:30 now"), 0, "clock time is not a path");
 eq(pathCount("version 1.2.3 released"), 0, "version string is not a path");
-eq(pathCount("http://example.com 正常"), 0, "http URL untouched (GFM handles it)");
+eq(pathCount("http://example.com 정상"), 0, "http URL untouched (GFM handles it)");
 eq(pathCount("prefixD:\\x\\y.md"), 0, "drive path after a letter is rejected without lookbehind");
 eq(pathCount("file:///D:/x/y.md"), 1, "file URL drive segment is not double-matched");
-eq(pathCount("a\\b\\c.md 讨论"), 0, "share-less backslash path in prose is not a UNC path");
+eq(pathCount("a\\b\\c.md 논의"), 0, "share-less backslash path in prose is not a UNC path");
 eq(pathCount("C:\\nas\\share\\x.md"), 1, "drive path does not also become a UNC match");
-eq(firstPath("见 \\nas\\share\\x.md"), "\\\\nas\\share\\x.md", "real UNC path still matches");
-eq(firstPath("见 C:\\Program\\ Files\\ (x86) 完成"), "C:\\Program Files (x86)", "escaped-space path with (x86) keeps its closing paren");
+eq(firstPath("참조 \\nas\\share\\x.md"), "\\\\nas\\share\\x.md", "real UNC path still matches");
+eq(firstPath("참조 C:\\Program\\ Files\\ (x86) 완료"), "C:\\Program Files (x86)", "escaped-space path with (x86) keeps its closing paren");
 
 console.log("\nsegment alternation");
 
-const segs = linkifyLocalPaths("见 D:\\x\\y.md 然后 file:///C:/a/b.txt 完成");
+const segs = linkifyLocalPaths("참조 D:\\x\\y.md 그리고 file:///C:/a/b.txt 완료");
 eq(segs.length, 5, "text/link/text/link/text alternation");
-eq(segs[0], { text: "见 " }, "leading plain text");
+eq(segs[0], { text: "참조 " }, "leading plain text");
 eq(segs[1].path, "D:\\x\\y.md", "first link segment");
-eq(segs[2], { text: " 然后 " }, "middle plain text");
+eq(segs[2], { text: " 그리고 " }, "middle plain text");
 eq(segs[3].path, "file:///C:/a/b.txt", "second link segment");
-eq(segs[4], { text: " 完成" }, "trailing plain text");
+eq(segs[4], { text: " 완료" }, "trailing plain text");
 
 console.log("\nlocalPathHref round-trip");
 
 eq(localPathHref("D:\\x\\y.md"), "file:///D:/x/y.md", "backslashes become forward slashes");
-eq(localPathHref("D:\\Project\\中停时分析\\05-静态验收.md"), "file:///D:/Project/%E4%B8%AD%E5%81%9C%E6%97%B6%E5%88%86%E6%9E%90/05-%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md",
+eq(localPathHref("D:\\Project\\중단시간분석\\05-정적검수.md"), "file:///D:/Project/%EC%A4%91%EB%8B%A8%EC%8B%9C%EA%B0%84%EB%B6%84%EC%84%9D/05-%EC%A0%95%EC%A0%81%EA%B2%80%EC%88%98.md",
   "CJK percent-encoded");
 eq(localPathHref("D:\\a\\b#c.md"), "file:///D:/a/b%23c.md", "hash escaped for URL safety");
 eq(localPathHref("file:///C:/a/b.txt"), "file:///C:/a/b.txt", "already-absolute file URL is not double-prefixed");
@@ -98,8 +98,8 @@ eq(localPathHref("file:///D:/a%20b.txt"), "file:///D:/a%20b.txt", "literal %xx i
 eq(localPathFromHref("file:///D:/a%20b.txt"), "D:/a b.txt", "decoded %20 becomes a real space");
 
 eq(localPathFromHref("file:///D:/x/y.md"), "D:/x/y.md", "decodes plain path");
-eq(localPathFromHref("file:///D:/Project/%E4%B8%AD%E5%81%9C%E6%97%B6%E5%88%86%E6%9E%90/05-%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md"),
-  "D:/Project/中停时分析/05-静态验收.md", "decodes percent-encoded CJK");
+eq(localPathFromHref("file:///D:/Project/%EC%A4%91%EB%8B%A8%EC%8B%9C%EA%B0%84%EB%B6%84%EC%84%9D/05-%EC%A0%95%EC%A0%81%EA%B2%80%EC%88%98.md"),
+  "D:/Project/중단시간분석/05-정적검수.md", "decodes percent-encoded CJK");
 eq(localPathFromHref("file:///D:/x/%zz"), null, "malformed escapes yield null");
 eq(localPathFromHref("https://example.com/x"), null, "http URL is not local");
 eq(localPathFromHref(undefined), null, "undefined href is not local");
@@ -116,16 +116,16 @@ const markdownUrlTransform = (value: string) =>
 
 const html = renderToStaticMarkup(
   <ReactMarkdown remarkPlugins={[remarkLocalPathLinks]} urlTransform={markdownUrlTransform}>
-    {"文件在 D:\\Project\\x\\05-静态验收.md 已生成"}
+    {"파일은 D:\\Project\\x\\05-정적검수.md 생성됨"}
   </ReactMarkdown>,
 );
-ok(html.includes('href="file:///D:/Project/x/05-%E9%9D%99%E6%80%81%E9%AA%8C%E6%94%B6.md"'),
+ok(html.includes('href="file:///D:/Project/x/05-%EC%A0%95%EC%A0%81%EA%B2%80%EC%88%98.md"'),
   "plain drive path renders as a file:/// anchor");
-ok(html.includes("05-静态验收.md"), "anchor label keeps the original text");
+ok(html.includes("05-정적검수.md"), "anchor label keeps the original text");
 
 const mixed = renderToStaticMarkup(
   <ReactMarkdown remarkPlugins={[remarkLocalPathLinks]} urlTransform={markdownUrlTransform}>
-    {"见 D:\\x\\y.md，然后 file:///C:/a/b.txt 完成"}
+    {"참조 D:\\x\\y.md, 그리고 file:///C:/a/b.txt 완료"}
   </ReactMarkdown>,
 );
 ok(mixed.includes('href="file:///D:/x/y.md"'), "CJK comma boundary renders drive link");

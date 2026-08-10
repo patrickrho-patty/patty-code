@@ -13,10 +13,9 @@ import (
 // Returns false on any parse error or empty host.
 //
 // We take the apex separately from the canonical because they differ: the
-// canonical (e.g. api.minimaxi.com) is the specific endpoint, but regional
-// subdomains like eu.minimaxi.com or us.minimaxi.com should also match —
-// the wire shape is the same, just hosted in a different region. The bare
-// apex (e.g. minimaxi.com) is intentionally rejected: it would only happen
+// canonical (for example api.vendor.example) is the specific endpoint, but
+// regional subdomains under the same apex can still share the same wire shape.
+// The bare apex is intentionally rejected: it would only happen
 // if the user pointed their base_url at the apex domain, which is a
 // misconfiguration — not a path we want to silently accept.
 func matchesVendorHost(baseURL, apex string, canonical ...string) bool {
@@ -109,13 +108,10 @@ func normalizeModelID(baseURL, model string) string {
 	return model
 }
 
-// IsMiniMax reports whether baseURL points at MiniMax's OpenAI-compatible
-// endpoint (api.minimaxi.com or any *.minimaxi.com subdomain).
-//
-// The host string is matched exactly — the spelling is `minimaxi`, not
-// `minimax` — to avoid clashing with any future minimax-branded gateway.
+// IsMiniMax reports whether baseURL points at MiniMax's international
+// OpenAI-compatible endpoint (api.minimax.io or any *.minimax.io subdomain).
 func IsMiniMax(baseURL string) bool {
-	return matchesVendorHost(baseURL, "minimaxi.com", "api.minimaxi.com")
+	return matchesVendorHost(baseURL, "minimax.io", "api.minimax.io")
 }
 
 // IsMiMo reports whether baseURL points at Xiaomi MiMo's OpenAI-compatible API.
@@ -125,15 +121,12 @@ func IsMiMo(baseURL string) bool {
 	return provider.IsMiMoEndpoint(baseURL)
 }
 
-// IsZhipu reports whether baseURL points at Zhipu's OpenAI-compatible endpoint
-// for GLM models — either the China host (open.bigmodel.cn, *.bigmodel.cn) or
-// the international Z.ai host (api.z.ai, *.z.ai). Both speak the same wire shape,
-// where chain-of-thought is gated by `thinking.type` (enabled|disabled) and
-// `reasoning_effort` is silently ignored, so the client routes reasoning control
-// to the thinking knob for either host.
+// IsZhipu reports whether baseURL points at the remaining international
+// OpenAI-compatible GLM host (api.z.ai or any *.z.ai subdomain). This wire
+// shape gates chain-of-thought with `thinking.type` (enabled|disabled) and
+// silently ignores `reasoning_effort`.
 func IsZhipu(baseURL string) bool {
-	return matchesVendorHost(baseURL, "bigmodel.cn", "open.bigmodel.cn") ||
-		matchesVendorHost(baseURL, "z.ai", "api.z.ai")
+	return matchesVendorHost(baseURL, "z.ai", "api.z.ai")
 }
 
 // IsTokenRhythm reports whether baseURL points at Token Rhythm's official
@@ -154,20 +147,15 @@ func IsLongCat(baseURL string) bool {
 	return matchesVendorHost(baseURL, "longcat.chat", "api.longcat.chat")
 }
 
-// IsKimiAPI reports whether baseURL is one of Moonshot's official Kimi direct
-// API endpoints. Gate Kimi-specific wire compatibility on the exact API hosts
+// IsKimiAPI reports whether baseURL is Moonshot's remaining official Kimi
+// direct API endpoint. Gate Kimi-specific wire compatibility on the exact host
 // so OpenAI-compatible relays carrying the same model ID remain untouched.
 func IsKimiAPI(baseURL string) bool {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return false
 	}
-	switch strings.ToLower(u.Hostname()) {
-	case "api.moonshot.cn", "api.moonshot.ai":
-		return true
-	default:
-		return false
-	}
+	return strings.EqualFold(u.Hostname(), "api.moonshot.ai")
 }
 
 // IsOllamaCloud reports whether baseURL points at Ollama Cloud's hosted

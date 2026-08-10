@@ -672,7 +672,7 @@ without importing provider keys or Patty Code control variables.
 
 ```toml
 default_model = "deepseek"   # provider name (→ its default model) or "provider/model"
-# language    = "zh"                # ui language tag; empty = auto-detect from $LANG / $PATTY_LANG
+# language    = "ko-KR"             # UI language tag; empty = Korean default; set en for English
 
 [ui]
 # shortcut_layout = "desktop"       # classic|desktop; compatibility setting

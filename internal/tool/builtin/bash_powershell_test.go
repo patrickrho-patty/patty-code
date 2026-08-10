@@ -96,12 +96,12 @@ func TestBashPowerShellOutputIsUTF8(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("powershell e2e is windows-only")
 	}
-	out, err := runPS(t, "Write-Output 'AB-機能整理檢討-CD'")
+	out, err := runPS(t, "Write-Output 'AB-기능정리검토-CD'")
 	if err != nil {
 		t.Fatalf("command failed: %v (out=%q)", err, out)
 	}
-	if !strings.Contains(out, "機能整理檢討") {
-		t.Fatalf("non-ASCII output mojibake — got %q (want it to contain 機能整理檢討)", out)
+	if !strings.Contains(out, "기능정리검토") {
+		t.Fatalf("non-ASCII output mojibake — got %q (want it to contain 기능정리검토)", out)
 	}
 }
 

@@ -1504,19 +1504,19 @@ func TestSaveHooksSettingsDecodesLegacyEncodedGlobalSettings(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	legacy := `{"label":"中文","hooks":{"Stop":[{"command":"echo 旧"}]}}`
+	legacy := `{"label":"한국어","hooks":{"Stop":[{"command":"echo 이전"}]}}`
 	if err := os.WriteFile(path, fileencoding.Encode(legacy, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	app := NewApp()
 	before := app.HooksSettings("global")
-	if len(before.Hooks) != 1 || before.Hooks[0].Command != "echo 旧" {
+	if len(before.Hooks) != 1 || before.Hooks[0].Command != "echo 이전" {
 		t.Fatalf("HooksSettings before save = %+v, want decoded legacy hook", before.Hooks)
 	}
 	if err := app.SaveHooksSettings("global", []HookConfigView{{
 		Event:   string(hook.PreToolUse),
-		Command: "echo 新",
+		Command: "echo 새로",
 	}}); err != nil {
 		t.Fatalf("SaveHooksSettings: %v", err)
 	}
@@ -1529,11 +1529,11 @@ func TestSaveHooksSettingsDecodesLegacyEncodedGlobalSettings(t *testing.T) {
 	if err := json.Unmarshal(body, &raw); err != nil {
 		t.Fatalf("saved settings should be valid UTF-8 JSON: %v", err)
 	}
-	if string(raw["label"]) != `"中文"` {
+	if string(raw["label"]) != `"한국어"` {
 		t.Fatalf("label key was not preserved after decoding legacy settings: %s", raw["label"])
 	}
 	view := app.HooksSettings("global")
-	if len(view.Hooks) != 1 || view.Hooks[0].Command != "echo 新" {
+	if len(view.Hooks) != 1 || view.Hooks[0].Command != "echo 새로" {
 		t.Fatalf("HooksSettings after save = %+v, want new decoded hook", view.Hooks)
 	}
 }

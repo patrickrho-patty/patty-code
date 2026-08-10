@@ -19,7 +19,7 @@ func TestBuildRequestBodyExcludesToolExecution(t *testing.T) {
 			Role: provider.RoleTool, ToolCallID: "call_1", Name: "bash", Content: "FAIL",
 			ToolExecution: &provider.ToolExecution{
 				Kind: "shell", Shell: "bash", State: "failed", ExitCode: &code,
-				FailurePhase: "execution", OutputTail: "機能整理檢討stderr-marker-must-not-leak",
+				FailurePhase: "execution", OutputTail: "기능정리검토stderr-marker-must-not-leak",
 			},
 		},
 	}
@@ -30,7 +30,7 @@ func TestBuildRequestBodyExcludesToolExecution(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(body)
-	for _, banned := range []string{"tool_execution", "outputTail", "機能整理檢討stderr-marker-must-not-leak", "failurePhase", "mutationRisk"} {
+	for _, banned := range []string{"tool_execution", "outputTail", "기능정리검토stderr-marker-must-not-leak", "failurePhase", "mutationRisk"} {
 		if strings.Contains(s, banned) {
 			t.Fatalf("responses wire leaked %q: %s", banned, s)
 		}

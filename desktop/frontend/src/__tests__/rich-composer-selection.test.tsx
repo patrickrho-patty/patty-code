@@ -179,10 +179,10 @@ console.log("\nrich composer slash queries");
   eq(start?.from, 0, "slash query at the start keeps offset zero");
   eq(start?.query, "review", "slash query at the start captures its filter");
 
-  const middle = slashQueryAt("请用/review检查", { start: 9, end: 9 });
-  eq(middle?.from, 2, "slash query after adjacent Chinese text keeps its real offset");
+  const middle = slashQueryAt("이걸/review확인", { start: 9, end: 9 });
+  eq(middle?.from, 2, "slash query after adjacent Korean text keeps its real offset");
   eq(middle?.to, 9, "slash query ends at the middle caret");
-  eq(middle?.query, "review", "slash query after adjacent Chinese text captures its filter");
+  eq(middle?.query, "review", "slash query after adjacent Korean text captures its filter");
 
   const insideToken = slashQueryAt("/review", { start: 4, end: 4 });
   eq(insideToken?.from, 0, "slash query inside a token starts at its slash");
@@ -194,11 +194,11 @@ console.log("\nrich composer slash queries");
   eq(end?.query, "", "bare trailing slash exposes the full command menu");
 
   eq(
-    slashQueryAt("@00-基础文件/", { start: 9, end: 9 }),
+    slashQueryAt("@00-기본문서/", { start: 9, end: 9 }),
     null,
     "a directory separator inside an active ref does not open slash completion",
   );
-  const escapedRef = "看 @docs/my\\ dir/rev";
+  const escapedRef = "보기 @docs/my\\ dir/rev";
   eq(
     slashQueryAt(escapedRef, { start: escapedRef.length, end: escapedRef.length }),
     null,
@@ -394,7 +394,7 @@ console.log("\nrich composer selection mapping");
       inputType: "insertCompositionText",
       data: null,
     },
-    "hello你好 world",
+    "hello안녕 world",
     { start: 5, end: 5 },
   );
   eq(recoveredCompositionCommit.start, 7, "composition commit with data=null places caret after new text");
@@ -414,16 +414,16 @@ console.log("\nrich composer selection mapping");
   multi.remove();
 
   // --- Repeated characters and CJK ---
-  const cjkText = "测试测试重复重复";
+  const cjkText = "가나다라마바사아";
   const cjkRoot = buildWebView2Dom(cjkText, inv, "anchor");
   const cjkKnown = known;
   placeCaretInText(cjkRoot, 4);
   setDomSelection(cjkRoot, { start: 4, end: 4 });
   read = selectionFromDom(cjkRoot, cjkKnown);
   eq(read.ok ? read.selection.start : -1, 4, "CJK mid-text caret restores without jumping");
-  const cjkInsert = insertTextAtSelection(cjkRoot, "中", cjkKnown);
+  const cjkInsert = insertTextAtSelection(cjkRoot, "한", cjkKnown);
   if ("afterModel" in cjkInsert) {
-    eq(cjkInsert.afterModel.text, "测试测试中重复重复", "CJK insert stays at mid-text position");
+    eq(cjkInsert.afterModel.text, "가나다라한마바사아", "CJK insert stays at mid-text position");
   }
   cjkRoot.remove();
 
@@ -687,7 +687,7 @@ function Harness({
   eq(midImeCount, beforeImeCount, "IME composition intermediate input does not sync the model");
 
   await act(async () => {
-    // Commit composition: replace provisional "ni" with "你", then black out selection
+    // Commit composition: replace provisional "ni" with "한", then black out selection
     // before compositionend (WebView2 may drop selection across the commit).
     const current = document.querySelector(".composer__rich-input") as HTMLDivElement;
     const textNodes: Text[] = [];
@@ -698,15 +698,15 @@ function Harness({
     collect(current);
     const provisional = textNodes.find((node) => (node.textContent ?? "").includes("ni"));
     if (provisional && provisional.textContent === "ni") {
-      provisional.textContent = "你";
+      provisional.textContent = "한";
     } else if (provisional?.textContent?.includes("ni")) {
-      provisional.textContent = provisional.textContent.replace("ni", "你");
+      provisional.textContent = provisional.textContent.replace("ni", "한");
     } else {
       const anchorEl = current.querySelector<HTMLElement>("[data-composer-caret-anchor]");
       if (anchorEl) {
-        anchorEl.textContent = `\u00A0${textBeforeIme.slice(0, imeInsertAt)}你${textBeforeIme.slice(imeInsertAt)}`;
+        anchorEl.textContent = `\u00A0${textBeforeIme.slice(0, imeInsertAt)}한${textBeforeIme.slice(imeInsertAt)}`;
       } else {
-        current.appendChild(document.createTextNode("你"));
+        current.appendChild(document.createTextNode("한"));
       }
     }
     document.getSelection()?.removeAllRanges();
@@ -717,7 +717,7 @@ function Harness({
   ok(afterImeCount === beforeImeCount + 1, "compositionend performs exactly one model sync");
   const imeLive = document.querySelector(".composer__rich-input") as HTMLDivElement;
   const imeModel = modelFromDom(imeLive, known);
-  ok(imeModel.text.includes("你"), "committed IME text is present once");
+  ok(imeModel.text.includes("한"), "committed IME text is present once");
   const imeSel = selectionFromDom(imeLive, known);
   // After blackout recovery, caret must sit after the committed run — never the
   // pre-composition offset when the commit actually grew the text.
@@ -1027,8 +1027,8 @@ console.log("\nrich composer IME compositionend blackout");
         (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").length > 0,
       ) as Text | undefined;
       const anchorEl = imeRoot.querySelector<HTMLElement>("[data-composer-caret-anchor]");
-      if (sibling) sibling.textContent = "hello你 world";
-      else if (anchorEl) anchorEl.textContent = "\u00A0hello你 world";
+      if (sibling) sibling.textContent = "hello한 world";
+      else if (anchorEl) anchorEl.textContent = "\u00A0hello한 world";
       document.getSelection()?.removeAllRanges();
       ok(!selectionFromDom(imeRoot, imeKnown).ok, "selection is unavailable at compositionend");
       imeRoot.dispatchEvent(new Event("compositionend", { bubbles: true }));
@@ -1038,9 +1038,9 @@ console.log("\nrich composer IME compositionend blackout");
 
     const afterImeRoot = document.querySelector(".composer__rich-input") as HTMLDivElement;
     const afterImeModel = modelFromDom(afterImeRoot, imeKnown);
-    eq(afterImeModel.text, "hello你 world", "IME mid-text commit keeps text at the composition locus");
+    eq(afterImeModel.text, "hello한 world", "IME mid-text commit keeps text at the composition locus");
     const afterImeSel = selectionFromDom(afterImeRoot, imeKnown);
-    // "hello" (5) + "你" (1) → caret index 6. Must not stay at pre-composition 5
+    // "hello" (5) + "한" (1) → caret index 6. Must not stay at pre-composition 5
     // and must not jump to text.length (12).
     eq(
       afterImeSel.ok ? afterImeSel.selection.start : lastSelection.start,
@@ -1119,12 +1119,12 @@ console.log("\nrich composer IME late final input");
         (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").includes("hello world"),
       ) as Text | undefined;
       const anchorEl = imeRoot.querySelector<HTMLElement>("[data-composer-caret-anchor]");
-      if (sibling) sibling.textContent = "hello你 world";
-      else if (anchorEl) anchorEl.textContent = "\u00A0hello你 world";
+      if (sibling) sibling.textContent = "hello한 world";
+      else if (anchorEl) anchorEl.textContent = "\u00A0hello한 world";
       document.getSelection()?.removeAllRanges();
       imeRoot.dispatchEvent(new window.InputEvent("input", {
         bubbles: true,
-        data: "你",
+        data: "한",
         inputType: "insertCompositionText",
         isComposing: false,
       }));
@@ -1132,11 +1132,11 @@ console.log("\nrich composer IME late final input");
     });
 
     eq(changeCount, 1, "late final input performs one authoritative IME model sync");
-    eq(latestText, "hello你 world", "late final input preserves the committed IME candidate");
+    eq(latestText, "hello한 world", "late final input preserves the committed IME candidate");
     const afterImeRoot = document.querySelector(".composer__rich-input") as HTMLDivElement;
     eq(
       modelFromDom(afterImeRoot, imeKnown).text,
-      "hello你 world",
+      "hello한 world",
       "controlled echo keeps the late committed IME text",
     );
     eq(lastSelection.start, 6, "late final input restores the caret after the committed IME text");

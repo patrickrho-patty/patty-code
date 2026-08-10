@@ -15,7 +15,7 @@ assert summary == {
 }, summary
 assert list(summary) == sorted(summary), "keys must be sorted"
 PY
-# 泛化检查:换一份数据(含平手)再跑一次
+# 일반화 점검: 다른 데이터(동률 포함)로 한 번 더 실행
 cat > alt.csv <<'CSV'
 region,product,units,unit_price
 south,kegs,2,10.0

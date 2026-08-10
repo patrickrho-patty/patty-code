@@ -7,12 +7,11 @@ import (
 )
 
 // This file holds the shared connection-lifecycle primitives for the platform
-// adapters (qq / feishu / weixin). Each adapter previously hand-rolled the same
-// "loop forever, attempt a connection, sleep a fixed 5s on failure" shape; two of
-// them used time.Sleep, which ignores ctx and so left a Stop() blocked for the
-// remaining delay. SleepCtx fixes that; RunWithRetry folds the persistent-
-// connection reconnect loop (qq / feishu) into one cancellation-aware,
-// exponentially-backing-off helper.
+// adapters. Each adapter previously hand-rolled the same "loop forever,
+// attempt a connection, sleep a fixed 5s on failure" shape; some used
+// time.Sleep, which ignores ctx and so left a Stop() blocked for the remaining
+// delay. SleepCtx fixes that; RunWithRetry folds the persistent connection
+// reconnect loop into one cancellation-aware, exponentially-backing-off helper.
 
 const (
 	defaultInitialDelay = 1 * time.Second

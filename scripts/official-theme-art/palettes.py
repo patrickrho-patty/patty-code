@@ -23,7 +23,7 @@ TEXT_KEYS = ["border", "borderSoft", "fg", "fgDim", "fgFaint", "accent", "accent
 THEMES = {
     "official-rose-dawn": {
         "name": "Rose Dawn",
-        "zh": "玫瑰晨光",
+        "ko": "장미 새벽",
         "baseStyle": "graphite",
         "corners": "round",
         "bgparams": (0.72, 0.43, 1.0, 0.20, 0.68),
@@ -45,7 +45,7 @@ THEMES = {
     },
     "official-fortune-forge": {
         "name": "Fortune Forge",
-        "zh": "鸿运工坊",
+        "ko": "행운 공방",
         "baseStyle": "amber",
         "corners": "soft",
         "bgparams": (0.74, 0.44, 1.0, 0.20, 0.70),
@@ -67,7 +67,7 @@ THEMES = {
     },
     "official-crimson-horizon": {
         "name": "Crimson Horizon",
-        "zh": "赤曜新城",
+        "ko": "진홍 지평선",
         "baseStyle": "graphite",
         "corners": "soft",
         "bgparams": (0.75, 0.45, 0.98, 0.22, 0.66),
@@ -89,7 +89,7 @@ THEMES = {
     },
     "official-sage-breeze": {
         "name": "Sage Breeze",
-        "zh": "鼠尾草清风",
+        "ko": "세이지 바람",
         "baseStyle": "slate",
         "corners": "soft",
         "bgparams": (0.73, 0.44, 1.0, 0.20, 0.68),
@@ -111,7 +111,7 @@ THEMES = {
     },
     "official-spark-notebook": {
         "name": "Spark Notebook",
-        "zh": "灵感手账",
+        "ko": "스파크 노트북",
         "baseStyle": "aurora",
         "corners": "round",
         "bgparams": (0.74, 0.46, 0.98, 0.20, 0.68),
@@ -133,7 +133,7 @@ THEMES = {
     },
     "official-violet-starlight": {
         "name": "Violet Starlight",
-        "zh": "紫曜星夜",
+        "ko": "바이올렛 별빛",
         "baseStyle": "nocturne",
         "corners": "round",
         "bgparams": (0.73, 0.44, 0.96, 0.18, 0.72),
@@ -155,7 +155,7 @@ THEMES = {
     },
     "official-cyan-stage": {
         "name": "Cyan Stage",
-        "zh": "青岚舞台",
+        "ko": "시안 스테이지",
         "baseStyle": "carbon",
         "corners": "round",
         "bgparams": (0.74, 0.45, 0.96, 0.18, 0.72),
@@ -177,7 +177,7 @@ THEMES = {
     },
     "official-noir-gold": {
         "name": "Noir Gold",
-        "zh": "黑金序曲",
+        "ko": "누아르 골드",
         "baseStyle": "carbon",
         "corners": "soft",
         "bgparams": (0.73, 0.43, 0.94, 0.18, 0.74),

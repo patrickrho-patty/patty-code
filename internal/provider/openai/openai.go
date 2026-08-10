@@ -4,10 +4,10 @@
 // code. Each instance picks the wire shape from its base URL:
 //   - api.deepseek.com → emits thinking.type=enabled (DeepSeek-flavor CoT) plus
 //     reasoning_effort as a depth hint.
-//   - api.minimaxi.com → emits thinking.type=adaptive|disabled (M3's binary
+//   - api.minimax.io → emits thinking.type=adaptive|disabled (M3's binary
 //     knob) instead of reasoning_effort, since M3 has no level scale.
-//   - open.bigmodel.cn / api.z.ai (Zhipu GLM) → emits thinking.type=enabled|
-//     disabled instead of reasoning_effort, which Zhipu silently ignores.
+//   - api.z.ai → emits thinking.type=enabled|disabled instead of
+//     reasoning_effort, which the GLM-compatible endpoint silently ignores.
 //   - api.longcat.chat → emits thinking.type=enabled|disabled and omits
 //     reasoning_effort, matching LongCat's OpenAI-compatible API.
 //   - ollama.com → accepts hosted Ollama Cloud's reasoning_effort scale,
@@ -304,8 +304,8 @@ type client struct {
 	model           string
 	http            *http.Client
 	deepseek        bool
-	minimax         bool          // true for api.minimaxi.com — emits MiniMax-M3's thinking knob instead of reasoning_effort
-	zhipu           bool          // true for Zhipu GLM (bigmodel.cn / z.ai) — gates thinking via thinking.type, ignores reasoning_effort
+	minimax         bool          // true for api.minimax.io — emits MiniMax-M3's thinking knob instead of reasoning_effort
+	zhipu           bool          // true for Z.AI GLM — gates thinking via thinking.type, ignores reasoning_effort
 	longcat         bool          // true for LongCat — gates thinking via thinking.type, ignores reasoning_effort
 	kimiK3          bool          // true for the explicit K3 protocol or kimi-k3 on Moonshot's direct API hosts
 	mimo            bool          // true for MiMo — upgrades legacy tuple schemas to Draft 2020-12

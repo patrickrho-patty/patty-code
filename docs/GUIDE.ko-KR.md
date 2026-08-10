@@ -36,7 +36,7 @@
 
 ```toml
 default_model = "deepseek-flash"   # executor; 플래너를 추가하려면 [agent].planner_model 설정
-# language    = "zh"               # UI 언어; 비어 있으면 $LANG / $PATTY_LANG에서 자동 감지
+# language    = "ko-KR"            # UI 언어; 비어 있으면 한국어 기본값, en이면 영어
 
 [ui]
 # shortcut_layout = "desktop"      # classic|desktop; 호환성 설정
@@ -233,7 +233,7 @@ patcode remote fs ls gpu-box:'~/projects/app'
 
 데스크톱 앱에서 OpenAI 호환 채팅 API 또는 Anthropic 호환 Messages API를 말하는 프록시, 애그리게이터, 자체 호스팅 서비스에 대해 **Settings → Model → Access → Add model service → Custom provider**를 엽니다.
 
-일반적인 제공자는 대신 **Add model service → Recommended preset**을 선택하세요. 공식 DeepSeek 서비스는 기본적으로 특별히 적응된 OpenAI Chat Completions 경로를 계속 사용하며, Anthropic Messages 호환이 필요한 경우에만 선택적 **DeepSeek Anthropic** 사전 설정을 추가하세요. 두 항목은 서로를 대체하지 않습니다. Patty Code는 Kimi CN, Kimi Global, Kimi Coding Plan, MiMo API, MiMo Anthropic, MiMo Token Plan CN/SGP/AMS 및 해당 Anthropic 호환 변형, MiniMax CN/Global API, MiniMax CN/Global Anthropic, GLM CN, Z.AI Global, GLM/Z.AI Coding Plan의 OpenAI 호환 및 Anthropic 호환 엔드포인트, OpenCode Go, OpenCode Go Anthropic, OpenCode Zen Anthropic, Qwen/DashScope CN/Global, Qwen Coding Plan CN/Global의 OpenAI 호환 및 Anthropic 호환 엔드포인트, StepFun의 OpenAI 호환 및 Anthropic 호환 엔드포인트, NovitaAI, GMI Cloud, Vercel AI Gateway, HuggingFace Router, NVIDIA NIM, KiloCode, Ollama Cloud에 대한 편집 가능한 사용자 지정 제공자 항목을 미리 채울 수 있습니다. 플랜 이름은 접근/결제 경로를 설명하며, 제공자가 별도의 지역 엔드포인트를 노출하는 경우에만 CN/Global을 포함합니다. 따라서 Kimi Coding Plan은 전용 플랜 엔드포인트이고, Kimi 직접 API는 CN과 Global로 나뉩니다. 사전 설정 경로는 보통 제공자 API 키만 필요합니다: 키 값은 Patty Code home `.env`에 저장되고, `config.toml`에는 엔드포인트, 모델 목록, 키 환경 변수 이름, 컨텍스트 창, 비전 모델 메타데이터, 중국 전용 엔드포인트의 프록시 우회, MiniMax `reasoning_split`, GLM/MiniMax 사고 휴리스틱, 필요한 경우 Anthropic 호환 Bearer 인증, Ollama Cloud max-effort 지원, OpenCode Go의 모델별 patty code 재정의가 저장됩니다. OpenCode Go 사전 설정에는 이미지 입력, `high`/`max` patty code 강도, 1,048,576토큰 컨텍스트 창을 갖춘 자체 `kimi-k3` 구독 경로가 포함됩니다. 손대지 않은 기존 OpenCode Go 사전 설정 설치는 자동으로 업그레이드되며, 편집된 모델 카탈로그는 보존됩니다. Kimi CN 및 Kimi Global 직접 API 사전 설정에도 이미지 입력, 1,048,576토큰 컨텍스트 창, 공식 `low`/`high`/`max` 강도 척도(기본값 `max`)를 갖춘 `kimi-k3`가 포함됩니다. 공식 K3 엔드포인트의 경우 Patty Code는 턴 전체에 걸쳐 완전한 어시스턴트 메시지를 보존하고, 출력 제한을 `max_completion_tokens`로 전송하며, K3의 고정 샘플링 매개변수를 생략합니다. 손대지 않은 레거시 Kimi 직접 API 카탈로그는 기본 모델을 변경하지 않고 자동으로 업그레이드되며, 사용자 지정 카탈로그와 엔드포인트는 보존됩니다. 사전 설정을 추가한 후 모델, 헤더, 엔드포인트 또는 호환성 설정을 변경해야 한다면 해당 제공자 카드를 여세요.
+일반적인 제공자는 대신 **Add model service → Recommended preset**을 선택하세요. 공식 DeepSeek 서비스는 기본적으로 특별히 적응된 OpenAI Chat Completions 경로를 계속 사용하며, Anthropic Messages 호환이 필요한 경우에만 선택적 **DeepSeek Anthropic** 사전 설정을 추가하세요. 두 항목은 서로를 대체하지 않습니다. Patty Code는 DeepSeek, LongCat, OpenCode Go, OpenCode Go Anthropic, OpenCode Zen Anthropic, Vercel AI Gateway, HuggingFace Router, NVIDIA NIM, KiloCode, Ollama Cloud, 그리고 일부 OpenAI 호환 서비스에 대해 편집 가능한 사용자 지정 제공자 항목을 미리 채울 수 있습니다. 사전 설정 경로는 보통 제공자 API 키만 필요합니다. 키 값은 Patty Code home `.env`에 저장되고, `config.toml`에는 엔드포인트, 모델 목록, 키 환경 변수 이름, 컨텍스트 창, 비전 모델 메타데이터, 필요한 경우 Anthropic 호환 Bearer 인증, 그리고 해당 사전 설정이 노출하는 모델별 reasoning 재정의가 저장됩니다. 사전 설정을 추가한 뒤 모델, 헤더, 엔드포인트 또는 호환성 설정을 바꾸고 싶다면 해당 제공자 카드를 열어 수정하세요.
 
 **API address**에는 표준 채팅 경로를 수신할 제공자 엔드포인트를 입력합니다. 이 모드에서 Patty Code는 다음 위치로 채팅 요청을 미리 보고 전송합니다:
 
@@ -257,7 +257,7 @@ patcode remote fs ls gpu-box:'~/projects/app'
 | `models_url` | 모델 검색에만 사용되는 URL. 채팅 요청은 여전히 위의 API 주소 또는 Full URL을 사용합니다. | 게이트웨이가 모델 목록을 `/models` 또는 `/v1/models`가 아닌 곳에 노출할 때 설정하세요. |
 | Extra request headers | 한 줄에 `Header: value` 형식의 정적 HTTP 헤더. | `HTTP-Referer`, `X-Title` 또는 유사한 사이트 헤더를 요구하는 OpenRouter 같은 게이트웨이에 사용하세요. Bearer/API 키는 여기에 중복하지 말고 키 필드에 두세요. |
 | Extra request body | 채팅 요청 본문의 최상위에 병합되는 JSON 객체. | `{"enable_thinking": true}` 같은 제공자별 플래그에만 사용하세요. Patty Code는 `model`, `messages`, `tools`, `stream`, `thinking` 같은 핵심 필드를 계속 소유하며 null 값은 거부됩니다. |
-| Authorization: Bearer | Anthropic 호환 제공자의 경우 저장된 API 키를 `x-api-key` 대신 `Authorization: Bearer <key>`로 전송합니다. | MiniMax Global 또는 Vercel AI Gateway처럼 게이트웨이가 Bearer 인증을 문서화한 경우에만 활성화하세요. |
+| Authorization: Bearer | Anthropic 호환 제공자의 경우 저장된 API 키를 `x-api-key` 대신 `Authorization: Bearer <key>`로 전송합니다. | Vercel AI Gateway처럼 게이트웨이가 Bearer 인증을 문서화한 경우에만 활성화하세요. |
 | Model capability mode | 이 제공자에 Patty Code가 사용할 patty code 요청 프로토콜. | 게이트웨이가 잘못 감지되거나 모델 문서가 특정 patty code 형식을 요구하지 않는 한 **Auto-detect**를 유지하세요. |
 | Thinking override | `thinking.type`에 대한 제공자별 재정의. | 백엔드가 `enabled`, `disabled` 또는 `adaptive`를 문서화하지 않는 한 **Auto**를 유지하세요. 지원되지 않는 값은 일부 OpenAI 호환 게이트웨이가 요청을 거부하게 만들 수 있습니다. |
 | Balance URL | 지갑/잔액 조회용 선택적 엔드포인트. | 제공자가 잔액 엔드포인트를 노출하고 데스크톱 상태 표시줄에 표시하려 할 때 설정하세요. |
@@ -281,17 +281,17 @@ patcode remote fs ls gpu-box:'~/projects/app'
 | Auto(제공자 기본값) | 명시적인 제공자 수준 `thinking` 재정의를 쓰지 않습니다. Patty Code는 제공자/모델 기본 동작을 사용합니다. |
 | Enabled | 호환 제공자에 `thinking.type = "enabled"`를 전송합니다. |
 | Disabled | 호환 제공자에 `thinking.type = "disabled"`를 전송합니다. DeepSeek 스타일 제공자에서는 reasoning 깊이 힌트 전송도 피합니다. |
-| Adaptive(자체 조정) | MiniMax-M3 스타일 엔드포인트처럼 적응형 사고를 문서화한 제공자에만 `thinking.type = "adaptive"`를 전송하거나 유지합니다. |
+| Adaptive(자체 조정) | 적응형 사고를 명시적으로 문서화한 제공자에만 `thinking.type = "adaptive"`를 전송하거나 유지합니다. |
 
 일부 OpenAI 호환 게이트웨이는 비표준 최상위 요청 본문 필드를 요구합니다. 제공자 항목에 `extra_body`로 추가하세요:
 
 ```toml
 [[providers]]
-name        = "spark"
+name        = "custom-gateway"
 kind        = "openai"
-base_url    = "https://maas-coding-api.cn-huabei-1.xf-yun.com/v2"
-models      = ["xopglm52"]
-api_key_env = "SPARK_API_KEY"
+base_url    = "https://gateway.example.com/v1"
+models      = ["example-model"]
+api_key_env = "EXAMPLE_API_KEY"
 extra_body  = { enable_thinking = true }
 ```
 

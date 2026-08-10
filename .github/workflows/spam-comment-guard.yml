@@ -6,7 +6,7 @@ name: Spam comment guard
 # repos, posting a sub-50 character comment with emoji and no code/link/log.
 # Every signal must fire — on 7604 replayed comments that caught all 83 known
 # spam posts with no false positive. Loosening any one of them reintroduces
-# real users ("点赞", "同样的问题", a 2020 account posting "感谢各位❤").
+# real users ("点赞", "同样的문제", a 2020 account posting "感谢各位❤").
 
 on:
   issue_comment:

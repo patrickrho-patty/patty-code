@@ -25,7 +25,7 @@ func TestHeartbeatConfigPathUsesPattyCodeUserStateDir(t *testing.T) {
 func TestHeartbeatLoadTasksDecodesGB18030Config(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	engine := &HeartbeatEngine{}
-	body := `{"tasks":[{"id":"daily","title":"매일 점검","prompt":"機能整理檢討 상태 요약","interval":"1h","enabled":true}]}`
+	body := `{"tasks":[{"id":"daily","title":"매일 점검","prompt":"기능정리검토 상태 요약","interval":"1h","enabled":true}]}`
 	if err := os.MkdirAll(filepath.Dir(engine.configPath()), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestHeartbeatLoadTasksDecodesGB18030Config(t *testing.T) {
 	}
 
 	tasks := engine.loadTasks()
-	if len(tasks) != 1 || tasks[0].Title != "매일 점검" || tasks[0].Prompt != "機能整理檢討 상태 요약" {
+	if len(tasks) != 1 || tasks[0].Title != "매일 점검" || tasks[0].Prompt != "기능정리검토 상태 요약" {
 		t.Fatalf("loadTasks = %+v, want decoded Chinese task", tasks)
 	}
 }

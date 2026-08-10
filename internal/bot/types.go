@@ -1,5 +1,5 @@
-// [Package bot  Patty Code  IM bot ， QQ、、WeChat。]
-// [Hermes Agent  gateway/adapter/session 。]
+// Package bot defines Patty Code's legacy IM bot gateway and shared session
+// types.
 package bot
 
 import (
@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-// [Platform  IM 。]
+// Platform identifies a bot transport.
 type Platform string
 
-// [ChatType]
+// ChatType identifies the remote conversation shape.
 type ChatType string
 
 const (
@@ -22,7 +22,7 @@ const (
 	ChatThread ChatType = "thread"
 )
 
-// [SessionSource ， session key。]
+// SessionSource is the stable session key material for an inbound source.
 type SessionSource struct {
 	Platform     Platform `json:"platform"`
 	ConnectionID string   `json:"connection_id,omitempty"`
@@ -41,7 +41,7 @@ type InboundMedia struct {
 	FailureText string                                        `json:"-"`
 }
 
-// [InboundMessage]
+// InboundMessage is a normalized incoming bot message.
 type InboundMessage struct {
 	Platform     Platform `json:"platform"`
 	ConnectionID string   `json:"connection_id,omitempty"`
@@ -72,7 +72,7 @@ func (m InboundMessage) Session() SessionSource {
 	}
 }
 
-// [OutboundMessage]
+// OutboundMessage is a normalized outgoing bot message.
 type OutboundMessage struct {
 	ConnectionID string           `json:"connection_id,omitempty"`
 	Domain       string           `json:"domain,omitempty"`
@@ -85,17 +85,17 @@ type OutboundMessage struct {
 	Card         *InteractiveCard `json:"card,omitempty"`
 }
 
-// [InlineKeyboard （ QQ ）。]
+// InlineKeyboard represents a button-based reply surface.
 type InlineKeyboard struct {
 	Rows []InlineKeyboardRow `json:"rows"`
 }
 
-// [InlineKeyboardRow]
+// InlineKeyboardRow groups buttons into one row.
 type InlineKeyboardRow struct {
 	Buttons []InlineKeyboardButton `json:"buttons"`
 }
 
-// [InlineKeyboardButton]
+// InlineKeyboardButton is one interactive button.
 type InlineKeyboardButton struct {
 	ID         string `json:"id"`
 	Label      string `json:"label"`
@@ -103,20 +103,20 @@ type InlineKeyboardButton struct {
 	CallbackID string `json:"callback_id,omitempty"`
 }
 
-// [InteractiveCard]
+// InteractiveCard is a structured rich-message container.
 type InteractiveCard struct {
 	Header   string                   `json:"header"`
 	Elements []InteractiveCardElement `json:"elements"`
 }
 
-// [InteractiveCardElement]
+// InteractiveCardElement is one element in a structured rich message.
 type InteractiveCardElement struct {
 	Tag     string         `json:"tag"`
 	Content string         `json:"content,omitempty"`
 	Extra   map[string]any `json:"extra,omitempty"`
 }
 
-// [SendResult]
+// SendResult records adapter send metadata.
 type SendResult struct {
 	MessageID  string   `json:"message_id,omitempty"`
 	MessageIDs []string `json:"message_ids,omitempty"`

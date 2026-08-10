@@ -3720,7 +3720,7 @@ func TestStrongResearchPromptStaysInOrdinaryMode(t *testing.T) {
 func TestSlashCodeCommentSubmitStartsTurn(t *testing.T) {
 	for _, input := range []string{
 		"// explain this",
-		"/**\n * 아밍\n */",
+		"/**\n * explain this\n */",
 	} {
 		t.Run(input, func(t *testing.T) {
 			r := &recordingTurnRunner{}
@@ -4313,8 +4313,8 @@ func TestTruncateSubject(t *testing.T) {
 	}{
 		{"short ASCII", "rm file", 60},
 		{"long ASCII", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 60},
-		{"CJK at 60", "日本語の文章は通常、表示幅が広いため、端末の横幅を超えてしまうことがあります。", 60},
-		{"CJK at 30", "日本語の文章は通常、表示幅が広いため、端末の横幅を超えてしまうことがあります。", 30},
+		{"CJK at 60", "한국어 문장은 표시 폭이 넓어서 터미널 가로 폭을 쉽게 넘길 수 있습니다.", 60},
+		{"CJK at 30", "한국어 문장은 표시 폭이 넓어서 터미널 가로 폭을 쉽게 넘길 수 있습니다.", 30},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -17,7 +17,7 @@ ALLOWED_ORIGINS = "https://patty-code.io,https://www.patty.io"
 # Shared identity service that resolves the session.
 ID_ORIGIN = "https://id.patty.io"
 # Emails minted as forum admins/moderators on first sign-in.
-ADMIN_EMAILS = "359807859@qq.com"
+ADMIN_EMAILS = "admin@example.com"
 
 [[d1_databases]]
 binding = "DB"

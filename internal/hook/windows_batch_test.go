@@ -211,7 +211,7 @@ func TestDefaultSpawnerRunsCompoundCmdShellHook(t *testing.T) {
 
 func TestDefaultSpawnerRunsPowerShellHookWithNestedQuotes(t *testing.T) {
 	result := DefaultSpawner(context.Background(), SpawnInput{
-		Command: `$items = @("a b", "c'd", 'e"f', "機能整理檢討", "🧪"); Write-Output ($items -join "|")`,
+		Command: `$items = @("a b", "c'd", 'e"f', "기능정리검토", "🧪"); Write-Output ($items -join "|")`,
 		Mode:    ExecutionShell,
 		Shell:   "powershell",
 		Timeout: realSpawnTimeout,
@@ -219,7 +219,7 @@ func TestDefaultSpawnerRunsPowerShellHookWithNestedQuotes(t *testing.T) {
 	if result.ExitCode != 0 || result.SpawnErr != nil {
 		t.Fatalf("PowerShell hook failed: %+v", result)
 	}
-	if got, want := result.Stdout, `a b|c'd|e"f|機能整理檢討|🧪`; got != want {
+	if got, want := result.Stdout, `a b|c'd|e"f|기능정리검토|🧪`; got != want {
 		t.Fatalf("PowerShell stdout = %q, want %q", got, want)
 	}
 }

@@ -626,7 +626,7 @@ func TestTurnOrchestratorAutoReasoningLanguageUsesRawPromptForRefTurns(t *testin
 		}),
 	})
 
-	const visible = "AuthHandler 說明 整理 檢討 @auth.go"
+	const visible = "AuthHandler 설명 정리 검토 @auth.go"
 	c.runRefTurn(visible, visible)
 	waitForTurnDone(t, events)
 

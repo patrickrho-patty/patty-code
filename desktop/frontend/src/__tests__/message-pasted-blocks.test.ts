@@ -31,7 +31,7 @@ for (const [label, name] of [
     `${name} pasted text labels are parsed from submit text`,
   );
 }
-for (const label of ["[已粘贴文本 #2 · 31 行]", "[已貼上文字 #2 · 31 行]"]) {
+for (const label of ["[붙여넣은 텍스트 #2 · 31줄]", "[붙여넣은 텍스트 #2 · 31줄]"]) {
   eq(parsePastedBlocks(`before\n${label}\nafter`, wrapped(label, "line 1\nline 2")), [], "legacy Chinese paste labels are no longer parsed");
 }
 

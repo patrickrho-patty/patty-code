@@ -62,12 +62,12 @@ func TestSemanticPoolRequiresLexicalOverlap(t *testing.T) {
 	}
 }
 
-func TestSemanticPoolAllowsBoundedChineseBuiltinFallback(t *testing.T) {
+func TestSemanticPoolAllowsBoundedKoreanBuiltinFallback(t *testing.T) {
 	entries := []Entry{
 		{ID: "skill:explore", Kind: KindSkill, Name: "explore", Source: "builtin", Description: "inspect architecture", AutoUse: AutoUseSuggest},
 		{ID: "skill:custom", Kind: KindSkill, Name: "custom", Source: "project", Description: "unrelated custom workflow", AutoUse: AutoUseSuggest},
 	}
-	pool := semanticPool("이 機能을 整理해 주세요", entries)
+	pool := semanticPool("이 기능을 정리해 주세요", entries)
 	if len(pool) != 1 || pool[0].ID != "skill:explore" {
 		t.Fatalf("Korean fallback pool = %+v, want only the bounded built-in candidate", pool)
 	}
