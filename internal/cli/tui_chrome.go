@@ -415,22 +415,26 @@ func contextHeadroom(used, window int) string {
 	return fmt.Sprintf("%d%%", remaining*100/window)
 }
 
-// renderComposerChrome gives the input a title and lightweight capability
-// legend without drawing a box around the conversation. The textarea keeps its
-// own height between these two fixed rows, so cursor and viewport accounting
-// remain exact as the input grows.
+const composerChromeInset = 2
+
+// renderComposerChrome gives the input a padded label and a secondary
+// capability legend without drawing a box around the conversation. The textarea
+// keeps its own height between these fixed rows, so cursor and viewport
+// accounting remain exact as the input grows.
 func renderComposerChrome(m chatTUI, width int) string {
 	width = max(width, 1)
-	title := themeStyle(activeCLITheme.signal).Bold(true).Render("입력")
+	titleText := "메시지 입력"
 	if i18n.CurrentLanguage() == "en" {
-		title = themeStyle(activeCLITheme.signal).Bold(true).Render("INPUT")
+		titleText = "MESSAGE INPUT"
 	}
-	header := title
-	if remaining := width - visibleWidth(title) - 1; remaining > 0 {
+	title := themeStyle(activeCLITheme.signal).Bold(true).Render(titleText)
+	header := insetComposerLine(title, width)
+	if remaining := width - visibleWidth(header) - 1; remaining > 0 {
 		header += " " + themedRule(remaining, activeCLITheme.border)
 	}
 
-	inputWidth := max(width-1, 1) // one cell belongs to composerInputStyle's left padding
+	bodyWidth := max(width-composerChromeInset, 1)
+	inputWidth := bodyWidth
 	inputRows := strings.Split(m.renderComposerInput(), "\n")
 	for row := range inputRows {
 		// The textarea owns soft wrapping and its visible height. Lip Gloss must
@@ -448,7 +452,10 @@ func renderComposerChrome(m chatTUI, width int) string {
 		return header + "\n" + input
 	}
 	hints := renderComposerHints(width)
-	return header + "\n" + input + "\n" + hints
+	if m.composerHintSpacerRows(width) == 0 {
+		return header + "\n" + input + "\n" + hints
+	}
+	return header + "\n" + input + "\n" + strings.Repeat(" ", min(composerChromeInset, width)) + "\n" + hints
 }
 
 func renderComposerInputPlate(input string, width int) string {
@@ -458,31 +465,69 @@ func renderComposerInputPlate(input string, width int) string {
 		line = composerInputStyle.Width(width).Render(line)
 		line = ansi.Truncate(line, width, "")
 		padding := strings.Repeat(" ", max(width-visibleWidth(line), 0))
-		lines[i] = themeFg(activeCLITheme.accent, "▌") + line + padding
+		lines[i] = strings.Repeat(" ", composerChromeInset) + line + padding
 	}
 	return strings.Join(lines, "\n")
 }
 
 func renderComposerHints(width int) string {
+	label := "도움말"
+	if i18n.CurrentLanguage() == "en" {
+		label = "HELP"
+	}
 	hintGroups := []string{
-		themeFg(activeCLITheme.accent, "/") + " " + themeFg(activeCLITheme.muted, strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerCommandsHint, "/"))),
-		themeFg(activeCLITheme.info, "@") + " " + themeFg(activeCLITheme.muted, strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerFilesHint, "@"))),
-		themeFg(activeCLITheme.warn, "!") + " " + themeFg(activeCLITheme.muted, strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerShellHint, "!"))),
-		themeFg(activeCLITheme.signal, "?") + " " + themeFg(activeCLITheme.muted, strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerShortcutsHint, "?"))),
+		themeFg(activeCLITheme.faint, label),
+		themeFg(activeCLITheme.muted, "/ "+strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerCommandsHint, "/"))),
+		themeFg(activeCLITheme.muted, "@ "+strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerFilesHint, "@"))),
+		themeFg(activeCLITheme.muted, "! "+strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerShellHint, "!"))),
+		themeFg(activeCLITheme.muted, "? "+strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerShortcutsHint, "?"))),
 	}
 	if width < 28 {
 		// Labels would consume four or more rows here and crowd out the actual
 		// editor. The symbols are the stable command language across locales.
 		hintGroups = []string{
+			themeFg(activeCLITheme.faint, label),
 			themeFg(activeCLITheme.muted, "/"),
 			themeFg(activeCLITheme.muted, "@"),
 			themeFg(activeCLITheme.muted, "!"),
 			themeFg(activeCLITheme.muted, "?"),
 		}
 	}
-	return packStatusGroups(hintGroups, width)
+	return insetComposerLine(packStatusGroups(hintGroups, max(width-composerChromeInset, 1)), width)
 }
 
-func composerHintRowCount(width int) int {
-	return strings.Count(renderComposerHints(max(width, 1)), "\n") + 1
+func (m chatTUI) composerHintRowCount(width int) int {
+	width = max(width, 1)
+	return m.composerHintSpacerRows(width) + strings.Count(renderComposerHints(width), "\n") + 1
+}
+
+func (m chatTUI) composerHintSpacerRows(width int) int {
+	width = max(width, 1)
+	if m.height <= 0 {
+		return 1
+	}
+	hintRows := strings.Count(renderComposerHints(width), "\n") + 1
+	composerRowsWithSpacer := 1 + m.input.Height() + hintRows + 1
+	fixedBottom := m.bottomRowsWithoutComposer()
+	headerRows := strings.Count(renderSessionHeader(m, max(m.width, 10)), "\n") + 1
+	if headerRows+fixedBottom+composerRowsWithSpacer+minTranscriptRows > m.height {
+		headerRows = 0
+	}
+	if headerRows+fixedBottom+composerRowsWithSpacer+minTranscriptRows > m.height {
+		return 0
+	}
+	return 1
+}
+
+func insetComposerLine(s string, width int) string {
+	width = max(width, 1)
+	if width <= composerChromeInset {
+		return ansi.Truncate(s, width, "")
+	}
+	inset := strings.Repeat(" ", composerChromeInset)
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = inset + ansi.Truncate(line, width-composerChromeInset, "")
+	}
+	return strings.Join(lines, "\n")
 }

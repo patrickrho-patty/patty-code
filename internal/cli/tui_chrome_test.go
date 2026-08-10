@@ -215,8 +215,9 @@ func TestComposerChromeIsKoreanFirstBorderlessAndComplete(t *testing.T) {
 
 	plain := ansi.Strip(renderComposerChrome(m, 80))
 	for _, want := range []string{
-		"입력",
+		"메시지 입력",
 		"명령 또는 질문을 입력해보세요",
+		"도움말",
 		"/ 명령어",
 		"@ 파일",
 		"! 셸",
@@ -231,8 +232,11 @@ func TestComposerChromeIsKoreanFirstBorderlessAndComplete(t *testing.T) {
 			t.Fatalf("borderless composer retained %q:\n%s", reject, plain)
 		}
 	}
-	if got := strings.Count(plain, "\n") + 1; got != 3 {
-		t.Fatalf("one-row composer chrome has %d rows, want heading + input + hints:\n%s", got, plain)
+	if !strings.HasPrefix(strings.Split(plain, "\n")[0], "  ") {
+		t.Fatalf("composer heading should not be flush-left:\n%s", plain)
+	}
+	if got := strings.Count(plain, "\n") + 1; got != 4 {
+		t.Fatalf("one-row composer chrome has %d rows, want heading + input + spacer + hints:\n%s", got, plain)
 	}
 }
 
@@ -247,8 +251,9 @@ func TestComposerChromeUsesEnglishCatalogAndFitsWidth(t *testing.T) {
 	plain := ansi.Strip(renderComposerChrome(m, 48))
 	flattened := strings.Join(strings.Fields(plain), " ")
 	for _, want := range []string{
-		"INPUT",
+		"MESSAGE INPUT",
 		"Type a command or ask a question",
+		"HELP",
 		"/ commands",
 		"@ files",
 		"! shell",

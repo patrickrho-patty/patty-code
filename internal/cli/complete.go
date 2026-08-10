@@ -462,7 +462,22 @@ func fuzzyFilterSlash(items []compItem, query string) []compItem {
 func aliasMatches(it compItem, query string) bool {
 	for _, a := range it.aliases {
 		la := strings.ToLower(a)
-		if strings.HasPrefix(la, query) || subsequenceMatch(la, query) {
+		if strings.HasPrefix(la, query) {
+			return true
+		}
+		if hasHangulInitialJamo(query) {
+			continue
+		}
+		if subsequenceMatch(la, query) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasHangulInitialJamo(s string) bool {
+	for _, r := range s {
+		if r >= 'ㄱ' && r <= 'ㅎ' {
 			return true
 		}
 	}

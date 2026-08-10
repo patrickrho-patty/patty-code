@@ -1491,7 +1491,7 @@ func TestInputOwnedOverlaysKeepComposerBox(t *testing.T) {
 				t.Fatalf("%s panel did not render", tt.name)
 			}
 			panelRows := strings.Count(panel, "\n") + 1
-			if got, want := m.bottomRows(), panelRows+m.input.Height()+2+m.statusLineCount; got != want {
+			if got, want := m.bottomRows(), panelRows+m.composerRowCount()+m.statusLineCount; got != want {
 				t.Fatalf("bottomRows with %s = %d, want %d (panel + composer box + status rows)", tt.name, got, want)
 			}
 		})

@@ -1252,6 +1252,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyPressMsg:
+		msg = normalizeComposerKeyPress(msg)
 		// Any keystroke dismisses a finished selection (copy is a right-click),
 		// with a few exceptions: Ctrl/Super/Meta+C and Ctrl+Insert copy the
 		// selection, the paste shortcuts keep it so the async clipboard result
@@ -1591,15 +1592,13 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// raw content (including whitespace-only); only quit when idle
 			// with a truly empty composer (bash/readline-style EOF).
 			if m.input.Value() != "" {
-				// Delegate to textarea DeleteCharacterForward (bound to
-				// ctrl+d by default) so mid-line forward delete works.
-				var ic tea.Cmd
-				m.input, ic = m.input.Update(msg)
-				if ic != nil {
-					cmds = append(cmds, ic)
-				}
+				beforeInput := m.input.Value()
+				m.handleComposerGraphemeKey(msg)
 				m.growInputToFit()
 				m.updateCompletion()
+				if shouldClearWideInputChange(beforeInput, m.input.Value()) {
+					cmds = append(cmds, tea.ClearScreen)
+				}
 				return m, finalize(m, cmds)
 			}
 			if m.state == tuiIdle {
@@ -2007,6 +2006,18 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if inputBeforeSelection != "" {
 		beforeInput = inputBeforeSelection
 	}
+	if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
+		keyMsg = normalizeComposerKeyPress(keyMsg)
+		if m.handleComposerGraphemeKey(keyMsg) {
+			m.growInputToFit()
+			m.updateCompletion()
+			if shouldClearWideInputChange(beforeInput, m.input.Value()) {
+				cmds = append(cmds, tea.ClearScreen)
+			}
+			return m, finalize(m, cmds)
+		}
+		msg = keyMsg
+	}
 	var ic tea.Cmd
 	m.input, ic = m.input.Update(msg)
 	cmds = append(cmds, ic)
@@ -2142,6 +2153,14 @@ func (m *chatTUI) commitSpacer() {
 // and skills normally render inside the main transcript area; in native
 // scrollback mode they join the bottom rail because there is no main viewport.
 func (m chatTUI) bottomRows() int {
+	rows := m.bottomRowsWithoutComposer()
+	if !m.hideComposer() {
+		rows += m.composerRowCount()
+	}
+	return rows
+}
+
+func (m chatTUI) bottomRowsWithoutComposer() int {
 	rows := 0
 	for _, s := range []string{
 		m.renderTodoPanel(),
@@ -2170,9 +2189,6 @@ func (m chatTUI) bottomRows() int {
 	if footer := m.renderMainManagerFooter(); footer != "" {
 		rows += strings.Count(footer, "\n") + 1
 	}
-	if !m.hideComposer() {
-		rows += m.composerRowCount()
-	}
 	return rows + max(m.statusLineCount, 0)
 }
 
@@ -2192,7 +2208,7 @@ func (m chatTUI) composerRowCount() int {
 	if m.isNaturalStartupFrame() && !m.completion.active {
 		return 1 + m.input.Height()
 	}
-	return 1 + m.input.Height() + composerHintRowCount(max(m.width, 10))
+	return 1 + m.input.Height() + m.composerHintRowCount(max(m.width, 10))
 }
 
 // hideComposer is the single ownership gate for the bottom composer.

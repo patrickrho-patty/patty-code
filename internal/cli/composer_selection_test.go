@@ -83,7 +83,7 @@ func TestComposerMouseRegionIncludesWrappedHintRows(t *testing.T) {
 	if !ok {
 		t.Fatal("composer should expose a mouse origin")
 	}
-	hintRows := composerHintRowCount(m.width)
+	hintRows := m.composerHintRowCount(m.width)
 	if hintRows < 2 {
 		t.Fatalf("test width produced %d hint rows, want wrapped hints", hintRows)
 	}
@@ -517,5 +517,67 @@ func TestFailedImagePastePreservesComposerSelection(t *testing.T) {
 	}
 	if got := m.selectedComposerText(); got != "keep" {
 		t.Fatalf("failed image paste should preserve selection, got %q", got)
+	}
+}
+
+func TestComposerBackspaceDeletesPreviousGraphemeCluster(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	value := "\u1112\u1161\u11ABx" // decomposed 한 + x
+	m.input.SetValue(value)
+	m.setComposerCursor(3)
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+
+	if got := m.input.Value(); got != "x" {
+		t.Fatalf("backspace deleted %q, want only x left", got)
+	}
+	if got := m.input.Column(); got != 0 {
+		t.Fatalf("cursor column after grapheme backspace = %d, want 0", got)
+	}
+}
+
+func TestComposerDeleteRemovesNextGraphemeCluster(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	value := "x\u1112\u1161\u11ABy" // x + decomposed 한 + y
+	m.input.SetValue(value)
+	m.setComposerCursor(1)
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyDelete})
+
+	if got := m.input.Value(); got != "xy" {
+		t.Fatalf("delete removed %q, want xy", got)
+	}
+	if got := m.input.Column(); got != 1 {
+		t.Fatalf("cursor column after grapheme delete = %d, want 1", got)
+	}
+}
+
+func TestComposerArrowsMoveByGraphemeCluster(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 60, 12)
+	value := "a👨‍👩‍👧‍👦b"
+	m.input.SetValue(value)
+	m.setComposerCursor(len([]rune("a👨‍👩‍👧‍👦")))
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyLeft})
+	if got, want := m.input.Column(), 1; got != want {
+		t.Fatalf("left moved cursor to rune column %d, want cluster start %d", got, want)
+	}
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyRight})
+	if got, want := m.input.Column(), len([]rune("a👨‍👩‍👧‍👦")); got != want {
+		t.Fatalf("right moved cursor to rune column %d, want cluster end %d", got, want)
+	}
+}
+
+func TestComposerTypedTextNormalizesToNFC(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: '\u1112', Text: "\u1112\u1161\u11AB"})
+
+	if got := m.input.Value(); got != "한" {
+		t.Fatalf("typed decomposed Hangul stored %q, want NFC 한", got)
+	}
+	if got := m.input.Column(); got != 1 {
+		t.Fatalf("cursor column after normalized insert = %d, want 1", got)
 	}
 }

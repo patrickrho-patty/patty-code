@@ -10,6 +10,7 @@ import (
 	"charm.land/lipgloss/v2"
 	rw "github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
+	"golang.org/x/text/unicode/norm"
 )
 
 // composerSelection is an editable textarea selection expressed as rune offsets
@@ -239,7 +240,7 @@ func (m chatTUI) mouseOverComposer(screenX, screenY int) bool {
 	}
 	// Include the heading and every localized hint row so a wheel gesture
 	// anywhere over the complete composer chrome has the same target.
-	lastHintY := contentY + m.input.Height() + composerHintRowCount(max(m.width, 10)) - 1
+	lastHintY := contentY + m.input.Height() + m.composerHintRowCount(max(m.width, 10)) - 1
 	return screenY >= contentY-1 && screenY <= lastHintY
 }
 
@@ -401,6 +402,112 @@ func (m *chatTUI) setComposerCursor(offset int) {
 		m.input.CursorDown()
 	}
 	m.input.SetCursorColumn(caret.logicalCol)
+}
+
+func (m chatTUI) composerCursorOffset() int {
+	lines := strings.Split(m.input.Value(), "\n")
+	if len(lines) == 0 {
+		return 0
+	}
+	row := min(max(m.input.Line(), 0), len(lines)-1)
+	offset := 0
+	for i := 0; i < row; i++ {
+		offset += len([]rune(lines[i])) + 1 // include the explicit newline
+	}
+	col := min(max(m.input.Column(), 0), len([]rune(lines[row])))
+	return offset + col
+}
+
+func composerGraphemeBoundaries(value string) []int {
+	boundaries := []int{0}
+	offset := 0
+	graphemes := uniseg.NewGraphemes(value)
+	for graphemes.Next() {
+		offset += len(graphemes.Runes())
+		if boundaries[len(boundaries)-1] != offset {
+			boundaries = append(boundaries, offset)
+		}
+	}
+	return boundaries
+}
+
+func previousComposerGraphemeBoundary(value string, offset int) int {
+	boundaries := composerGraphemeBoundaries(value)
+	offset = min(max(offset, 0), boundaries[len(boundaries)-1])
+	previous := 0
+	for _, boundary := range boundaries {
+		if boundary >= offset {
+			return previous
+		}
+		previous = boundary
+	}
+	return previous
+}
+
+func nextComposerGraphemeBoundary(value string, offset int) int {
+	boundaries := composerGraphemeBoundaries(value)
+	offset = min(max(offset, 0), boundaries[len(boundaries)-1])
+	for _, boundary := range boundaries {
+		if boundary > offset {
+			return boundary
+		}
+	}
+	return boundaries[len(boundaries)-1]
+}
+
+func (m *chatTUI) replaceComposerRuneRange(start, end int, replacement string) {
+	runes := []rune(m.input.Value())
+	start = min(max(start, 0), len(runes))
+	end = min(max(end, start), len(runes))
+	next := string(runes[:start]) + replacement + string(runes[end:])
+	m.input.SetValue(next)
+	m.composerSel = composerSelection{}
+	m.setComposerCursor(start + len([]rune(replacement)))
+}
+
+func (m *chatTUI) handleComposerGraphemeKey(msg tea.KeyPressMsg) bool {
+	value := m.input.Value()
+	offset := m.composerCursorOffset()
+	switch {
+	case key.Matches(msg, m.input.KeyMap.DeleteCharacterBackward):
+		if value == "" || offset <= 0 {
+			return true
+		}
+		start := previousComposerGraphemeBoundary(value, offset)
+		m.replaceComposerRuneRange(start, offset, "")
+		return true
+	case key.Matches(msg, m.input.KeyMap.DeleteCharacterForward):
+		if value == "" {
+			return false
+		}
+		end := nextComposerGraphemeBoundary(value, offset)
+		if end > offset {
+			m.replaceComposerRuneRange(offset, end, "")
+		}
+		return true
+	case key.Matches(msg, m.input.KeyMap.CharacterBackward):
+		m.setComposerCursor(previousComposerGraphemeBoundary(value, offset))
+		return true
+	case key.Matches(msg, m.input.KeyMap.CharacterForward):
+		m.setComposerCursor(nextComposerGraphemeBoundary(value, offset))
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeComposerKeyPress(msg tea.KeyPressMsg) tea.KeyPressMsg {
+	if msg.Text == "" {
+		return msg
+	}
+	commandMods := tea.ModCtrl | tea.ModMeta | tea.ModHyper | tea.ModSuper
+	if msg.Key().Mod&commandMods != 0 {
+		return msg
+	}
+	if !norm.NFC.IsNormalString(msg.Text) {
+		msg.Text = norm.NFC.String(msg.Text)
+	}
+	return msg
 }
 
 func (m *chatTUI) deleteComposerSelection() bool {

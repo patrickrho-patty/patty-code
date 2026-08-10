@@ -13,6 +13,7 @@ import (
 	"patty/internal/command"
 	"patty/internal/control"
 	"patty/internal/event"
+	"patty/internal/i18n"
 	"patty/internal/provider"
 	"patty/internal/skill"
 )
@@ -708,6 +709,32 @@ func TestFuzzyFilterSlashCaseInsensitive(t *testing.T) {
 
 	if !hasLabel(m.completion.items, "/compact") {
 		t.Fatalf("uppercase /COMP should still match /compact: %v", labels(m.completion.items))
+	}
+}
+
+func TestFuzzyFilterSlashChosungMatchesOnlyInitialPrefix(t *testing.T) {
+	previousLanguage := i18n.CurrentLanguage()
+	defer i18n.DetectLanguage(previousLanguage)
+	i18n.DetectLanguage("ko")
+
+	m := newTestChatTUI()
+	m.input.SetValue("/ㅇㅇ")
+	m.updateCompletion()
+
+	if !m.completion.active {
+		t.Fatal("menu should open for Korean initial-consonant query /ㅇㅇ")
+	}
+	for _, item := range m.completion.items {
+		matchedChosungPrefix := false
+		for _, alias := range item.aliases {
+			if strings.HasPrefix(alias, "/ㅇㅇ") {
+				matchedChosungPrefix = true
+				break
+			}
+		}
+		if !matchedChosungPrefix {
+			t.Fatalf("/ㅇㅇ matched non-prefix item %q aliases=%v; got labels %v", item.label, item.aliases, labels(m.completion.items))
+		}
 	}
 }
 
