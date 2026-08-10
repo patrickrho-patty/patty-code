@@ -21,7 +21,7 @@
 
 Language: **English is the primary language for all code** — comments,
 user-facing strings, tool descriptions, system prompts, and this spec. The
-README is bilingual (`README.md` English + `README.ko-KR.md`).
+README is bilingual (`README.md` Korean default + `README.en.md` English secondary).
 
 ## 2. Layout
 
@@ -29,7 +29,7 @@ README is bilingual (`README.md` English + `README.ko-KR.md`).
 patty/
 ├── go.mod / go.sum          # module patty; require BurntSushi/toml
 ├── Makefile                 # build / cross / vet / fmt / test
-├── README.md / README.ko-KR.md
+├── README.md / README.en.md
 ├── patty.example.toml         # sample config
 ├── docs/SPEC.md             # this file
 ├── cmd/patty/main.go          # entry; blank-imports built-in providers/tools

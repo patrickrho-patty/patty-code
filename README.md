@@ -3,15 +3,15 @@
 </p>
 
 <p align="center">
-  <strong>English</strong>
+  <a href="./README.en.md">English</a>
   &nbsp;·&nbsp;
-  <a href="./README.ko-KR.md">한국어</a>
+  <strong>한국어</strong>
   &nbsp;·&nbsp;
-  <a href="./docs/GUIDE.md">Guide</a>
+  <a href="./docs/GUIDE.ko-KR.md">가이드</a>
   &nbsp;·&nbsp;
-  <a href="./docs/ACP.md">ACP</a>
+  <a href="./docs/ACP.ko-KR.md">ACP</a>
   &nbsp;·&nbsp;
-  <a href="./docs/EXTENSIONS.md">Extensions</a>
+  <a href="./docs/EXTENSIONS.ko-KR.md">확장</a>
   &nbsp;·&nbsp;
   <a href="./docs/SPEC.md">Spec</a>
   &nbsp;·&nbsp;
@@ -39,9 +39,9 @@
 
 <br/>
 
-<p align="center"><strong>Open source · MIT · Korea's #1 Korean-first commercial coding agent harness</strong></p>
-<h3 align="center">Patty Code is built for Korean developers first.</h3>
-<p align="center">Patty Code, from <strong>Patty Co., Ltd.</strong> (<strong>주식회사 패티</strong>), is the first commercial Korean-specific coding agent harness: one local engine with terminal, desktop, browser, and ACP editor entry points, built around Korean workflows from prompt to approval. It ships Korean-first command UX, Korean reasoning support, HWPX parsing, IME-safe composition, caret-safe input, 초성 slash commands, and the long-run controls you need to trust an autonomous agent.</p>
+<p align="center"><strong>오픈소스 · MIT · 한국 최초 · 한국 1등 · 한국어 퍼스트 상용 코딩 에이전트 하네스</strong></p>
+<h3 align="center">한국어로 일할 때, 처음으로 “제대로 맞는다”고 느껴지는 코딩 에이전트.</h3>
+<p align="center">Patty Code는 <strong>주식회사 패티</strong>(<strong>Patty Co., Ltd.</strong>)가 만드는 한국어 퍼스트 상용 코딩 에이전트 하네스입니다. 한국 개발자가 외국어 기준 도구에 자신을 맞추지 않도록, HWPX 파싱, 한국어 추론 표시, IME 조합 보존, 커서/캐럿 복원, 초성 슬래시 명령, 통제 가능한 장시간 자율 실행까지 처음부터 한국어 워크플로 기준으로 설계했습니다. 첫 프롬프트부터 “번역된 제품”이 아니라 “내 팀을 위한 제품”처럼 느껴집니다.</p>
 
 <div align="center">
   <video src="https://github.com/user-attachments/assets/ab2f3878-e224-4931-8254-060e7695cfb9" controls preload="metadata" width="560"></video>
@@ -50,65 +50,64 @@
 <br/>
 
 > [!IMPORTANT]
-> **Community** — Discord for setup help, Korean workflow showcases, and feature ideas. → **<https://discord.gg/XF78rEME2D>**
+> **커뮤니티** — 한국 개발자들이 Patty Code를 실제로 어떻게 쓰고 있는지 보고, 빠르게 설정 도움을 받고, 실전 워크플로 아이디어를 주고받을 수 있는 Discord입니다. → **<https://discord.gg/XF78rEME2D>**
 
 <br/>
 
-## Why Patty Code
+## 왜 한국 개발자들이 Patty Code로 넘어오는가
 
-- **Korean-first by design.** Patty Code treats Korean as a first-class product surface, not a bolt-on translation layer. The runtime, docs, reasoning-language controls, and desktop UX already understand `ko-KR` as a core mode.
-- **Korean input that does not fight the user.** The desktop composer preserves IME composition state, keeps Enter from breaking composition confirmation, and restores the caret correctly after Korean input commits.
-- **초성-native command UX.** Built-in slash commands resolve through Korean canonical names, 초성 aliases, and English names, with ambiguity-safe behavior so fuzzy Korean command input still feels reliable.
-- **Korean document workflows.** Patty Code supports HWPX parsing and is designed for real Korean document-heavy workflows, not just plain English code prompts.
-- **Mixed-language safe.** Korean, English, and other double-width CJK text are handled cleanly in mixed-language input, terminal rendering, and command interaction.
-- **Autonomy you can audit.** Plan mode, tool approvals, workspace sandboxing, rewind, checkpoints, branches, and session history make long autonomous runs inspectable and reversible.
-- **Commercial-grade harness, open kernel.** The project stays MIT and developer-friendly while giving teams a production-minded harness around models, tools, policy, recovery, and UX.
-- **Multi-provider and composable.** DeepSeek is one preset, not the whole product. Any OpenAI-compatible endpoint can be configured, and dual-model executor/planner setups remain first-class.
+- **한국어가 제품의 중심입니다.** Patty Code는 한국어를 나중에 붙인 번역 계층으로 다루지 않습니다. 런타임, 문서, 추론 표시 제어, 명령 시스템까지 `ko-KR`를 핵심 경로로 취급합니다.
+- **입력기가 흐름을 끊지 않습니다.** IME 조합 상태를 보존하고, Enter가 조합 확정을 깨지 않으며, 조합 종료 뒤 커서도 기대한 위치로 돌아옵니다.
+- **초성 명령이 정말 빠릅니다.** 한국어 명령명, 초성 별칭, 영어 이름을 모두 이해하면서도 애매한 입력은 함부로 실행하지 않도록 설계되어 있습니다.
+- **한국 문서 워크플로가 제품 안에 남습니다.** HWPX 파싱 덕분에 한국 팀의 문서 중심 작업이 에이전트 바깥 수작업으로 밀려나지 않습니다.
+- **자율 실행이 강력하면서도 안전합니다.** Plan 모드, 권한 승인, 샌드박스, 체크포인트, 되감기, 브랜치가 긴 실행을 실무에서 쓸 수 있는 수준으로 만들어 줍니다.
+- **우리 스택에 가두지 않습니다.** 하나의 로컬 엔진으로 desktop, CLI, browser, ACP를 모두 쓰고, DeepSeek든 OpenAI 호환 제공자든 원하는 조합으로 붙일 수 있으며, MCP와 플러그인으로 확장도 가능합니다.
 
-## Core features
+## 처음 설치하자마자 얻는 것
 
-- **Config-driven.** Providers, the agent, enabled tools, and plugins are all declared in `patty.toml`.
-- **Desktop + CLI + browser + ACP.** One local Patty Code engine, four ways in.
-- **Plugin-driven.** MCP servers and Extension Protocol sidecars can contribute tools, prompts, providers, resources, and structured UI.
-- **Cache-aware context maintenance.** Startup injects a stable environment summary, stale tool output is pruned before compaction, and the tool schema contract is documented for regression review.
-- **Zero-friction distribution.** `CGO_ENABLED=0` single binary; cross-compile to six targets with one command.
+- **하나의 엔진, 네 가지 진입점.** Desktop, CLI, browser, ACP가 모두 같은 로컬 Patty Code 런타임 위에서 동작합니다.
+- **한국어 퍼스트 상호작용 모델.** 한국어 추론 표시, 혼합 언어 안전 입력 처리, 초성 명령 접근, 한국어 네이티브 워크플로 설계가 기본 내장입니다.
+- **진짜 모델 자유도.** Provider, 도구, 에이전트 동작, 플러그인을 `patty.toml`에서 구성할 수 있어 제품에 갇히지 않습니다.
+- **통제 가능한 자율성.** 계획, 승인, 워크스페이스 샌드박스, 되감기, 체크포인트, 브랜치가 처음부터 제공됩니다.
+- **확장 가능한 하네스.** MCP 서버와 Extension Protocol 사이드카가 도구, 프롬프트, Provider, 리소스, 구조화된 UI를 추가할 수 있습니다.
+- **빠른 배포.** `CGO_ENABLED=0` 단일 바이너리, 데스크톱 빌드, 6개 타깃 교차 빌드로 배포가 단순합니다.
 
-## Install
+## 설치
 
-Choose the path that matches how you want to use Patty Code. The CLI/TUI, desktop app, and VS Code extension all use the same local Patty Code engine.
+CLI/TUI, 데스크톱 앱, VS Code 확장은 모두 같은 로컬 Patty Code 엔진을 사용합니다.
 
-### Path A: CLI / TUI
+### 경로 A: CLI / TUI
 
-Install the native binary through npm on any supported platform, or use Homebrew on macOS:
+지원 플랫폼에서는 npm으로, macOS에서는 Homebrew로 설치할 수 있습니다.
 
 ```sh
-npm i -g patty code                  # any OS; pulls the prebuilt native binary
+npm i -g patty code                  # 모든 OS; 사전 빌드된 네이티브 바이너리 설치
 brew install pattycorp/patty/patty code   # macOS
 ```
 
-Prebuilt archives (`darwin|linux|windows × amd64|arm64`) and `SHA256SUMS` are on every [GitHub release](https://github.com/pattycorp/DeepSeek-PattyCode/releases).
+사전 빌드 아카이브(`darwin|linux|windows × amd64|arm64`)와 `SHA256SUMS`는 모든 [GitHub 릴리스](https://github.com/pattycorp/DeepSeek-PattyCode/releases)에 포함됩니다.
 
-### Path B: Desktop app
+### 경로 B: 데스크톱 앱
 
-Use the [official download page](https://patty-code.io/?download=desktop#start) for the latest desktop build.
+최신 데스크톱 빌드는 [공식 다운로드 페이지](https://patty-code.io/?download=desktop#start)에서 받을 수 있습니다.
 
-| Platform | Package | Architecture |
+| 플랫폼 | 패키지 | 아키텍처 |
 | --- | --- | --- |
-| macOS | Universal `.dmg` or `.zip` | Apple Silicon / Intel |
-| Windows | Installer `.exe` or portable `.zip` | x64 / ARM64 |
-| Linux | `.deb` or `.tar.gz` | x64 |
+| macOS | Universal `.dmg` 또는 `.zip` | Apple Silicon / Intel |
+| Windows | 설치형 `.exe` 또는 휴대형 `.zip` | x64 / ARM64 |
+| Linux | `.deb` 또는 `.tar.gz` | x64 |
 
-Windows installers are code-signed through [SignPath.io](https://signpath.io/) with a free certificate provided by the [SignPath Foundation](https://signpath.org/).
+Windows 설치 프로그램은 [SignPath.io](https://signpath.io/)를 통해 코드 서명됩니다.
 
-### Path C: VS Code extension
+### 경로 C: VS Code 확장
 
-Complete Path A first. The extension does not bundle the CLI; it starts your local `patty code acp` backend and adds native chat, editor context, tool-call approvals, model selection, and workspace sessions.
+먼저 경로 A를 완료하세요. 확장은 CLI를 번들하지 않고, 로컬 `patty code acp` 백엔드를 시작해 네이티브 채팅, 에디터 컨텍스트, 도구 승인, 모델 선택, 워크스페이스 세션을 제공합니다.
 
-- **VS Code:** [install from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SivanLiu.patty-agent)
-- **VSCodium / Eclipse Theia:** [install from Open VSX Registry](https://open-vsx.org/extension/SivanLiu/patty-code-agent)
-- **Extension ID:** `SivanLiu.patty-agent` · [source and usage guide](https://github.com/SivanCola/patty-code-vscode)
+- **VS Code:** [Visual Studio Marketplace에서 설치](https://marketplace.visualstudio.com/items?itemName=SivanLiu.patty-agent)
+- **VSCodium / Eclipse Theia:** [Open VSX Registry에서 설치](https://open-vsx.org/extension/SivanLiu/patty-code-agent)
+- **확장 ID:** `SivanLiu.patty-agent` · [소스 및 사용 가이드](https://github.com/SivanCola/patty-code-vscode)
 
-### Path D: Build from source
+### 경로 D: 소스에서 빌드
 
 ```sh
 git clone https://github.com/pattycorp/DeepSeek-PattyCode.git
@@ -117,11 +116,9 @@ make build      # -> bin/patty(.exe)
 make cross      # -> dist/ (darwin|linux|windows × amd64|arm64)
 ```
 
-## Quick start
+## 빠른 시작
 
 ### CLI / TUI
-
-These commands are for the CLI/TUI installed through Path A:
 
 ```sh
 patty code setup
@@ -129,20 +126,20 @@ patty code
 patty code run "implement the TODOs in main.go"
 ```
 
-In an interactive session, run `/init` when you want Patty Code to create project instructions.
+대화형 세션에서는 프로젝트 지침을 만들고 싶을 때 `/init`을 실행하세요.
 
-### Desktop app
+### 데스크톱 앱
 
-Download the installer for your platform from the [official download page](https://patty-code.io/?download=desktop#start), install and launch Patty Code, then configure a provider and model in the app. The CLI commands above are not required for the desktop app.
+[공식 다운로드 페이지](https://patty-code.io/?download=desktop#start)에서 설치 파일을 내려받아 실행한 뒤, 앱 안에서 Provider와 모델을 설정하면 됩니다. 데스크톱 앱만 사용할 때는 위 CLI 명령이 필수는 아닙니다.
 
-For advanced CLI usage and configuration, see the **[CLI reference](./docs/CLI.md)**, **[Guide](./docs/GUIDE.md)**, and **[configuration paths](./docs/CONFIG_PATHS.md)**.
+고급 CLI 사용법과 구성은 **[CLI 문서](./docs/CLI.ko-KR.md)**, **[가이드](./docs/GUIDE.ko-KR.md)**, **[구성 경로](./docs/CONFIG_PATHS.md)** 를 참고하세요.
 
-## Documentation
+## 문서
 
-- **Getting started:** [Guide](./docs/GUIDE.md) · [CLI reference](./docs/CLI.md) · [Configuration paths](./docs/CONFIG_PATHS.md) · [ACP editor integration](./docs/ACP.md)
-- **Features & troubleshooting:** [Reasoning language](./docs/REASONING_LANGUAGE.md) · [Subagent profiles](./docs/SUBAGENT_PROFILES.md) · [Context Engine v2](./docs/SESSION_MEMORY_RETRIEVAL.md) · [Capability diagnostics](./docs/CAPABILITY_DIAGNOSTICS.md) · [Recovery and updates](./docs/RECOVERY.md) · [Checkpoints & rewind](./docs/CHECKPOINTS.md)
-- **Engineering & migration:** [Spec](./docs/SPEC.md) · [Task contracts & pause policy](./docs/TASK_CONTRACT.md) · [Tool contract](./docs/TOOL_CONTRACT.md) · [Migrating from 0.x](./docs/MIGRATING.md)
-- **Extension development:** [Extensions](./docs/EXTENSIONS.md) · [Plugin packages and Manifest v1](./docs/PLUGIN_PACKAGES.md) · [Extension Protocol](./docs/EXTENSION_PROTOCOL.md) · [Go SDK and starter](./sdk/go/README.md)
+- **시작하기:** [가이드](./docs/GUIDE.ko-KR.md) · [CLI 문서](./docs/CLI.ko-KR.md) · [ACP 에디터 연동](./docs/ACP.ko-KR.md)
+- **기능 및 문제 해결:** [Reasoning language](./docs/REASONING_LANGUAGE.ko-KR.md) · [기능 진단](./docs/CAPABILITY_DIAGNOSTICS.ko-KR.md) · [체크포인트와 되감기](./docs/CHECKPOINTS.md)
+- **엔지니어링 문서:** [Spec](./docs/SPEC.md) · [Tool contract](./docs/TOOL_CONTRACT.md) · [0.x에서 마이그레이션](./docs/MIGRATING.md)
+- **확장 개발:** [Extensions](./docs/EXTENSIONS.ko-KR.md) · [Plugin packages](./docs/PLUGIN_PACKAGES.ko-KR.md) · [Extension Protocol](./docs/EXTENSION_PROTOCOL.ko-KR.md) · [Go SDK](./sdk/go/README.md)
 
 ## Star History
 
@@ -156,9 +153,9 @@ For advanced CLI usage and configuration, see the **[CLI reference](./docs/CLI.m
 
 <br/>
 
-## Acknowledgments
+## 감사의 말
 
-A small list of folks whose work has shaped Patty Code the most — the current top 20 contributors by commit count. The full contributor graph is on [GitHub](https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors?all=1).
+Patty Code에 큰 영향을 준 기여자들을 소개합니다. 전체 기여자 그래프는 [GitHub](https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors?all=1)에서 볼 수 있습니다.
 
 <!-- patty-code-top-contributors:start -->
 | Contributor | Contributor | Contributor | Contributor |
@@ -170,7 +167,7 @@ A small list of folks whose work has shaped Patty Code the most — the current 
 | [**CnsMaple**](https://github.com/CnsMaple) | [**cyq1017**](https://github.com/cyq1017) | [**JesonChou**](https://github.com/JesonChou) | [**XTLine**](https://github.com/XTLine) |
 <!-- patty-code-top-contributors:end -->
 
-Special thanks to [**Bernardxu123**](https://github.com/Bernardxu123) for designing the project logo and intro video.
+특별히 프로젝트 로고와 인트로 영상을 디자인한 [**Bernardxu123**](https://github.com/Bernardxu123)에게 감사드립니다.
 
 <p align="center">
   <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors">
@@ -183,15 +180,15 @@ Special thanks to [**Bernardxu123**](https://github.com/Bernardxu123) for design
 ---
 
 <p align="center">
-  <sub>MIT — see <a href="./LICENSE">LICENSE</a></sub>
+  <sub>MIT — <a href="./LICENSE">LICENSE</a> 참고</sub>
   <br/>
-  <sub>Built by <strong>Patty Co., Ltd.</strong> (<strong>주식회사 패티</strong>) with the <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors">Patty Code community</a></sub>
+  <sub><strong>주식회사 패티</strong>(<strong>Patty Co., Ltd.</strong>)와 <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors">Patty Code 커뮤니티</a>가 함께 만들고 있습니다.</sub>
 </p>
 
 ---
 
-<p align="center"><sub><strong>Support this project</strong></sub></p>
+<p align="center"><sub><strong>프로젝트 후원</strong></sub></p>
 
-If Patty Code has been useful and you'd like to say thanks, you can. It stays a coffee, not a contract — donations don't buy feature priority or change how issues get triaged.
+Patty Code가 도움이 되었고 응원하고 싶다면 후원할 수 있습니다. 다만 후원은 기능 우선순위나 이슈 처리 순서를 바꾸지 않습니다.
 
 - **PayPal** — [paypal.me/yuhuahui](https://paypal.me/yuhuahui)

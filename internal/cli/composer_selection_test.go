@@ -535,6 +535,37 @@ func TestComposerBackspaceDeletesPreviousGraphemeCluster(t *testing.T) {
 	}
 }
 
+func TestComposerBackspaceDeletesStandaloneHangulJamoAtCursor(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.input.SetValue("안ㄴ")
+	m.setComposerCursor(len([]rune("안ㄴ")))
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("backspace over standalone Hangul jamo produced %q, want %q", got, "안")
+	}
+	if got, want := m.composerCursorOffset(), len([]rune("안")); got != want {
+		t.Fatalf("cursor offset after deleting standalone jamo = %d, want %d", got, want)
+	}
+}
+
+func TestComposerBackspaceDecomposesHangulSyllableThenDeletesInitialJamo(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.input.SetValue("안녕")
+	m.setComposerCursor(len([]rune("안녕")))
+
+	for _, want := range []string{"안녀", "안ㄴ", "안"} {
+		m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+		if got := m.input.Value(); got != want {
+			t.Fatalf("backspace step produced %q, want %q", got, want)
+		}
+		if got, wantOffset := m.composerCursorOffset(), len([]rune(want)); got != wantOffset {
+			t.Fatalf("cursor offset after value %q = %d, want %d", want, got, wantOffset)
+		}
+	}
+}
+
 func TestComposerDeleteRemovesNextGraphemeCluster(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
 	value := "x\u1112\u1161\u11ABy" // x + decomposed 한 + y

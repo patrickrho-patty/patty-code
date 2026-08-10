@@ -265,6 +265,9 @@ func TestApplyTextareaThemeClearsCursorLineBackground(t *testing.T) {
 			if styles.Cursor.Color == nil {
 				t.Fatal("cursor color is nil with color enabled")
 			}
+			if !styles.Focused.Placeholder.GetFaint() || !styles.Blurred.Placeholder.GetFaint() {
+				t.Fatal("placeholder style should be explicitly faint so it reads as a placeholder, not typed text")
+			}
 		})
 	}
 }

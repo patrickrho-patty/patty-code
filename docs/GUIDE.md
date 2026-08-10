@@ -1,6 +1,6 @@
 # Patty Code Guide
 
-<a href="../README.md">README</a>
+<a href="../README.en.md">README</a>
 &nbsp;·&nbsp;
 <a href="./GUIDE.ko-KR.md">(Korean)</a>
 &nbsp;·&nbsp;

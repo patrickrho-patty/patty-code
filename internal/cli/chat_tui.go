@@ -3592,7 +3592,7 @@ func (m chatTUI) View() tea.View {
 		applyViewTheme(&v)
 		if !hideComposer {
 			if cur := m.composerCursor(); cur != nil {
-				cur.X += composerCursorChromeOffset
+				cur.X += m.composerCursorChromeOffset()
 				cur.Y += m.sessionHeaderRowCount() + rowsAboveBox + 1
 				v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 			}
@@ -3637,12 +3637,19 @@ func (m chatTUI) View() tea.View {
 	// storms cannot leave the caret off-grid (#6282, #7236).
 	if !hideComposer {
 		if cur := m.composerCursor(); cur != nil {
-			cur.X += composerCursorChromeOffset
+			cur.X += m.composerCursorChromeOffset()
 			cur.Y += m.sessionHeaderRowCount() + m.viewport.Height() + rowsAboveBox + 1
 			v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 		}
 	}
 	return v
+}
+
+func (m chatTUI) composerCursorChromeOffset() int {
+	if m.input.Value() == "" {
+		return max(composerCursorChromeOffset-1, 0)
+	}
+	return composerCursorChromeOffset
 }
 
 func (m chatTUI) renderNaturalStartupTranscript(width, height int) string {

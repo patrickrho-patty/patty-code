@@ -498,8 +498,10 @@ func refreshCLIStyles() {
 func applyTextareaTheme(ti *textarea.Model) {
 	plain := lipgloss.NewStyle()
 	weak := themeStyle(activeCLITheme.faint)
+	placeholder := weak.Faint(true)
 	if !colorOn() {
 		weak = plain
+		placeholder = plain
 	}
 
 	styles := ti.Styles()
@@ -510,7 +512,7 @@ func applyTextareaTheme(ti *textarea.Model) {
 		CursorLineNumber: weak,
 		EndOfBuffer:      weak,
 		LineNumber:       weak,
-		Placeholder:      weak,
+		Placeholder:      placeholder,
 		Prompt:           weak,
 	}
 	styles.Blurred = textarea.StyleState{
@@ -520,7 +522,7 @@ func applyTextareaTheme(ti *textarea.Model) {
 		CursorLineNumber: weak,
 		EndOfBuffer:      weak,
 		LineNumber:       weak,
-		Placeholder:      weak,
+		Placeholder:      placeholder,
 		Prompt:           weak,
 	}
 	if colorOn() {

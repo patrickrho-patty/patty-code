@@ -455,6 +455,28 @@ func nextComposerGraphemeBoundary(value string, offset int) int {
 	return boundaries[len(boundaries)-1]
 }
 
+func composerHangulBackspaceReplacement(r rune) (rune, bool) {
+	const (
+		hangulSBase  = 0xAC00
+		hangulSLast  = 0xD7A3
+		hangulVCount = 21
+		hangulTCount = 28
+		hangulNCount = hangulVCount * hangulTCount
+	)
+	if r < hangulSBase || r > hangulSLast {
+		return 0, false
+	}
+	leading := []rune("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
+	index := r - hangulSBase
+	l := index / hangulNCount
+	v := (index % hangulNCount) / hangulTCount
+	t := index % hangulTCount
+	if t == 0 {
+		return leading[l], true
+	}
+	return hangulSBase + l*hangulNCount + v*hangulTCount, true
+}
+
 func (m *chatTUI) replaceComposerRuneRange(start, end int, replacement string) {
 	runes := []rune(m.input.Value())
 	start = min(max(start, 0), len(runes))
@@ -472,6 +494,14 @@ func (m *chatTUI) handleComposerGraphemeKey(msg tea.KeyPressMsg) bool {
 	case key.Matches(msg, m.input.KeyMap.DeleteCharacterBackward):
 		if value == "" || offset <= 0 {
 			return true
+		}
+		runes := []rune(value)
+		if offset <= len(runes) {
+			previous := offset - 1
+			if replacement, ok := composerHangulBackspaceReplacement(runes[previous]); ok {
+				m.replaceComposerRuneRange(previous, offset, string(replacement))
+				return true
+			}
 		}
 		start := previousComposerGraphemeBoundary(value, offset)
 		m.replaceComposerRuneRange(start, offset, "")

@@ -1,6 +1,6 @@
 # ACP editor integration
 
-<a href="../README.md">README</a>
+<a href="../README.en.md">README</a>
 &nbsp;·&nbsp;
 <a href="./ACP.ko-KR.md">(Korean)</a>
 &nbsp;·&nbsp;

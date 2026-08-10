@@ -885,6 +885,46 @@ func TestComposerFrameOffsetsTerminalCursorAfterEnglishCharacter(t *testing.T) {
 	}
 }
 
+func TestComposerEmptyPlaceholderCursorAlignsWithInputTitle(t *testing.T) {
+	previousLanguage := i18n.CurrentLanguage()
+	defer i18n.DetectLanguage(previousLanguage)
+	i18n.DetectLanguage("ko")
+
+	ctrl := control.New(control.Options{})
+	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 40)
+	m0, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 14})
+	m = m0.(chatTUI)
+	m.input.Reset()
+	m.refreshInputPlaceholder()
+
+	view := m.View()
+	if view.Cursor == nil {
+		t.Fatal("focused empty composer should expose the real terminal cursor")
+	}
+	lines := strings.Split(ansi.Strip(view.Content), "\n")
+	titleRow := -1
+	inputRow := -1
+	for i, line := range lines {
+		if strings.Contains(line, "메시지 입력") {
+			titleRow = i
+		}
+		if strings.Contains(line, "명령 또는 질문을 입력해보세요") {
+			inputRow = i
+		}
+	}
+	if titleRow < 0 || inputRow < 0 {
+		t.Fatalf("rendered view missing title/input rows:\n%s", strings.Join(lines, "\n"))
+	}
+	titleX := visibleWidth(lines[titleRow][:strings.Index(lines[titleRow], "메시지 입력")])
+	placeholderX := visibleWidth(lines[inputRow][:strings.Index(lines[inputRow], "명령 또는 질문을 입력해보세요")])
+	if got, want := view.Cursor.X, titleX; got != want {
+		t.Fatalf("empty composer cursor X = %d, want title-aligned X %d; input row %q", got, want, lines[inputRow])
+	}
+	if placeholderX <= view.Cursor.X {
+		t.Fatalf("placeholder should remain to the right of the empty cursor: cursor=%d placeholder=%d row=%q", view.Cursor.X, placeholderX, lines[inputRow])
+	}
+}
+
 func TestComposerBlankGutterRepeatsOnWrappedRows(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 16)

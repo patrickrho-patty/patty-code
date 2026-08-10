@@ -1,6 +1,6 @@
 # Patty Code Bot Guide
 
-<a href="../README.md">README</a>
+<a href="../README.en.md">README</a>
 &nbsp;·&nbsp;
 <a href="./BOT_GUIDE.ko-KR.md">(Korean)</a>
 &nbsp;·&nbsp;
