@@ -550,6 +550,38 @@ func TestComposerBackspaceDeletesStandaloneHangulJamoAtCursor(t *testing.T) {
 	}
 }
 
+func TestComposerCode8BackspaceDeletesStandaloneHangulJamoAtCursor(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.input.SetValue("안ㄴ")
+	m.setComposerCursor(len([]rune("안ㄴ")))
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 8})
+
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("code-8 backspace over standalone Hangul jamo produced %q, want %q", got, "안")
+	}
+}
+
+func TestComposerBackspaceAfterClickInsideHangulJamoDeletesIt(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.input.SetValue("안ㄴ")
+	x, y, ok := m.composerOrigin()
+	if !ok {
+		t.Fatal("composer should expose origin")
+	}
+
+	// Cell positions in the textarea content: 안 occupies columns 0-1 and ㄴ
+	// occupies columns 2-3. Click the right half of ㄴ to model the cursor being
+	// visually inside the wide jamo.
+	m = updateComposerMouseTestTUI(t, m, tea.MouseClickMsg{X: x + 3, Y: y, Button: tea.MouseLeft})
+	m = updateComposerMouseTestTUI(t, m, tea.MouseReleaseMsg{X: x + 3, Y: y, Button: tea.MouseLeft})
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("backspace after click inside Hangul jamo produced %q, want %q", got, "안")
+	}
+}
+
 func TestComposerBackspaceDecomposesHangulSyllableThenDeletesInitialJamo(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
 	m.input.SetValue("안녕")

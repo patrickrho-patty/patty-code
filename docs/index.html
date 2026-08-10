@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Patty Code — DeepSeek-native coding agent for your terminal</title>
-<meta name="description" content="Open-source AI coding agent for your terminal, engineered around DeepSeek's byte-stable prefix cache. Long sessions hold 90%+ cache hit and input-token cost collapses to ~1/5. A single Go binary. npm · Homebrew · desktop. MIT." />
+<title>Patty Code — Korean-first coding agent for your terminal</title>
+<meta name="description" content="Open-source Korean-first AI coding agent for your terminal, engineered around cache-stable long sessions, strong Korean input handling, and a single Go binary runtime." />
 <link rel="canonical" href="https://pattycorp.github.io/DeepSeek-Patty Code/" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-<meta property="og:title" content="Patty Code — DeepSeek-native coding agent" />
-<meta property="og:description" content="Cache-first AI coding agent for your terminal. A single Go binary. npm · Homebrew · desktop. MIT." />
+<meta property="og:title" content="Patty Code — Korean-first coding agent" />
+<meta property="og:description" content="Cache-first AI coding agent for your terminal with Korean-first UX, a single Go binary, and long-session autonomy you can trust." />
 <meta property="og:url" content="https://pattycorp.github.io/DeepSeek-Patty Code/" />
 <style>
   :root{
@@ -16,8 +16,8 @@
     --line:#e7e5df; --line-2:#dcd9d1; --accent:#2f5bd6; --code-bg:#17181c; --code-fg:#d7dae1;
     --maxw:1060px; --radius:12px;
     --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
-    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
-    --serif:"Iowan Old Style","Palatino Linotype",Georgia,"Songti SC",serif;
+    --sans:"Inter","Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --serif:"Iowan Old Style","Noto Serif KR","AppleMyungjo",Georgia,serif;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -44,7 +44,6 @@
   .btn-line{background:transparent;color:var(--ink);border-color:var(--line-2)}
   .btn-line:hover{border-color:var(--ink)}
 
-  /* hero */
   .hero{text-align:center;padding:104px 0 0}
   .kicker{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--muted);margin-bottom:30px}
   .kicker .b{color:var(--ink)}
@@ -60,7 +59,6 @@
   .cp:hover{color:var(--ink);border-color:var(--line-2)}
   .cp.ok{color:#1a8f5a;border-color:#bfe3cd}
 
-  /* terminal */
   .term{max-width:720px;margin:72px auto 0;text-align:left;background:var(--code-bg);border-radius:14px;overflow:hidden;
     box-shadow:0 1px 0 rgba(0,0,0,.04),0 26px 60px -32px rgba(20,22,40,.5)}
   .tbar{display:flex;align-items:center;gap:7px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
@@ -71,14 +69,12 @@
   .tbody .k{color:#8fd6b0}.tbody .e{color:#c7a3f0}.tbody .c{color:#5a5e68}
   @media(max-width:560px){.tbody{font-size:11.5px}}
 
-  /* sections */
   section{padding:108px 0}
   .lab{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--accent);margin-bottom:16px}
   h2{font-size:clamp(28px,4vw,42px);line-height:1.12;letter-spacing:-.03em;font-weight:600;color:var(--ink);margin:0 0 16px;max-width:18ch}
   .sub{color:var(--muted);font-size:18px;max-width:560px;margin:0}
   .head{margin-bottom:48px}
 
-  /* install tabs */
   .tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin-bottom:0}
   .tab{font-size:15px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:0 0 14px;cursor:pointer;transition:.15s;margin-bottom:-1px}
   .tab.on{color:var(--ink);border-bottom-color:var(--ink)}
@@ -102,7 +98,6 @@
   .dl .go{color:var(--accent);font-family:var(--mono);font-size:14px}
   @media(max-width:600px){.dl .ar{display:none}.dl .fn{font-size:12px}}
 
-  /* features */
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
   @media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:540px){.grid{grid-template-columns:1fr}}
@@ -112,7 +107,6 @@
   .feat p{margin:0;color:var(--muted);font-size:15px;line-height:1.6}
   .feat code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
 
-  /* stats */
   .why{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
   @media(max-width:760px){.why{grid-template-columns:1fr;gap:40px}}
   .nums{display:flex;flex-direction:column;gap:28px}
@@ -125,11 +119,10 @@
   .foot a{color:var(--muted)}.foot a:hover{color:var(--ink)}
   .foot-links{display:flex;gap:26px;flex-wrap:wrap}
 
-  [data-zh]{display:none}
-  html[lang="zh"] [data-en]{display:none}
-  html[lang="zh"] [data-zh]{display:inline}
-  html[lang="zh"] [data-zh].blk{display:block}
-  html[lang="zh"] h1,html[lang="zh"] h2{letter-spacing:-.02em}
+  [data-ko]{display:none}
+  html[lang="ko"] [data-en]{display:none}
+  html[lang="ko"] [data-ko]{display:inline}
+  html[lang="ko"] [data-ko].blk{display:block}
 </style>
 </head>
 <body>
@@ -137,36 +130,36 @@
   <div class="wrap nav">
     <a class="brand" href="#top"><span class="mk">R</span>Patty Code</a>
     <div class="nav-links">
-      <a href="#install" data-en>Install</a><a href="#install" data-zh>安装</a>
-      <a href="#features" data-en>Features</a><a href="#features" data-zh>特性</a>
-      <a href="#why" data-en>Why DeepSeek</a><a href="#why" data-zh>为何 DeepSeek</a>
+      <a href="#install" data-en>Install</a><a href="#install" data-ko>설치</a>
+      <a href="#features" data-en>Features</a><a href="#features" data-ko>기능</a>
+      <a href="#why" data-en>Why Patty Code</a><a href="#why" data-ko>왜 Patty Code인가</a>
       <a href="https://github.com/patty-io/patty-code">GitHub</a>
     </div>
     <div class="nav-right">
-      <button class="lang" id="lang">한국어</button>
-      <a class="btn btn-dark" href="#install"><span data-en>Get started</span><span data-zh>开始</span></a>
+      <button class="lang" id="lang">EN</button>
+      <a class="btn btn-dark" href="#install"><span data-en>Get started</span><span data-ko>시작하기</span></a>
     </div>
   </div>
 </nav>
 
 <a id="top"></a>
 <header class="hero wrap">
-  <div class="kicker"><span class="b">v1.0.0</span> · <span data-en>a ground-up rewrite in Go · open source, MIT</span><span data-zh>Go 全新重写 · 开源 MIT</span></div>
+  <div class="kicker"><span class="b">v1.0.0</span> · <span data-en>a ground-up rewrite in Go · open source, MIT</span><span data-ko>Go로 새로 작성 · 오픈소스 MIT</span></div>
   <h1>
-    <span data-en>A <em>DeepSeek</em>-native agent for your terminal.</span>
-    <span data-zh><em>DeepSeek</em> 原生的终端编码 Agent。</span>
+    <span data-en>A Korean-first agent for your terminal.</span>
+    <span data-ko>한국어로 일할 때 가장 자연스러운 터미널 에이전트.</span>
   </h1>
   <p class="lede">
-    <span data-en>The loop is append-only, aligned to DeepSeek's byte-stable prefix cache — so long sessions hold <b>90%+ cache hit</b> and input-token cost collapses to <b>~1/5</b>. One Go binary. Terminal-first.</span>
-    <span data-zh>运行循环 append-only,对齐 DeepSeek 字节稳定的 prefix-cache —— 长会话缓存命中 <b>90%+</b>,输入 token 成本降到 <b>约 1/5</b>。单个 Go 二进制,终端优先。</span>
+    <span data-en>Patty Code keeps the loop append-only and cache-stable, so long sessions stay fast, cheap, and readable. One Go binary. Korean-first UX. Terminal-native autonomy.</span>
+    <span data-ko>Patty Code는 루프를 append-only와 cache-stable 구조로 유지해 긴 세션도 빠르고 저렴하며 읽기 쉽게 만듭니다. 하나의 Go 바이너리. 한국어 퍼스트 UX. 터미널 네이티브 자율 실행.</span>
   </p>
   <div class="cta">
-    <a class="btn btn-dark" href="#install"><span data-en>Get started</span><span data-zh>开始使用</span></a>
-    <a class="btn btn-line" href="https://github.com/patty-io/patty-code"><span data-en>View on GitHub</span><span data-zh>在 GitHub 查看</span></a>
+    <a class="btn btn-dark" href="#install"><span data-en>Get started</span><span data-ko>시작하기</span></a>
+    <a class="btn btn-line" href="https://github.com/patty-io/patty-code"><span data-en>View on GitHub</span><span data-ko>GitHub에서 보기</span></a>
   </div>
   <div class="install">
     <span><span class="p">$ </span>npm i -g patty-code</span>
-    <button class="cp" data-copy="npm i -g patty-code"><span data-en>Copy</span><span data-zh>复制</span></button>
+    <button class="cp" data-copy="npm i -g patty-code"><span data-en>Copy</span><span data-ko>복사</span></button>
   </div>
 
   <div class="term">
@@ -184,91 +177,91 @@
 
 <section id="install" class="wrap">
   <div class="head">
-    <div class="lab" data-en>Install</div><div class="lab" data-zh>安装</div>
-    <h2><span data-en>Up and running in one line.</span><span data-zh>一行命令,跑起来。</span></h2>
-    <p class="sub"><span data-en>The npm package pulls the prebuilt native binary for your platform — no Node runtime needed to run it.</span><span data-zh>npm 包自动拉取对应平台的预编译原生二进制 —— 运行时不需要 Node。</span></p>
+    <div class="lab" data-en>Install</div><div class="lab" data-ko>설치</div>
+    <h2><span data-en>Up and running in one line.</span><span data-ko>한 줄이면 바로 시작됩니다.</span></h2>
+    <p class="sub"><span data-en>The npm package pulls the prebuilt native binary for your platform — no Node runtime needed to run it.</span><span data-ko>npm 패키지가 플랫폼에 맞는 사전 빌드 네이티브 바이너리를 내려받습니다. 실행에 Node 런타임은 필요하지 않습니다.</span></p>
   </div>
   <div class="tabs">
     <button class="tab on" data-tab="npm">npm</button>
     <button class="tab" data-tab="brew">Homebrew</button>
-    <button class="tab" data-tab="desk"><span data-en>Desktop</span><span data-zh>桌面端</span></button>
+    <button class="tab" data-tab="desk"><span data-en>Desktop</span><span data-ko>데스크톱</span></button>
   </div>
   <div class="panel on" data-panel="npm">
     <div class="block"><button class="cp" data-copy="npm i -g patty-code
 patcode setup
-patty"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> npm i -g patty-code
+patcode"><span data-en>Copy</span><span data-ko>복사</span></button><pre><span class="p">$</span> npm i -g patty-code
 <span class="p">$</span> patcode setup        <span class="c"># config wizard → ./patty.toml</span>
-<span class="p">$</span> patcode         <span class="c"># or: patcode run "implement the TODOs"</span></pre></div>
-    <p class="undertext"><span data-en>Any OS · macOS, Linux, Windows × amd64/arm64. Short alias <code>dsnix</code> too.</span><span data-zh>任意系统 · macOS、Linux、Windows × amd64/arm64。</span></p>
+<span class="p">$</span> patcode         <span class="c"># or: patcode run \"implement the TODOs\"</span></pre></div>
+    <p class="undertext"><span data-en>Any OS · macOS, Linux, Windows × amd64/arm64.</span><span data-ko>모든 주요 OS · macOS, Linux, Windows × amd64/arm64.</span></p>
   </div>
   <div class="panel" data-panel="brew">
-    <div class="block"><button class="cp" data-copy="brew install patty-io/patty-code"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> brew install patty-io/patty-code</pre></div>
-    <p class="undertext"><span data-en>macOS. The cask pulls the archive from the latest release.</span><span data-zh>macOS。cask 从最新 release 拉取归档。</span></p>
+    <div class="block"><button class="cp" data-copy="brew install patty-io/patty-code"><span data-en>Copy</span><span data-ko>복사</span></button><pre><span class="p">$</span> brew install patty-io/patty-code</pre></div>
+    <p class="undertext"><span data-en>macOS. The cask pulls the archive from the latest release.</span><span data-ko>macOS용. cask가 최신 릴리스 아카이브를 내려받습니다.</span></p>
   </div>
   <div class="panel" data-panel="desk">
     <div class="dls">
       <a class="dl" href="https://dl.patty.io/latest/Patty Code-darwin-arm64.zip" download>
-        <span class="os">macOS</span><span class="fn">Patty Code-darwin-arm64.zip</span><span class="ar" data-en>universal · Intel + Apple Silicon</span><span class="ar" data-zh>通用 · Intel + Apple Silicon</span><span class="go">↓</span>
+        <span class="os">macOS</span><span class="fn">Patty Code-darwin-arm64.zip</span><span class="ar" data-en>universal · Intel + Apple Silicon</span><span class="ar" data-ko>유니버설 · Intel + Apple Silicon</span><span class="go">↓</span>
       </a>
       <a class="dl" href="https://dl.patty.io/latest/Patty Code-windows-amd64-installer.exe" download>
-        <span class="os">Windows</span><span class="fn">Patty Code-windows-amd64-installer.exe</span><span class="ar" data-en>installer · x64</span><span class="ar" data-zh>安装器 · x64</span><span class="go">↓</span>
+        <span class="os">Windows</span><span class="fn">Patty Code-windows-amd64-installer.exe</span><span class="ar" data-en>installer · x64</span><span class="ar" data-ko>설치형 · x64</span><span class="go">↓</span>
       </a>
       <a class="dl" href="https://dl.patty.io/latest/Patty Code-linux-amd64.tar.gz" download>
-        <span class="os">Linux</span><span class="fn">Patty Code-linux-amd64.tar.gz</span><span class="ar" data-en>x64</span><span class="ar" data-zh>x64</span><span class="go">↓</span>
+        <span class="os">Linux</span><span class="fn">Patty Code-linux-amd64.tar.gz</span><span class="ar" data-en>x64</span><span class="ar" data-ko>x64</span><span class="go">↓</span>
       </a>
     </div>
-    <p class="undertext"><span data-en>Served from the R2 CDN (fast worldwide). Or browse <a href="https://github.com/patty-io/patty-code/releases">all releases on GitHub</a>.</span><span data-zh>经 R2 CDN 分发(全球加速)。或在 <a href="https://github.com/patty-io/patty-code/releases">GitHub releases</a> 浏览全部。</span></p>
+    <p class="undertext"><span data-en>Served from the R2 CDN. Or browse <a href="https://github.com/patty-io/patty-code/releases">all releases on GitHub</a>.</span><span data-ko>R2 CDN에서 제공합니다. 또는 <a href="https://github.com/patty-io/patty-code/releases">GitHub Releases</a>에서 전체 릴리스를 확인할 수 있습니다.</span></p>
   </div>
 </section>
 
 <section id="features" class="wrap">
   <div class="head">
-    <div class="lab" data-en>Features</div><div class="lab" data-zh>特性</div>
-    <h2><span data-en>Built for long, cheap sessions.</span><span data-zh>为长会话、低成本而生。</span></h2>
+    <div class="lab" data-en>Features</div><div class="lab" data-ko>기능</div>
+    <h2><span data-en>Built for long, cheap, controllable sessions.</span><span data-ko>길고, 저렴하고, 통제 가능한 세션을 위해 설계되었습니다.</span></h2>
   </div>
   <div class="grid">
-    <div class="feat"><div class="n">01</div><h3 data-en>Cache-first loop</h3><h3 data-zh>缓存优先循环</h3><p data-en>Append-only history aligned to DeepSeek's prefix cache. 90%+ hit on long sessions; input tokens bill at ~1/5.</p><p data-zh>append-only 历史对齐 DeepSeek prefix-cache。长会话 90%+ 命中,输入 token 约 1/5 计费。</p></div>
-    <div class="feat"><div class="n">02</div><h3 data-en>Single Go binary</h3><h3 data-zh>单个 Go 二进制</h3><p data-en>CGO-free, cross-compiled for darwin/linux/windows × amd64/arm64. No Node runtime.</p><p data-zh>无 CGO,交叉编译覆盖 darwin/linux/windows × amd64/arm64。运行不需要 Node。</p></div>
-    <div class="feat"><div class="n">03</div><h3>MCP first-class</h3><p data-en>stdio, SSE, streamable HTTP. External servers merge their tools into one registry under a prefix.</p><p data-zh>stdio、SSE、streamable HTTP。外部服务器的工具以前缀合并进同一 registry。</p></div>
-    <div class="feat"><div class="n">04</div><h3 data-en>Plan mode + sandbox</h3><h3 data-zh>计划模式 + 沙箱</h3><p data-en><code>/plan</code> asks the model to plan first; Permissions and the workspace sandbox still govern every tool call.</p><p data-zh><code>/plan</code> 要求模型先规划；每次工具호출(call)仍由权限与工作区沙箱控制。</p></div>
-    <div class="feat"><div class="n">05</div><h3 data-en>Subagents &amp; skills</h3><h3 data-zh>子智能体与技能</h3><p data-en>explore / research / review / security-review agents, plus Markdown skill scripts with isolated tools.</p><p data-zh>explore / research / review / security-review 子智能体,加 Markdown 技能脚本与隔离工具。</p></div>
-    <div class="feat"><div class="n">06</div><h3 data-en>Terminal-native</h3><h3 data-zh>终端原生</h3><p data-en>Not another IDE plugin. <code>git diff</code> handles diffs, <code>ls</code> handles trees — the terminal is the workspace.</p><p data-zh>不是又一个 IDE 插件。diff 交给 <code>git diff</code> —— 终端就是工作面板。</p></div>
+    <div class="feat"><div class="n">01</div><h3 data-en>Cache-first loop</h3><h3 data-ko>캐시 우선 루프</h3><p data-en>Append-only history aligned to a cache-stable prefix. Long sessions stay cheap and predictable.</p><p data-ko>append-only 기록과 cache-stable prefix 구조로 긴 세션도 저렴하고 예측 가능하게 유지합니다.</p></div>
+    <div class="feat"><div class="n">02</div><h3 data-en>Single Go binary</h3><h3 data-ko>단일 Go 바이너리</h3><p data-en>CGO-free, cross-compiled for darwin/linux/windows × amd64/arm64. No Node runtime.</p><p data-ko>CGO 없이 darwin/linux/windows × amd64/arm64로 교차 빌드됩니다. 실행에 Node 런타임이 필요하지 않습니다.</p></div>
+    <div class="feat"><div class="n">03</div><h3>MCP first-class</h3><p data-en>stdio, SSE, streamable HTTP. External servers merge their tools into one registry under a prefix.</p><p data-ko>stdio, SSE, streamable HTTP를 지원합니다. 외부 서버의 도구는 prefix 아래 하나의 registry로 합쳐집니다.</p></div>
+    <div class="feat"><div class="n">04</div><h3 data-en>Plan mode + sandbox</h3><h3 data-ko>계획 모드 + 샌드박스</h3><p data-en><code>/plan</code> asks the model to plan first; Permissions and the workspace sandbox still govern every tool call.</p><p data-ko><code>/plan</code>은 먼저 계획을 세우게 하고, 모든 도구 호출에는 여전히 권한과 워크스페이스 샌드박스가 적용됩니다.</p></div>
+    <div class="feat"><div class="n">05</div><h3 data-en>Subagents &amp; skills</h3><h3 data-ko>서브에이전트와 스킬</h3><p data-en>explore / research / review / security-review agents, plus Markdown skill scripts with isolated tools.</p><p data-ko>explore / research / review / security-review 에이전트와 격리된 도구를 쓰는 Markdown 스킬 스크립트를 제공합니다.</p></div>
+    <div class="feat"><div class="n">06</div><h3 data-en>Terminal-native</h3><h3 data-ko>터미널 네이티브</h3><p data-en>Not another IDE plugin. <code>git diff</code> handles diffs, <code>ls</code> handles trees — the terminal is the workspace.</p><p data-ko>또 하나의 IDE 플러그인이 아닙니다. <code>git diff</code>가 diff를, <code>ls</code>가 트리를 맡고, 터미널이 곧 워크스페이스가 됩니다.</p></div>
   </div>
 </section>
 
 <section id="why" class="wrap">
   <div class="why">
     <div>
-      <div class="lab" data-en>Why DeepSeek</div><div class="lab" data-zh>为何 DeepSeek</div>
-      <h2><span data-en>The cheapness is the point.</span><span data-zh>便宜,就是核心。</span></h2>
-      <p class="sub"><span data-en>Most agents pay full price for the same growing prompt every turn. Patty Code keeps the prefix byte-identical so DeepSeek's cache does the heavy lifting.</span><span data-zh>多数 agent 每回合都为同一段不断增长的 prompt 付全价。Patty Code 让前缀逐字节稳定,让 DeepSeek 的缓存替你扛下来。</span></p>
+      <div class="lab" data-en>Why Patty Code</div><div class="lab" data-ko>왜 Patty Code인가</div>
+      <h2><span data-en>Korean-first where it actually matters.</span><span data-ko>정말 중요한 지점에서 한국어 퍼스트.</span></h2>
+      <p class="sub"><span data-en>Most coding agents were built for someone else first. Patty Code is designed around Korean input, long-session control, and local autonomy you can actually inspect and trust.</span><span data-ko>대부분의 코딩 에이전트는 다른 사용자를 먼저 기준으로 설계되었습니다. Patty Code는 한국어 입력, 긴 세션 통제, 직접 확인하고 믿을 수 있는 로컬 자율 실행을 중심에 둡니다.</span></p>
     </div>
     <div class="nums">
-      <div class="num"><div class="v">90%+</div><div class="l"><span data-en>cache hit on long sessions</span><span data-zh>长会话缓存命中</span></div></div>
-      <div class="num"><div class="v">~1/5</div><div class="l"><span data-en>input-token cost</span><span data-zh>输入 token 成本</span></div></div>
-      <div class="num"><div class="v">0</div><div class="l"><span data-en>Node runtime to run it</span><span data-zh>运行所需 Node</span></div></div>
+      <div class="num"><div class="v">90%+</div><div class="l"><span data-en>cache hit on long sessions</span><span data-ko>긴 세션에서의 캐시 적중률</span></div></div>
+      <div class="num"><div class="v">~1/5</div><div class="l"><span data-en>input-token cost</span><span data-ko>입력 토큰 비용</span></div></div>
+      <div class="num"><div class="v">1</div><div class="l"><span data-en>local engine across desktop, CLI, browser, and ACP</span><span data-ko>desktop, CLI, browser, ACP를 아우르는 하나의 로컬 엔진</span></div></div>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap foot">
-    <div>© 2026 Patty Code · <span data-en>MIT licensed</span><span data-zh>MIT 许可</span></div>
+    <div>© 2026 Patty Code · <span data-en>MIT licensed</span><span data-ko>MIT 라이선스</span></div>
     <div class="foot-links">
       <a href="https://github.com/patty-io/patty-code">GitHub</a>
       <a href="https://www.npmjs.com/package/patty">npm</a>
       <a href="https://platform.deepseek.com" target="_blank" rel="noreferrer">DeepSeek</a>
-      <a href="https://github.com/patty-io/patty-code/releases"><span data-en>Releases</span><span data-zh>下载</span></a>
+      <a href="https://github.com/patty-io/patty-code/releases"><span data-en>Releases</span><span data-ko>릴리스</span></a>
     </div>
   </div>
 </footer>
 
 <script>
   var html=document.documentElement, langBtn=document.getElementById('lang');
-  function setLang(l){html.lang=l;langBtn.textContent=l==='zh'?'EN':'한국어';try{localStorage.setItem('rx-lang',l)}catch(e){}}
+  function setLang(l){html.lang=l;langBtn.textContent=l==='ko'?'EN':'한국어';try{localStorage.setItem('rx-lang',l)}catch(e){}}
   var saved; try{saved=localStorage.getItem('rx-lang')}catch(e){}
-  setLang(saved||((navigator.language||'').toLowerCase().indexOf('zh')===0?'zh':'en'));
-  langBtn.onclick=function(){setLang(html.lang==='zh'?'en':'zh')};
+  setLang(saved||((navigator.language||'').toLowerCase().indexOf('en')===0?'en':'ko'));
+  langBtn.onclick=function(){setLang(html.lang==='ko'?'en':'ko')};
 
   document.querySelectorAll('.tab').forEach(function(t){
     t.onclick=function(){
@@ -283,7 +276,7 @@ patty"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span c
     b.onclick=function(){
       navigator.clipboard.writeText(b.dataset.copy).then(function(){
         var prev=b.innerHTML; b.classList.add('ok');
-        b.innerHTML='<span data-en>Copied</span><span data-zh>已复制</span>';
+        b.innerHTML='<span data-en>Copied</span><span data-ko>복사됨</span>';
         setTimeout(function(){b.innerHTML=prev;b.classList.remove('ok')},1400);
       });
     };

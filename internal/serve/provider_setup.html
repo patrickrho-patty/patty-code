@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,27 +18,56 @@ label{display:block;margin:0 0 8px;font-weight:600}.field{width:100%;height:44px
 </head>
 <body>
 <main class="card">
-  <div class="brand"><img src="/assets/logo-wordmark.svg" alt="Patty Code" /><span class="badge" id="remote-badge">Remote</span></div>
-  <h1 id="title">Configure the remote Provider</h1>
-  <p id="intro">This Patty Code Serve is ready, but its selected Provider has no saved API key on this host.</p>
+  <div class="brand"><img src="/assets/logo-wordmark.svg" alt="Patty Code" /><span class="badge" id="remote-badge">원격</span></div>
+  <h1 id="title">원격 Provider 구성</h1>
+  <p id="intro">이 Patty Code Serve는 준비되었지만, 이 호스트에는 선택된 Provider의 API Key가 저장되어 있지 않습니다.</p>
   <dl class="meta">
     <dt id="provider-label">Provider</dt><dd id="provider">—</dd>
-    <dt id="model-label">Model</dt><dd id="model">—</dd>
-    <dt id="key-label">Credential</dt><dd id="key-env">—</dd>
+    <dt id="model-label">모델</dt><dd id="model">—</dd>
+    <dt id="key-label">자격 증명</dt><dd id="key-env">—</dd>
   </dl>
   <form id="setup-form">
     <label for="api-key" id="api-key-label">API Key</label>
     <input class="field" id="api-key" type="password" autocomplete="off" spellcheck="false" required />
-    <p class="hint" id="hint">The key is stored only in this remote host's Patty Code credential file.</p>
-    <div class="actions"><button id="save" type="submit">Save and open Patty Code</button><span class="status" id="status" role="status"></span></div>
+    <p class="hint" id="hint">키는 이 원격 호스트의 Patty Code 자격 증명 파일에만 저장됩니다.</p>
+    <div class="actions"><button id="save" type="submit">저장하고 Patty Code 열기</button><span class="status" id="status" role="status"></span></div>
   </form>
 </main>
 <script>
 const langPref='__LANG__';
-const zh=String(langPref).toLowerCase().startsWith('zh');
-const copy=zh?{
-  badge:'远端',title:'配置远端 Provider',intro:'Patty Code Serve 已可访问，但这台主机尚未保存当前 Provider 的 API Key。',provider:'Provider',model:'模型',credential:'凭据变量',apiKey:'API Key',hint:'密钥只会保存到这台远端主机的 Patty Code 凭据文件。',pendingHint:'API Key 已安全保存。现在只需重试激活 Provider。',save:'保存并打开 Patty Code',retry:'重试激活',saving:'正在保存…',activating:'正在激活…',failed:'保存失败，请重试。'
-}:{badge:'Remote',title:'Configure the remote Provider',intro:'This Patty Code Serve is ready, but its selected Provider has no saved API key on this host.',provider:'Provider',model:'Model',credential:'Credential',apiKey:'API Key',hint:"The key is stored only in this remote host's Patty Code credential file.",pendingHint:'The API key is safely stored. Retry Provider activation without entering it again.',save:'Save and open Patty Code',retry:'Retry activation',saving:'Saving…',activating:'Activating…',failed:'Setup failed. Try again.'};
+const pref=String(langPref).toLowerCase();
+const ko=!pref.startsWith('en');
+const copy=ko?{
+  badge:'원격',
+  title:'원격 Provider 구성',
+  intro:'이 Patty Code Serve는 준비되었지만, 이 호스트에는 선택된 Provider의 API Key가 저장되어 있지 않습니다.',
+  provider:'Provider',
+  model:'모델',
+  credential:'자격 증명',
+  apiKey:'API Key',
+  hint:'키는 이 원격 호스트의 Patty Code 자격 증명 파일에만 저장됩니다.',
+  pendingHint:'API Key가 안전하게 저장되었습니다. 이제 다시 입력하지 않고 Provider 활성화를 재시도하면 됩니다.',
+  save:'저장하고 Patty Code 열기',
+  retry:'활성화 재시도',
+  saving:'저장 중…',
+  activating:'활성화 중…',
+  failed:'설정에 실패했습니다. 다시 시도하세요.'
+}:{
+  badge:'Remote',
+  title:'Configure the remote Provider',
+  intro:'This Patty Code Serve is ready, but its selected Provider has no saved API key on this host.',
+  provider:'Provider',
+  model:'Model',
+  credential:'Credential',
+  apiKey:'API Key',
+  hint:"The key is stored only in this remote host's Patty Code credential file.",
+  pendingHint:'The API key is safely stored. Retry Provider activation without entering it again.',
+  save:'Save and open Patty Code',
+  retry:'Retry activation',
+  saving:'Saving…',
+  activating:'Activating…',
+  failed:'Setup failed. Try again.'
+};
 const $=id=>document.getElementById(id);
 $('remote-badge').textContent=copy.badge;$('title').textContent=copy.title;$('intro').textContent=copy.intro;$('provider-label').textContent=copy.provider;$('model-label').textContent=copy.model;$('key-label').textContent=copy.credential;$('api-key-label').textContent=copy.apiKey;$('hint').textContent=copy.hint;$('save').textContent=copy.save;
 let activationPending=false;

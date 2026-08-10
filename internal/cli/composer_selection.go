@@ -491,7 +491,7 @@ func (m *chatTUI) handleComposerGraphemeKey(msg tea.KeyPressMsg) bool {
 	value := m.input.Value()
 	offset := m.composerCursorOffset()
 	switch {
-	case key.Matches(msg, m.input.KeyMap.DeleteCharacterBackward):
+	case composerBackspaceKey(msg, m.input.KeyMap):
 		if value == "" || offset <= 0 {
 			return true
 		}
@@ -524,6 +524,10 @@ func (m *chatTUI) handleComposerGraphemeKey(msg tea.KeyPressMsg) bool {
 	default:
 		return false
 	}
+}
+
+func composerBackspaceKey(msg tea.KeyPressMsg, keyMap textarea.KeyMap) bool {
+	return key.Matches(msg, keyMap.DeleteCharacterBackward) || (msg.Code == 8 && msg.Text == "")
 }
 
 func normalizeComposerKeyPress(msg tea.KeyPressMsg) tea.KeyPressMsg {
@@ -560,7 +564,7 @@ func (m *chatTUI) deleteComposerSelection() bool {
 func composerSelectionDeletes(msg tea.KeyPressMsg, keyMap textarea.KeyMap) bool {
 	return key.Matches(msg, keyMap.DeleteAfterCursor) ||
 		key.Matches(msg, keyMap.DeleteBeforeCursor) ||
-		key.Matches(msg, keyMap.DeleteCharacterBackward) ||
+		composerBackspaceKey(msg, keyMap) ||
 		key.Matches(msg, keyMap.DeleteCharacterForward) ||
 		key.Matches(msg, keyMap.DeleteWordBackward) ||
 		key.Matches(msg, keyMap.DeleteWordForward)

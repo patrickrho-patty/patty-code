@@ -239,14 +239,20 @@ func TestComposerChromeIsKoreanFirstRoundedAndComplete(t *testing.T) {
 	if !strings.HasPrefix(lines[0], "╭─ 메시지 입력") {
 		t.Fatalf("composer heading should be embedded in the top border:\n%s", plain)
 	}
-	if !strings.HasPrefix(lines[1], "│ ") || !strings.HasSuffix(lines[1], " │") {
+	if strings.Trim(lines[1], " │") != "" {
+		t.Fatalf("composer should include top input padding inside the rounded rectangle:\n%s", plain)
+	}
+	if !strings.HasPrefix(lines[2], "│ ") || !strings.HasSuffix(lines[2], " │") {
 		t.Fatalf("composer input row should have vertical rounded-box sides:\n%s", plain)
 	}
-	if !strings.HasPrefix(lines[2], "╰") || !strings.HasSuffix(lines[2], "╯") {
+	if strings.Trim(lines[3], " │") != "" {
+		t.Fatalf("composer should include bottom input padding inside the rounded rectangle:\n%s", plain)
+	}
+	if !strings.HasPrefix(lines[4], "╰") || !strings.HasSuffix(lines[4], "╯") {
 		t.Fatalf("composer should close the rounded input rectangle before hints:\n%s", plain)
 	}
-	if got := len(lines); got != 5 {
-		t.Fatalf("one-row composer chrome has %d rows, want top border + input + bottom border + spacer + hints:\n%s", got, plain)
+	if got := len(lines); got != 7 {
+		t.Fatalf("one-row composer chrome has %d rows, want top border + top padding + input + bottom padding + bottom border + spacer + hints:\n%s", got, plain)
 	}
 }
 

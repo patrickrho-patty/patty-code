@@ -2203,12 +2203,12 @@ func (m chatTUI) composerRowCount() int {
 		return 1
 	}
 	if m.isCompactTerminal() {
-		return 2 + m.input.Height()
+		return 2 + m.composerInputVerticalPaddingRows() + m.input.Height()
 	}
 	if m.isNaturalStartupFrame() && !m.completion.active {
-		return 2 + m.input.Height()
+		return 2 + m.composerInputVerticalPaddingRows() + m.input.Height()
 	}
-	return 2 + m.input.Height() + m.composerHintRowCount(max(m.width, 10))
+	return 2 + m.composerInputVerticalPaddingRows() + m.input.Height() + m.composerHintRowCount(max(m.width, 10))
 }
 
 // hideComposer is the single ownership gate for the bottom composer.
@@ -3593,7 +3593,7 @@ func (m chatTUI) View() tea.View {
 		if !hideComposer {
 			if cur := m.composerCursor(); cur != nil {
 				cur.X += m.composerCursorChromeOffset()
-				cur.Y += m.sessionHeaderRowCount() + rowsAboveBox + 1
+				cur.Y += m.sessionHeaderRowCount() + rowsAboveBox + 1 + m.composerInputTopPaddingRows()
 				v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 			}
 		}
@@ -3638,7 +3638,7 @@ func (m chatTUI) View() tea.View {
 	if !hideComposer {
 		if cur := m.composerCursor(); cur != nil {
 			cur.X += m.composerCursorChromeOffset()
-			cur.Y += m.sessionHeaderRowCount() + m.viewport.Height() + rowsAboveBox + 1
+			cur.Y += m.sessionHeaderRowCount() + m.viewport.Height() + rowsAboveBox + 1 + m.composerInputTopPaddingRows()
 			v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 		}
 	}
@@ -3647,9 +3647,31 @@ func (m chatTUI) View() tea.View {
 
 func (m chatTUI) composerCursorChromeOffset() int {
 	if m.input.Value() == "" {
-		return max(composerCursorChromeOffset-1, 0)
+		return max(composerCursorChromeOffset-2, 0)
 	}
 	return composerCursorChromeOffset
+}
+
+func (m chatTUI) composerInputTopPaddingRows() int {
+	if m.composerInputVerticalPaddingRows() >= composerInputVerticalPaddingRows {
+		return composerInputTopPaddingRows
+	}
+	return 0
+}
+
+func (m chatTUI) composerInputVerticalPaddingRows() int {
+	if m.isMinimalTerminal() || m.isCompactTerminal() {
+		return 0
+	}
+	if m.height <= 0 {
+		return composerInputVerticalPaddingRows
+	}
+	headerRows := strings.Count(renderSessionHeader(m, max(m.width, 10)), "\n") + 1
+	composerRows := 2 + composerInputVerticalPaddingRows + max(m.input.Height(), 1)
+	if headerRows+m.bottomRowsWithoutComposer()+composerRows+minTranscriptRowsWithComposerHints > m.height {
+		return 0
+	}
+	return composerInputVerticalPaddingRows
 }
 
 func (m chatTUI) renderNaturalStartupTranscript(width, height int) string {
@@ -4229,11 +4251,11 @@ func (m chatTUI) inputHeightLimit() int {
 
 	limit := maxInputRows
 	composerRows := m.composerRowCount()
-	decorativeRows := composerChromeRows
+	decorativeRows := composerChromeRows + m.composerInputVerticalPaddingRows()
 	// Only the rounded input frame is mandatory chrome for growth budgeting.
 	// Secondary help hints are allowed to disappear on tight screens instead of
 	// preventing a multiline draft from showing its first lines.
-	halfScreen := max(1, m.height/2-decorativeRows)
+	halfScreen := max(1, (m.height-decorativeRows)/2)
 	limit = min(limit, halfScreen)
 
 	// bottomRows includes the current composer. Remove it to get the fixed

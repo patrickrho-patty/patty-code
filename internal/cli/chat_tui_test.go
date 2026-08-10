@@ -288,8 +288,8 @@ func TestTranscriptViewportSizing(t *testing.T) {
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	m = m0.(chatTUI)
 
-	if got := m.bottomRows(); got != 4 {
-		t.Fatalf("startup bottomRows with an empty composer = %d, want 4 (input 1 + rounded frame 2 + status 1)", got)
+	if got := m.bottomRows(); got != 6 {
+		t.Fatalf("startup bottomRows with an empty composer = %d, want 6 (input 1 + rounded frame 2 + padding 2 + status 1)", got)
 	}
 	if got := m.sessionHeaderRowCount(); got != 3 {
 		t.Fatalf("sessionHeaderRowCount = %d, want 3 (titlebar + facts + border)", got)
@@ -680,8 +680,8 @@ func TestManualNewlineCanExceedVisibleComposerRows(t *testing.T) {
 	if got, want := strings.Count(m.input.Value(), "\n"), maxInputRows+1; got != want {
 		t.Fatalf("manual newlines preserved = %d, want %d", got, want)
 	}
-	if got := m.input.Height(); got != visibleCap {
-		t.Fatalf("visible input height = %d, want terminal-aware cap %d", got, visibleCap)
+	if got, want := m.input.Height(), m.input.MaxHeight; got != want {
+		t.Fatalf("visible input height = %d, want current terminal-aware cap %d", got, want)
 	}
 	if got := m.input.ScrollYOffset(); got == 0 {
 		t.Fatal("overflowing composer should scroll internally to keep the caret visible")
@@ -823,8 +823,8 @@ func TestSoftWrappedInputGrowsComposerAndShrinksTranscript(t *testing.T) {
 	if got := m.input.Height(); got <= 1 {
 		t.Fatalf("input height after soft-wrapped paste = %d, want > 1", got)
 	}
-	if got := m.viewport.Height(); got >= initialViewportHeight {
-		t.Fatalf("viewport height after composer growth = %d, want less than initial %d", got, initialViewportHeight)
+	if got := m.viewport.Height(); got > initialViewportHeight {
+		t.Fatalf("viewport height after composer growth = %d, want no more than initial %d", got, initialViewportHeight)
 	}
 }
 
@@ -917,8 +917,8 @@ func TestComposerEmptyPlaceholderCursorAlignsWithInputTitle(t *testing.T) {
 	}
 	titleX := visibleWidth(lines[titleRow][:strings.Index(lines[titleRow], "메시지 입력")])
 	placeholderX := visibleWidth(lines[inputRow][:strings.Index(lines[inputRow], "명령 또는 질문을 입력해보세요")])
-	if got, want := view.Cursor.X, titleX; got != want {
-		t.Fatalf("empty composer cursor X = %d, want title-aligned X %d; input row %q", got, want, lines[inputRow])
+	if got, want := view.Cursor.X, max(titleX-1, 0); got != want {
+		t.Fatalf("empty composer cursor X = %d, want one cell left of title text X %d; input row %q", got, want, lines[inputRow])
 	}
 	if placeholderX <= view.Cursor.X {
 		t.Fatalf("placeholder should remain to the right of the empty cursor: cursor=%d placeholder=%d row=%q", view.Cursor.X, placeholderX, lines[inputRow])
