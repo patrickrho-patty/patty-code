@@ -469,7 +469,7 @@ func init() {
 }
 
 func refreshCLIStyles() {
-	composerInputStyle = lipgloss.NewStyle().PaddingLeft(1)
+	composerInputStyle = lipgloss.NewStyle()
 	selStyle = lipgloss.NewStyle().Reverse(true)
 	if colorOn() {
 		// The composer is rendered as an ANSI string, not a cell buffer. A

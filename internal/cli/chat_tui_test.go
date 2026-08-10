@@ -855,6 +855,36 @@ func TestComposerGutterReservesWidthAndOffsetsCJKCursor(t *testing.T) {
 	}
 }
 
+func TestComposerFrameOffsetsTerminalCursorAfterEnglishCharacter(t *testing.T) {
+	ctrl := control.New(control.Options{})
+	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 40)
+
+	m0, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 14})
+	m = m0.(chatTUI)
+	m.input.SetValue("a")
+
+	view := m.View()
+	if view.Cursor == nil {
+		t.Fatal("focused composer should expose the real terminal cursor")
+	}
+	lines := strings.Split(ansi.Strip(view.Content), "\n")
+	if view.Cursor.Y < 0 || view.Cursor.Y >= len(lines) {
+		t.Fatalf("cursor Y %d outside rendered content with %d rows", view.Cursor.Y, len(lines))
+	}
+	row := lines[view.Cursor.Y]
+	charX := strings.Index(row, "a")
+	if charX < 0 {
+		t.Fatalf("composer row does not contain typed character: %q", row)
+	}
+	charCell := visibleWidth(row[:charX])
+	if got, want := charCell, 4; got != want {
+		t.Fatalf("typed character cell = %d, want %d so input starts one cell closer to the border in row %q", got, want, row)
+	}
+	if got, want := view.Cursor.X, charCell+1; got != want {
+		t.Fatalf("terminal cursor X after English input = %d, want %d after typed character in row %q", got, want, row)
+	}
+}
+
 func TestComposerBlankGutterRepeatsOnWrappedRows(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 16)
