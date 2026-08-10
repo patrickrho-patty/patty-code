@@ -2189,7 +2189,7 @@ func (m chatTUI) composerRowCount() int {
 	if m.isCompactTerminal() {
 		return 1 + m.input.Height()
 	}
-	if m.isNaturalStartupFrame() {
+	if m.isNaturalStartupFrame() && !m.completion.active {
 		return 1 + m.input.Height()
 	}
 	return 1 + m.input.Height() + composerHintRowCount(max(m.width, 10))
@@ -2247,7 +2247,7 @@ func (m chatTUI) isLaunchChromeOnlyTranscript() bool {
 	if m.renderMainManager() != "" {
 		return false
 	}
-	if m.completion.active || m.chooserTyping() {
+	if m.chooserTyping() {
 		return false
 	}
 	if m.state == tuiRunning || m.answerIdx >= 0 || m.reasoningLineIdx >= 0 || m.toolStreamIdx >= 0 {

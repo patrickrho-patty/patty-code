@@ -444,7 +444,7 @@ func renderComposerChrome(m chatTUI, width int) string {
 	if m.isCompactTerminal() {
 		return header + "\n" + input
 	}
-	if m.isNaturalStartupFrame() {
+	if m.isNaturalStartupFrame() && !m.completion.active {
 		return header + "\n" + input
 	}
 	hints := renderComposerHints(width)

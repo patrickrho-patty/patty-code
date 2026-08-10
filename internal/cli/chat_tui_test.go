@@ -398,6 +398,34 @@ func TestIdleStartupUsesNaturalTranscriptHeight(t *testing.T) {
 		}
 	})
 
+	t.Run("slash completion preserves expanded launch frame", func(t *testing.T) {
+		m := newChatTUI(control.New(control.Options{}), "", make(chan event.Event, 1), 140)
+		m0, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
+		m = m0.(chatTUI)
+		before := m.View()
+		beforeRows := strings.Count(before.Content, "\n") + 1
+		if !m.isLaunchChromeOnlyTranscript() || before.AltScreen {
+			t.Fatalf("startup precondition failed: launch=%v alt=%v\n%s", m.isLaunchChromeOnlyTranscript(), before.AltScreen, ansi.Strip(before.Content))
+		}
+
+		m0, _ = m.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
+		m = m0.(chatTUI)
+		after := m.View()
+		plain := ansi.Strip(after.Content)
+		if !m.completion.active {
+			t.Fatalf("slash key did not open completion:\n%s", plain)
+		}
+		if !m.isLaunchChromeOnlyTranscript() || after.AltScreen {
+			t.Fatalf("slash completion exited launch frame: launch=%v alt=%v\n%s", m.isLaunchChromeOnlyTranscript(), after.AltScreen, plain)
+		}
+		if !strings.Contains(plain, "+-----------------------------+  +-----------------------------+") {
+			t.Fatalf("slash completion hid launch artwork:\n%s", plain)
+		}
+		if rows := strings.Count(after.Content, "\n") + 1; rows < beforeRows {
+			t.Fatalf("slash completion shrank startup from %d rows to %d:\n%s", beforeRows, rows, plain)
+		}
+	})
+
 	t.Run("tall startup notice before resize keeps composer within expanded launch frame", func(t *testing.T) {
 		m := newChatTUI(control.New(control.Options{}), "", make(chan event.Event, 1), 140)
 		m0, _ := m.Update(agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "Selected model is missing its API key."}))
