@@ -946,7 +946,7 @@ func TestMigrateSupportData(t *testing.T) {
 
 	// Write data to the legacy support directory
 	filesToWrite := map[string]string{
-		"config.toml":                  "language = \"zh\"",
+		"config.toml":                  "language = \"ko-KR\"",
 		"hooks.json":                   `{"hook":"test"}`,
 		"sessions/s1.json":             `{"id":"s1"}`,
 		"projects/p1/sessions/s2.json": `{"id":"s2"}`,

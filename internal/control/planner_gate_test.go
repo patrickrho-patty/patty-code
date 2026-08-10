@@ -135,7 +135,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 			reason: plannerReasonUserPlanOnly,
 		},
 		{
-			name:   "bare chinese plan only with embedded target",
+			name:   "bare korean plan only with embedded target",
 			input:  "오직 방안만 주세요",
 			route:  agent.PlannerRoutePlanOnly,
 			depth:  agent.PlannerDepthFull,
@@ -163,7 +163,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 			reason: plannerReasonUserPlanOnly,
 		},
 		{
-			name:   "task first chinese plan only boundary",
+			name:   "task first korean plan only boundary",
 			input:  "인증 마이그레이션을 검토하고, 방안만 주세요. 코드는 수정하지 마세요",
 			route:  agent.PlannerRoutePlanOnly,
 			depth:  agent.PlannerDepthFull,
@@ -205,7 +205,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 			reason: plannerReasonUserPlanApproval,
 		},
 		{
-			name:   "task first chinese approval boundary",
+			name:   "task first korean approval boundary",
 			input:  "인증 마이그레이션을 구현하되, 먼저 방안을 주고 제가 확인할 때까지 기다려 주세요",
 			route:  agent.PlannerRoutePlanForApproval,
 			depth:  agent.PlannerDepthFull,
@@ -247,7 +247,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 			reason: plannerReasonComplexIntent,
 		},
 		{
-			name:   "task first chinese direct execution boundary",
+			name:   "task first korean direct execution boundary",
 			input:  "인증 마이그레이션을 구현하고, 계획하지 말고, 바로 수정해 줘",
 			route:  agent.PlannerRouteExecutorOnly,
 			depth:  agent.PlannerDepthNone,

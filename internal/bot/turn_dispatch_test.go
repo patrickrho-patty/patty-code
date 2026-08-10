@@ -73,13 +73,13 @@ func TestGatewayApprovalReplyUnblocksTurnOffDispatchGoroutine(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	gw := NewGateway(GatewayConfig{Allowlist: AllowlistConfig{AllowAll: true}}, nil, logger)
 
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	binding := AdapterBinding{ID: "weixin", Platform: Platform("weixin"), Adapter: adapter}
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	binding := AdapterBinding{ID: "relay", Platform: Platform("relay"), Adapter: adapter}
 
 	ctrl := newApprovalBlockingController()
 	msg := InboundMessage{
-		Platform:     Platform("weixin"),
-		ConnectionID: "weixin",
+		Platform:     Platform("relay"),
+		ConnectionID: "relay",
 		ChatType:     ChatDM,
 		ChatID:       "chat",
 		UserID:       "user",

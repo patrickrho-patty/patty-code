@@ -236,7 +236,7 @@ func TestHistoryEnglishCandidateNameBackwardCompat(t *testing.T) {
 	if len(view.Memories) == 0 {
 		t.Fatalf("no candidates")
 	}
-// Old code: suggestionName("", statement, "memory-candidate-1") = asciiSlug(statement)
+	// Old code: suggestionName("", statement, "memory-candidate-1") = asciiSlug(statement)
 	oldName := asciiSlug("Always prefer English for code comments.")
 	if view.Memories[0].Name != oldName {
 		t.Fatalf("Name = %q, want old-compatible %q (no hash suffix for short ASCII slugs)", view.Memories[0].Name, oldName)
@@ -252,12 +252,12 @@ func TestHistoryMemoryCandidateNamesUniqueForCJK(t *testing.T) {
 	cwd := t.TempDir()
 	sessionDir := t.TempDir()
 	store := memory.StoreFor(userDir, cwd)
-// Two pure-CJK "always" statements that pass extractMemoryStatement but
-	writeSuggestionSession(t, sessionDir, "zh-a.jsonl",
+	// Two pure-CJK "always" statements that pass extractMemoryStatement but
+	writeSuggestionSession(t, sessionDir, "ko-a.jsonl",
 		provider.Message{Role: provider.RoleUser, Content: "앞으로 항상 A안으로 병합 충돌을 처리하세요."},
 		provider.Message{Role: provider.RoleAssistant, Content: "좋아요."},
 	)
-	writeSuggestionSession(t, sessionDir, "zh-b.jsonl",
+	writeSuggestionSession(t, sessionDir, "ko-b.jsonl",
 		provider.Message{Role: provider.RoleUser, Content: "앞으로 항상 B안으로 배포 롤백을 처리하세요."},
 		provider.Message{Role: provider.RoleAssistant, Content: "좋아요."},
 	)
@@ -286,7 +286,7 @@ func TestHistoryMemoryCandidateNamesUniqueForCJK(t *testing.T) {
 		ids[m.ID] = true
 	}
 
-// Accept both  two distinct persisted memories.
+	// Accept both  two distinct persisted memories.
 	for _, c := range view.Memories {
 		if _, err := app.AcceptMemorySuggestion(c); err != nil {
 			t.Fatalf("AcceptMemorySuggestion(%s): %v", c.Name, err)

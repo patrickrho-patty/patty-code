@@ -147,8 +147,8 @@ func TestAskCardAddsAnswerButtonsForSingleChoice(t *testing.T) {
 }
 
 func TestRenderSinkDoesNotFlushMidSentenceOnTimer(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 	sink.lastFlush = time.Now().Add(-2 * time.Second)
 
 	sink.Emit(event.Event{Kind: event.Text, Text: "저는 **"})
@@ -169,8 +169,8 @@ func TestRenderSinkDoesNotFlushMidSentenceOnTimer(t *testing.T) {
 }
 
 func TestRenderSinkKeepsSemanticTextUntilFinalResult(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 	sink.lastFlush = time.Now().Add(-2 * time.Second)
 
 	sink.Emit(event.Event{Kind: event.Text, Text: "첫 번째 문장。"})
@@ -190,8 +190,8 @@ func TestRenderSinkKeepsSemanticTextUntilFinalResult(t *testing.T) {
 }
 
 func TestRenderSinkFinalFlushKeepsChunkLimit(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 	sink.buf.WriteString(strings.Repeat("긴", renderMaxChunkRunes*2+10))
 
 	sink.Emit(event.Event{Kind: event.TurnDone})
@@ -208,8 +208,8 @@ func TestRenderSinkFinalFlushKeepsChunkLimit(t *testing.T) {
 }
 
 func TestRenderSinkConsumesEmptyWhitespacePrefix(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 	sink.buf.WriteString("\n도구 상태")
 
 	sink.flushPrefix(1)
@@ -223,8 +223,8 @@ func TestRenderSinkConsumesEmptyWhitespacePrefix(t *testing.T) {
 }
 
 func TestRenderSinkSendsProgressWithoutToolOutput(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	sink.Emit(event.Event{Kind: event.TurnStarted})
 	sink.Emit(event.Event{Kind: event.ToolDispatch, Tool: event.Tool{ID: "tool-1", Name: "read_file", ReadOnly: true}})
@@ -250,8 +250,8 @@ func TestRenderSinkSendsProgressWithoutToolOutput(t *testing.T) {
 }
 
 func TestRenderSinkLimitsProgressMessages(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	for range renderMaxProgressMessages + 2 {
 		sink.lastProgress = time.Now().Add(-renderProgressMinInterval)
@@ -277,7 +277,7 @@ type editRecord struct {
 }
 
 func newFakeEditorAdapter() *fakeEditorAdapter {
-	return &fakeEditorAdapter{fakeAdapter: newFakeAdapter(Platform("feishu"), "fake-feishu")}
+	return &fakeEditorAdapter{fakeAdapter: newFakeAdapter(Platform("custom"), "fake-custom")}
 }
 
 func (f *fakeEditorAdapter) EditMessage(ctx context.Context, messageID string, msg OutboundMessage) error {
@@ -300,9 +300,9 @@ func (f *fakeEditorAdapter) editRecords() []editRecord {
 
 func TestRenderSinkStreamsIntoLiveMessage(t *testing.T) {
 	adapter := newFakeEditorAdapter()
-	sink := newRenderSink(context.Background(), adapter, "feishu-feishu", "feishu", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	sink := newRenderSink(context.Background(), adapter, "custom-main", "custom", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
-// 첫 번째 증분：소프트 윈도우를 초과한 후 live 메시지를 생성합니다。
+	// 첫 번째 증분：소프트 윈도우를 초과한 후 live 메시지를 생성합니다。
 	sink.lastFlush = time.Now().Add(-2 * renderSoftFlushAfter)
 	sink.Emit(event.Event{Kind: event.Text, Text: "첫 번째 내용"})
 	if sent := adapter.sentMessages(); len(sent) != 1 || sent[0].Text != "첫 번째 내용" {
@@ -326,7 +326,7 @@ func TestRenderSinkStreamsIntoLiveMessage(t *testing.T) {
 		t.Fatalf("edit text = %q, want cumulative content", edits[0].text)
 	}
 
-// 턴 종료：최종 내용을 live 메시지에 편집하고 새로 보내지 않습니다。
+	// 턴 종료：최종 내용을 live 메시지에 편집하고 새로 보내지 않습니다。
 	sink.Emit(event.Event{Kind: event.Text, Text: "마무리。"})
 	sink.Emit(event.Event{Kind: event.TurnDone})
 	if sent := adapter.sentMessages(); len(sent) != 1 {
@@ -344,7 +344,7 @@ func TestRenderSinkStreamsIntoLiveMessage(t *testing.T) {
 
 func TestRenderSinkStreamingThrottledBySoftWindow(t *testing.T) {
 	adapter := newFakeEditorAdapter()
-	sink := newRenderSink(context.Background(), adapter, "feishu-feishu", "feishu", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	sink := newRenderSink(context.Background(), adapter, "custom-main", "custom", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	// 소프트 윈도우 안의 증분은 네트워크 호출을 발생시키지 않습니다。
 	sink.Emit(event.Event{Kind: event.Text, Text: "방금 시작한 내용"})
@@ -358,7 +358,7 @@ func TestRenderSinkStreamingThrottledBySoftWindow(t *testing.T) {
 
 func TestRenderSinkStreamingEditFailureRotatesWithoutDuplication(t *testing.T) {
 	adapter := newFakeEditorAdapter()
-	sink := newRenderSink(context.Background(), adapter, "feishu-feishu", "feishu", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	sink := newRenderSink(context.Background(), adapter, "custom-main", "custom", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	sink.lastFlush = time.Now().Add(-2 * renderSoftFlushAfter)
 	sink.Emit(event.Event{Kind: event.Text, Text: "이미 전송된 내용。"})
@@ -391,7 +391,7 @@ func TestRenderSinkStreamingEditFailureRotatesWithoutDuplication(t *testing.T) {
 
 func TestRenderSinkStreamingHardCapRotatesBlocks(t *testing.T) {
 	adapter := newFakeEditorAdapter()
-	sink := newRenderSink(context.Background(), adapter, "feishu-feishu", "feishu", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	sink := newRenderSink(context.Background(), adapter, "custom-main", "custom", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	sink.lastFlush = time.Now().Add(-2 * renderSoftFlushAfter)
 	sink.Emit(event.Event{Kind: event.Text, Text: "첫 번째 문장。"})
@@ -399,7 +399,7 @@ func TestRenderSinkStreamingHardCapRotatesBlocks(t *testing.T) {
 		t.Fatal("live message should be created")
 	}
 
-// 하드 상한 초과：live 메시지를 의미 경계에서 마무리하고 나머지는 다음 블록으로 넘깁니다。
+	// 하드 상한 초과：live 메시지를 의미 경계에서 마무리하고 나머지는 다음 블록으로 넘깁니다。
 	sink.Emit(event.Event{Kind: event.Text, Text: strings.Repeat("긴", renderHardChunkRunes) + "。꼬리"})
 	if sink.liveMsgID != "" {
 		t.Fatalf("liveMsgID = %q, want block closed at hard cap", sink.liveMsgID)
@@ -429,8 +429,8 @@ func (f *failingEditorAdapter) EditMessage(ctx context.Context, id string, msg O
 }
 
 func TestRenderSinkStreamingEditFailureDoesNotDuplicate(t *testing.T) {
-	adapter := &failingEditorAdapter{fakeAdapter: newFakeAdapter(Platform("feishu"), "fake-feishu")}
-	sink := newRenderSink(context.Background(), adapter, "feishu-feishu", "feishu", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := &failingEditorAdapter{fakeAdapter: newFakeAdapter(Platform("custom"), "fake-custom")}
+	sink := newRenderSink(context.Background(), adapter, "custom-main", "custom", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	sink.lastFlush = time.Now().Add(-2 * renderSoftFlushAfter)
 	head := strings.Repeat("a", 2000)
@@ -455,7 +455,7 @@ func TestRenderSinkStreamingEditFailureDoesNotDuplicate(t *testing.T) {
 
 func TestRenderSinkStreamingFinalizesInOneEditWithoutSplit(t *testing.T) {
 	adapter := newFakeEditorAdapter()
-	sink := newRenderSink(context.Background(), adapter, "feishu-feishu", "feishu", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	sink := newRenderSink(context.Background(), adapter, "custom-main", "custom", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	sink.lastFlush = time.Now().Add(-2 * renderSoftFlushAfter)
 	sink.Emit(event.Event{Kind: event.Text, Text: "결론은 다음과 같습니다. 코드는 여기:\n```go\nfmt.Println(\"x\")\n```"})
@@ -471,8 +471,8 @@ func TestRenderSinkStreamingFinalizesInOneEditWithoutSplit(t *testing.T) {
 }
 
 func TestRenderSinkSuppressesReasoning(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	sink.Emit(event.Event{Kind: event.Reasoning, Text: "internal reasoning"})
 	sink.Emit(event.Event{Kind: event.Text, Text: "보이는 결과"})
@@ -488,8 +488,8 @@ func TestRenderSinkSuppressesReasoning(t *testing.T) {
 }
 
 func TestRenderSinkSuppressesOperatorNoticesWithoutHidingUserWarnings(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: "please resend your message"})
 	for _, code := range []string{
@@ -517,8 +517,8 @@ func TestRenderSinkSuppressesOperatorNoticesWithoutHidingUserWarnings(t *testing
 }
 
 func TestRenderSinkIgnoresSubagentProgress(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
-	sink := newRenderSink(context.Background(), adapter, "weixin-weixin", "weixin", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
+	sink := newRenderSink(context.Background(), adapter, "relay-main", "relay", "chat-1", ChatDM, "user-1", "msg-1", slog.New(slog.NewTextHandler(io.Discard, nil)), nil, nil)
 
 	sink.Emit(event.Event{Kind: event.TurnStarted})
 	sink.Emit(event.Event{Kind: event.ToolDispatch, Tool: event.Tool{ID: "task-1", Name: "task"}})

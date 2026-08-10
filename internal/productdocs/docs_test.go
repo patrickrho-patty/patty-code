@@ -117,12 +117,12 @@ func TestExtensionDeveloperGuidesAreEmbeddedAndSearchable(t *testing.T) {
 		t.Fatalf("English extension search did not expose the overview and manifest reference:\n%s", english)
 	}
 
-	chinese, err := tool.search(context.Background(), "Sidecar 플러그인 Manifest v2 확장 개발", "ko-KR", "all", 10)
+	koreanResults, err := tool.search(context.Background(), "Sidecar 플러그인 Manifest v2 확장 개발", "ko-KR", "all", 10)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(chinese, "path=docs/EXTENSIONS.ko-KR.md") || !strings.Contains(chinese, "path=docs/PLUGIN_PACKAGES.ko-KR.md") {
-		t.Fatalf("Korean extension search did not expose the overview and manifest reference:\n%s", chinese)
+	if !strings.Contains(koreanResults, "path=docs/EXTENSIONS.ko-KR.md") || !strings.Contains(koreanResults, "path=docs/PLUGIN_PACKAGES.ko-KR.md") {
+		t.Fatalf("Korean extension search did not expose the overview and manifest reference:\n%s", koreanResults)
 	}
 }
 
@@ -236,12 +236,12 @@ func TestReleaseNotesAreSearchableInBothLanguages(t *testing.T) {
 		t.Fatalf("English release search missing versioned changelog:\n%s", english)
 	}
 
-	chinese, err := tl.search(context.Background(), "v1.19.5 사용량 통계 패널", "ko-KR", "user", 5)
+	koreanResults, err := tl.search(context.Background(), "v1.19.5 사용량 통계 패널", "ko-KR", "user", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(chinese, "path=changelog/v1.19.5.ko-KR.md") {
-		t.Fatalf("Korean release search missing versioned changelog:\n%s", chinese)
+	if !strings.Contains(koreanResults, "path=changelog/v1.19.5.ko-KR.md") {
+		t.Fatalf("Korean release search missing versioned changelog:\n%s", koreanResults)
 	}
 
 	sections, err := tl.read("", "changelog/v1.19.5.ko-KR.md")
@@ -329,12 +329,12 @@ func TestSearchPrefersRelevantKoreanAndEnglishSections(t *testing.T) {
 	}
 	tl := &docsTool{catalog: c}
 
-	zh, err := tl.search(context.Background(), "도구 권한 Auto Yolo 자동 승인", "auto", "all", 5)
+	koResults, err := tl.search(context.Background(), "도구 권한 Auto Yolo 자동 승인", "auto", "all", 5)
 	if err != nil {
 		t.Fatalf("Korean search: %v", err)
 	}
-	if !strings.Contains(zh, "docs/TOOL_APPROVAL_MODES.ko-KR.md") {
-		t.Fatalf("Korean search did not find the permission guide:\n%s", zh)
+	if !strings.Contains(koResults, "docs/TOOL_APPROVAL_MODES.ko-KR.md") {
+		t.Fatalf("Korean search did not find the permission guide:\n%s", koResults)
 	}
 
 	en, err := tl.search(context.Background(), "PATTY_HOME configuration paths", "auto", "all", 5)

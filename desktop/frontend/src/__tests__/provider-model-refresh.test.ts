@@ -216,7 +216,7 @@ eq(
     apiKeyEnvFromProviderName("센스타임"),
     apiKeyEnvFromProviderName("큐원"),
   ],
-  ["CUSTOM_9ROUTER_API_KEY", "CUSTOM_d39b9067_API_KEY", "CUSTOM_e995c4c9_API_KEY"],
+  ["CUSTOM_9ROUTER_API_KEY", "CUSTOM_5628d3c9_API_KEY", "CUSTOM_fbf63a8d_API_KEY"],
   "generates valid stable key envs for digit-leading and non-ASCII provider names",
 );
 

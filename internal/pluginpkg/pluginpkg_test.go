@@ -49,7 +49,7 @@ func TestParseCodexSuperpowersManifest(t *testing.T) {
 
 func TestParseDirDecodesGB18030Manifest(t *testing.T) {
 	root := t.TempDir()
-	manifest := `{"apiVersion":"patty.io/plugin/v2","name":"cn-plugin","version":"1.0.0","description":"중국어 플러그인"}`
+	manifest := `{"apiVersion":"patty.io/plugin/v2","name":"ko-plugin","version":"1.0.0","description":"한국어 플러그인"}`
 	path := filepath.Join(root, NativeManifest)
 	if err := os.WriteFile(path, fileencoding.Encode(manifest, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
@@ -62,7 +62,7 @@ func TestParseDirDecodesGB18030Manifest(t *testing.T) {
 	if len(warnings) != 0 {
 		t.Fatalf("warnings = %v", warnings)
 	}
-	if pkg.Manifest.Description != "중국어 플러그인" {
+	if pkg.Manifest.Description != "한국어 플러그인" {
 		t.Fatalf("decoded manifest = %+v", pkg.Manifest)
 	}
 }
@@ -317,8 +317,8 @@ func TestParseClaudePluginIgnoresEmptyConventionDirAndExplicitSkillsWin(t *testi
 func TestParseClaudeHooksKeepsDistinctEnvTimeoutAsyncCwd(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{"name": "hook-pack"}`)
-// Same event/matcher/command/args, but each block differs in exactly one
-// of env, timeout, async, cwd  none should be dropped as a duplicate of
+	// Same event/matcher/command/args, but each block differs in exactly one
+	// of env, timeout, async, cwd  none should be dropped as a duplicate of
 	writeTestFile(t, filepath.Join(root, "hooks", "hooks.json"), `{
   "hooks": {"PreToolUse": [
     {"matcher": "bash", "hooks": [{"type":"command","command":"bin/guard","env":{"MODE":"a"}}]},
@@ -485,8 +485,8 @@ func TestParseClaudeHooksWarnOnUnsupportedSemantics(t *testing.T) {
 			if !found {
 				t.Fatalf("warnings = %v, want one containing %q", warnings, c.wantSub)
 			}
-// The hook is still imported best-effort  dropping it entirely
-// could remove a plugins only safety hook.
+			// The hook is still imported best-effort  dropping it entirely
+			// could remove a plugins only safety hook.
 			if pkg.Manifest.Hooks == nil {
 				t.Fatal("hook should still be imported despite the unsupported semantics")
 			}
@@ -567,7 +567,7 @@ func TestParseClaudeHooksDoesNotWarnOnMatchersThatCanFire(t *testing.T) {
 			hooksJSON: `{"hooks":{"PreToolUse":[{"matcher":"Bash|WebSearch","hooks":[{"type":"command","command":"bin/guard"}]}]}}`,
 		},
 		{
-// A regex beyond a plain "|" alternation isn't evaluated, to
+			// A regex beyond a plain "|" alternation isn't evaluated, to
 			name:      "complex-regex-not-evaluated",
 			hooksJSON: `{"hooks":{"PreToolUse":[{"matcher":"WebSearch.*","hooks":[{"type":"command","command":"bin/guard"}]}]}}`,
 		},
@@ -640,16 +640,16 @@ func TestParseClaudePluginMapsConventionCapabilities(t *testing.T) {
 }
 
 func TestClaudeMCPServerIDUsesConnectionIdentityAndPreservesValidNames(t *testing.T) {
-	identity := claudeMCPIdentity{Type: "http", URL: "https://open.feishu.cn/mcp"}
+	identity := claudeMCPIdentity{Type: "http", URL: "https://open.custom.cn/mcp"}
 	if got := claudeMCPServerID("yuandian", identity); got != "yuandian" {
 		t.Fatalf("valid MCP ID changed to %q", got)
 	}
-	first := claudeMCPServerID("페이수", identity)
-	second := claudeMCPServerID("페이수", identity)
+	first := claudeMCPServerID("샘플", identity)
+	second := claudeMCPServerID("샘플", identity)
 	if first != second || !IsValidName(first) {
 		t.Fatalf("stable MCP IDs = %q / %q", first, second)
 	}
-	different := claudeMCPServerID("페이수", claudeMCPIdentity{Type: "http", URL: "https://example.com/other"})
+	different := claudeMCPServerID("샘플", claudeMCPIdentity{Type: "http", URL: "https://example.com/other"})
 	if different == first {
 		t.Fatalf("different endpoints shared MCP ID %q", first)
 	}

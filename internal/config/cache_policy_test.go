@@ -12,6 +12,7 @@ func TestDefaultCacheTTL(t *testing.T) {
 	}{
 		{"https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1", 5 * time.Minute},
 		{"https://dashscope.aliyuncs.com/compatible-mode/v1", 5 * time.Minute},
+		{"https://dashscope-intl.aliyuncs.com/compatible-mode/v1", 5 * time.Minute},
 		{"https://api.deepseek.com", 24 * time.Hour},
 		{"https://api.anthropic.com", 5 * time.Minute},
 		{"https://unknown.example.com/v1", 24 * time.Hour},
@@ -54,6 +55,7 @@ func TestDetectCacheVendor(t *testing.T) {
 	}{
 		{"https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1", "dashscope"},
 		{"https://dashscope.aliyuncs.com/api/v1", "dashscope"},
+		{"https://dashscope-intl.aliyuncs.com/api/v1", "dashscope"},
 		{"https://api.deepseek.com", "deepseek"},
 		{"https://api.anthropic.com", "anthropic"},
 		{"https://openrouter.ai/api/v1", ""},

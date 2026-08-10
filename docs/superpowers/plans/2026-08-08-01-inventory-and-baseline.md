@@ -12,7 +12,7 @@ Establish the authoritative machine-readable match ledger of all Patty Code/patt
 
 ## 2. Scope
 
-- Literal string scans for `patty`, `pattycorp`, Chinese locales, branded paths
+- Literal string scans for `patty`, `pattycorp`, retired locale resources, and branded paths
 - Semantic category classification (16 categories from §13.4)
 - Behavioral baseline: record passing/failing tests per workstream area
 - Build matrix: verify clean builds on macOS, document Windows/Linux parity gaps
@@ -27,7 +27,7 @@ Establish the authoritative machine-readable match ledger of all Patty Code/patt
 | Surface | Files with matches | Matches |
 |---|---:|---:|
 | Full tree (tracked files) | 1,627 | 13,276 |
-| Chinese docs + zh locale files | 35+7 | 35 docs + 7 code files |
+| Retired locale docs and files | 35+7 | 35 docs + 7 code files |
 | Branded paths from §13.3 | 28 tracked paths | 28 entries to disposition |
 
 ## 4. Required Commands and Outputs
@@ -44,7 +44,7 @@ git ls-files | xargs -I{} sh -c 'rg -qi "pattycorp" "{}" && echo {}' > /tmp/patt
 
 rg -i --hidden --no-ignore --glob '!.git/**' 'patty|pattycorp' --output=file | sort -u > /tmp/patty_pattycorp_files.txt
 
-find . \( -name "*.zh*" -o -name "*ko-KR*" -o -name "*en-US*" -o -name "*messages_ko*" \) -not -path '*/node_modules/*' -not -path '*/.git/*' > /tmp/chinese_paths.txt
+find . \( -name "*.zh*" -o -name "*en-US*" -o -name "*messages_zh*" \) -not -path '*/node_modules/*' -not -path '*/.git/*' > /tmp/retired_locale_paths.txt
 ```
 
 ### 4.2 Expanded Brand Scans (Category-specific)
@@ -99,7 +99,7 @@ Categories map to numbers:
 ## 5. Task List
 
 ### T1: Run primary literal scans and produce raw file lists
-- **Output:** `/tmp/patty_files.txt`, `/tmp/pattycorp_files.txt`, `/tmp/chinese_paths.txt`
+- **Output:** `/tmp/patty_files.txt`, `/tmp/pattycorp_files.txt`, `/tmp/retired_locale_paths.txt`
 - **Expected exit:** 0
 - **Done when:** All four scan commands above execute successfully and output files are non-empty
 

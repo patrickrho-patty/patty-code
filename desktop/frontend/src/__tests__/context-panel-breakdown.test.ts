@@ -239,7 +239,7 @@ eq(currencySymbol("aud"), "AUD ", "unknown ISO currency codes stay readable");
 eq(currencySymbol("A$"), "A$", "compact multi-character currency symbols are preserved");
 const usdLocalized = formatMoneyLocalized(0.1759, "USD", { locale: "en" });
 ok(/\$|USD|US\$/.test(usdLocalized) && usdLocalized.includes("0.1759"), "ISO USD cost renders with locale-aware currency formatting");
-const cnyLocalized = formatMoneyLocalized(12.3, "CNY", { locale: "zh" });
+const cnyLocalized = formatMoneyLocalized(12.3, "CNY", { locale: "ko-KR" });
 ok(/¥|CNY|CN¥/.test(cnyLocalized) && cnyLocalized.includes("12.30"), "ISO CNY cost renders with locale-aware currency formatting");
 eq(formatMoneyLocalized(0.1759, "A$", { locale: "en" }), "A$0.1759", "symbol currency remains symbol-based");
 eq(formatMoneyLocalized(0, "USD", { locale: "en", empty: "dash" }), "-", "localized money preserves dash empty state");

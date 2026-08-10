@@ -124,8 +124,8 @@ func TestSteerTextSurvivesTurnPreferenceWrapping(t *testing.T) {
 		text  string
 	}{
 		{"english auto (no blocks)", plain, "use plan B"},
-		{"chinese auto (reasoning block)", plain, "계획 B로 바꿔 주세요"},
-		{"explicit zh (both blocks)", explicit, "switch to plan B"},
+		{"korean auto (reasoning block)", plain, "계획 B로 바꿔 주세요"},
+		{"explicit ko-KR (both blocks)", explicit, "switch to plan B"},
 		{"exact text preserved", plain, "  spaced\ttext  "},
 	}
 	for _, tc := range cases {

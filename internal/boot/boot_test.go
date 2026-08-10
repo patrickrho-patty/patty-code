@@ -65,7 +65,7 @@ func TestApplyRuntimeAutoPricingCurrency(t *testing.T) {
 		wantCurrency    string
 		wantOutput      float64
 	}{
-		{name: "auto Chinese locale", runtimeCurrency: "CNY", wantCurrency: "¥", wantOutput: 2},
+		{name: "auto regional locale", runtimeCurrency: "CNY", wantCurrency: "¥", wantOutput: 2},
 		{name: "auto English locale", runtimeCurrency: "USD", wantCurrency: "$", wantOutput: 0.28},
 		{name: "explicit USD wins", runtimeCurrency: "CNY", desktopCurrency: "USD", wantCurrency: "$", wantOutput: 0.28},
 		{name: "explicit CNY wins", runtimeCurrency: "USD", desktopCurrency: "CNY", wantCurrency: "¥", wantOutput: 2},

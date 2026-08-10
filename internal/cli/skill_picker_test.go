@@ -711,7 +711,7 @@ func TestRenderSkillRowLongNameTruncated(t *testing.T) {
 	}
 }
 
-func TestRenderSkillRowChineseBadgeFitsWidth(t *testing.T) {
+func TestRenderSkillRowKoreanBadgeFitsWidth(t *testing.T) {
 	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 

@@ -142,12 +142,12 @@ func TestStoreListDecodesGB18030MemoryFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := `---
-title: 중국어 선호
-description: 중국어로 답변
+title: 한국어 선호
+description: 한국어로 답변
 type: user
 ---
-사용자는 기본적으로 중국어로 답변하기를 원합니다.`
-	if err := os.WriteFile(filepath.Join(s.Dir, "cn-pref.md"), fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
+사용자는 기본적으로 한국어로 답변하기를 원합니다.`
+	if err := os.WriteFile(filepath.Join(s.Dir, "ko-pref.md"), fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -156,7 +156,7 @@ type: user
 		t.Fatalf("List() = %+v, want one decoded memory", memories)
 	}
 	m := memories[0]
-	if m.Title != "중국어 선호" || m.Description != "중국어로 답변" || !strings.Contains(m.Body, "기본적으로 중국어로 답변") {
+	if m.Title != "한국어 선호" || m.Description != "한국어로 답변" || !strings.Contains(m.Body, "기본적으로 한국어로 답변") {
 		t.Fatalf("decoded memory = %+v", m)
 	}
 }
@@ -543,7 +543,7 @@ func TestStoreGlobalAndProject(t *testing.T) {
 		t.Fatalf("want 3 memories after delete, got %d", len(list2))
 	}
 
-// Index should not duplicate  Memory headers (Block() adds its own).
+	// Index should not duplicate  Memory headers (Block() adds its own).
 	idx2 := s.Index()
 	if strings.Count(idx2, "# Memory") != 0 {
 		t.Fatalf("Index should have 0 # Memory headers (Block() adds one), got %d:\n%s", strings.Count(idx2, "# Memory"), idx2)
@@ -779,7 +779,7 @@ func TestStoreSaveVerifiesIndexDir(t *testing.T) {
 		GlobalDir: filepath.Join(dir, "global"),
 	}
 
-// Explicit global user preference  GlobalDir.
+	// Explicit global user preference  GlobalDir.
 	if _, err := s.Save(Memory{Name: "user-pref", Description: "d", Type: TypeUser, Scope: FactScopeGlobal, Body: "b"}); err != nil {
 		t.Fatal(err)
 	}
@@ -792,7 +792,7 @@ func TestStoreSaveVerifiesIndexDir(t *testing.T) {
 		t.Fatal("Dir MEMORY.md should NOT contain user-pref (it went to GlobalDir)")
 	}
 
-// TypeProject  Dir
+	// TypeProject  Dir
 	if _, err := s.Save(Memory{Name: "build-cmd", Description: "d", Type: TypeProject, Body: "b"}); err != nil {
 		t.Fatal(err)
 	}
@@ -840,7 +840,7 @@ func TestStoreDeleteFlushesIndexPerDir(t *testing.T) {
 		t.Fatalf("Dir MEMORY.md should not reference %s after delete:\n%s", name, pb)
 	}
 
-// Index() should return  (no entries, no orphaned header).
+	// Index() should return  (no entries, no orphaned header).
 	idx := s.Index()
 	if idx != "" {
 		t.Fatalf("Index() should return empty after deleting all entries, got:\n%s", idx)
@@ -854,7 +854,7 @@ func TestStorePathWithGlobalDir(t *testing.T) {
 		GlobalDir: filepath.Join(dir, "global"),
 	}
 
-// No files yet  defaults to Dir.
+	// No files yet  defaults to Dir.
 	p := s.Path("new-fact")
 	if !strings.HasPrefix(p, s.Dir) {
 		t.Fatalf("Path for new file should default to Dir, got %s", p)

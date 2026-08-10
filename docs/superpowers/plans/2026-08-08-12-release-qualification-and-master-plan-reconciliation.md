@@ -14,7 +14,7 @@ Run the final whole-tree audit across source, generated artifacts, binaries, pac
 
 - Clean-build from scratch → verify all artifacts produce correct identities
 - Binary inspection via `strings`, archive member listing, XML parsing of SVGs
-- Locale completeness: ko ≥ en ≥ 0 zh resources
+- Locale completeness: ko ≥ en, with zero retired locale resources
 - Brand gate: zero unauthorized first-party identity families
 - Legal notice placement review (§14)
 - Transitional document sanitation (plans/docs in .superpowers/)
@@ -51,14 +51,14 @@ rg -i 'patty|pattycorp|PATTY_|\.patty' \
 
 ### T3: Locale completeness test
 ```bash
-# Korean catalog has ≥ English entries
-ko_count=$(grep -c '^"' internal/i18n/messages_ko.go 2>/dev/null || echo 0)
-en_count=$(grep -c '^"' internal/i18n/messages_en.go 2>/dev/null || echo 0)
-echo "ko=$ko_count en=$en_count" # ko >= en required
+# Reflection-based catalog completeness, placeholder parity, and code-token parity
+go test ./internal/i18n \
+  -run 'TestCatalogs(Complete|AgreeOnPlaceholders|AgreeOnCodeTokens)$' \
+  -count=1
 
-# No Chinese resources remain
-zh_files=$(find . -name '*zh*' -not -path '*/node_modules/*' -not -path '*/.git/*' | wc -l)
-# zh_files == 0 required
+# No retired locale resources remain
+retired_locale_files=$(find . -name '*zh*' -not -path '*/node_modules/*' -not -path '*/.git/*' | wc -l)
+# retired_locale_files == 0 required
 ```
 
 ### T4: Legal notice review
@@ -90,7 +90,7 @@ Collect:
 
 - [ ] Clean build produces artifacts with correct Patty/GongCode identities
 - [ ] Brand scanner returns only legal exception and .superpowers/ paths
-- [ ] Korean catalog covers ≥ all English keys; zero Chinese resources
+- [ ] Korean catalog covers ≥ all English keys; zero retired locale resources
 - [ ] License file is Patty; notices are in THIRD_PARTY_NOTICES.md
 - [ ] Transitional documents sanitized or non-distributable
 - [ ] Master plan reconciled with new profile architecture

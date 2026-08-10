@@ -24,7 +24,7 @@ func TestSizeRuleCoversTypeScript(t *testing.T) {
 		{"spec suffix", "desktop/frontend/src/lib/big.spec.ts", linesOf(900), ruleTestSize},
 		{"worker ts", "workers/crash-report/src/big.ts", linesOf(900), ruleFileSize},
 		{"go file keeps its rule", "internal/agent/big.go", goLinesOf(900), ruleFileSize},
-		{"locale table is exempt", "desktop/frontend/src/locales/zh.ts", linesOf(3000), ""},
+		{"locale table is exempt", "desktop/frontend/src/locales/locale-table.ts", linesOf(3000), ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := parseBytes(tc.rel, tc.data)

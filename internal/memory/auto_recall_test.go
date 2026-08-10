@@ -34,7 +34,7 @@ func TestAutoRecallFindsDistinctiveCodeTicketAndCJKQueries(t *testing.T) {
 		Scope: FactScopeProject, Body: "AuthHandler panics when session metadata is missing.",
 	})
 	recallTestWrite(t, store.Dir, Memory{
-		ID: "mem-project-zh", Name: "memory-recall", Title: "메모리 회상 전략",
+		ID: "mem-project-ko", Name: "memory-recall", Title: "메모리 회상 전략",
 		Description: "프로젝트 메모리는 관련성에 따라 자동으로 회상되어야 합니다", Type: TypeProject,
 		Scope: FactScopeProject, Body: "자동 회상은 예산을 제어하고 일반화된 단어를 필터링해야 합니다.",
 	})

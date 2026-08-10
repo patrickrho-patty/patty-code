@@ -612,8 +612,8 @@ func TestComposeReasoningLanguagePreference(t *testing.T) {
 		t.Fatalf("auto reasoning language should not alter the turn, got %q", got)
 	}
 
-	zh := New(Options{ReasoningLanguage: "ko-KR"})
-	got := zh.Compose("hi")
+	koPref := New(Options{ReasoningLanguage: "ko-KR"})
+	got := koPref.Compose("hi")
 	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") || !strings.HasSuffix(got, "hi") {
 		t.Fatalf("ko-KR reasoning language should ride the user turn, got %q", got)
 	}
@@ -779,7 +779,7 @@ func TestSetReasoningLanguageUpdatesRunner(t *testing.T) {
 
 	c.SetReasoningLanguage("ko-KR")
 	if runner.lang != "ko-KR" {
-		t.Fatalf("runner reasoning language = %q, want zh", runner.lang)
+		t.Fatalf("runner reasoning language = %q, want ko-KR", runner.lang)
 	}
 
 	c.SetReasoningLanguage("auto")

@@ -1205,13 +1205,6 @@ func botAccessConfigFromView(access BotAccessView) config.BotAccessConfig {
 	}
 }
 
-func botDomainOrDefault(domain string) string {
-	if strings.EqualFold(strings.TrimSpace(domain), "lark") {
-		return "lark"
-	}
-	return "feishu"
-}
-
 // apply (write config, then rebuild the controller so it's live)
 
 // applyConfigChange mutates the user-global config and rebuilds the controller so

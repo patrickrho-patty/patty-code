@@ -112,7 +112,7 @@ func TestClaudePackageMCPDeduplicatesSameConnectionAcrossPackages(t *testing.T) 
 		root := filepath.Join(home, "plugins", name)
 		writeConfigTestFile(t, filepath.Join(root, pluginpkg.ClaudeManifest), `{"name":"`+name+`"}`)
 		writeConfigTestFile(t, filepath.Join(root, ".mcp.json"), `{
-  "mcpServers":{"페이수":{"type":"http","url":"https://open.feishu.cn/mcp","description":"package `+string(rune('A'+i))+` description"}}
+  "mcpServers":{"샘플":{"type":"http","url":"https://open.custom.cn/mcp","description":"package `+string(rune('A'+i))+` description"}}
 }`)
 		if err := pluginpkg.Upsert(home, pluginpkg.InstalledPlugin{Name: name, Root: "plugins/" + name, ManifestKind: "claude", Enabled: true}); err != nil {
 			t.Fatal(err)
@@ -122,7 +122,7 @@ func TestClaudePackageMCPDeduplicatesSameConnectionAcrossPackages(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cfg.Plugins) != 1 || cfg.Plugins[0].URL != "https://open.feishu.cn/mcp" {
+	if len(cfg.Plugins) != 1 || cfg.Plugins[0].URL != "https://open.custom.cn/mcp" {
 		t.Fatalf("deduplicated plugins = %#v", cfg.Plugins)
 	}
 }

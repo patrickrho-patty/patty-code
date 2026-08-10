@@ -364,7 +364,7 @@ func TestCuratedProviderPresetCapabilities(t *testing.T) {
 		t.Fatal("mimo-api provider missing")
 	}
 	if !mimo.NoProxy {
-		t.Fatal("mimo-api preset should bypass configured proxy for China-only endpoint")
+		t.Fatal("mimo-api preset should bypass configured proxy for regional endpoint")
 	}
 	if mimo.DefaultModel() != "mimo-v2.5-pro" || !mimo.HasVisionModel("mimo-v2.5") || mimo.HasVisionModel("mimo-v2.5-pro") {
 		t.Fatalf("mimo vision capability mismatch: %+v", mimo.VisionModels)

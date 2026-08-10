@@ -108,17 +108,17 @@ func TestBotGatewayStopClosesSessionsWithoutGatewayLock(t *testing.T) {
 }
 
 func TestBotGatewayStopWaitsForDispatchHandler(t *testing.T) {
-	adapter := newFakeAdapter(Platform("feishu"), "fake-feishu")
+	adapter := newFakeAdapter(Platform("custom"), "fake-custom")
 	entered := make(chan struct{})
 	release := make(chan struct{})
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled:   map[Platform]bool{Platform("feishu"): true},
+		Enabled:   map[Platform]bool{Platform("custom"): true},
 		Allowlist: AllowlistConfig{AllowAll: true},
 		OnInbound: func(InboundMessage) {
 			close(entered)
 			<-release
 		},
-	}, []AdapterBinding{{ID: "feishu-lark", Platform: Platform("feishu"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, []AdapterBinding{{ID: "custom-alpha", Platform: Platform("custom"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err := gw.Start(context.Background()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -148,13 +148,13 @@ func TestBotGatewayStopWaitsForDispatchHandler(t *testing.T) {
 }
 
 func TestBotGatewayStopWaitsForTurn(t *testing.T) {
-	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
+	adapter := newFakeAdapter(Platform("relay"), "fake-relay")
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled:   map[Platform]bool{Platform("weixin"): true},
+		Enabled:   map[Platform]bool{Platform("relay"): true},
 		Allowlist: AllowlistConfig{AllowAll: true},
-	}, []AdapterBinding{{ID: "weixin", Platform: Platform("weixin"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, []AdapterBinding{{ID: "relay", Platform: Platform("relay"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctrl := &stopWaitBotController{started: make(chan struct{}), release: make(chan struct{})}
-	msg := InboundMessage{Platform: Platform("weixin"), ConnectionID: "weixin", ChatType: ChatDM, ChatID: "chat", UserID: "user", Text: "hello"}
+	msg := InboundMessage{Platform: Platform("relay"), ConnectionID: "relay", ChatType: ChatDM, ChatID: "chat", UserID: "user", Text: "hello"}
 	key := BuildSessionKey(msg.Session())
 	gw.controllers[key] = &sessionState{ctrl: ctrl, sink: &sessionEventSink{}}
 	if err := gw.Start(context.Background()); err != nil {
@@ -230,20 +230,20 @@ func (c *cancelPublishBotController) Close() {
 // Run with -race: an unlocked read of state.cancel here is a data race.
 func TestBotGatewayStopBeforeTurnCancelPublication(t *testing.T) {
 	adapter := &typingHoldAdapter{
-		fakeAdapter: newFakeAdapter(Platform("weixin"), "fake-weixin"),
+		fakeAdapter: newFakeAdapter(Platform("relay"), "fake-relay"),
 		entered:     make(chan struct{}, 2),
 		release:     make(chan struct{}),
 	}
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled:   map[Platform]bool{Platform("weixin"): true},
+		Enabled:   map[Platform]bool{Platform("relay"): true},
 		Allowlist: AllowlistConfig{AllowAll: true},
-	}, []AdapterBinding{{ID: "weixin", Platform: Platform("weixin"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, []AdapterBinding{{ID: "relay", Platform: Platform("relay"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	closeEntered := make(chan struct{}, 2)
 	closeHold := make(chan struct{})
 	turnCtx := make(chan error, 2)
 	chats := []string{"chat-a", "chat-b"}
 	for _, chat := range chats {
-		msg := InboundMessage{Platform: Platform("weixin"), ConnectionID: "weixin", ChatType: ChatDM, ChatID: chat, UserID: "user"}
+		msg := InboundMessage{Platform: Platform("relay"), ConnectionID: "relay", ChatType: ChatDM, ChatID: chat, UserID: "user"}
 		gw.controllers[BuildSessionKey(msg.Session())] = &sessionState{
 			ctrl: &cancelPublishBotController{closeEntered: closeEntered, closeHold: closeHold, turnCtx: turnCtx},
 			sink: &sessionEventSink{},
@@ -253,7 +253,7 @@ func TestBotGatewayStopBeforeTurnCancelPublication(t *testing.T) {
 		t.Fatalf("Start: %v", err)
 	}
 	for _, chat := range chats {
-		adapter.msgCh <- InboundMessage{Platform: Platform("weixin"), ConnectionID: "weixin", ChatType: ChatDM, ChatID: chat, UserID: "user", Text: "hello"}
+		adapter.msgCh <- InboundMessage{Platform: Platform("relay"), ConnectionID: "relay", ChatType: ChatDM, ChatID: chat, UserID: "user", Text: "hello"}
 	}
 	for range chats {
 		select {
@@ -301,10 +301,10 @@ func TestBotGatewayStopBeforeTurnCancelPublication(t *testing.T) {
 }
 
 func TestBotGatewayStopIsIdempotent(t *testing.T) {
-	adapter := &countingStopAdapter{fakeAdapter: newFakeAdapter(Platform("feishu"), "fake-feishu")}
+	adapter := &countingStopAdapter{fakeAdapter: newFakeAdapter(Platform("custom"), "fake-custom")}
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled: map[Platform]bool{Platform("feishu"): true},
-	}, []AdapterBinding{{ID: "feishu-lark", Platform: Platform("feishu"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		Enabled: map[Platform]bool{Platform("custom"): true},
+	}, []AdapterBinding{{ID: "custom-alpha", Platform: Platform("custom"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err := gw.Start(context.Background()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -318,12 +318,12 @@ func TestBotGatewayStopIsIdempotent(t *testing.T) {
 
 func TestBotGatewayStopCancelsConcurrentStart(t *testing.T) {
 	adapter := &cancelBlockingStartAdapter{
-		fakeAdapter: newFakeAdapter(Platform("feishu"), "fake-feishu"),
+		fakeAdapter: newFakeAdapter(Platform("custom"), "fake-custom"),
 		entered:     make(chan struct{}),
 	}
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled: map[Platform]bool{Platform("feishu"): true},
-	}, []AdapterBinding{{ID: "feishu-lark", Platform: Platform("feishu"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		Enabled: map[Platform]bool{Platform("custom"): true},
+	}, []AdapterBinding{{ID: "custom-alpha", Platform: Platform("custom"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	startDone := make(chan error, 1)
 	go func() { startDone <- gw.Start(context.Background()) }()
 	select {
@@ -362,10 +362,10 @@ func TestBotGatewayToolApprovalModeConcurrentWithConfigReaders(t *testing.T) {
 		cfg: GatewayConfig{
 			WorkspaceRoot: t.TempDir(),
 			Channels: map[Platform]ChannelConfig{
-				Platform("feishu"): {ToolApprovalMode: control.ToolApprovalAsk},
+				Platform("custom"): {ToolApprovalMode: control.ToolApprovalAsk},
 			},
 			ConnectionChannels: map[string]ChannelConfig{
-				"feishu-lark": {ToolApprovalMode: control.ToolApprovalAsk},
+				"custom-alpha": {ToolApprovalMode: control.ToolApprovalAsk},
 			},
 		},
 		controllers:      map[string]*sessionState{},
@@ -386,9 +386,9 @@ func TestBotGatewayToolApprovalModeConcurrentWithConfigReaders(t *testing.T) {
 		modes := []string{control.ToolApprovalYolo, control.ToolApprovalAsk, control.ToolApprovalAuto}
 		for i := range iterations {
 			mode := modes[i%len(modes)]
-			gw.UpdateConnectionToolApprovalMode("feishu-lark", mode)
+			gw.UpdateConnectionToolApprovalMode("custom-alpha", mode)
 			gw.mu.Lock()
-			gw.updateToolApprovalModeDefaultLocked(InboundMessage{Platform: Platform("feishu")}, mode)
+			gw.updateToolApprovalModeDefaultLocked(InboundMessage{Platform: Platform("custom")}, mode)
 			gw.updateToolApprovalModeDefaultLocked(InboundMessage{}, mode)
 			gw.mu.Unlock()
 			runtime.Gosched()
@@ -396,10 +396,10 @@ func TestBotGatewayToolApprovalModeConcurrentWithConfigReaders(t *testing.T) {
 	}()
 
 	close(start)
-	connMsg := InboundMessage{Platform: Platform("feishu"), ConnectionID: "feishu-lark", ChatType: ChatDM, ChatID: "chat", UserID: "user"}
+	connMsg := InboundMessage{Platform: Platform("custom"), ConnectionID: "custom-alpha", ChatType: ChatDM, ChatID: "chat", UserID: "user"}
 	for range iterations {
 		gw.sessionOptionsForMessage(connMsg)
-		gw.sessionOptionsForMessage(InboundMessage{Platform: Platform("feishu")})
+		gw.sessionOptionsForMessage(InboundMessage{Platform: Platform("custom")})
 		projects := gw.buildProjectIndex()
 		gw.buildSessionIndex(projects)
 		runtime.Gosched()

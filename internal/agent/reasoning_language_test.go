@@ -47,7 +47,7 @@ func TestReasoningLanguageBlockKoreanStaysImperative(t *testing.T) {
 	block := ReasoningLanguageBlock("ko-KR")
 	for _, want := range []string{"반드시 한국어로 작성해야 합니다", "전체 턴", "사용자가 최종 답변 언어에 대해 명시적으로 요청한 내용을 덮어쓰지 않습니다"} {
 		if !strings.Contains(block, want) {
-			t.Fatalf("zh reasoning block lost required anchor %q:\n%s", want, block)
+			t.Fatalf("ko-KR reasoning block lost required anchor %q:\n%s", want, block)
 		}
 	}
 }

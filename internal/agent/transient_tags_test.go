@@ -25,7 +25,7 @@ func TestStripTransientUserBlocksConsumesStackedBlocks(t *testing.T) {
 	const prompt = "계획을 계속 실행해 주세요"
 	stacked := "<active-goal>\ngoal: ship it\n</active-goal>\n\n" +
 		"<autoresearch-runtime>\nstatus: running\n</autoresearch-runtime>\n\n" +
-		"<response-language>\nprefer zh\n</response-language>\n\n" +
+		"<response-language>\nprefer ko-KR\n</response-language>\n\n" +
 		prompt
 	if got := StripTransientUserBlocks(stacked); got != prompt {
 		t.Fatalf("StripTransientUserBlocks = %q, want %q", got, prompt)
@@ -48,7 +48,7 @@ func TestHasLeadingInjectedBlockSkipsEveryDeclaredTag(t *testing.T) {
 		}
 		t.Run(tag, func(t *testing.T) {
 			content := "<" + tag + ">\nx\n</" + tag + ">\n\n" +
-				"<" + target + ">\nprefer zh\n</" + target + ">\n\nhello"
+				"<" + target + ">\nprefer ko-KR\n</" + target + ">\n\nhello"
 			if !hasLeadingInjectedBlock(content, target) {
 				t.Fatalf("hasLeadingInjectedBlock(%q) = false, want the existing %s block detected", content, target)
 			}

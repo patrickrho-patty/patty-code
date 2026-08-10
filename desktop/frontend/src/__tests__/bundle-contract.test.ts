@@ -108,9 +108,10 @@ ok(
   !/String\.raw`[^`]*\(\?<!/s.test(localPathLinksSource),
   "Markdown local-path support avoids RegExp lookbehind required by newer WebKit",
 );
+const localeImports = i18nSource.match(/locales\/[A-Za-z0-9_-]+/g) ?? [];
 ok(
-  !i18nSource.includes("locales/zh"),
-  "i18n ships no Chinese locale dictionaries",
+  localeImports.length === 1 && localeImports[0] === "locales/en",
+  "the current desktop bundle declares its exact shipped locale set instead of passing vacuously",
 );
 ok(
   mainSource.includes("await preloadDetectedLocale()"),

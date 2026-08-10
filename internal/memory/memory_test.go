@@ -171,13 +171,13 @@ func TestDiscoverPrecedenceOrder(t *testing.T) {
 func TestDiscoverDecodesGB18030PrimaryDoc(t *testing.T) {
 	proj := t.TempDir()
 	mustMkdir(t, filepath.Join(proj, ".git"))
-	body := "# 프로젝트 규칙\n\n항상 중국어로 답변하세요."
+	body := "# 프로젝트 규칙\n\n항상 한국어로 답변하세요."
 	if err := os.WriteFile(filepath.Join(proj, "AGENTS.md"), fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	set := Load(Options{CWD: proj})
-	if len(set.Docs) != 1 || !strings.Contains(set.Docs[0].Body, "항상 중국어로 답변") {
+	if len(set.Docs) != 1 || !strings.Contains(set.Docs[0].Body, "항상 한국어로 답변") {
 		t.Fatalf("decoded docs = %+v", set.Docs)
 	}
 }

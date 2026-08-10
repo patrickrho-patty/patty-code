@@ -66,7 +66,6 @@ func requireNode(t *testing.T) {
 }
 
 // their own tight budgets  that direction cannot flake under load.
-//
 const realSpawnTimeout = 60 * time.Second
 
 const sampleSettings = `{"hooks":{"PreToolUse":[{"match":"bash","command":"echo pre"}],"Stop":[{"command":"echo stop"}]}}`
@@ -99,14 +98,14 @@ func TestLoadProjectHooksByDefault(t *testing.T) {
 
 func TestLoadDecodesGB18030GlobalSettings(t *testing.T) {
 	home := t.TempDir()
-	body := `{"hooks":{"Stop":[{"command":"echo 중국어","description":"전역"}]}}`
+	body := `{"hooks":{"Stop":[{"command":"echo 한국어","description":"전역"}]}}`
 	writeHookTestBytes(t, GlobalSettingsPath(home), fileencoding.Encode(body, fileencoding.GB18030))
 
 	got := Load(LoadOptions{HomeDir: home})
 	if len(got) != 1 {
 		t.Fatalf("Load hooks = %+v, want one decoded global hook", got)
 	}
-	if got[0].Scope != ScopeGlobal || got[0].Event != Stop || got[0].Command != "echo 중국어" || got[0].Description != "전역" {
+	if got[0].Scope != ScopeGlobal || got[0].Event != Stop || got[0].Command != "echo 한국어" || got[0].Description != "전역" {
 		t.Fatalf("decoded global hook = %+v", got[0])
 	}
 }
@@ -555,7 +554,7 @@ func TestInspectNoHomeDirResolvesPluginRootFromPlatformHome(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("PATTY_HOME", home)
 	root := filepath.Join(home, "plugins", "superpowers")
-// (writeSettings would add .patty, the OS-home convention 7420 fixes).
+	// (writeSettings would add .patty, the OS-home convention 7420 fixes).
 	if err := os.MkdirAll(home, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -579,7 +578,7 @@ func TestInspectNoHomeDirResolvesPluginRootFromPlatformHome(t *testing.T) {
 	}
 
 	insp := Inspect(LoadOptions{ProjectRoot: "/workspace"})
-// the two that 7420 broke: plugin and global must resolve from the
+	// the two that 7420 broke: plugin and global must resolve from the
 	var pluginOK, globalOK bool
 	for _, s := range insp.Sources {
 		switch s.Scope {
@@ -975,8 +974,8 @@ func TestDecodeHookOutputRecoversGB18030WindowsErrors(t *testing.T) {
 }
 
 func TestDecodeHookOutputPreservesTruncatedUTF8Prefix(t *testing.T) {
-	raw := []byte("중국어")[:5]
-	if got, want := decodeHookOutput(raw, true), "중"; got != want {
+	raw := []byte("한국어")[:5]
+	if got, want := decodeHookOutput(raw, true), "한"; got != want {
 		t.Fatalf("truncated UTF-8 output = %q, want %q", got, want)
 	}
 }
@@ -1108,13 +1107,13 @@ func TestMatchesToolTranslatesClaudeToolNames(t *testing.T) {
 	if MatchesTool(claude("Bash"), "write_file") {
 		t.Error(`Claude matcher "Bash" must not match Patty Code tool "write_file"`)
 	}
-// A native (non-Claude) hook's matcher stays in patty's own vocabulary.
+	// A native (non-Claude) hook's matcher stays in patty's own vocabulary.
 	native := ResolvedHook{HookConfig: HookConfig{Match: "bash"}, Event: PreToolUse}
 	if MatchesTool(native, "Bash") {
 		t.Error("native hook matcher must not be interpreted against Claude tool names")
 	}
-// The subagent tool was renamed "Task" -> "Agent" by Claude; a matcher
-// using either name must still fire against Patty Code's "task" tool.
+	// The subagent tool was renamed "Task" -> "Agent" by Claude; a matcher
+	// using either name must still fire against Patty Code's "task" tool.
 	if !MatchesTool(claude("Agent"), "task") {
 		t.Error(`Claude matcher "Agent" (current name) should match Patty Code tool "task"`)
 	}
@@ -1156,9 +1155,9 @@ func TestClaudeFacingToolNameUsesCurrentNames(t *testing.T) {
 	if got := claudeFacingToolName("wait"); got != "TaskOutput" {
 		t.Errorf(`claudeFacingToolName("wait") = %q, want "TaskOutput"`, got)
 	}
-// Every subagent-spawning entry point — not just "task" — corresponds to
-// Claude's single "Agent" tool, and a matcher can still use the legacy
-// "Task" name.
+	// Every subagent-spawning entry point — not just "task" — corresponds to
+	// Claude's single "Agent" tool, and a matcher can still use the legacy
+	// "Task" name.
 	for _, name := range []string{"task", "read_only_task", "parallel_tasks", "explore", "research", "review", "security_review"} {
 		if got := claudeFacingToolName(name); got != "Agent" {
 			t.Errorf(`claudeFacingToolName(%q) = %q, want "Agent"`, name, got)
@@ -1314,8 +1313,8 @@ func TestDecideOutcome(t *testing.T) {
 		{"permission-timeout-warns", PermissionRequest, "", SpawnResult{TimedOut: true}, DecisionWarn},
 		{"timeout-nonblocking", Stop, "", SpawnResult{TimedOut: true}, DecisionWarn},
 		{"spawn-error", PreToolUse, "", SpawnResult{SpawnErr: os.ErrNotExist}, DecisionError},
-// Claude's own PermissionRequest contract blocks on exit 2/timeout the
-// (format == ) stay advisory-only, verified above.
+		// Claude's own PermissionRequest contract blocks on exit 2/timeout the
+		// (format == ) stay advisory-only, verified above.
 		{"claude-permission-exit2-blocks", PermissionRequest, "claude", SpawnResult{ExitCode: 2}, DecisionBlock},
 		{"claude-permission-timeout-blocks", PermissionRequest, "claude", SpawnResult{TimedOut: true}, DecisionBlock},
 	}
@@ -1481,9 +1480,9 @@ func TestRunHonorsClaudeJSONDenyOnExitZero(t *testing.T) {
 }
 
 func TestRunNativeHookIgnoresPermissionDecisionField(t *testing.T) {
-// A native (non-Claude) hooks stdout happening to contain a field named
-// "permissionDecision" must not gain new blocking power — only imported
-// Claude hooks (PayloadFormat "claude") opt into that contract.
+	// A native (non-Claude) hooks stdout happening to contain a field named
+	// "permissionDecision" must not gain new blocking power — only imported
+	// Claude hooks (PayloadFormat "claude") opt into that contract.
 	hooks := []ResolvedHook{
 		{HookConfig: HookConfig{Command: "guard"}, Event: PreToolUse},
 	}

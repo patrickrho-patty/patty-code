@@ -22,7 +22,7 @@ This document defines the target design. It does not authorize a bulk search-and
 5. Optional modules are easy to install and remove. Harness-enforced modules are signed, required, and non-disableable through supported runtime controls.
 6. GongCode governance is a separate program following the phased scope and architecture in `GongCode_Master_Plan.md`.
 7. GongCode Control is a separate administrative web application and service plane. Governance inspection is not an engineer-facing TUI menu.
-8. Korean is the default and completeness baseline. English is optional. Chinese support is removed completely.
+8. Korean is the default and completeness baseline. English is optional. Retired locale support is removed completely.
 9. Built-in slash commands use Korean canonical names, full 초성 aliases, and searchable English keywords. Skills and user commands retain their declared names.
 10. The TUI is conversation-first. It has no permanent file browser, change inspector, governance inspector, or shortcut rail.
 11. The selected visual direction is “한지 작업대”: terminal-native, restrained, Korean, and structurally distinct from Patty Code.
@@ -38,7 +38,7 @@ This document defines the target design. It does not authorize a bulk search-and
 - Remove Patty Code identity from every current product and engineering surface except the legally required upstream notice.
 - Preserve mature coding-agent behavior while changing identity, language, presentation, packaging, and extension composition.
 - Make Korean complete across CLI, TUI, desktop, documentation, errors, help, onboarding, notifications, and built-in command descriptions.
-- Permit a complete English interface for foreign workers without exposing Chinese resources or behavior.
+- Permit a complete English interface for foreign workers without exposing retired locale resources or behavior.
 - Make new harnesses declarative, independently branded, independently packaged, and independently secured.
 - Allow derived enterprise harnesses to add governance, metering, billing, licensing, and other commercial capabilities as registered modules without placing those behaviors in the public Patty core.
 - Reuse the existing extension graph, provider interception, tool interception, payload validation, required/optional runtime behavior, and replacement slots.
@@ -301,7 +301,7 @@ Per the master plan:
 
 - `ko`: default, canonical, and required to be complete.
 - `en`: optional and complete.
-- Chinese locales, aliases, resources, documentation, tests, and language policies are removed.
+- Retired locales, aliases, resources, documentation, tests, and language policies are removed.
 
 Automatic locale detection selects Korean unless the user explicitly selects English or an approved harness policy fixes the locale.
 
@@ -326,11 +326,11 @@ Korean documentation is canonical. English documentation is a maintained seconda
 
 ### 10.3 Translation architecture
 
-- Replace the current English/Chinese assumption with a typed Korean/English catalog contract.
+- Replace the previous locale assumptions with a typed Korean/English catalog contract.
 - Make Korean the source-of-truth catalog for completeness checks.
 - Generate or validate the English key set against Korean.
 - Prohibit literal user-facing strings outside approved catalog and formatting layers.
-- Add automated missing-key, orphan-key, placeholder-shape, and forbidden-Chinese-resource tests.
+- Add automated missing-key, orphan-key, placeholder-shape, and forbidden-locale-resource tests.
 - Add Korean typography, width, wrapping, Unicode, IME, and terminal-cell-width tests.
 
 ## 11. Korean Slash Commands
@@ -410,10 +410,19 @@ The design must specify and test:
 - Screen readers and reduced color.
 - `NO_COLOR` and monochrome terminals.
 - Termux/native scrollback behavior.
+- Empty startup is height-bounded rather than stretched to the terminal floor; the conversation grows into available height as turns accumulate.
+- Slash-palette opening does not collapse the launch stage or drop its background.
 
 ### 12.4 Launch artwork
 
 Artwork is supplied by the compiled product profile. Korean flag imagery is permitted.
+
+The approved launch composition centers the Taegeukgi and Patty marks as one group,
+both horizontally and vertically, inside the bounded startup stage. A static bordered
+`Patty Code` titlebar sits above a separate row of individually bounded status
+instruments. The composer is a padded, rounded rectangle with a distinct input
+background, visible insertion cursor, subdued placeholder and command hints, and no
+leading `>` prompt.
 
 The full banner appears once on interactive TUI startup. It does not appear for:
 
@@ -467,7 +476,7 @@ The highest-volume ownership areas are:
 | `internal/control` | 79 | 464 | slash resolution, events, lifecycle, approvals |
 | `desktop/cmd` | 15 | 251 | signing, update helpers, Windows resources |
 | `desktop/build` | 7 | 245 | Linux/Windows packaging and app identity |
-| `internal/i18n` | 6 | 241 | English/Chinese catalog and locale detection |
+| `internal/i18n` | 6 | 241 | Korean/English catalogs and locale detection |
 | `internal/acp` | 20 | 232 | protocol-facing names and user-facing messages |
 | `internal/hook` | 10 | 217 | global/project roots and environment |
 | `internal/tool` | 57 | 198 | tool metadata, managed paths, runtime messages |
@@ -503,7 +512,7 @@ git ls-files -z |
   xargs -0 rg -i --count-matches --no-messages --text 'patty'
 
 git ls-files |
-  rg -i 'patty|pattycorp|(^|[._/-])(zh|zh-cn|zh-tw|chinese)([._/-]|$)'
+  rg -i 'patty|pattycorp|(^|[._/-])(zh|zh-cn|zh-tw)([._/-]|$)'
 
 rg -i --hidden --no-ignore \
   --glob '!.git/**' \
@@ -674,24 +683,26 @@ Required inspection uses the appropriate combination of:
 
 No artifact is released merely because its source directory passed a text scan.
 
-### 13.10 Chinese-removal coverage
+### 13.10 Retired-locale removal coverage
 
-The initial scan found 35 explicitly Chinese-named tracked files:
+Canonical Korean and English resources are explicitly preserved, including
+`README.ko-KR.md`, `internal/i18n/messages_ko.go`,
+`desktop/frontend/src/locales/ko.ts`, and `desktop/frontend/src/locales/en.ts`.
+Retired-locale removal applies only to the former `zh` resource family:
 
-- `README.ko-KR.md`.
-- `desktop/frontend/src/locales/zh.ts` and `en-US.ts`.
-- Thirty Chinese documentation translations under `docs/`.
-- `internal/i18n/messages_ko.go` and `messages_ko_tw.go`.
-- `sdk/go/examples/starterextension/README.ko-KR.md`.
+- `README.zh-*.md` and translated documentation beneath `docs/`.
+- `desktop/frontend/src/locales/zh*.ts` and their imports, aliases, and generated bundles.
+- `internal/i18n/messages_zh*.go`.
+- SDK example documentation with a `README.zh-*.md` name.
 
 Removal also covers non-filename surfaces:
 
 - Locale types, defaults, normalization, detection, and persisted preferences.
 - Response-language and reasoning-language policies.
-- Chinese-specific formatting, token units, pricing, dates, and number formats.
-- Chinese keywords, command arguments, language aliases, and help.
+- Retired-locale-specific formatting, token units, pricing, dates, and number formats.
+- Retired locale keywords, command arguments, language aliases, and help.
 - Documentation generation, language navigation, SEO locale routing, sitemaps, and release-note translation.
-- Chinese catalog parity, snapshots, fixtures, golden prompts, workflow labels, and tests.
+- Retired locale catalog parity, snapshots, fixtures, golden prompts, workflow labels, and tests.
 - Simplified/traditional fallback behavior in desktop, CLI, embedded docs, agents, and providers.
 
 The replacement sequence is:
@@ -700,10 +711,10 @@ The replacement sequence is:
 2. Make Korean the default and completeness source.
 3. Add or retain complete English parity.
 4. Migrate tests and stored default assumptions to Korean/English.
-5. Delete Chinese resources and code branches.
+5. Delete retired locale resources and code branches.
 6. Run forbidden-locale and forbidden-resource scans.
 
-Deleting Chinese files before Korean parity exists is prohibited because it would create untranslated or broken surfaces.
+Deleting retired locale files before Korean parity exists is prohibited because it would create untranslated or broken surfaces.
 
 ### 13.11 Dependency order
 
@@ -717,7 +728,7 @@ Deleting Chinese files before Korean parity exists is prohibited because it woul
 8. Replace event, protocol, metric, log, HTTP, user-agent, and wire identities.
 9. Add complete Korean catalogs and Korean-first locale plumbing while English remains functional.
 10. Replace Korean built-in command surfaces and multi-keyword resolution.
-11. Remove Chinese resources and language branches after Korean/English parity passes.
+11. Remove retired locale resources and language branches after Korean/English parity passes.
 12. Replace desktop UI identity, TUI layout, launch artwork, assets, examples, docs, snapshots, and accessibility text.
 13. Replace platform packaging, OS integration, updater, signing, and release identities.
 14. Replace hosted-service, website, worker, database-deployment, domain, and operational identities.
@@ -748,7 +759,7 @@ The rebrand is not complete when a search command returns zero in source. It is 
 - The current-tree ledger has zero unresolved rows.
 - The 28 branded paths have their recorded disposition.
 - Operational `pattycorp` coordinates are gone or profile-controlled; legal authorship is in notices.
-- Korean and English parity pass and all Chinese surfaces are removed.
+- Korean and English parity pass and all retired locale surfaces are removed.
 - Root, desktop, and SDK modules build with Patty coordinates.
 - macOS, Windows, and Linux packaged identities pass platform inspection.
 - Hosted Patty services use only owned or explicitly release-blocked coordinates.
@@ -823,7 +834,7 @@ Transitional specifications and implementation plans are not permanent exception
 
 - Korean key set is complete.
 - English key set matches the approved contract.
-- No Chinese locale or language-policy resources remain.
+- No retired locale or language-policy resources remain.
 - No unauthorized literal user-facing text remains.
 - Korean IME, cell width, wrapping, truncation, and snapshot tests pass.
 - Built-in commands resolve through Korean, 초성, English, and keyword inputs without ambiguous execution.
@@ -861,7 +872,7 @@ This file is the architecture specification and umbrella execution plan. It is n
 | 02 | `02-product-profile-and-module-foundation.md` | New product-profile schema/API/generator, Patty profile, inheritance, validation, capability registration, optional/required module contracts |
 | 03 | `03-go-module-and-core-semantic-rebrand.md` | Root/desktop/SDK modules, imports, `cmd/`, neutral shared symbols, URNs, schemas, built-ins, examples, compile checkpoints |
 | 04 | `04-storage-config-schema-and-isolation.md` | `internal/config`, credentials/keyring, sessions, memory, hooks, plugins, caches, locks, telemetry, SQL, workers’ schemas, signed harness envelopes |
-| 05 | `05-korean-localization-and-chinese-removal.md` | Go and frontend i18n, product docs, response/patty code policy, formatting, Korean parity, English parity, all Chinese resources and branches |
+| 05 | `05-korean-localization-and-legacy-locale-removal.md` | Go and frontend i18n, product docs, response/patty code policy, formatting, Korean parity, English parity, and retired locale cleanup |
 | 06 | `06-korean-slash-command-system.md` | Stable command IDs, Korean names, 초성 generation, Korean/English keywords, aliases, collision resolution, CLI/desktop completion/help, all built-ins |
 | 07 | `07-tui-redesign-and-launch-art.md` | Bubble Tea TUI layout, transcript, contextual pickers, inline approvals/diffs, Korean IME/width, selected visual direction, profile banner renderer |
 | 08 | `08-desktop-site-docs-and-assets.md` | Wails desktop identity/UI, frontend, public site, docs, embedded docs, release notes, accessibility, logos/icons/media/theme assets |
@@ -917,7 +928,7 @@ Tasks may not say “replace remaining occurrences,” “update related files,�
 | G1 Profile foundation | Patty profile resolves deterministically; invalid inheritance/module graphs fail |
 | G2 Core identity | All Go module graphs compile; core tests pass; no mixed import namespace |
 | G3 State identity | Clean Patty state works; upstream state is ignored; harness envelope tests pass |
-| G4 Language | Korean completeness and English parity pass; Chinese resources and branches are absent |
+| G4 Language | Korean completeness and English parity pass; retired locale resources and branches are absent |
 | G5 Command UX | Every built-in resolves by Korean, 초성, and keywords; ambiguity never executes |
 | G6 TUI/desktop | Korean-first TUI and desktop smoke tests pass at supported widths/platforms |
 | G7 Distribution | Every platform package installs with correct names and no upstream operational coordinates |

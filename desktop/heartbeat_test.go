@@ -35,7 +35,7 @@ func TestHeartbeatLoadTasksDecodesGB18030Config(t *testing.T) {
 
 	tasks := engine.loadTasks()
 	if len(tasks) != 1 || tasks[0].Title != "매일 점검" || tasks[0].Prompt != "기능정리검토 상태 요약" {
-		t.Fatalf("loadTasks = %+v, want decoded Chinese task", tasks)
+		t.Fatalf("loadTasks = %+v, want decoded Korean task", tasks)
 	}
 }
 

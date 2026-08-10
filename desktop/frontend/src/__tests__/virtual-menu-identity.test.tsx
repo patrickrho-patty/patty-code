@@ -87,9 +87,9 @@ Object.defineProperty(dom.window.HTMLElement.prototype, "offsetHeight", {
 const initialItems: CommandInfo[] = [
   { name: "documentation", description: "Documentation", kind: "skill" },
   { name: "docx", description: "Word documents", kind: "skill" },
-  { name: "lark-doc", description: "Lark documents", kind: "skill" },
+  { name: "alpha-doc", description: "Alpha documents", kind: "skill" },
   { name: "grill-with-docs", description: "Review with docs", kind: "skill" },
-  { name: "tencent-docs", description: "Tencent documents", kind: "skill" },
+  { name: "team-docs", description: "team documents", kind: "skill" },
   { name: "docs", description: "Search bundled documentation", kind: "builtin", group: "integrations" },
 ];
 
@@ -137,7 +137,7 @@ ok(
   JSON.stringify(positions) === JSON.stringify([
     { label: "group", position: 0, transform: "translate3d(0, 0px, 0)" },
     { label: "/documentation", position: 26, transform: "translate3d(0, 26px, 0)" },
-    { label: "/tencent-docs", position: 60, transform: "translate3d(0, 60px, 0)" },
+    { label: "/team-docs", position: 60, transform: "translate3d(0, 60px, 0)" },
     { label: "group", position: 94, transform: "translate3d(0, 94px, 0)" },
     { label: "/docs", position: 120, transform: "translate3d(0, 120px, 0)" },
   ]),

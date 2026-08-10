@@ -210,7 +210,7 @@ console.log("\ntool card shell execution");
   const afterExpand = document.body.textContent ?? "";
   ok(
     afterExpand.includes("한국어") || afterExpand.includes("경로를찾을수없음"),
-    "live path: Chinese stderr from execution.outputTail is visible in the DOM",
+    "live path: localized stderr from execution.outputTail is visible in the DOM",
   );
 
   await ui.cleanup();

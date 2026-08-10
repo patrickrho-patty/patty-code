@@ -15,56 +15,56 @@ func TestBuildSessionKey(t *testing.T) {
 	}{
 		{
 			name:     "dm same chat different user",
-			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "user123", UserID: "a"},
-			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "user123", UserID: "b"},
+			src:      SessionSource{Platform: Platform("channel"), ChatType: ChatDM, ChatID: "user123", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("channel"), ChatType: ChatDM, ChatID: "user123", UserID: "b"},
 			wantSame: true,
 		},
 		{
 			name:     "dm different chat",
-			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "user123", UserID: "a"},
-			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "user456", UserID: "a"},
+			src:      SessionSource{Platform: Platform("channel"), ChatType: ChatDM, ChatID: "user123", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("channel"), ChatType: ChatDM, ChatID: "user456", UserID: "a"},
 			wantSame: false,
 		},
 		{
 			name:     "direct same chat different user",
-			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDirect, ChatID: "guild123", UserID: "a"},
-			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatDirect, ChatID: "guild123", UserID: "b"},
+			src:      SessionSource{Platform: Platform("channel"), ChatType: ChatDirect, ChatID: "guild123", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("channel"), ChatType: ChatDirect, ChatID: "guild123", UserID: "b"},
 			wantSame: true,
 		},
 		{
 			name:     "direct distinct from dm",
-			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDirect, ChatID: "shared", UserID: "a"},
-			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "shared", UserID: "a"},
+			src:      SessionSource{Platform: Platform("channel"), ChatType: ChatDirect, ChatID: "shared", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("channel"), ChatType: ChatDM, ChatID: "shared", UserID: "a"},
 			wantSame: false,
 		},
 		{
 			name:     "group same chat different user",
-			src:      SessionSource{Platform: Platform("feishu"), ChatType: ChatGroup, ChatID: "group1", UserID: "a"},
-			src2:     SessionSource{Platform: Platform("feishu"), ChatType: ChatGroup, ChatID: "group1", UserID: "b"},
+			src:      SessionSource{Platform: Platform("custom"), ChatType: ChatGroup, ChatID: "group1", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("custom"), ChatType: ChatGroup, ChatID: "group1", UserID: "b"},
 			wantSame: false,
 		},
 		{
 			name:     "group same user different chat",
-			src:      SessionSource{Platform: Platform("feishu"), ChatType: ChatGroup, ChatID: "group1", UserID: "a"},
-			src2:     SessionSource{Platform: Platform("feishu"), ChatType: ChatGroup, ChatID: "group2", UserID: "a"},
+			src:      SessionSource{Platform: Platform("custom"), ChatType: ChatGroup, ChatID: "group1", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("custom"), ChatType: ChatGroup, ChatID: "group2", UserID: "a"},
 			wantSame: false,
 		},
 		{
 			name:     "thread shared",
-			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatThread, ChatID: "ch1", ThreadID: "th1", UserID: "a"},
-			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatThread, ChatID: "ch1", ThreadID: "th1", UserID: "b"},
+			src:      SessionSource{Platform: Platform("channel"), ChatType: ChatThread, ChatID: "ch1", ThreadID: "th1", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("channel"), ChatType: ChatThread, ChatID: "ch1", ThreadID: "th1", UserID: "b"},
 			wantSame: true,
 		},
 		{
 			name:     "different platform same ids",
-			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "123", UserID: "u1"},
-			src2:     SessionSource{Platform: Platform("feishu"), ChatType: ChatDM, ChatID: "123", UserID: "u1"},
+			src:      SessionSource{Platform: Platform("channel"), ChatType: ChatDM, ChatID: "123", UserID: "u1"},
+			src2:     SessionSource{Platform: Platform("custom"), ChatType: ChatDM, ChatID: "123", UserID: "u1"},
 			wantSame: false,
 		},
 		{
 			name:     "same platform different connection",
-			src:      SessionSource{Platform: Platform("feishu"), ConnectionID: "feishu-feishu", ChatType: ChatDM, ChatID: "123", UserID: "u1"},
-			src2:     SessionSource{Platform: Platform("feishu"), ConnectionID: "feishu-lark", ChatType: ChatDM, ChatID: "123", UserID: "u1"},
+			src:      SessionSource{Platform: Platform("custom"), ConnectionID: "custom-main", ChatType: ChatDM, ChatID: "123", UserID: "u1"},
+			src2:     SessionSource{Platform: Platform("custom"), ConnectionID: "custom-alpha", ChatType: ChatDM, ChatID: "123", UserID: "u1"},
 			wantSame: false,
 		},
 	}
@@ -116,7 +116,7 @@ func TestIsSlashBypass(t *testing.T) {
 func TestSessionManager_TryAcquire(t *testing.T) {
 	sm := NewSessionManager(100 * time.Millisecond)
 
-	msg := InboundMessage{Text: "hello", Platform: Platform("qq"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
+	msg := InboundMessage{Text: "hello", Platform: Platform("channel"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
 	key := BuildSessionKey(msg.Session())
 
 	// 첫 번째 가져오기 성공
@@ -150,7 +150,7 @@ func TestSessionManager_TryAcquire(t *testing.T) {
 func TestSessionManager_Debounce(t *testing.T) {
 	sm := NewSessionManager(200 * time.Millisecond)
 
-	msg := InboundMessage{Text: "first", Platform: Platform("qq"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
+	msg := InboundMessage{Text: "first", Platform: Platform("channel"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
 	key := BuildSessionKey(msg.Session())
 
 	acquired, _ := sm.TryAcquire(key, msg)
@@ -176,7 +176,7 @@ func TestSessionManager_Debounce(t *testing.T) {
 func TestSessionManager_ForceRelease(t *testing.T) {
 	sm := NewSessionManager(100 * time.Millisecond)
 
-	msg := InboundMessage{Text: "test", Platform: Platform("qq"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
+	msg := InboundMessage{Text: "test", Platform: Platform("channel"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
 	key := BuildSessionKey(msg.Session())
 
 	sm.TryAcquire(key, msg)
@@ -192,7 +192,7 @@ func TestSessionManager_ForceRelease(t *testing.T) {
 
 func TestSessionManagerRunIfIdleSerializesNewAdmission(t *testing.T) {
 	sm := NewSessionManager(100 * time.Millisecond)
-	msg := InboundMessage{Text: "test", Platform: Platform("qq"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
+	msg := InboundMessage{Text: "test", Platform: Platform("channel"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
 	key := BuildSessionKey(msg.Session())
 	entered := make(chan struct{})
 	release := make(chan struct{})
@@ -248,9 +248,9 @@ func TestHashID(t *testing.T) {
 
 func TestInboundMessage_Session(t *testing.T) {
 	msg := InboundMessage{
-		Platform:     Platform("qq"),
-		ConnectionID: "qq-main",
-		Domain:       "qq",
+		Platform:     Platform("channel"),
+		ConnectionID: "channel-main",
+		Domain:       "channel",
 		ChatType:     ChatDM,
 		ChatID:       "chat1",
 		UserID:       "user1",
@@ -258,7 +258,7 @@ func TestInboundMessage_Session(t *testing.T) {
 	}
 
 	src := msg.Session()
-	if src.Platform != Platform("qq") || src.ConnectionID != "qq-main" || src.Domain != "qq" || src.ChatType != ChatDM || src.ChatID != "chat1" || src.UserID != "user1" || src.ThreadID != "thread1" {
+	if src.Platform != Platform("channel") || src.ConnectionID != "channel-main" || src.Domain != "channel" || src.ChatType != ChatDM || src.ChatID != "chat1" || src.UserID != "user1" || src.ThreadID != "thread1" {
 		t.Error("Session() should copy all fields")
 	}
 }

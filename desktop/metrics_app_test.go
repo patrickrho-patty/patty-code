@@ -128,7 +128,7 @@ func TestObserveSettingsSnapshotUsesSafeBuckets(t *testing.T) {
 	cfg.Agent.PlannerModel = customProvider + "/" + customModel
 	cfg.Desktop.ProviderAccess = []string{customProvider}
 	cfg.Bot.Connections = []config.BotConnectionConfig{{
-		Provider: "feishu",
+		Provider: "custom",
 		Enabled:  true,
 		Status:   "connected",
 		Model:    customProvider + "/" + customModel,
@@ -154,7 +154,7 @@ func TestObserveSettingsSnapshotUsesSafeBuckets(t *testing.T) {
 		"settings_provider_access":         metricBucket("custom_" + customProvider),
 		"settings_bot_enabled":             "off",
 		"settings_bot_connection_count":    "n_1",
-		"settings_bot_connection_provider": "feishu",
+		"settings_bot_connection_provider": "other",
 		"settings_bot_connection_enabled":  "on",
 		"settings_bot_connection_status":   "connected",
 		"settings_bot_connection_model":    metricBucket("custom_" + customProvider + "_" + customModel),

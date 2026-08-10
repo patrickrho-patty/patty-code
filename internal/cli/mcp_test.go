@@ -520,7 +520,7 @@ func TestRenderMCPStatusStripsControlSequencesFromExternalText(t *testing.T) {
 }
 
 func TestSanitizeExternalDisplayText(t *testing.T) {
-	in := "hello\x1b[2J\x1b]52;c;QQ\x07 world\n\t!"
+	in := "hello\x1b[2J\x1b]52;c;channel\x07 world\n\t!"
 	got := sanitizeExternalDisplayText(in)
 	if strings.ContainsAny(got, "\x1b\x07\n\t") {
 		t.Fatalf("controls remain: %q", got)

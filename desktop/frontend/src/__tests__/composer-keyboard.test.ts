@@ -86,9 +86,9 @@ eq(composerEnterAction({ key: "Enter" }, "windows"), "send", "plain Enter still 
 resetCustomShortcuts();
 
 saveCustomShortcut("composer.send", { key: "Enter", ctrl: true });
-eq(composerEnterAction({ key: "Enter", ctrlKey: true }, "linux"), "send", "custom Ctrl+Enter sends (WeChat-style layout)");
+eq(composerEnterAction({ key: "Enter", ctrlKey: true }, "linux"), "send", "custom Ctrl+Enter sends (chat-style layout)");
 eq(composerEnterAction({ key: "Enter" }, "linux"), "newline-insert", "plain Enter breaks the line when the send chord moved to Ctrl+Enter");
-eq(composerEnterAction({ key: "Enter", shiftKey: true }, "linux"), "newline-native", "Shift+Enter still breaks the line in the WeChat-style layout");
+eq(composerEnterAction({ key: "Enter", shiftKey: true }, "linux"), "newline-native", "Shift+Enter still breaks the line in the chat-style layout");
 eq(composerEnterAction({ key: "Enter", altKey: true }, "linux"), "none", "a custom send chord disables legacy modified-Enter aliases");
 
 resetCustomShortcuts();

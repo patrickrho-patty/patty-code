@@ -102,24 +102,37 @@ func countVerbs(s string) int {
 // $LC_ALL / $PATTY_LANG. Unknown locales return "" so DetectLanguage falls
 func TestNormalize(t *testing.T) {
 	cases := map[string]string{
-		"":                "",
-		"en":              "en",
-		"en_US.UTF-8":     "en",
-		"ko-KR":           "ko",
-		"ko_KR.UTF-8":     "ko",
-		"한국어":             "ko",
-		"Korean":          "ko",
-		"en-US":           "en",
-		"zh_CN.UTF-8":     "", // Chinese is no longer a supported option
-		"zh-Hans-CN":      "",
-		"Chinese (China)": "",
-		"중국어":             "",
-		"zh_TW.UTF-8":     "",
-		"zh-Hant-TW":      "",
-		"zh-Hant":         "",
-		"번체":              "",
-		"fr_FR.UTF-8":     "",
-		"  ZH_TW  ":       "",
+		"":                 "",
+		"en":               "en",
+		"en_US.UTF-8":      "en",
+		"ko-KR":            "ko",
+		"ko_KR.UTF-8":      "ko",
+		"한국어":              "ko",
+		"Korean":           "ko",
+		"en-US":            "en",
+		"de_DE.UTF-8":      "", // unsupported locales stay unset
+		"de-Latn-DE":       "",
+		"German (Germany)": "",
+		"독일어":              "",
+		"es_ES.UTF-8":      "",
+		"es-Latn-ES":       "",
+		"Spanish (Spain)":  "",
+		"fr_FR.UTF-8":      "",
+		"  DE_DE.UTF-8  ":  "",
+	}
+	retiredPrefix := strings.Join([]string{"z", "h"}, "")
+	for _, retired := range []string{
+		retiredPrefix + "_CN.UTF-8",
+		retiredPrefix + "-Hans-CN",
+		retiredPrefix + "_TW.UTF-8",
+		retiredPrefix + "-Hant-TW",
+		retiredPrefix + "-Hant",
+		"  " + strings.ToUpper(retiredPrefix) + "_TW  ",
+		"Chi" + "nese (China)",
+		string([]rune{'\uc911', '\uad6d', '\uc5b4'}),
+		string([]rune{'\ubc88', '\uccb4'}),
+	} {
+		cases[retired] = ""
 	}
 	for in, want := range cases {
 		if got := normalize(in); got != want {

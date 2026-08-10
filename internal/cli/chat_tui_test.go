@@ -3479,6 +3479,31 @@ func TestWideInputChangeRequestsClearScreen(t *testing.T) {
 	}
 }
 
+func TestWideInputShrinkRequestsClearScreenAcrossPlatforms(t *testing.T) {
+	prev := clearWideInputChanges
+	clearWideInputChanges = false
+	defer func() { clearWideInputChanges = prev }()
+
+	for _, tc := range []struct {
+		name          string
+		before, after string
+		want          bool
+	}{
+		{name: "Hangul jamo removed", before: "안ㄴ", after: "안", want: true},
+		{name: "CJK character removed", before: "a한", after: "a", want: true},
+		{name: "wide input cleared", before: "글", after: "", want: true},
+		{name: "wide insertion does not need shrink cleanup", before: "a", after: "a글"},
+		{name: "equal-width wide replacement does not need shrink cleanup", before: "한", after: "글"},
+		{name: "ASCII deletion remains a normal diff", before: "ab", after: "a"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := shouldClearWideInputChange(tc.before, tc.after); got != tc.want {
+				t.Fatalf("shouldClearWideInputChange(%q, %q) = %v, want %v", tc.before, tc.after, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestChooserFreeTextWideInputChangeRequestsClearScreen(t *testing.T) {
 	prev := clearWideInputChanges
 	clearWideInputChanges = true

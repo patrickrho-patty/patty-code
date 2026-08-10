@@ -44,6 +44,7 @@ import { useWailsResizeFix } from "./lib/useWailsResizeFix";
 import { asArray } from "./lib/array";
 import { createBoundedRefreshCoordinator, sameTabMetaLists, shouldRefreshTabMetaForEvent, TAB_META_MAX_IN_FLIGHT, tabMetaFallbackDelay } from "./lib/tabMetaRefresh";
 import { clearLegacyLangPref, normalizeLangPref, readLegacyLangPref, t, useI18n, useT, type Translator } from "./lib/i18n";
+import { IM_FALLBACK_LABEL, IM_PLATFORM, imDisplayLabel } from "./lib/imPresentation";
 import { localizedNoticeText, useController, type Item, type LiveStream } from "./lib/useController";
 import { app, onEvent, onProjectTreeChanged, onReady, onRuntimeRebuilt, onSessionRecovered, openExternal } from "./lib/bridge";
 import { generativeMusic, isGenerativeMusicEnabled } from "./lib/generative-music";
@@ -567,15 +568,15 @@ function sidebarImConnectionsFromBot(
     const mappings = connection.sessionMappings.filter((mapping) => mapping.sessionId.trim() || mapping.remoteId.trim());
     const rowMappings = mappings.length > 0 ? mappings : [null];
     rowMappings.forEach((mapping, index) => {
-      const platform = connection.provider;
-      const platformLabel = platform;
+      const platform = IM_PLATFORM;
+      const platformLabel = IM_FALLBACK_LABEL;
       const remoteId = mapping?.remoteId.trim() ?? "";
       const sessionId = mapping?.sessionId.trim() ?? "";
       const sessionSource = mapping?.sessionSource.trim() ?? "";
       const scope = botMappingScope(mapping, connection.workspaceRoot);
       const workspaceRoot = botMappingWorkspaceRoot(mapping, connection.workspaceRoot);
       const status = sidebarImStatus(connection, bot.enabled);
-      const title = connection.label.trim() || platformLabel;
+      const title = imDisplayLabel(connection.label, connection.provider, connection.domain);
       const allowlistUsers = sidebarImAllowlistUsers(bot);
       const identityLabel = botMappingIdentityLabel(mapping);
       const mappedUserId = mapping?.userId.trim() ?? "";
@@ -647,9 +648,9 @@ function sidebarImTopicSourcesFromBot(bot: BotSettingsView | null | undefined): 
   if (!bot?.connections?.length) return {};
   const sources: Record<string, SidebarImTopicSource> = {};
   for (const connection of bot.connections) {
-    const platform = connection.provider;
-    const label = platform;
-    const title = connection.label.trim() || label;
+    const platform = IM_PLATFORM;
+    const label = imDisplayLabel(connection.label, connection.provider, connection.domain);
+    const title = label;
     for (const mapping of asArray(connection.sessionMappings)) {
       const scope = botMappingScope(mapping, connection.workspaceRoot);
       if (scope !== "global") continue;
@@ -4208,7 +4209,7 @@ export default function App() {
   const topicbarImSourceLabel = sidebarImDetailConnection
     ? sidebarImDetailConnection.platformLabel
     : topicbarImSource ? t("msg.fromIm", { source: topicbarImSource.label }) : "";
-  const topicbarImSourcePlatform = sidebarImDetailConnection?.platform ?? topicbarImSource?.platform;
+  const topicbarImSourcePlatform = sidebarImDetailConnection || topicbarImSource ? IM_PLATFORM : "";
   const topicbarSubtitleVisible = !sidebarCreation && Boolean(topicbarWorkspaceLabel || topicbarImSourceLabel);
   const topicbarSubtitleTitle = sidebarImDetailConnection
     ? [topicbarWorkspaceLabel, topicbarImSourceLabel, sidebarImScopeLabel(sidebarImDetailConnection, t)].filter(Boolean).join(" · ")

@@ -628,7 +628,7 @@ func TestSlashArgCompletionReasoningLanguage(t *testing.T) {
 			t.Fatalf("/reasoning-language completion missing %q: %v", want, labels(m.completion.items))
 		}
 	}
-	if hasLabel(m.completion.items, "zh") || hasLabel(m.completion.items, "chinese") {
+	if hasLabel(m.completion.items, "fr") || hasLabel(m.completion.items, "french") {
 		t.Fatalf("/reasoning-language completion should expose only auto|ko-KR|en: %v", labels(m.completion.items))
 	}
 }

@@ -68,7 +68,7 @@ const mixedInvocations: ComposerInvocation[] = [
 const mixedSubmit = serializeInvocationSubmit("이건또해", mixedInvocations);
 eq(
   mixedSubmit,
-  "/general-purpose 이 /activity-dynamic-debug 건 /explore 또해",
+  "/general-purpose 이건 /activity-dynamic-debug 또 /explore 해",
   "multiple abilities serialize in visual order",
 );
 const mixedSegments = invocationSegmentsFromMessage("이건또해", mixedSubmit);
@@ -85,7 +85,7 @@ eq(
 
 eq(
   replaySubmitText(mixedSubmit, "이건또해", "개발하고검토", "개발하고검토"),
-  "/general-purpose 개 /activity-dynamic-debug 발하 /explore 고검토",
+  "/general-purpose 개발하 /activity-dynamic-debug 고검 /explore 토",
   "editing a mixed ability message preserves every invocation",
 );
 

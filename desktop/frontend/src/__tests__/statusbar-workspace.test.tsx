@@ -198,7 +198,7 @@ console.log("\nstatus bar workspace");
   globalThis.window = dom.window as unknown as Window & typeof globalThis;
   globalThis.document = dom.window.document;
   // Node's built-in navigator reflects the machine's ICU locale; pin jsdom's
-  // en-US one so English-string assertions hold on zh-locale machines.
+  // en-US one so English-string assertions hold on non-English locale machines.
   Object.defineProperty(globalThis, "navigator", { configurable: true, value: dom.window.navigator });
   globalThis.Node = dom.window.Node;
   globalThis.HTMLElement = dom.window.HTMLElement;

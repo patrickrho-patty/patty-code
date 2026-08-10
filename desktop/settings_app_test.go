@@ -1113,12 +1113,12 @@ func TestSetReasoningLanguagePersistsToUserConfig(t *testing.T) {
 
 	view := app.Settings()
 	if view.Agent.ReasoningLanguage != "ko-KR" {
-		t.Fatalf("Settings().Agent.ReasoningLanguage = %q, want zh", view.Agent.ReasoningLanguage)
+		t.Fatalf("Settings().Agent.ReasoningLanguage = %q, want ko-KR", view.Agent.ReasoningLanguage)
 	}
 
 	cfg := config.LoadForEdit(config.UserConfigPath())
 	if cfg.Agent.ReasoningLanguage != "ko-KR" || cfg.ReasoningLanguage() != "ko-KR" {
-		t.Fatalf("saved reasoning language = %q/%q, want zh", cfg.Agent.ReasoningLanguage, cfg.ReasoningLanguage())
+		t.Fatalf("saved reasoning language = %q/%q, want ko-KR", cfg.Agent.ReasoningLanguage, cfg.ReasoningLanguage())
 	}
 }
 
@@ -1213,7 +1213,7 @@ func TestSetDesktopLanguagePersistsResponseLanguageAndUpdatesLiveTabs(t *testing
 	}
 	projectComposed := projectCtrl.Compose("explain this function")
 	if !strings.Contains(projectComposed, "use Standard Korean") {
-		t.Fatalf("project controller Compose = %q, want project zh response language", projectComposed)
+		t.Fatalf("project controller Compose = %q, want project Korean response language", projectComposed)
 	}
 }
 

@@ -1305,7 +1305,10 @@ func qwenPresetIDForMigration(p ProviderEntry) string {
 		presetID = strings.TrimSpace(p.Name)
 	}
 	switch presetID {
-	case "qwen-global",
+	case "qwen-cn",
+		"qwen-global",
+		"qwen-coding-plan-cn",
+		"qwen-coding-plan-cn-anthropic",
 		"qwen-coding-plan-global",
 		"qwen-coding-plan-global-anthropic":
 		return presetID
@@ -1338,7 +1341,7 @@ func mergeMissingQwenContextOverrides(p *ProviderEntry, defaults map[string]Prov
 }
 
 // normalizeLegacyKimiK3Catalog upgrades only untouched Kimi direct-API model
-// catalogs on the remaining official endpoint. Custom model lists, endpoints,
+// catalogs on the official regional endpoints. Custom model lists, endpoints,
 // defaults, credentials, and provider-wide settings remain user-owned.
 func normalizeLegacyKimiK3Catalog(c *Config) bool {
 	if c == nil {
@@ -1351,6 +1354,8 @@ func normalizeLegacyKimiK3Catalog(c *Config) bool {
 		name := strings.TrimSpace(p.Name)
 		var baseURL string
 		switch {
+		case presetID == "kimi-cn" || (presetID == "" && name == "kimi-cn"):
+			baseURL = "https://api.moonshot.cn/v1"
 		case presetID == "kimi-global" || (presetID == "" && name == "kimi-global"):
 			baseURL = "https://api.moonshot.ai/v1"
 		default:

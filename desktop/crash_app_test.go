@@ -15,7 +15,7 @@ func TestScrubUserPaths(t *testing.T) {
 	cases := map[string]string{
 		`at C:\Users\yuhua\proj\app.ts:12:3`:      `at C:\Users\_\proj\app.ts:12:3`,
 		`at c:\users\someone\x.go`:                `at c:\users\_\x.go`,
-		`/home/bob/.patty/config.toml`:         `/home/_/.patty/config.toml`,
+		`/home/bob/.patty/config.toml`:            `/home/_/.patty/config.toml`,
 		`/Users/alice/Library/Logs`:               `/Users/_/Library/Logs`,
 		`Error: ENOENT open '/home/bob/secret'`:   `Error: ENOENT open '/home/_/secret'`,
 		`no user path here: /usr/lib/node`:        `no user path here: /usr/lib/node`,
@@ -33,9 +33,9 @@ func TestScrubSensitiveText(t *testing.T) {
 	bearer := "abcdefghijklmnopqrstuvwxyz1234567890ABCDE"
 	longHex := "0123456789abcdef0123456789abcdef"
 	jwt := "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature"
-	got := scrubSensitiveText("user dev@example.com Authorization: Bearer " + bearer + " api_key=" + apiKey + " jwt " + jwt + " hash " + longHex + " env FEISHU_BOT_APP_SECRET WEIXIN_BOT_TOKEN short abc1234 path /Users/alice/x")
+	got := scrubSensitiveText("user dev@example.com Authorization: Bearer " + bearer + " api_key=" + apiKey + " jwt " + jwt + " hash " + longHex + " env CHAT_BOT_APP_SECRET CHAT_BOT_TOKEN short abc1234 path /Users/alice/x")
 
-	for _, leaked := range []string{"dev@example.com", bearer, apiKey, jwt, longHex, "FEISHU_BOT_APP_SECRET", "WEIXIN_BOT_TOKEN", "alice"} {
+	for _, leaked := range []string{"dev@example.com", bearer, apiKey, jwt, longHex, "CHAT_BOT_APP_SECRET", "CHAT_BOT_TOKEN", "alice"} {
 		if strings.Contains(got, leaked) {
 			t.Fatalf("sensitive text leaked %q in %q", leaked, got)
 		}
@@ -182,7 +182,7 @@ func TestCrashReportFromBotDetail(t *testing.T) {
 		SchemaVersion: 2,
 		Kind:          "bot",
 		Source:        "bot.runtime",
-		Label:         "bot.feishu.lark.send",
+		Label:         "bot.custom.alpha.send",
 		Message:       "[bot]\n\nfailed at /Users/alice/project with token=" + token,
 		ErrorType:     "BotConnectionDiagnostic",
 		ErrorMessage:  "send failed with Bearer " + token,
@@ -196,7 +196,7 @@ func TestCrashReportFromBotDetail(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.Kind != "bot" || r.Source != "bot.runtime" || r.Label != "bot.feishu.lark.send" {
+	if r.Kind != "bot" || r.Source != "bot.runtime" || r.Label != "bot.custom.alpha.send" {
 		t.Fatalf("bot fields not preserved: %+v", r)
 	}
 	if strings.Contains(r.Message, "alice") || strings.Contains(r.Message, token) || strings.Contains(r.ErrorMessage, token) {

@@ -44,7 +44,7 @@ func TestSaveInboundMediaItemsStoresBytesAndReportsErrors(t *testing.T) {
 
 	refs, fallbacks, errs := saveInboundMediaItems(context.Background(), workspace, []InboundMedia{
 		{MIME: "image/png", Data: png},
-		{Name: "notes.txt", MIME: "text/plain", Data: []byte("hello from feishu")},
+		{Name: "notes.txt", MIME: "text/plain", Data: []byte("hello from custom")},
 		{Name: "empty.bin", FailureText: "[file unavailable]"}, // no data -> error
 	})
 	if len(errs) != 1 {
@@ -89,10 +89,10 @@ func TestSaveInboundMediaItemsLoadsDeferredBytesAfterAdmission(t *testing.T) {
 
 func TestInputTextWithMediaKeepsDeferredFailurePlaceholder(t *testing.T) {
 	workspace := t.TempDir()
-	adapter := newFakeAdapter(Platform("feishu"), "feishu")
-	gw := NewGateway(GatewayConfig{WorkspaceRoot: workspace}, map[Platform]Adapter{Platform("feishu"): adapter}, discardLogger())
+	adapter := newFakeAdapter(Platform("custom"), "custom")
+	gw := NewGateway(GatewayConfig{WorkspaceRoot: workspace}, map[Platform]Adapter{Platform("custom"): adapter}, discardLogger())
 	input := gw.inputTextWithMedia(context.Background(), adapter, InboundMessage{
-		Platform: Platform("feishu"),
+		Platform: Platform("custom"),
 		ChatType: ChatDM,
 		ChatID:   "chat",
 		Media: []InboundMedia{{

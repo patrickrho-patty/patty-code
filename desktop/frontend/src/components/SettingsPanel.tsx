@@ -47,6 +47,7 @@ import { getDisplayMode, onDisplayModeChange, setDisplayMode as setLocalDisplayM
 import { getProcessFoldPreference, onProcessFoldPreferenceChange, setProcessFoldPreference, type ProcessFoldPreference } from "../lib/processFoldPreference";
 import { DEFAULT_STATUS_BAR_ITEMS, normalizeStatusBarItems, type StatusBarItemId } from "../lib/statusBarItems";
 import { normalizeToolApprovalMode } from "../lib/types";
+import { IM_FALLBACK_LABEL, imDisplayLabel } from "../lib/imPresentation";
 import {
   comboFromKeyboardEvent,
   detectShortcutPlatform,
@@ -2729,8 +2730,8 @@ function BotsSection({ s, busy, apply, initialFocus }: BotsSectionProps) {
                   <BotIcon size={24} />
                 </span>
                 <span className="bot-channel-tab__text">
-                  <strong>{connection.label || botConnectionLabel(connection)}</strong>
-                  <small>{connection.provider}</small>
+                  <strong>{botConnectionLabel(connection)}</strong>
+                  <small>{IM_FALLBACK_LABEL}</small>
                 </span>
                 <span className={`bot-channel-tab__dot${connected ? " bot-channel-tab__dot--online" : connection.enabled ? " bot-channel-tab__dot--configured" : ""}`} />
               </button>
@@ -3180,8 +3181,7 @@ function botConnectionScopeLabel(connection: BotConnectionView, t: ReturnType<ty
 }
 
 function botConnectionLabel(connection: BotConnectionView): string {
-  if (connection.label.trim()) return connection.label.trim();
-  return [connection.provider, connection.domain].filter(Boolean).join(" / ") || "Bot";
+  return imDisplayLabel(connection.label, connection.provider, connection.domain);
 }
 
 function botConnectionSecretEnv(connection: BotConnectionView): string {
@@ -4395,6 +4395,8 @@ function providerPresetDescription(preset: ProviderPresetView, t: ReturnType<typ
       return t("settings.addProvider.preset.longcatAnthropicDesc");
     case "token-rhythm":
       return t("settings.addProvider.preset.tokenRhythmDesc");
+    case "kimi-cn":
+      return t("settings.addProvider.preset.kimiCnDesc");
     case "kimi-global":
       return t("settings.addProvider.preset.kimiGlobalDesc");
     case "kimi-coding-plan":
@@ -4403,6 +4405,10 @@ function providerPresetDescription(preset: ProviderPresetView, t: ReturnType<typ
       return t("settings.addProvider.preset.mimoApiDesc");
     case "mimo-anthropic":
       return t("settings.addProvider.preset.mimoAnthropicDesc");
+    case "mimo-token-plan-cn":
+      return t("settings.addProvider.preset.mimoTokenPlanCnDesc");
+    case "mimo-token-plan-cn-anthropic":
+      return t("settings.addProvider.preset.mimoTokenPlanCnAnthropicDesc");
     case "mimo-token-plan-sgp":
       return t("settings.addProvider.preset.mimoTokenPlanSgpDesc");
     case "mimo-token-plan-sgp-anthropic":
@@ -4411,12 +4417,22 @@ function providerPresetDescription(preset: ProviderPresetView, t: ReturnType<typ
       return t("settings.addProvider.preset.mimoTokenPlanAmsDesc");
     case "mimo-token-plan-ams-anthropic":
       return t("settings.addProvider.preset.mimoTokenPlanAmsAnthropicDesc");
+    case "minimax-cn-api":
+      return t("settings.addProvider.preset.minimaxCnApiDesc");
     case "minimax-global-api":
       return t("settings.addProvider.preset.minimaxGlobalApiDesc");
+    case "minimax-cn-anthropic":
+      return t("settings.addProvider.preset.minimaxCnAnthropicDesc");
     case "minimax-global-anthropic":
       return t("settings.addProvider.preset.minimaxGlobalAnthropicDesc");
+    case "glm-cn":
+      return t("settings.addProvider.preset.glmCnDesc");
     case "zai-global":
       return t("settings.addProvider.preset.zaiGlobalDesc");
+    case "glm-coding-plan-cn":
+      return t("settings.addProvider.preset.glmCodingPlanCnDesc");
+    case "glm-coding-plan-cn-anthropic":
+      return t("settings.addProvider.preset.glmCodingPlanCnAnthropicDesc");
     case "zai-coding-plan-global":
       return t("settings.addProvider.preset.zaiCodingPlanGlobalDesc");
     case "zai-coding-plan-global-anthropic":
@@ -4427,8 +4443,14 @@ function providerPresetDescription(preset: ProviderPresetView, t: ReturnType<typ
       return t("settings.addProvider.preset.opencodeGoAnthropicDesc");
     case "opencode-zen-anthropic":
       return t("settings.addProvider.preset.opencodeZenAnthropicDesc");
+    case "qwen-cn":
+      return t("settings.addProvider.preset.qwenCnDesc");
     case "qwen-global":
       return t("settings.addProvider.preset.qwenGlobalDesc");
+    case "qwen-coding-plan-cn":
+      return t("settings.addProvider.preset.qwenCodingPlanCnDesc");
+    case "qwen-coding-plan-cn-anthropic":
+      return t("settings.addProvider.preset.qwenCodingPlanCnAnthropicDesc");
     case "qwen-coding-plan-global":
       return t("settings.addProvider.preset.qwenCodingPlanGlobalDesc");
     case "qwen-coding-plan-global-anthropic":

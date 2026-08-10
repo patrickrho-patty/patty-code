@@ -82,7 +82,7 @@ Plans created (9 new files):
   docs/superpowers/plans/2026-08-08-02-product-profile-and-module-foundation.md
   docs/superpowers/plans/2026-08-08-03-go-module-and-core-semantic-rebrand.md
   docs/superpowers/plans/2026-08-08-04-storage-config-schema-and-isolation.md
-  docs/superpowers/plans/2026-08-08-05-korean-localization-and-chinese-removal.md
+  docs/superpowers/plans/2026-08-08-05-korean-localization-and-legacy-locale-removal.md
   docs/superpowers/plans/2026-08-08-06-korean-slash-command-system.md
   docs/superpowers/plans/2026-08-08-07-tui-redesign-and-launch-art.md
   docs/superpowers/plans/2026-08-08-08-desktop-site-docs-and-assets.md
@@ -97,7 +97,7 @@ Plans created (9 new files):
 Per §13.11 dependency order, these phases come next:
 
 1. **Phase A** (Plans 01–04): Inventory + Profile foundation + Go module rename + Storage/isolation — partially done
-2. **Phase B** (Plans 05–08): Korean localization + Chinese removal + Slash commands + TUI redesign + Desktop/site/assets
+2. **Phase B** (Plans 05–08): Korean localization + legacy locale removal + Slash commands + TUI redesign + Desktop/site/assets
 3. **Phase C** (Plans 09–10): Packaging/release/signing + Hosted services/network identities
 4. **Phase D** (Plan 11): GongCode derived profile + trust chain + mandatory modules
 5. **Phase E** (Plan 12): Release qualification + whole-tree audit

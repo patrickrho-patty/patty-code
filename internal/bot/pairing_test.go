@@ -22,7 +22,7 @@ func TestCreateOrRefreshPairingRequestConcurrent(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			msg := InboundMessage{
-				Platform: Platform("feishu"),
+				Platform: Platform("custom"),
 				ChatType: ChatDM,
 				ChatID:   fmt.Sprintf("chat-%d", i),
 				UserID:   fmt.Sprintf("user-%d", i),

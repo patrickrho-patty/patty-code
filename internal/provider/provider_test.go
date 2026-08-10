@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-
 // tool message answering it — the contract the OpenAI/DeepSeek API enforces.
 func toolIDsAnswered(msgs []Message) bool {
 	answered := map[string]bool{}
@@ -161,7 +160,7 @@ func TestAttachedDecisionReceiptPreservesCurrentAndLegacyToolPairing(t *testing.
 		t.Fatalf("provider-visible message leaked local decision metadata: %+v", current[1])
 	}
 
-// must still contain the same adjacent assistantresult pair, including the
+	// must still contain the same adjacent assistantresult pair, including the
 	legacy := append([]Message(nil), stored...)
 	legacy[1].DecisionReceipts = nil
 	legacy = SanitizeToolPairing(legacy)
@@ -195,7 +194,7 @@ func TestModelMessagesUsesProviderContentWithoutMutatingStoredMessage(t *testing
 	stored := []Message{{
 		Role:            RoleUser,
 		Content:         "fix the bug",
-		ProviderContent: "<reasoning-language>zh</reasoning-language>\n\nfix the bug",
+		ProviderContent: "<reasoning-language>ko-KR</reasoning-language>\n\nfix the bug",
 	}}
 
 	model := ModelMessages(stored)
@@ -214,7 +213,7 @@ func TestModelMessagesUsesProviderContentWithoutMutatingStoredMessage(t *testing
 }
 
 func TestModelMessagesStripsRawContentWithoutChangingLegacyContent(t *testing.T) {
-	const rendered = "<reasoning-language>zh</reasoning-language>\n\nfix the bug"
+	const rendered = "<reasoning-language>ko-KR</reasoning-language>\n\nfix the bug"
 	stored := []Message{{Role: RoleUser, Content: rendered, RawContent: "fix the bug"}}
 
 	model := ModelMessages(stored)
@@ -234,7 +233,7 @@ func TestLocalOnlySentinelIsSafeWhenNewFieldsAreIgnoredByLegacyReader(t *testing
 		{Role: RoleUser, Content: "task"},
 		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}}},
 		{Role: RoleTool, ToolCallID: "c1", Name: "read_file", Content: "ok"},
-// Simulate an older binary: unknown local_onlyinterrupted_turn JSON fields
+		// Simulate an older binary: unknown local_onlyinterrupted_turn JSON fields
 		{Role: RoleTool, ToolCallID: LocalOnlyToolID, Name: LocalOnlyToolName, Content: "partial reasoning that must not leak"},
 		{Role: RoleUser, Content: "continue"},
 	}
@@ -384,7 +383,6 @@ func TestSanitizeToolPairingBackfillsMissingToolResultName(t *testing.T) {
 	}
 }
 
-
 func TestPricingCostNil(t *testing.T) {
 	var p *Pricing
 	if got := p.Cost(&Usage{PromptTokens: 100}); got != 0 {
@@ -417,7 +415,7 @@ func TestPricingCostCalculation(t *testing.T) {
 		CacheMissTokens:  500_000,
 		CompletionTokens: 200_000,
 	}
-// Expected: (1M * 0.5 + 500K * 2.0 + 200K * 10.0) / 1M
+	// Expected: (1M * 0.5 + 500K * 2.0 + 200K * 10.0) / 1M
 	got := p.Cost(u)
 	if got != 3.5 {
 		t.Errorf("Cost = %f, want 3.5", got)
@@ -462,7 +460,6 @@ func TestPricingCostZeroTokens(t *testing.T) {
 		t.Errorf("zero tokens Cost = %f, want 0", got)
 	}
 }
-
 
 func TestPricingSymbolDefault(t *testing.T) {
 	p := &Pricing{}
@@ -509,7 +506,6 @@ func TestPricingSymbolNormalizesCurrencyCodes(t *testing.T) {
 	}
 }
 
-
 func TestAuthErrorWithKeyEnv(t *testing.T) {
 	e := &AuthError{Provider: "deepseek", KeyEnv: "DEEPSEEK_API_KEY", Status: 401}
 	msg := e.Error()
@@ -521,7 +517,7 @@ func TestAuthErrorWithKeyEnv(t *testing.T) {
 }
 
 func TestAuthErrorBodyStaysOutOfError(t *testing.T) {
-// Body carries the servers reason for display layers to extract, but it
+	// Body carries the servers reason for display layers to extract, but it
 	e := &AuthError{Provider: "relay", Status: 401, Body: `{"error":{"message":"Your api key: ****ae54 has expired"}}`}
 	if e.Body == "" {
 		t.Fatal("Body should carry the server's reason")
@@ -549,9 +545,8 @@ func TestAuthErrorImplementsError(t *testing.T) {
 	}
 }
 
-
 func TestRegistryKindsSorted(t *testing.T) {
-// The openai package self-registers via init(); we cant control that here
+	// The openai package self-registers via init(); we cant control that here
 	kinds := Kinds()
 	for i := 1; i < len(kinds); i++ {
 		if kinds[i-1] >= kinds[i] {
@@ -575,7 +570,7 @@ func TestNewWithRegisteredKind(t *testing.T) {
 	Register("test-mock-__"+t.Name(), func(cfg Config) (Provider, error) {
 		return nil, nil
 	})
-// We can't easily unregister, but we can test it doesn't panic.
+	// We can't easily unregister, but we can test it doesn't panic.
 }
 
 func TestNewRejectsTypedNilProvider(t *testing.T) {
@@ -593,7 +588,6 @@ func TestNewRejectsTypedNilProvider(t *testing.T) {
 		t.Fatalf("New error = %v, want returned nil provider", err)
 	}
 }
-
 
 func TestRoleConstants(t *testing.T) {
 	if RoleSystem != "system" {
@@ -641,7 +635,6 @@ func TestMessageResponsesItemsRemainBackwardCompatible(t *testing.T) {
 	}
 }
 
-
 func TestChunkTypeConstants(t *testing.T) {
 	types := []ChunkType{ChunkText, ChunkReasoning, ChunkToolCallStart, ChunkToolCallArgsDelta, ChunkToolCall, ChunkUsage, ChunkDone, ChunkError, ChunkResponsesItem}
 	for i, ct := range types {
@@ -650,7 +643,6 @@ func TestChunkTypeConstants(t *testing.T) {
 		}
 	}
 }
-
 
 func TestToolSchemaJSON(t *testing.T) {
 	ts := ToolSchema{

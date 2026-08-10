@@ -84,16 +84,16 @@ func TestCustomFileOverridesBuiltinAndParses(t *testing.T) {
 
 func TestResolveDecodesGB18030CustomFile(t *testing.T) {
 	dir := t.TempDir()
-	body := "---\nname: concise-cn\ndescription: 중국어 스타일\n---\n중국어로 간결하게 답변하세요."
-	if err := os.WriteFile(filepath.Join(dir, "concise-cn.md"), fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
+	body := "---\nname: concise-ko\ndescription: 한국어 스타일\n---\n한국어로 간결하게 답변하세요."
+	if err := os.WriteFile(filepath.Join(dir, "concise-ko.md"), fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	st, ok := Resolve("concise-cn", []string{dir})
+	st, ok := Resolve("concise-ko", []string{dir})
 	if !ok {
 		t.Fatal("custom style should resolve")
 	}
-	if st.Description != "중국어 스타일" || st.Body != "중국어로 간결하게 답변하세요." {
+	if st.Description != "한국어 스타일" || st.Body != "한국어로 간결하게 답변하세요." {
 		t.Fatalf("decoded style = %+v", st)
 	}
 }

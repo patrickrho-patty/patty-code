@@ -26,7 +26,7 @@ Replace all Patty Code-specific UI text, assets, build metadata, and website con
 
 ### T1: Rename `patty-code-example.toml` → `patty.example.toml`
 - Update all example values to patty coordinates
-- Remove Chinese locale examples
+- Remove retired locale examples
 
 ### T2: Rename `.patty/commands/review.md` → `.patty/commands/review.md`
 - Update command-root discovery code to look in `.patty/commands/`
@@ -57,7 +57,7 @@ Replace all Patty Code-specific UI text, assets, build metadata, and website con
 ### T8: Website overhaul
 - Page titles: "Patty Code" → "Patty Code"
 - Download links point to patty-artifact URLs
-- Remove ko-KR SEO routing / sitemap entries
+- Remove only retired-locale SEO routes and sitemap entries; preserve canonical Korean (`ko-KR`) and English routes
 - Social card images regenerated
 
 ### T9: Accessibility audit

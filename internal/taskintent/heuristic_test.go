@@ -9,7 +9,7 @@ func TestHeuristicInputIsTask(t *testing.T) {
 		input string
 		want  bool
 	}{
-// Greetings / acknowledgements — chat.
+		// Greetings / acknowledgements — chat.
 		{"hello", "hello", false},
 		{"hi", "hi", false},
 		{"안녕하세요", "안녕하세요", false},
@@ -42,7 +42,7 @@ func TestHeuristicInputIsTask(t *testing.T) {
 		{"test was helpful", "that test was helpful", false},
 		{"수고하셨습니다", "수고하셨습니다", false},
 		{"thanks then update", "thanks for fixing that, now update the tests", true},
-		{"chinese thanks then update", "고마워요, 계속해서 설정을 수정해 줘", true},
+		{"korean thanks then update", "고마워요, 계속해서 설정을 수정해 줘", true},
 		{"task before thanks", "review this PR; thanks for the help", true},
 
 		{"auth not working", "the auth isn't working", true},

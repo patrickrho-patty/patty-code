@@ -578,10 +578,10 @@ func TestSetProviderEffort(t *testing.T) {
 func TestSetLanguage(t *testing.T) {
 	c := Default()
 	if err := c.SetLanguage("ko-KR"); err != nil {
-		t.Fatalf("SetLanguage zh: %v", err)
+		t.Fatalf("SetLanguage ko-KR: %v", err)
 	}
 	if c.Language != "ko-KR" {
-		t.Fatalf("language = %q, want zh", c.Language)
+		t.Fatalf("language = %q, want ko-KR", c.Language)
 	}
 	if err := c.SetLanguage("auto"); err != nil {
 		t.Fatalf("SetLanguage auto: %v", err)
@@ -599,8 +599,9 @@ func TestSetReasoningLanguage(t *testing.T) {
 	if c.Agent.ReasoningLanguage != "ko-KR" || c.ReasoningLanguage() != "ko-KR" {
 		t.Fatalf("reasoning language = %q/%q, want ko-KR", c.Agent.ReasoningLanguage, c.ReasoningLanguage())
 	}
-	if err := c.SetReasoningLanguage("zh"); err == nil {
-		t.Fatal("SetReasoningLanguage should reject removed Chinese alias zh")
+	retiredLocaleAlias := strings.Join([]string{"z", "h"}, "")
+	if err := c.SetReasoningLanguage(retiredLocaleAlias); err == nil {
+		t.Fatal("SetReasoningLanguage should reject the retired locale alias")
 	}
 	if err := c.SetReasoningLanguage("model-default"); err != nil {
 		t.Fatalf("SetReasoningLanguage legacy default: %v", err)

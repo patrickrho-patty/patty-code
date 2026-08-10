@@ -13,7 +13,7 @@ import (
 // - leading-slash command tokens — /compact, /language, /init, ...
 // - key hints — PgUp/PgDn/Ctrl+Home/End, Shift+Tab, Ctrl+C/Y/D, Esc, arrows
 //
-// "PgUp/PgDn 스크롤" while en/zh also carry Ctrl+Home/End. Because the check is
+// "PgUp/PgDn 스크롤" while other locale variants also carry Ctrl+Home/End. Because the check is
 //
 // The test enumerates fields of the baseline catalogue (Korean) — the same
 // Messages type all catalogues use — exactly like TestCatalogsComplete,
@@ -47,17 +47,16 @@ func TestCatalogsAgreeOnCodeTokens(t *testing.T) {
 	}
 }
 
-
 var (
 	reBacktick = regexp.MustCompile("`([^`]+)`")
-// A slash token is a leading-slash word (/init, /resume <n>). Requiring a
-// non-word boundary before it keeps enumerations such as "y/a/p/n",
-// "drag-select/scrollbar" or "auth/quota" from being misread as commands.
+	// A slash token is a leading-slash word (/init, /resume <n>). Requiring a
+	// non-word boundary before it keeps enumerations such as "y/a/p/n",
+	// "drag-select/scrollbar" or "auth/quota" from being misread as commands.
 	reSlashCmd = regexp.MustCompile("(?:^|[ \\t\\n\\r(（)·\\[：“\"'`,，;；:：、])(/[A-Za-z][A-Za-z0-9_-]*)")
 	reKeyToken = regexp.MustCompile(`\b(?:PgUp|PgDn|Home|End|Esc|Shift\+Tab|Ctrl[-+][A-Za-z]+)\b`)
 	reArrow    = regexp.MustCompile(`[↑↓←→]`)
-// `patcode run "your task"`   vs   `patcode run "당신의 작업"`
-// `patcode remote add <name>` vs   `patcode remote add <이름>`
+	// `patcode run "your task"`   vs   `patcode run "당신의 작업"`
+	// `patcode remote add <name>` vs   `patcode remote add <이름>`
 	reSpanQuoted = regexp.MustCompile(`"[^"]*"`)
 	reSpanAngle  = regexp.MustCompile(`<[^>]*>`)
 )

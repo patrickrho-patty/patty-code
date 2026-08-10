@@ -40,7 +40,7 @@ func TestLockUserConfigEditsSerializesRMW(t *testing.T) {
 			cfg := LoadForEdit(path)
 			cfg.Bot.Connections = append(cfg.Bot.Connections, BotConnectionConfig{
 				ID:       fmt.Sprintf("conn-%d", n),
-				Provider: "qq",
+				Provider: "channel",
 				Enabled:  true,
 			})
 			if err := cfg.SaveTo(path); err != nil {
@@ -96,7 +96,7 @@ func TestConcurrentBotAndSettingsWritersKeepBothFields(t *testing.T) {
 			}
 			cfg.Bot.Connections = []BotConnectionConfig{{
 				ID:       fmt.Sprintf("conn-%d", i),
-				Provider: "feishu",
+				Provider: "custom",
 				Enabled:  true,
 			}}
 			err := cfg.SaveTo(path)
@@ -201,7 +201,7 @@ func assertUserConfigLockSerializesAcrossProcesses(t *testing.T, firstHome, seco
 		t.Helper()
 		cmd := exec.Command(os.Args[0], "-test.run=^TestLockUserConfigEditsHelperProcess$")
 		cmd.Env = testEnvWithOverrides(map[string]string{
-			"TMPDIR":                        processTmp,
+			"TMPDIR":                     processTmp,
 			"PATTY_HOME":                 processHome,
 			"PATTY_CONFIG_LOCK_HELPER":   "1",
 			"PATTY_CONFIG_LOCK_MODE":     mode,
@@ -360,7 +360,7 @@ func TestLockUserConfigEditsHelperProcess(t *testing.T) {
 	case "bot":
 		cfg.Bot.Connections = []BotConnectionConfig{{
 			ID:       "cross-process",
-			Provider: "qq",
+			Provider: "channel",
 			Enabled:  true,
 		}}
 	case "cli":

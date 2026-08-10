@@ -35,8 +35,8 @@ func TestStripTransientUserBlocksUnwrapsMemoryCompilerExecution(t *testing.T) {
 		},
 		{
 			name: "language blocks before the compiler block",
-			in: "<reasoning-language>zh</reasoning-language>\n\n" +
-				"<response-language>zh</response-language>\n\n" + realContract("do the thing"),
+			in: "<reasoning-language>ko-KR</reasoning-language>\n\n" +
+				"<response-language>ko-KR</response-language>\n\n" + realContract("do the thing"),
 			want: "do the thing",
 		},
 		{
@@ -71,7 +71,7 @@ func TestStripTransientUserBlocksUnwrapsMemoryCompilerExecution(t *testing.T) {
 		},
 		{
 			name: "active goal after other transient prefixes is stripped",
-			in: "<reasoning-language>\nuse Chinese\n</reasoning-language>\n\n" +
+			in: "<reasoning-language>\nuse Korean\n</reasoning-language>\n\n" +
 				"<memory-update>\n- note\n</memory-update>\n\n" +
 				"<active-goal>\nDo X\n</active-goal>\n\nhelp me",
 			want: "help me",
@@ -130,7 +130,7 @@ func TestUserPreviewTextUnwrapsNestedCompilerContracts(t *testing.T) {
 	}
 	assertNoContractLeak(t, UserPreviewText(deep), "follow-up step")
 
-// A dangling  truncated block (streaming cut, or the model echoing a partial
+	// A dangling  truncated block (streaming cut, or the model echoing a partial
 	partial := "do the thing\n<memory-compiler-execution>\n{\"planner_ir\":{\"source_event\":\"do the thing\"," + strings.Repeat("x", 40)
 	assertNoContractLeak(t, UserPreviewText(partial), "do the thing")
 }

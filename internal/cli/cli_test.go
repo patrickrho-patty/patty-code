@@ -747,7 +747,7 @@ func TestConfigReasoningLanguageCommandWritesUserConfig(t *testing.T) {
 	}
 	cfg := config.LoadForEdit(config.UserConfigPath())
 	if cfg.Agent.ReasoningLanguage != "ko-KR" || cfg.ReasoningLanguage() != "ko-KR" {
-		t.Fatalf("saved reasoning_language = %q/%q, want zh", cfg.Agent.ReasoningLanguage, cfg.ReasoningLanguage())
+		t.Fatalf("saved reasoning_language = %q/%q, want ko-KR", cfg.Agent.ReasoningLanguage, cfg.ReasoningLanguage())
 	}
 }
 
@@ -796,7 +796,7 @@ func TestConfigReasoningLanguageRejectsAliases(t *testing.T) {
 	isolateCLIConfigHome(t)
 
 	errOut := captureStderr(t, func() {
-		if rc := Run([]string{"config", "reasoning-language", "zh"}, "test-version"); rc != 2 {
+		if rc := Run([]string{"config", "reasoning-language", "fr"}, "test-version"); rc != 2 {
 			t.Fatalf("config reasoning-language alias rc = %d, want 2", rc)
 		}
 	})

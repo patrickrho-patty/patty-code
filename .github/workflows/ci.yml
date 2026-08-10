@@ -156,7 +156,7 @@ jobs:
         timeout-minutes: 3
         run: go test -timeout=2m -run '^TestBashSharesSessionTempAcrossCalls$' ./internal/tool/builtin
 
-      # Shell execution contract: PowerShell identity, Chinese workspace paths,
+      # Shell execution contract: PowerShell identity, non-ASCII workspace paths,
       # UTF-8 output, and ExitCode retention must gate PRs on native Windows.
       # Keep this focused (not full ./internal/tool) so the smoke budget holds.
       - name: test (Windows shell execution contract)

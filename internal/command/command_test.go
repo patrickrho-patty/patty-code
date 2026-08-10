@@ -70,7 +70,7 @@ func TestLoad(t *testing.T) {
 
 func TestLoadDecodesGB18030CommandFile(t *testing.T) {
 	dir := t.TempDir()
-	body := "---\ndescription: 중국어 명령\nargument-hint: [주제]\n---\n$ARGUMENTS를 요약해 주세요."
+	body := "---\ndescription: 한국어 명령\nargument-hint: [주제]\n---\n$ARGUMENTS를 요약해 주세요."
 	path := filepath.Join(dir, "summary.md")
 	if err := os.WriteFile(path, fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
@@ -80,7 +80,7 @@ func TestLoadDecodesGB18030CommandFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if len(cmds) != 1 || cmds[0].Description != "중국어 명령" || cmds[0].ArgHint != "[주제]" || cmds[0].Body != "$ARGUMENTS를 요약해 주세요." {
+	if len(cmds) != 1 || cmds[0].Description != "한국어 명령" || cmds[0].ArgHint != "[주제]" || cmds[0].Body != "$ARGUMENTS를 요약해 주세요." {
 		t.Fatalf("decoded command = %+v", cmds)
 	}
 }

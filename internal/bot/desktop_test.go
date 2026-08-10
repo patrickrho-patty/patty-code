@@ -91,9 +91,9 @@ func (f *fakeDesktopBridge) DriveInput(route DesktopWatchRoute, text string) (st
 
 func desktopTestMessage(text string) InboundMessage {
 	return InboundMessage{
-		Platform:     Platform("feishu"),
-		ConnectionID: "feishu-main",
-		Domain:       "feishu",
+		Platform:     Platform("custom"),
+		ConnectionID: "custom-main",
+		Domain:       "custom",
 		ChatType:     ChatDM,
 		ChatID:       "chat-god",
 		UserID:       "admin-user",
@@ -268,7 +268,7 @@ func TestDivertToDesktopTakeover(t *testing.T) {
 		logger:        discardLogger(),
 		adapterHealth: map[string]*AdapterHealthSnapshot{},
 	}
-	adapter := newFakeAdapter(Platform("feishu"), "fake-feishu")
+	adapter := newFakeAdapter(Platform("custom"), "fake-custom")
 	msg := desktopTestMessage("테스트 좀 실행해 줘")
 
 	// 미인수: 분기하지 않음。
@@ -308,13 +308,13 @@ func TestDivertToDesktopTakeoverRevokesFormerAdmin(t *testing.T) {
 		cfg: GatewayConfig{
 			Desktop: bridge,
 			Allowlist: AllowlistConfig{Admins: map[Platform][]string{
-				Platform("feishu"): {"current-admin"},
+				Platform("custom"): {"current-admin"},
 			}},
 		},
 		logger:        discardLogger(),
 		adapterHealth: map[string]*AdapterHealthSnapshot{},
 	}
-	adapter := newFakeAdapter(Platform("feishu"), "fake-feishu")
+	adapter := newFakeAdapter(Platform("custom"), "fake-custom")
 	msg := desktopTestMessage("run tests")
 	route := desktopRouteFromMessage(msg)
 	bridge.takeovers[route.Key()] = "tab-1"

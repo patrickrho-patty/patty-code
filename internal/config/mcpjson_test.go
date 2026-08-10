@@ -58,7 +58,7 @@ func TestLoadMCPJSON(t *testing.T) {
 func TestLoadMCPJSONDecodesGB18030(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, mcpJSONFile)
-	doc := `{"mcpServers":{"local":{"command":"도구.exe","env":{"LABEL":"중국어"}}}}`
+	doc := `{"mcpServers":{"local":{"command":"도구.exe","env":{"LABEL":"한국어"}}}}`
 	if err := os.WriteFile(path, fileencoding.Encode(doc, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestLoadMCPJSONDecodesGB18030(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 1 || got[0].Command != "도구.exe" || got[0].Env["LABEL"] != "중국어" {
+	if len(got) != 1 || got[0].Command != "도구.exe" || got[0].Env["LABEL"] != "한국어" {
 		t.Fatalf("decoded .mcp.json entries = %+v", got)
 	}
 }

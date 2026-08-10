@@ -351,7 +351,7 @@ func TestResolveSystemPromptForRootDecodesGB18030(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "prompts", "session.md")
-	if err := os.WriteFile(path, fileencoding.Encode(" 항상 중국어로 답변하세요. \n", fileencoding.GB18030), 0o644); err != nil {
+	if err := os.WriteFile(path, fileencoding.Encode(" 항상 한국어로 답변하세요. \n", fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -362,7 +362,7 @@ func TestResolveSystemPromptForRootDecodesGB18030(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveSystemPromptForRoot: %v", err)
 	}
-	if got != "항상 중국어로 답변하세요." {
+	if got != "항상 한국어로 답변하세요." {
 		t.Fatalf("system prompt = %q, want decoded Korean prompt", got)
 	}
 }

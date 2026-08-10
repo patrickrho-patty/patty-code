@@ -240,7 +240,7 @@ func TestBotPairingApproveAddsUserToConnectionAccess(t *testing.T) {
 		ID:       "custom-a",
 		Provider: "custom",
 		Domain:   "alpha",
-		Label:    "Lark",
+		Label:    "Alpha",
 		Enabled:  true,
 		Status:   "connected",
 		Access: config.BotAccessConfig{

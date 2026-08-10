@@ -128,7 +128,11 @@ func DetectVendor(baseURL string) string {
 	}
 	host := strings.ToLower(u.Hostname())
 	switch {
-	case host == "dashscope-intl.aliyuncs.com", strings.HasSuffix(host, ".dashscope-intl.aliyuncs.com"):
+	case host == "dashscope-intl.aliyuncs.com",
+		host == "dashscope.aliyuncs.com",
+		strings.HasSuffix(host, ".dashscope-intl.aliyuncs.com"),
+		strings.HasSuffix(host, ".dashscope.aliyuncs.com"),
+		strings.HasSuffix(host, ".maas.aliyuncs.com"):
 		return "dashscope"
 	case host == "api.deepseek.com", strings.HasSuffix(host, ".deepseek.com"):
 		return "deepseek"

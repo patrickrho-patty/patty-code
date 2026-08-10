@@ -51,10 +51,10 @@ func TestRemoteRemembererKeepsDistinctGroupUsers(t *testing.T) {
 
 	got := config.LoadForEdit(config.UserConfigPath())
 	if users := got.Bot.Allowlist.Users; len(users) != 2 || users[0] != "user-1" || users[1] != "user-2" {
-		t.Fatalf("feishu users = %+v, want both group users", users)
+		t.Fatalf("custom users = %+v, want both group users", users)
 	}
 	if groups := got.Bot.Allowlist.Groups; len(groups) != 1 || groups[0] != "group-1" {
-		t.Fatalf("feishu groups = %+v, want group once", groups)
+		t.Fatalf("custom groups = %+v, want group once", groups)
 	}
 	if mappings := got.Bot.Connections[0].SessionMappings; len(mappings) != 2 || mappings[0].RemoteID != "group-1" || mappings[0].UserID != "user-1" || mappings[1].RemoteID != "group-1" || mappings[1].UserID != "user-2" {
 		t.Fatalf("session mappings = %+v, want distinct group-user mappings", mappings)
@@ -342,13 +342,13 @@ func TestForgetAutoSessionMappingsForPathRemovesOnlyAutoPathTargets(t *testing.T
 
 func TestConnectionChannelConfigsPreserveToolApprovalMode(t *testing.T) {
 	connections := []config.BotConnectionConfig{
-		{ID: "feishu-feishu", Provider: "chan-a", Domain: "feishu", Enabled: true, ToolApprovalMode: "auto"},
+		{ID: "custom-main", Provider: "chan-a", Domain: "custom", Enabled: true, ToolApprovalMode: "auto"},
 		{ID: "custom-conn", Provider: "chan-b", Domain: "custom", Enabled: true, ToolApprovalMode: "yolo"},
 		{ID: "custom-conn2", Provider: "chan-c", Domain: "custom2", Enabled: true, ToolApprovalMode: "ask"},
 	}
 
 	byConnection := ConnectionChannelConfigs(connections, true, true)
-	if got := byConnection["feishu-feishu"].ToolApprovalMode; got != "auto" {
+	if got := byConnection["custom-main"].ToolApprovalMode; got != "auto" {
 		t.Fatalf("channel tool approval mode = %q, want auto", got)
 	}
 	if got := byConnection["custom-conn"].ToolApprovalMode; got != "yolo" {

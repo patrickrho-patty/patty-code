@@ -131,7 +131,7 @@ func TestGrepDecodesGB18030Gitignore(t *testing.T) {
 		t.Fatalf("kept Korean file must be searched: %q", out)
 	}
 	if strings.Contains(out, "비밀.txt") {
-		t.Fatalf("GB18030 .gitignore pattern should skip Chinese file: %q", out)
+		t.Fatalf("GB18030 .gitignore pattern should skip Korean file: %q", out)
 	}
 }
 
@@ -151,7 +151,7 @@ func TestScanGitConfigExcludesDecodesGB18030Path(t *testing.T) {
 
 func TestGrepExplicitIgnoredRootStillSearched(t *testing.T) {
 	dir := gitignoreRepo(t)
-// Pointing grep straight at a gitignored directory still searches it  the
+	// Pointing grep straight at a gitignored directory still searches it  the
 	out := runTool(t, grepTool{}, map[string]any{"pattern": "NEEDLE", "path": filepath.Join(dir, "build")})
 	if !strings.Contains(out, "out.txt") {
 		t.Fatalf("an explicitly targeted ignored dir should still be searched: %q", out)

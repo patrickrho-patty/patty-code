@@ -108,13 +108,13 @@ func writeUserProviderAccess(t *testing.T, body string) string {
 func TestLoadForEditDecodesGB18030TOML(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
-	body := `default_model = "local/중국어 모델"
+	body := `default_model = "local/한국어 모델"
 
 [[providers]]
 name = "local"
 kind = "openai"
 base_url = "https://example.com/v1"
-model = "중국어 모델"
+model = "한국어 모델"
 api_key_env = "LOCAL_KEY"
 `
 	if err := os.WriteFile(path, fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
@@ -122,10 +122,10 @@ api_key_env = "LOCAL_KEY"
 	}
 
 	cfg := LoadForEdit(path)
-	if cfg.DefaultModel != "local/중국어 모델" {
+	if cfg.DefaultModel != "local/한국어 모델" {
 		t.Fatalf("default_model = %q", cfg.DefaultModel)
 	}
-	if len(cfg.Providers) != 1 || cfg.Providers[0].Model != "중국어 모델" {
+	if len(cfg.Providers) != 1 || cfg.Providers[0].Model != "한국어 모델" {
 		t.Fatalf("providers = %+v, want decoded Korean model", cfg.Providers)
 	}
 }

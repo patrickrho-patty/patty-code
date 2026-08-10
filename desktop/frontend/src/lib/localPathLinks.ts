@@ -73,6 +73,23 @@ function stripTrailingClosers(raw: string): string {
   return stripped;
 }
 
+// Model output commonly appends a parenthetical status directly to a file
+// name ("report.md(created)"). Once a complete extension has been seen, that
+// suffix is prose rather than part of the path. Parentheses before the
+// extension and escaped-space directory names such as "Program\ Files\ (x86)"
+// remain valid path text.
+function stripParentheticalAnnotation(raw: string): string {
+  const open = raw.indexOf("(");
+  if (open < 0) return raw;
+  const before = raw.slice(0, open);
+  const finalComponent = before.slice(Math.max(before.lastIndexOf("\\"), before.lastIndexOf("/")) + 1);
+  return /\.[^.()]+$/.test(finalComponent) ? before : raw;
+}
+
+function recognizedPathText(raw: string): string {
+  return stripTrailingClosers(stripParentheticalAnnotation(raw));
+}
+
 export interface LocalPathSegment {
   /** Raw text to render (keeps the original spelling, escapes intact). */
   text: string;
@@ -96,14 +113,15 @@ export function linkifyLocalPaths(text: string): LocalPathSegment[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
       const match = m;
-      const matchEnd = match.index + match[0].length;
+      const raw = recognizedPathText(match[0]);
+      const matchEnd = match.index + raw.length;
       if (!hasValidPrefixBoundary(text, match.index, kind)) {
         continue;
       }
       // RegExpExecArray has no start/end — compare via index/length.
       const overlapped = matches.some((p) => !(matchEnd <= p.start || match.index >= p.end));
       if (!overlapped) {
-        matches.push({ start: match.index, end: matchEnd, raw: match[0], kind });
+        matches.push({ start: match.index, end: matchEnd, raw, kind });
       }
       if (match.index === re.lastIndex) re.lastIndex += 1; // guard against zero-width
     }
@@ -116,7 +134,7 @@ export function linkifyLocalPaths(text: string): LocalPathSegment[] {
     if (m.start > cursor) segments.push({ text: text.slice(cursor, m.start) });
     // UNC text arrives with a single leading backslash (markdown folded the
     // `\\` escape); restore the real UNC prefix for the native opener.
-    const path = m.kind === "unc" ? "\\" + stripTrailingClosers(m.raw) : stripTrailingClosers(m.raw);
+    const path = m.kind === "unc" ? "\\" + m.raw : m.raw;
     if (path) {
       segments.push({ text: m.raw, path: unescapeRefPath(path) });
     } else {

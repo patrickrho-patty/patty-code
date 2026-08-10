@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"bytes"
 	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 
 	"patty/internal/control"
@@ -550,6 +552,26 @@ func TestComposerBackspaceDeletesStandaloneHangulJamoAtCursor(t *testing.T) {
 	}
 }
 
+func TestComposerBackspaceClearsStaleWideCellWhenDisplayShrinks(t *testing.T) {
+	prev := clearWideInputChanges
+	clearWideInputChanges = false
+	defer func() { clearWideInputChanges = prev }()
+
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.input.SetValue("안ㄴ")
+	m.setComposerCursor(len([]rune("안ㄴ")))
+
+	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyBackspace})
+	m = next.(chatTUI)
+
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("backspace over standalone Hangul jamo produced %q, want %q", got, "안")
+	}
+	if cmd == nil {
+		t.Fatal("shrinking a wide-character input must clear stale terminal cells on every platform")
+	}
+}
+
 func TestComposerCode8BackspaceDeletesStandaloneHangulJamoAtCursor(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
 	m.input.SetValue("안ㄴ")
@@ -598,6 +620,97 @@ func TestComposerBackspaceDecomposesHangulSyllableThenDeletesInitialJamo(t *test
 	}
 }
 
+func TestIMETraceRecordsKeyAndComposerTransitionWhenEnabled(t *testing.T) {
+	var log bytes.Buffer
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.imeTraceMode = imeTraceFull
+	m.diagnostics = &tuiDiagnostics{writer: &log}
+	m.input.SetValue("안ㄴ")
+	m.setComposerCursor(len([]rune("안ㄴ")))
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+
+	got := log.String()
+	for _, want := range []string{
+		`ime_input`,
+		`key="backspace"`,
+		`code=127`,
+		`text=""`,
+		`handled=true`,
+		`before="안ㄴ"`,
+		`before_cursor=0:2`,
+		`after="안"`,
+		`after_cursor=0:1`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("IME trace %q does not contain %q", got, want)
+		}
+	}
+}
+
+func TestIMETraceRecordsOnlyComposerShapeWhenRequested(t *testing.T) {
+	var log bytes.Buffer
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.imeTraceMode = imeTraceShape
+	m.diagnostics = &tuiDiagnostics{writer: &log}
+	m.input.SetValue("안ㄴ")
+	m.setComposerCursor(len([]rune("안ㄴ")))
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+
+	got := log.String()
+	for _, want := range []string{
+		`ime_shape`,
+		`code=127`,
+		`handled=true`,
+		`before_runes=2`,
+		`before_cursor=0:2`,
+		`after_runes=1`,
+		`after_cursor=0:1`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("automatic IME shape trace %q does not contain %q", got, want)
+		}
+	}
+	for _, sensitive := range []string{`before=`, `after=`, "안", "ㄴ"} {
+		if strings.Contains(got, sensitive) {
+			t.Fatalf("automatic IME shape trace leaked %q in %q", sensitive, got)
+		}
+	}
+}
+
+func TestIMETraceIsDisabledByDefault(t *testing.T) {
+	var log bytes.Buffer
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.diagnostics = &tuiDiagnostics{writer: &log}
+	m.input.SetValue("안ㄴ")
+	m.setComposerCursor(len([]rune("안ㄴ")))
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+
+	if got := log.String(); strings.Contains(got, "ime_input") || strings.Contains(got, "ime_shape") {
+		t.Fatalf("disabled IME trace wrote an IME event: %q", got)
+	}
+}
+
+func TestConfiguredIMETraceMode(t *testing.T) {
+	for _, tc := range []struct {
+		value string
+		want  imeTraceMode
+	}{
+		{value: "", want: imeTraceDisabled},
+		{value: "0", want: imeTraceDisabled},
+		{value: "shape", want: imeTraceShape},
+		{value: "1", want: imeTraceFull},
+		{value: "true", want: imeTraceFull},
+		{value: "full", want: imeTraceFull},
+	} {
+		if got := configuredIMETraceMode(func(string) string { return tc.value }); got != tc.want {
+			t.Fatalf("configuredIMETraceMode(%q) = %v, want %v", tc.value, got, tc.want)
+		}
+	}
+}
+
 func TestComposerDeleteRemovesNextGraphemeCluster(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
 	value := "x\u1112\u1161\u11ABy" // x + decomposed 한 + y
@@ -641,5 +754,154 @@ func TestComposerTypedTextNormalizesToNFC(t *testing.T) {
 	}
 	if got := m.input.Column(); got != 1 {
 		t.Fatalf("cursor column after normalized insert = %d, want 1", got)
+	}
+}
+
+func TestCapturedKittyMacOSKoreanBackspaceResidualCommitIsSuppressed(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.kittyHangulIMECompatibility = true
+
+	// Kitty's ordinary PTY stream loses the physical Backspace and sends only
+	// "ㄴ". Associated-text keyboard reporting preserves both fields, making the
+	// faulty residual distinguishable from deliberate standalone jamo input.
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: '안', Text: "안"})
+	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyBackspace, Text: "ㄴ"})
+	m = next.(chatTUI)
+
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("captured Kitty IME replay produced %q, want %q", got, "안")
+	}
+	if cmd == nil {
+		t.Fatal("suppressing Kitty's residual IME commit must invalidate the terminal frame")
+	}
+	if rendered := ansi.Strip(m.renderComposerInput()); strings.Contains(rendered, "ㄴ") {
+		t.Fatalf("captured Kitty IME replay left residual jamo in rendered composer: %q", rendered)
+	}
+}
+
+func TestKittyAssociatedTextSequencePreservesBackspaceIdentity(t *testing.T) {
+	var decoder uv.EventDecoder
+	n, event := decoder.Decode([]byte("\x1b[127;1;12596u")) // Backspace with associated text ㄴ.
+	if n != len("\x1b[127;1;12596u") {
+		t.Fatalf("decoded %d bytes, want %d", n, len("\x1b[127;1;12596u"))
+	}
+	keyEvent, ok := event.(uv.KeyPressEvent)
+	if !ok {
+		t.Fatalf("decoded event type = %T, want ultraviolet.KeyPressEvent", event)
+	}
+	key := tea.KeyPressMsg(keyEvent)
+	if key.Code != tea.KeyBackspace || key.Text != "ㄴ" {
+		t.Fatalf("decoded key = %+v, want Backspace with associated text ㄴ", key)
+	}
+
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.kittyHangulIMECompatibility = true
+	m.input.SetValue("안")
+	m.setComposerCursor(1)
+	m = updateComposerMouseTestTUI(t, m, key)
+
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("parsed Kitty Backspace replay produced %q, want 안", got)
+	}
+}
+
+func TestKittyMacOSCompatibilityPreservesChosungInput(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.kittyHangulIMECompatibility = true
+
+	for range 2 {
+		m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㅇ', Text: "ㅇ"})
+	}
+
+	if got := m.input.Value(); got != "ㅇㅇ" {
+		t.Fatalf("Kitty compatibility changed first-class chosung input to %q", got)
+	}
+}
+
+func TestKittyMacOSCompatibilityPreservesStandaloneJamoAfterSyllable(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.kittyHangulIMECompatibility = true
+	m.input.SetValue("안")
+	m.setComposerCursor(1)
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+
+	if got := m.input.Value(); got != "안ㄴ" {
+		t.Fatalf("Kitty compatibility erased deliberate standalone jamo: %q", got)
+	}
+}
+
+func TestKittyMacOSViewRequestsLosslessKeyboardIdentity(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.kittyHangulIMECompatibility = true
+
+	view := m.View()
+	if !view.KeyboardEnhancements.ReportAllKeysAsEscapeCodes || !view.KeyboardEnhancements.ReportAssociatedText {
+		t.Fatalf("Kitty compatibility keyboard enhancements = %+v", view.KeyboardEnhancements)
+	}
+
+	m.kittyHangulIMECompatibility = false
+	view = m.View()
+	if view.KeyboardEnhancements.ReportAllKeysAsEscapeCodes || view.KeyboardEnhancements.ReportAssociatedText {
+		t.Fatalf("non-Kitty view unexpectedly requested compatibility enhancements: %+v", view.KeyboardEnhancements)
+	}
+}
+
+func TestOtherTerminalsKeepStandaloneJamoAfterHangulSyllable(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	m.kittyHangulIMECompatibility = false
+	m.input.SetValue("안")
+	m.setComposerCursor(1)
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+
+	if got := m.input.Value(); got != "안ㄴ" {
+		t.Fatalf("normal terminal input produced %q, want %q", got, "안ㄴ")
+	}
+}
+
+func TestKittyHangulIMECompatibilityDetection(t *testing.T) {
+	tests := []struct {
+		name       string
+		goos       string
+		stdinTTY   bool
+		env        map[string]string
+		clientTerm string
+		want       bool
+	}{
+		{
+			name: "direct Kitty on macOS", goos: "darwin", stdinTTY: true,
+			env: map[string]string{"TERM": "xterm-kitty"}, want: true,
+		},
+		{
+			name: "Kitty client behind tmux with stale outer metadata", goos: "darwin", stdinTTY: true,
+			env:        map[string]string{"TERM": "tmux-256color", "TERM_PROGRAM": "WarpTerminal", "TMUX": "/tmp/tmux"},
+			clientTerm: "xterm-kitty", want: true,
+		},
+		{
+			name: "non-Kitty macOS terminal", goos: "darwin", stdinTTY: true,
+			env: map[string]string{"TERM": "xterm-256color"}, want: false,
+		},
+		{
+			name: "Linux Kitty remains native", goos: "linux", stdinTTY: true,
+			env: map[string]string{"TERM": "xterm-kitty"}, want: false,
+		},
+		{
+			name: "headless process cannot own IME", goos: "darwin", stdinTTY: false,
+			env: map[string]string{"TERM": "xterm-kitty"}, want: false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := kittyHangulIMECompatibilityFor(
+				tc.goos,
+				tc.stdinTTY,
+				func(key string) string { return tc.env[key] },
+				func() string { return tc.clientTerm },
+			)
+			if got != tc.want {
+				t.Fatalf("compatibility detection = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }

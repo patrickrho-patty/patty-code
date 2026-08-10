@@ -32,7 +32,7 @@ for (const [label, name] of [
   );
 }
 for (const label of ["[붙여넣은 텍스트 #2 · 31줄]", "[붙여넣은 텍스트 #2 · 31줄]"]) {
-  eq(parsePastedBlocks(`before\n${label}\nafter`, wrapped(label, "line 1\nline 2")), [], "legacy Chinese paste labels are no longer parsed");
+  eq(parsePastedBlocks(`before\n${label}\nafter`, wrapped(label, "line 1\nline 2")), [], "legacy removed-locale paste labels are no longer parsed");
 }
 
 eq(parsePastedBlocks("[unknown paste #1]", "--- Begin [unknown paste #1] ---\nnope\n--- End [unknown paste #1] ---"), [], "unknown labels are ignored");

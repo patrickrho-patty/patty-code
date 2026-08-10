@@ -74,7 +74,7 @@ func TestRuntimeSwitchesRejectRunningBackgroundJobs(t *testing.T) {
 	t.Run("language", func(t *testing.T) {
 		isolateUserConfig(t)
 		m := chatTUIWithRunningBackgroundJob(t)
-		if cmd := m.runLanguageSubcommand("/language zh"); cmd != nil {
+		if cmd := m.runLanguageSubcommand("/language ko-KR"); cmd != nil {
 			t.Fatal("language switch queued a rebuild while a background job was running")
 		}
 		if _, err := os.Stat(config.UserConfigPath()); !os.IsNotExist(err) {

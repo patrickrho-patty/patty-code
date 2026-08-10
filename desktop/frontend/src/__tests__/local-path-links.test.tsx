@@ -39,7 +39,7 @@ console.log("\nlinkifyLocalPaths — drive paths");
 
 eq(firstPath("파일은 D:\\Project\\Jhtj\\20250804_000000_001_중단시간분석\\05-정적검수.md 생성됨"),
   "D:\\Project\\Jhtj\\20250804_000000_001_중단시간분석\\05-정적검수.md",
-  "issue case: Chinese dirs and underscores survive");
+  "issue case: Hangul dirs and underscores survive");
 eq(firstPath("see D:\\a\\b c.md note"), "D:\\a\\b", "unescaped space still ends the path");
 eq(firstPath("see D:\\a\\b\\ c.md"), "D:\\a\\b c.md", "escaped space unescapes to the real path");
 eq(firstPath("saved C:/Users/me/AppData/Local/x.md here"), "C:/Users/me/AppData/Local/x.md",

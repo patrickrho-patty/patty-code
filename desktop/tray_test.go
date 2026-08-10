@@ -3,9 +3,9 @@ package main
 import "testing"
 
 func TestTrayMenuLabelsFollowLocale(t *testing.T) {
-	zh := trayMenuLabels("ko-KR")
-	if zh.openTitle != "열기" || zh.quitTitle != "종료" {
-		t.Fatalf("zh labels = %#v", zh)
+	koLabels := trayMenuLabels("ko-KR")
+	if koLabels.openTitle != "열기" || koLabels.quitTitle != "종료" {
+		t.Fatalf("ko labels = %#v", koLabels)
 	}
 
 	en := trayMenuLabels("en")

@@ -70,9 +70,14 @@ type chatTUI struct {
 	// since the terminal no longer forwards those events to patty.
 	mouseCaptureOff bool
 
-	input       textarea.Model
-	composerSel composerSelection
-	composerMap composerLayoutCache
+	input        textarea.Model
+	composerSel  composerSelection
+	composerMap  composerLayoutCache
+	imeTraceMode imeTraceMode
+	// kittyHangulIMECompatibility suppresses a macOS Kitty pre-edit residual:
+	// Kitty can commit the final standalone jamo instead of forwarding the
+	// Backspace that removed it. Other terminals and platforms stay native.
+	kittyHangulIMECompatibility bool
 	// composerScrollOffset is an independent view offset used after the user
 	// wheels inside an overflowing composer. The textarea keeps ownership of the
 	// real insertion cursor; a subsequent edit or cursor key reattaches the view
@@ -626,41 +631,43 @@ func newChatTUI(ctrl control.SessionAPI, missing string, eventCh chan event.Even
 	history := ctrl.History()
 	nextPasteID, usedPasteIDs := pasteIDStateForHistory(history)
 	return chatTUI{
-		ctrl:                 ctrl,
-		label:                ctrl.Label(),
-		modelRef:             ctrl.ModelRef(),
-		missing:              missing,
-		nativeScrollback:     nativeScrollback,
-		mouseCaptureOff:      mouseCaptureOffByDefault(),
-		input:                ti,
-		spinner:              sp,
-		submittedInputCursor: -1,
-		queueEditCursor:      -1,
-		nextPasteID:          nextPasteID,
-		usedPasteIDs:         usedPasteIDs,
-		reasoningLineIdx:     -1,
-		reasoningTextIdx:     -1,
-		answerIdx:            -1,
-		toolStreamIdx:        -1,
-		reasoning:            &strings.Builder{},
-		pending:              &strings.Builder{},
-		pendingCommit:        &commitBuf,
-		diffMaxLines:         diffFoldLimit,
-		showReasoning:        nativeScrollback,
-		showTurnUsage:        true,
-		shellOutputs:         make(map[string]string),
-		shellExpanded:        make(map[string]bool),
-		shellTranscriptIdx:   make(map[string]int),
-		toolLineCountByID:    make(map[string]int),
-		subagentProgressIdx:  make(map[string]int),
-		subagentProgress:     make(map[string]*cliSubagentProgress),
-		eventCh:              eventCh,
-		history:              history,
-		host:                 ctrl.Host(),
-		commands:             ctrl.Commands(),
-		skills:               ctrl.SlashSkills(),
-		viewport:             viewport.New(viewport.WithWidth(termW)),
-		statusLineCount:      0,
+		ctrl:                        ctrl,
+		label:                       ctrl.Label(),
+		modelRef:                    ctrl.ModelRef(),
+		missing:                     missing,
+		nativeScrollback:            nativeScrollback,
+		mouseCaptureOff:             mouseCaptureOffByDefault(),
+		imeTraceMode:                configuredIMETraceMode(os.Getenv),
+		kittyHangulIMECompatibility: detectKittyHangulIMECompatibility(),
+		input:                       ti,
+		spinner:                     sp,
+		submittedInputCursor:        -1,
+		queueEditCursor:             -1,
+		nextPasteID:                 nextPasteID,
+		usedPasteIDs:                usedPasteIDs,
+		reasoningLineIdx:            -1,
+		reasoningTextIdx:            -1,
+		answerIdx:                   -1,
+		toolStreamIdx:               -1,
+		reasoning:                   &strings.Builder{},
+		pending:                     &strings.Builder{},
+		pendingCommit:               &commitBuf,
+		diffMaxLines:                diffFoldLimit,
+		showReasoning:               nativeScrollback,
+		showTurnUsage:               true,
+		shellOutputs:                make(map[string]string),
+		shellExpanded:               make(map[string]bool),
+		shellTranscriptIdx:          make(map[string]int),
+		toolLineCountByID:           make(map[string]int),
+		subagentProgressIdx:         make(map[string]int),
+		subagentProgress:            make(map[string]*cliSubagentProgress),
+		eventCh:                     eventCh,
+		history:                     history,
+		host:                        ctrl.Host(),
+		commands:                    ctrl.Commands(),
+		skills:                      ctrl.SlashSkills(),
+		viewport:                    viewport.New(viewport.WithWidth(termW)),
+		statusLineCount:             0,
 	}
 }
 
@@ -2022,12 +2029,22 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	beforeInput := m.input.Value()
+	beforeInputLine, beforeInputColumn := 0, 0
+	if m.imeTraceMode != imeTraceDisabled {
+		beforeInputLine, beforeInputColumn = m.input.Line(), m.input.Column()
+	}
 	if inputBeforeSelection != "" {
 		beforeInput = inputBeforeSelection
 	}
 	if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
 		keyMsg = normalizeComposerKeyPress(keyMsg)
+		if m.shouldSuppressKittyHangulResidualCommit(keyMsg) {
+			m.traceComposerInputTransition(keyMsg, beforeInput, beforeInputLine, beforeInputColumn, true)
+			cmds = append(cmds, tea.ClearScreen)
+			return m, finalize(m, cmds)
+		}
 		if m.handleComposerGraphemeKey(keyMsg) {
+			m.traceComposerInputTransition(keyMsg, beforeInput, beforeInputLine, beforeInputColumn, true)
 			m.growInputToFit()
 			m.updateCompletion()
 			if shouldClearWideInputChange(beforeInput, m.input.Value()) {
@@ -2039,6 +2056,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	var ic tea.Cmd
 	m.input, ic = m.input.Update(msg)
+	m.traceComposerInputTransition(msg, beforeInput, beforeInputLine, beforeInputColumn, false)
 	cmds = append(cmds, ic)
 	m.growInputToFit()
 	// Re-filter the autocomplete menu against the freshly-edited input.
@@ -2055,9 +2073,27 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 var clearWideInputChanges = runtime.GOOS == "windows"
 
 func shouldClearWideInputChange(before, after string) bool {
-	return clearWideInputChanges &&
-		before != after &&
-		(hasWideInputCells(before) || hasWideInputCells(after))
+	if before == after {
+		return false
+	}
+	// On macOS and Linux only shrink operations need stale-cell cleanup. This
+	// byte-length guard keeps insertion—the dominant composer path—O(1).
+	if !clearWideInputChanges && len(after) >= len(before) {
+		return false
+	}
+	beforeWidth, afterWidth := visibleWidth(before), visibleWidth(after)
+	if !clearWideInputChanges && afterWidth >= beforeWidth {
+		return false
+	}
+	if beforeWidth == utf8.RuneCountInString(before) && afterWidth == utf8.RuneCountInString(after) {
+		return false
+	}
+	// A wide glyph occupies two terminal cells. When an edit shortens the
+	// rendered line, some terminals retain the second cell (and macOS IME marked
+	// text may remain painted over it) unless Bubble Tea invalidates the complete
+	// frame. Windows needs the historical redraw for every wide edit; shrinking
+	// a wide input needs it on every platform.
+	return clearWideInputChanges || afterWidth < beforeWidth
 }
 
 func hasWideInputCells(s string) bool {
@@ -3513,6 +3549,7 @@ func (m chatTUI) View() tea.View {
 				v.MouseMode = tea.MouseModeCellMotion
 			}
 		}
+		applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility)
 		return v
 	}
 	boxW := max(m.width, 10)
@@ -3616,6 +3653,7 @@ func (m chatTUI) View() tea.View {
 				v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 			}
 		}
+		applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility)
 		return v
 	}
 
@@ -3661,6 +3699,7 @@ func (m chatTUI) View() tea.View {
 			v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 		}
 	}
+	applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility)
 	return v
 }
 

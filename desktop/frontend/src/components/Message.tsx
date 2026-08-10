@@ -22,6 +22,7 @@ import type { CheckpointMeta, MemoryCitation } from "../lib/types";
 import { InvocationBadge } from "./InvocationBadge";
 import { CodeViewer } from "./CodeViewer";
 import { formatSelectionLabels, languageFor, parseSelectedTextContext, stripSelectionLabels } from "../lib/selectedTextContext";
+import { imDisplayLabel } from "../lib/imPresentation";
 
 type AssistantItem = Extract<Item, { kind: "assistant" }>;
 export type TurnActionMenu = "summary" | "rewind";
@@ -62,10 +63,7 @@ function parseImSourceMessage(text: string): ImSourceMessage | null {
 }
 
 function imSourceLabel(source: ImSourceMessage): string {
-  if (source.label.trim()) return source.label.trim();
-  const provider = source.provider.trim().toLowerCase();
-  if (provider === "lark") return "Lark";
-  return source.provider.trim() || "IM";
+  return imDisplayLabel(source.label, source.provider);
 }
 
 function attachmentIcon(kind: "image" | "file" | "folder") {

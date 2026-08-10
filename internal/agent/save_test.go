@@ -26,7 +26,7 @@ func touch(path string, t time.Time) error {
 func TestSaveLoadPreservesLegacyContentAndRawUserContent(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "session.jsonl")
 	const raw = "fix the bug"
-	const rendered = "<reasoning-language>zh</reasoning-language>\n\nfix the bug"
+	const rendered = "<reasoning-language>ko-KR</reasoning-language>\n\nfix the bug"
 	s := NewSession("system")
 	s.Add(provider.Message{Role: provider.RoleUser, Content: rendered, RawContent: raw})
 	s.Add(provider.Message{Role: provider.RoleAssistant, Content: "done"})
@@ -98,7 +98,7 @@ func TestLoadSessionMigratesLegacyInjectedUserContentWithoutChangingProviderByte
 func TestLoadSessionMigratesTransitionalProviderContentToLegacySafeShape(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "session.jsonl")
 	const raw = "fix the bug"
-	const rendered = "<reasoning-language>zh</reasoning-language>\n\nfix the bug"
+	const rendered = "<reasoning-language>ko-KR</reasoning-language>\n\nfix the bug"
 	s := NewSession("system")
 	s.Add(provider.Message{Role: provider.RoleUser, Content: raw, ProviderContent: rendered})
 	s.Add(provider.Message{Role: provider.RoleAssistant, Content: "done"})

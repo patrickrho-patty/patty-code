@@ -75,7 +75,7 @@ ok(
 ok(
   /case "token-rhythm":\s*return t\("settings\.addProvider\.preset\.tokenRhythmDesc"\)/.test(settingsSource) &&
     /preset\.id === "token-rhythm"\) return t\("settings\.addProvider\.preset\.tokenRhythmLabel"\)/.test(settingsSource),
-  "Token Rhythm preset localizes the English and Chinese brand names",
+  "Token Rhythm preset localizes the English and Korean brand names",
 );
 ok(
   enLocaleSource.includes('"settings.addProvider.preset.deepseekResponsesDesc"') &&
@@ -99,6 +99,27 @@ ok(
 ok(
   /mockPreset\("token-rhythm",\s*"Token Rhythm"/.test(bridgeSource),
   "browser mock exposes the Token Rhythm preset",
+);
+const regionalPresetIds = [
+  "kimi-cn",
+  "mimo-token-plan-cn",
+  "mimo-token-plan-cn-anthropic",
+  "minimax-cn-api",
+  "minimax-cn-anthropic",
+  "glm-cn",
+  "glm-coding-plan-cn",
+  "glm-coding-plan-cn-anthropic",
+  "qwen-cn",
+  "qwen-coding-plan-cn",
+  "qwen-coding-plan-cn-anthropic",
+];
+ok(
+  regionalPresetIds.every((id) => bridgeSource.includes(`mockPreset("${id}"`)),
+  "browser mock exposes every regional provider preset from the Go catalog",
+);
+ok(
+  regionalPresetIds.every((id) => settingsSource.includes(`case "${id}":`)),
+  "settings localizes every regional provider preset from the browser mock",
 );
 ok(
   /function mockProviderPresetDisplayRank\(id: string\): number \{\s*if \(id === "deepseek-responses"\) return -1;\s*if \(id === "deepseek-anthropic"\) return 0;/.test(bridgeSource),

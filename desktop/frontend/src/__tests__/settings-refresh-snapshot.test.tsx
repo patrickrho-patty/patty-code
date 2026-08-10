@@ -597,21 +597,38 @@ const botsRoot = createRoot(botsRootEl);
 const botsSettings = baseSettings("standard");
 botsSettings.bot.connections = [
   {
-    id: "conn-feishu-1",
-    provider: "feishu",
-    domain: "feishu",
+    id: "conn-custom-1",
+    provider: "custom",
+    domain: "custom",
     label: "kun",
     enabled: true,
     status: "connected",
     model: "",
     toolApprovalMode: "",
     workspaceRoot: "",
-    credential: { appId: "cli_mock", appSecretEnv: "FEISHU_BOT_APP_SECRET", accountId: "", tokenEnv: "", secretSet: true },
+    credential: { appId: "cli_mock", appSecretEnv: "CHAT_BOT_APP_SECRET", accountId: "", tokenEnv: "", secretSet: true },
     sessionMappings: [],
     lastError: "",
     createdAt: "",
 	    updatedAt: "",
 	    access: { enabled: true, allowAll: false, pairingEnabled: true, users: ["ou_mock_user_001"], groups: [], approvers: [], admins: [] },
+	  },
+	  {
+	    id: "conn-custom-2",
+	    provider: "custom",
+	    domain: "custom",
+	    label: "ops",
+	    enabled: false,
+	    status: "disconnected",
+	    model: "",
+	    toolApprovalMode: "",
+	    workspaceRoot: "",
+	    credential: { appId: "", appSecretEnv: "CHAT_BOT_APP_SECRET_2", accountId: "", tokenEnv: "", secretSet: false },
+	    sessionMappings: [],
+	    lastError: "",
+	    createdAt: "",
+	    updatedAt: "",
+	    access: { enabled: false, allowAll: false, pairingEnabled: true, users: [], groups: [], approvers: [], admins: [] },
 	  },
 	];
 window.go = {
@@ -639,9 +656,15 @@ ok(!document.getElementById("bot-step-access"), "bots tab omits the old global a
 ok(!document.getElementById("bot-step-behavior"), "bots tab omits global default behavior card");
 eq(document.querySelectorAll(".bot-step-chip").length, 0, "hero no longer shows the old two-step chips");
 
-eq(document.querySelectorAll(".bot-channel-tabs [role=\"tab\"]").length, 1, "bot manager lists one connection tab on the left");
+const connectionTabs = Array.from(document.querySelectorAll(".bot-channel-tabs [role=\"tab\"]"));
+eq(connectionTabs.length, 2, "bot manager lists every connection tab on the left");
+eq(
+  connectionTabs.map((tab) => tab.querySelector("strong")?.textContent).join(","),
+  "kun,ops",
+  "bot manager preserves distinct user-owned connection labels",
+);
 
-const connTab = Array.from(document.querySelectorAll(".bot-channel-tabs [role=\"tab\"]")).find((button) => button.textContent?.includes("kun")) as HTMLButtonElement | undefined;
+const connTab = document.querySelector(".bot-channel-tabs [role=\"tab\"]") as HTMLButtonElement | null;
 if (!connTab) throw new Error("connection tab did not render");
 await act(async () => {
   connTab.click();

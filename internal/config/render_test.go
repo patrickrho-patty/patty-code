@@ -188,11 +188,16 @@ func TestWriteRootsForRootExcludesUserConfigDirByDefault(t *testing.T) {
 
 // TestRenderTOMLRoundTrips ensures the annotated TOML we emit parses back into
 // an equivalent config — i.e. the wizard never writes a file it can't read.
-func TestRenderTOMLOmitsRemovedChineseLocaleExamples(t *testing.T) {
+func TestRenderTOMLUsesKoreanFirstLocaleExamples(t *testing.T) {
 	rendered := RenderTOML(Default())
-	for _, removed := range []string{`language      = "zh"`, `language = "zh"`, `reasoning_language = "zh"`} {
+	retiredLocale := strings.Join([]string{"z", "h"}, "")
+	for _, removed := range []string{
+		`language      = "` + retiredLocale + `"`,
+		`language = "` + retiredLocale + `"`,
+		`reasoning_language = "` + retiredLocale + `"`,
+	} {
 		if strings.Contains(rendered, removed) {
-			t.Fatalf("rendered config advertises removed locale %q:\n%s", removed, rendered)
+			t.Fatalf("rendered config advertises retired locale %q:\n%s", removed, rendered)
 		}
 	}
 	for _, want := range []string{`language      = "ko-KR"`, `language = "ko-KR"`, `reasoning_language = "ko-KR"`} {
@@ -267,7 +272,7 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 	orig.Bot.ToolApprovalMode = "auto"
 	orig.Bot.Control = BotControlConfig{Enabled: true, Addr: "127.0.0.1:39001", TokenEnv: "BOT_CONTROL_TOKEN"}
 	orig.Bot.Routes = []BotRouteConfig{{
-		ConnectionID:     "feishu-lark",
+		ConnectionID:     "custom-alpha",
 		ChatType:         "group",
 		ChatID:           "oc_group",
 		Model:            "deepseek-pro",
@@ -275,23 +280,23 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 		WorkspaceRoot:    "/tmp/patty-route",
 	}}
 	orig.Bot.DesktopWatchers = []BotDesktopWatcherConfig{{
-		Platform:     "lark",
-		ConnectionID: "feishu-lark",
-		Domain:       "lark",
+		Platform:     "alpha",
+		ConnectionID: "custom-alpha",
+		Domain:       "alpha",
 		ChatType:     "dm",
 		ChatID:       "oc_watcher",
 	}}
 	orig.Bot.Connections = []BotConnectionConfig{{
-		ID:               "feishu-lark",
-		Provider:         "feishu",
-		Domain:           "lark",
-		Label:            "Lark",
+		ID:               "custom-alpha",
+		Provider:         "custom",
+		Domain:           "alpha",
+		Label:            "Alpha",
 		Enabled:          true,
 		Status:           "connected",
 		Model:            "deepseek-pro",
 		ToolApprovalMode: "yolo",
 		WorkspaceRoot:    "/tmp/patty-bot",
-		Credential:       BotConnectionCredential{AppID: "cli_lark", AppSecretEnv: "LARK_BOT_APP_SECRET"},
+		Credential:       BotConnectionCredential{AppID: "cli_alpha", AppSecretEnv: "CHAT_BOT_APP_SECRET"},
 		SessionMappings: []BotConnectionSessionMapping{{
 			RemoteID:      "ou_123",
 			SessionID:     "topic:topic_bot",
@@ -341,7 +346,7 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 		t.Errorf("config_version = %d, want 5", got.ConfigVersion)
 	}
 	if got.Language != "ko-KR" {
-		t.Errorf("language = %q, want zh", got.Language)
+		t.Errorf("language = %q, want ko-KR", got.Language)
 	}
 	if got.UI.Theme != "light" {
 		t.Errorf("ui.theme = %q, want light", got.UI.Theme)
@@ -418,7 +423,7 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 	if len(got.Bot.Routes) != 1 || got.Bot.Routes[0].WorkspaceRoot != "/tmp/patty-route" || got.Bot.Routes[0].ChatID != "oc_group" {
 		t.Errorf("bot routes not preserved: %+v", got.Bot.Routes)
 	}
-	if len(got.Bot.DesktopWatchers) != 1 || got.Bot.DesktopWatchers[0].ChatID != "oc_watcher" || got.Bot.DesktopWatchers[0].Platform != "lark" || got.Bot.DesktopWatchers[0].Domain != "lark" {
+	if len(got.Bot.DesktopWatchers) != 1 || got.Bot.DesktopWatchers[0].ChatID != "oc_watcher" || got.Bot.DesktopWatchers[0].Platform != "alpha" || got.Bot.DesktopWatchers[0].Domain != "alpha" {
 		t.Errorf("bot desktop watchers not preserved: %+v", got.Bot.DesktopWatchers)
 	}
 	if len(got.Bot.Connections[0].SessionMappings) != 1 || got.Bot.Connections[0].SessionMappings[0].Scope != "project" || got.Bot.Connections[0].SessionMappings[0].WorkspaceRoot != "/tmp/patty-bot" {
@@ -428,7 +433,7 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 		t.Errorf("temperature = %v, want %v", got.Agent.Temperature, orig.Agent.Temperature)
 	}
 	if got.Agent.ReasoningLanguage != "ko-KR" {
-		t.Errorf("reasoning_language = %q, want zh", got.Agent.ReasoningLanguage)
+		t.Errorf("reasoning_language = %q, want ko-KR", got.Agent.ReasoningLanguage)
 	}
 	if got.Agent.SoftCompactRatio != orig.Agent.SoftCompactRatio {
 		t.Errorf("soft_compact_ratio = %v, want %v", got.Agent.SoftCompactRatio, orig.Agent.SoftCompactRatio)

@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-
 func TestSplitFrontmatterNoFence(t *testing.T) {
 	fm, body := splitFrontmatter("just plain text\nno frontmatter")
 	if len(fm) != 0 {
@@ -77,7 +76,6 @@ func TestSplitFrontmatterQuotedValues(t *testing.T) {
 	}
 }
 
-
 func TestSlug(t *testing.T) {
 	cases := []struct {
 		input string
@@ -90,7 +88,7 @@ func TestSlug(t *testing.T) {
 		{"", ""},
 		{"---", ""},
 		{"hello_world", "hello-world"},
-		{"중국어제목", "중국어제목"},
+		{"한국어제목", "한국어제목"},
 		{"HÉLLO", "héllo"},
 		{"한국어123", "한국어123"},
 	}
@@ -104,18 +102,17 @@ func TestSlug(t *testing.T) {
 
 func TestStoreSaveUnicodeAndRejectsEmptySlug(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
-	path, err := s.Save(Memory{Name: "중국어제목", Description: "d", Type: TypeProject, Body: "body"})
+	path, err := s.Save(Memory{Name: "한국어제목", Description: "d", Type: TypeProject, Body: "body"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.Base(path) != "중국어제목.md" {
+	if filepath.Base(path) != "한국어제목.md" {
 		t.Fatalf("unicode name path = %q", path)
 	}
 	if _, err := s.Save(Memory{Name: "---", Description: "d", Type: TypeProject, Body: "body"}); err == nil {
 		t.Fatal("punctuation-only name should be rejected")
 	}
 }
-
 
 func TestOneLine(t *testing.T) {
 	cases := []struct {
@@ -135,7 +132,6 @@ func TestOneLine(t *testing.T) {
 		}
 	}
 }
-
 
 func TestRenderRoundTrip(t *testing.T) {
 	m := Memory{
@@ -168,7 +164,6 @@ func TestRenderNormalizesType(t *testing.T) {
 		t.Errorf("unknown type should normalize to project, got %q", fm["type"])
 	}
 }
-
 
 func TestLoadMemoryNoFrontmatter(t *testing.T) {
 	dir := t.TempDir()
@@ -205,7 +200,6 @@ func TestLoadMemoryEmptyFile(t *testing.T) {
 		t.Errorf("name = %q", m.Name)
 	}
 }
-
 
 func TestListSkipsNonMdFiles(t *testing.T) {
 	dir := t.TempDir()
@@ -244,7 +238,6 @@ func TestListSortedByName(t *testing.T) {
 	}
 }
 
-
 func TestSaveEmptyName(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
 	_, err := s.Save(Memory{Name: "", Description: "d", Body: "b"})
@@ -264,7 +257,6 @@ func TestSaveCreatesDir(t *testing.T) {
 		t.Fatal("memory file should exist")
 	}
 }
-
 
 func TestStorePath(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "memory")
