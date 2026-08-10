@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"reasonix/internal/evidence"
-	"reasonix/internal/instruction"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/evidence"
+	"patty/internal/instruction"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func init() { tool.RegisterBuiltin(completeStep{}) }

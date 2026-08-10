@@ -8,12 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/store"
+	"patty/internal/event"
+	"patty/internal/store"
 )
 
-// TestValidatePathSegment exhaustively covers the segment validator that guards
-// StartForSession against #6932 (path traversal in artifact paths).
+// StartForSession against 6932 (path traversal in artifact paths).
 func TestValidatePathSegment(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -21,30 +20,24 @@ func TestValidatePathSegment(t *testing.T) {
 		input   string
 		wantErr bool
 	}{
-		// parentSession: empty is the documented unscoped default.
 		{"empty parentSession is allowed", "parentSession", "", false},
-		// kind: empty is rejected because id is built from kind.
 		{"empty kind is rejected", "kind", "", true},
-		// Typical safe values.
 		{"simple lowercase kind", "kind", "task", false},
 		{"hyphenated kind", "kind", "bash-bg", false},
 		{"underscored kind", "kind", "bash_bg", false},
 		{"digits-only kind", "kind", "123", false},
-		{"unicode kind (no separators)", "kind", "任务", false},
+		{"unicode kind (no separators)", "kind", "작업", false},
 		{"parentSession with timestamp", "parentSession", "20260724-142525abc", false},
-		// Path separators: must reject on any field.
 		{"forward slash", "kind", "task/evil", true},
 		{"back slash", "kind", "task\\evil", true},
 		{"only slash", "parentSession", "/", true},
 		{"only backslash", "parentSession", "\\", true},
-		// Traversal: must reject both `.` and `..` even without separators,
-		// because filepath.Clean treats them as parent references.
+// Traversal: must reject both `.` and `..` even without separators,
 		{"single dot", "kind", ".", true},
 		{"double dot", "kind", "..", true},
 		{"traversal prefix", "parentSession", "..", true},
 		{"parentSession with traversal", "parentSession", "../../etc", true},
 		{"kind with embedded traversal", "kind", "task/../../etc", true},
-		// Control characters and NUL.
 		{"NUL byte", "kind", "task\x00evil", true},
 		{"newline", "kind", "task\nevil", true},
 		{"tab", "kind", "task\tevil", true},
@@ -63,24 +56,19 @@ func TestValidatePathSegment(t *testing.T) {
 	}
 }
 
-// TestStartForSession_RejectsPathTraversalParentSession ensures a malicious
 // parentSession like "../../etc" does not create files outside the manager's
-// temp root. See #6932.
+// temp root. See 6932.
 func TestStartForSession_RejectsPathTraversalParentSession(t *testing.T) {
 	m := NewManager(event.Discard)
 	defer m.Close()
 
-	// Snapshot the temp root before; afterwards the directory listing must be
-	// unchanged. This proves no traversal payload created any subdirectory.
 	beforeEntries, err := os.ReadDir(m.tempRoot)
 	if err != nil {
 		t.Fatalf("read temp root before: %v", err)
 	}
 
-	// "../../etc" with a leading traversal walks two parents up from
-	// m.tempRoot and then descends into "etc". The exact resolution does not
-	// matter; what matters is that the validator rejects it before any
-	// mkdir or open happens, anywhere.
+// "../../etc" with a leading traversal walks two parents up from
+// m.tempRoot and then descends into "etc". The exact resolution does not
 	ran := false
 	j := m.StartForSession("../../etc", "task", "escape attempt", func(_ context.Context, _ io.Writer) (string, error) {
 		ran = true
@@ -112,9 +100,7 @@ func TestStartForSession_RejectsPathTraversalParentSession(t *testing.T) {
 	}
 }
 
-// TestStartForSession_RejectsPathTraversalKind ensures a malicious kind
-// containing path separators is rejected before any artifact is created.
-// See #6932.
+// See 6932.
 func TestStartForSession_RejectsPathTraversalKind(t *testing.T) {
 	m := NewManager(event.Discard)
 	defer m.Close()
@@ -138,8 +124,6 @@ func TestStartForSession_RejectsPathTraversalKind(t *testing.T) {
 	}
 }
 
-// TestStartForSession_AcceptsValidInput is a regression guard: the validator
-// must not break legitimate callers that use typical session ids and kinds.
 func TestStartForSession_AcceptsValidInput(t *testing.T) {
 	m := NewManager(event.Discard)
 	defer m.Close()
@@ -170,7 +154,6 @@ func TestStartForSession_AcceptsValidInput(t *testing.T) {
 		t.Fatalf("artifactPath = %q does not start with temp root %q", artifactPath, m.tempRoot)
 	}
 
-	// Wait for run to finish and confirm cleanup paths still work.
 	close(release)
 	res := m.WaitForSession(context.Background(), "session-20260724-142525abc", []string{j.ID}, 5)
 	if len(res) != 1 {
@@ -184,14 +167,9 @@ func TestStartForSession_AcceptsValidInput(t *testing.T) {
 	}
 }
 
-// TestStartForSession_AcceptsSetActiveSessionPathDir guards against a previous
-// regression where a defense-in-depth containment check in openArtifactLocked
-// rejected legitimate artifact directories produced by SetActiveSessionPath.
-// That path resolves to <root>/<id>.jobs (an absolute directory outside the
-// manager's temp root), so a temp-root containment check was a false positive.
-// validatePathSegment confines only the temp-root fallback; persistent artifact
-// directories come from the trusted transcript path bound by the store layer.
-// See #6932.
+// That path resolves to <root><id>.jobs (an absolute directory outside the
+// managers temp root), so a temp-root containment check was a false positive.
+// See 6932.
 func TestStartForSession_AcceptsSetActiveSessionPathDir(t *testing.T) {
 	root := t.TempDir()
 	sessionPath := filepath.Join(root, "a.jsonl")
@@ -210,7 +188,6 @@ func TestStartForSession_AcceptsSetActiveSessionPathDir(t *testing.T) {
 	if j.artifactPath == "" {
 		t.Fatal("artifactPath empty; expected a path under the session dir")
 	}
-	// The log file must live next to the session transcript.
 	wantDir := store.SessionJobsDir(sessionPath)
 	if !strings.HasPrefix(j.artifactPath, wantDir) {
 		t.Fatalf("artifactPath = %q, want prefix %q", j.artifactPath, wantDir)

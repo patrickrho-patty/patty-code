@@ -428,20 +428,20 @@ func TestMatchTodoStepToleratesCitationDrift(t *testing.T) {
 		ToolName: "todo_write",
 		Success:  true,
 		Todos: []TodoItem{
-			{Content: "Phase 4：环境准备", Status: "completed"},
-			{Content: "Phase 5：脚本编辑与执行代码", Status: "in_progress"},
+			{Content: "Phase 4：환경 준비", Status: "completed"},
+			{Content: "Phase 5：스크립트 편집 및 코드 실행", Status: "in_progress"},
 			{Content: "Review notes", Status: "pending"},
 		},
 	})
 
 	matches := map[string]int{
-		"Phase 5: 脚本编辑与执行代码":  2,
-		"phase 5：脚本编辑与执行代码":   2,
-		"  Phase　5：脚本编辑与执行代码": 2,
-		"脚本编辑与执行代码":           2,
-		"Phase 4：环境":          1,
-		"REVIEW NOTES":        3,
-		"２":                   2,
+		"Phase 5: 스크립트 편집 및 코드 실행": 2,
+		"phase 5：스크립트 편집 및 코드 실행":  2,
+		"  Phase　5：스크립트 편집 및 코드 실행": 2,
+		"스크립트 편집 및 코드 실행":       2,
+		"Phase 4：환경":            1,
+		"REVIEW NOTES":          3,
+		"２":                     2,
 	}
 	for step, want := range matches {
 		match, ok := ledger.MatchLatestTodoStep(step)
@@ -453,7 +453,7 @@ func TestMatchTodoStepToleratesCitationDrift(t *testing.T) {
 		}
 	}
 
-	for _, step := range []string{"deploy backend", "代码", "Phase 9：不存在的阶段"} {
+	for _, step := range []string{"deploy backend", "코드", "Phase 9：존재하지 않는 단계"} {
 		if match, _ := ledger.MatchLatestTodoStep(step); match.Found {
 			t.Errorf("step %q should not match, got todo %d (%q)", step, match.Index, match.Content)
 		}
@@ -945,7 +945,6 @@ func TestLedgerNumericCompleteStepAuthorizesRephrasedTodo(t *testing.T) {
 		t.Fatalf("rephrased todo at same index should be authorized by content overlap, missing = %+v", missing)
 	}
 
-	// The model also rephrased item 2; still ok because the new text contains the old.
 	missing, hasBaseline = ledger.UnverifiedCompletedTodos([]TodoItem{
 		{Content: "Add parser with streaming support", Status: "completed"},
 		{Content: "Write tests and benchmarks", Status: "completed"},
@@ -953,7 +952,6 @@ func TestLedgerNumericCompleteStepAuthorizesRephrasedTodo(t *testing.T) {
 	if !hasBaseline {
 		t.Fatal("expected prior todo_write baseline for second rephrase")
 	}
-	// Item 1 is already authorized; item 2 is also rephrased but lacks a
 	// complete_step — so it should still be flagged.
 	if len(missing) != 1 || missing[0].Content != "Write tests and benchmarks" {
 		t.Fatalf("rephrased todo without complete_step should still be missing, got %+v", missing)
@@ -1017,8 +1015,6 @@ func TestToolCallMutatesForDeliveryProfile(t *testing.T) {
 
 func TestRunnerWriteOutputFlagsCannotMasqueradeAsVerification(t *testing.T) {
 	// Snapshot flags rewrite checked-in fixtures and report/profile flags
-	// write explicit output paths; both must stay opaque mutations so the
-	// files they produce still require review and sign-off.
 	for _, command := range []string{
 		"pytest --snapshot-update",
 		"pytest --junitxml=report.xml",
@@ -1214,7 +1210,6 @@ func TestNodeEvalCannotMasqueradeAsDeliveryVerification(t *testing.T) {
 }
 
 func TestNodeConditionsFlagCannotMasqueradeAsDeliveryVerification(t *testing.T) {
-	// Node CLI flags are case-sensitive: -C is --conditions and executes the
 	// target script, unlike the syntax-only -c/--check.
 	command := "node -C production server.js"
 	if IsDeliveryVerificationCommand(command) {
@@ -1230,8 +1225,6 @@ func TestNodeTestRunnerWriteFlagsCannotMasqueradeAsDeliveryVerification(t *testi
 		t.Fatal("plain node --test should be recognized as a delivery verification")
 	}
 	// Test-runner state/report flags and Node runtime profiling/tracing flags
-	// create or update files. They must stay opaque mutations so those files
-	// still require review and sign-off.
 	for _, command := range []string{
 		"node --test --test-update-snapshots",
 		"node --test --test-reporter=junit --test-reporter-destination=result.txt",
@@ -1261,10 +1254,6 @@ func TestNodeTestRunnerWriteFlagsCannotMasqueradeAsDeliveryVerification(t *testi
 }
 
 func TestLedgerReviewAfterRestoredCheckpointBaseline(t *testing.T) {
-	// A negative index is the restored-checkpoint baseline: the mutation
-	// happened before a controller rebuild or cold resume, so its receipt (and
-	// touched paths) are not in this ledger. Fresh review-shaped receipts must
-	// still be able to satisfy the review gate.
 	if NewLedger().HasSuccessfulReviewAfter(-1) {
 		t.Fatal("an empty ledger must not satisfy the checkpoint-baseline review")
 	}

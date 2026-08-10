@@ -8,11 +8,11 @@
 
 ## 1. Purpose
 
-Establish the authoritative machine-readable match ledger of all Reasonix/esengine references in the repository, capture the current behavior baseline via test matrices, and freeze legal exceptions before any rebrand edits begin.
+Establish the authoritative machine-readable match ledger of all Patty Code/pattycorp references in the repository, capture the current behavior baseline via test matrices, and freeze legal exceptions before any rebrand edits begin.
 
 ## 2. Scope
 
-- Literal string scans for `reasonix`, `esengine`, Chinese locales, branded paths
+- Literal string scans for `patty`, `pattycorp`, Chinese locales, branded paths
 - Semantic category classification (16 categories from §13.4)
 - Behavioral baseline: record passing/failing tests per workstream area
 - Build matrix: verify clean builds on macOS, document Windows/Linux parity gaps
@@ -35,41 +35,41 @@ Establish the authoritative machine-readable match ledger of all Reasonix/esengi
 ### 4.1 Primary Inventory Scan
 ```bash
 # Section 13.2 required commands
-git ls-files -z | xargs -0 rg -i --count-matches --no-messages --text 'reasonix' > /tmp/reasonix_counts.txt
-grep -v ':0$' /tmp/reasonix_counts.txt > /tmp/reasonix_active.txt
+git ls-files -z | xargs -0 rg -i --count-matches --no-messages --text 'patty' > /tmp/patty_counts.txt
+grep -v ':0$' /tmp/patty_counts.txt > /tmp/patty_active.txt
 
-git ls-files | xargs -I{} sh -c 'rg -qi "reasonix" "{}" && echo {}' > /tmp/reasonix_files.txt
+git ls-files | xargs -I{} sh -c 'rg -qi "patty" "{}" && echo {}' > /tmp/patty_files.txt
 
-git ls-files | xargs -I{} sh -c 'rg -qi "esengine" "{}" && echo {}' > /tmp/esengine_files.txt
+git ls-files | xargs -I{} sh -c 'rg -qi "pattycorp" "{}" && echo {}' > /tmp/pattycorp_files.txt
 
-rg -i --hidden --no-ignore --glob '!.git/**' 'reasonix|esengine' --output=file | sort -u > /tmp/reasonix_esengine_files.txt
+rg -i --hidden --no-ignore --glob '!.git/**' 'patty|pattycorp' --output=file | sort -u > /tmp/patty_pattycorp_files.txt
 
-find . \( -name "*.zh*" -o -name "*zh-CN*" -o -name "*zh-TW*" -o -name "*messages_zh*" \) -not -path '*/node_modules/*' -not -path '*/.git/*' > /tmp/chinese_paths.txt
+find . \( -name "*.zh*" -o -name "*ko-KR*" -o -name "*en-US*" -o -name "*messages_ko*" \) -not -path '*/node_modules/*' -not -path '*/.git/*' > /tmp/chinese_paths.txt
 ```
 
 ### 4.2 Expanded Brand Scans (Category-specific)
 
 ```bash
 # Category 4: Filesystem paths
-rg -i '\.reasonix|reasonix\.toml|REASONIX_|reasonix-' --hidden --no-ignore --glob '!.git/**' --output=file > /tmp/paths_scan.txt
+rg -i '\.patty|patty\.toml|PATTY_|patty-code-' --hidden --no-ignore --glob '!.git/**' --output=file > /tmp/paths_scan.txt
 
 # Category 2: Go import paths  
-rg -r 'import.*"reasonix/' --include '*.go' --output=file > /tmp/go_imports.txt
+rg -r 'import.*"patty/' --include '*.go' --output=file > /tmp/go_imports.txt
 
 # Category 9: Network endpoints
-rg -i 'reasonix\.io|urn:reasonix' --output=file > /tmp/network_scan.txt
+rg -i 'patty\.io|urn:patty' --output=file > /tmp/network_scan.txt
 
 # Category 8: Executable/package names
-rg -i 'cmd/reasonix|reasonix-launcher|reasonix-legacy-migrator|reasonix-plugin-example' --output=file > /tmp/exec_scan.txt
+rg -i 'cmd/patty|patty-code-launcher|patty-code-legacy-migrator|patty-plugin-example' --output=file > /tmp/exec_scan.txt
 
 # Category 5: Configuration keys
 rg -i '"language".*zh|"currency".*CNY|default.*zh' --include '*.go' --include '*.ts' --output=file > /tmp/config_keys.txt
 
 # Category 16: OS integration
-rg -i 'io\.reasonix|reasonix-desktop|Reasonix\.app' --output=file > /tmp/os_integration.txt
+rg -i 'io.patty|patty-desktop|Patty Code.app' --output=file > /tmp/os_integration.txt
 
 # Binary strings (generated artifacts from last release)
-for f in $(find dist/ -type f 2>/dev/null); do strings "$f" 2>/dev/null | grep -qi 'reasonix' && echo "$f"; done > /tmp/binary_strings.txt 2>/dev/null
+for f in $(find dist/ -type f 2>/dev/null); do strings "$f" 2>/dev/null | grep -qi 'patty' && echo "$f"; done > /tmp/binary_strings.txt 2>/dev/null
 ```
 
 ### 4.3 Ledger Schema (`inventory.jsonl`)
@@ -79,7 +79,7 @@ Each line is JSON with these fields (per §13.2):
 {
   "path": "internal/cli/chat.go",
   "line": 142,
-  "matched_identity": "reasonix",
+  "matched_identity": "patty",
   "semantic_category": 3,
   "owning_workstream": "plan-03",
   "disposition": "rename",
@@ -99,7 +99,7 @@ Categories map to numbers:
 ## 5. Task List
 
 ### T1: Run primary literal scans and produce raw file lists
-- **Output:** `/tmp/reasonix_files.txt`, `/tmp/esengine_files.txt`, `/tmp/chinese_paths.txt`
+- **Output:** `/tmp/patty_files.txt`, `/tmp/pattycorp_files.txt`, `/tmp/chinese_paths.txt`
 - **Expected exit:** 0
 - **Done when:** All four scan commands above execute successfully and output files are non-empty
 
@@ -120,7 +120,7 @@ Categories map to numbers:
 - Each path gets its disposition row in the ledger
 - File moves and renames get explicit dependency ordering
 
-### T6: Classify esengine operational vs legal references
+### T6: Classify pattycorp operational vs legal references
 - Operational coordinates → replace with patty-controlled values
 - Authorship mentions → mark as legal exception, move to notices
 

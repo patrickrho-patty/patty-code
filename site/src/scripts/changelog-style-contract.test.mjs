@@ -15,7 +15,7 @@ test("every release uses the version-ledger hero", () => {
   assert.doesNotMatch(component, /isThematicTitle|isThematic/);
   assert.doesNotMatch(component, /release-hero--compact|release-hero__actions|<blockquote>/);
   assert.match(component, /<header class="release-hero">/);
-  assert.match(component, /<h1>Reasonix v\{release\.version\}<\/h1>/);
+  assert.match(component, /<h1>Patty Code v\{release\.version\}<\/h1>/);
   assert.match(component, /<p class="release-lede">/);
   assert.doesNotMatch(css, /\.release-hero--compact|\.release-hero__actions|\.release-hero blockquote/);
 });

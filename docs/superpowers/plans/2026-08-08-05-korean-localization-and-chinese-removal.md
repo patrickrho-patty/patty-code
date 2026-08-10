@@ -14,7 +14,7 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 
 - Go i18n catalog: `internal/i18n/messages_ko.go` (complete), `messages_en.go` → update scope
 - Desktop frontend locales: Korean (`ko.ts`) and English (`en.ts`) catalogs
-- Response/reasoning language policy defaults to Korean
+- Response/patty code language policy defaults to Korean
 - CLI/TUI text replacement with localizable strings
 - Chinese resource removal after parity check
 
@@ -35,8 +35,8 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 
 ### T3: Update locale detection and persistence
 - Default locale changed from `"zh"` / `"auto"` to `"ko"`
-- Locale preference persistence key changes from `reasonix_lang` to neutral
-- Environment variable from `REASONIX_LANG` to `PATTY_LANG`
+- Locale preference persistence key changes from `patty_lang` to neutral
+- Environment variable from `PATTY_LANG` to `PATTY_LANG`
 
 ### T4: Replace hardcoded UI strings in CLI/TUI code
 - Audit: `rg 'say|tprintf|t.Errorf.*"' internal/cli/ | head -100`
@@ -46,7 +46,7 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 ### T5: Update desktop frontend locale system
 - Create `desktop/frontend/src/locales/ko.ts` from scratch
 - Update `en.ts` with current correct strings
-- Remove `zh.ts`, `zh-TW.ts` files
+- Remove `zh.ts`, `en-US.ts` files
 
 ### T6: Add completion-check tests
 - Test that ko catalog has ≥ en catalog entry count
@@ -54,14 +54,14 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 - Test IME composition compatibility
 
 ### T7: Delete Chinese resources (after parity pass)
-- Delete `internal/i18n/messages_zh.go`, `messages_zh_tw.go`
-- Delete `desktop/frontend/src/locales/zh-TW.ts`
-- Delete 33+ `*.zh-CN.md` docs under `docs/`
-- Delete `README.zh-CN.md`, `sdk/go/examples/starterextension/README.zh-CN.md`
+- Delete `internal/i18n/messages_ko.go`, `messages_ko_tw.go`
+- Delete `desktop/frontend/src/locales/en-US.ts`
+- Delete 33+ `*.ko-KR.md` docs under `docs/`
+- Delete `README.ko-KR.md`, `sdk/go/examples/starterextension/README.ko-KR.md`
 
 ### T8: Run forbidden-locale scan
 - CI gate checks no Chinese resources remain
-- Tests verify zero `zh` or `zh-CN` or `zh-TW` locale entries
+- Tests verify zero `zh` or `ko-KR` or `en-US` locale entries
 
 ## 4. Definition of Done
 

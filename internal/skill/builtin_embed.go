@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"reasonix/internal/skill/builtincontent"
+	"patty/internal/skill/builtincontent"
 )
 
 var (

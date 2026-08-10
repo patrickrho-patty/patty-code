@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
+	"patty/internal/event"
 )
 
 func TestSplitEditorCommandUsesStaticShellWords(t *testing.T) {
@@ -42,7 +42,7 @@ auto_start = false
 	writeConfig := func(root, token string) {
 		t.Helper()
 		raw := minimalTestModelTOML + strings.ReplaceAll(pluginConfig, "TOKEN", token)
-		if err := os.WriteFile(filepath.Join(root, "reasonix.toml"), []byte(raw), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(root, "patty.toml"), []byte(raw), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -60,7 +60,7 @@ auto_start = false
 	model := chatTUI{ctrl: ctrl, pendingCommit: &pending}
 	model.clearMCPAuthentication(mcpServerView{Name: "dida"})
 
-	controllerRaw, err := os.ReadFile(filepath.Join(controllerRoot, "reasonix.toml"))
+	controllerRaw, err := os.ReadFile(filepath.Join(controllerRoot, "patty.toml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ auto_start = false
 		!strings.Contains(string(controllerRaw), "workspace=main") {
 		t.Fatalf("controller config authentication was not cleared:\n%s", controllerRaw)
 	}
-	cwdRaw, err := os.ReadFile(filepath.Join(cwdRoot, "reasonix.toml"))
+	cwdRaw, err := os.ReadFile(filepath.Join(cwdRoot, "patty.toml"))
 	if err != nil {
 		t.Fatal(err)
 	}

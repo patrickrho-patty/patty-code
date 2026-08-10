@@ -3,10 +3,10 @@ package agent
 import (
 	"fmt"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/taskcontract"
-	"reasonix/internal/taskintent"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/taskcontract"
+	"patty/internal/taskintent"
 )
 
 // buildShadowContract replays a finished turn's receipts into a task

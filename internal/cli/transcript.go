@@ -13,7 +13,7 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 type transcriptSourceKind uint8
@@ -25,7 +25,9 @@ const (
 	transcriptSourceReasoning
 	transcriptSourceToolCard
 	transcriptSourceBanner
+	transcriptSourceStartupNotice
 	transcriptSourceReplayBundle
+	transcriptSourceReplayHistory
 	transcriptSourceTurnReceipt
 	transcriptSourceSubagentProgress
 )
@@ -95,15 +97,25 @@ func (m *chatTUI) renderTranscriptSource(source transcriptSource, terminalWidth 
 	case transcriptSourceMarkdown:
 		return renderAssistantMarkdown(source.raw, contentWidth)
 	case transcriptSourceUser:
-		return renderUserBubble(source.raw, terminalWidth, source.planMode)
+		return renderUserBubble(source.raw, contentWidth, source.planMode)
 	case transcriptSourceReasoning:
 		return reasoningBlock(source.raw, terminalWidth, source.maxLines)
 	case transcriptSourceToolCard:
 		return toolCard(source.raw, source.aux, terminalWidth)
 	case transcriptSourceBanner:
-		return strings.TrimRight(renderTUIBanner(m.label, source.raw, contentWidth), "\n")
+		if m.usesTallSessionMasthead(terminalWidth) {
+			// A tall persistent masthead owns the marks. Keep only the operational
+			// launch text in the transcript so the composer sits directly under the
+			// identity block instead of after a duplicated logo.
+			return strings.TrimRight(renderCompactLaunchMasthead(*m, source.raw, contentWidth), "\n")
+		}
+		return strings.TrimRight(renderLaunchMasthead(*m, source.raw, contentWidth), "\n")
+	case transcriptSourceStartupNotice:
+		return source.raw
 	case transcriptSourceReplayBundle:
 		return m.renderReplayBundle(source, contentWidth, renderAssistantMarkdown)
+	case transcriptSourceReplayHistory:
+		return renderReplayHistory(source.history, contentWidth, renderAssistantMarkdown)
 	case transcriptSourceTurnReceipt:
 		return renderTurnReceiptBand(source.raw, contentWidth)
 	case transcriptSourceSubagentProgress:
@@ -122,12 +134,21 @@ func (m chatTUI) renderReplayBundle(
 	renderAssistant func(string, int) string,
 ) string {
 	var b strings.Builder
-	b.WriteString(renderTUIBanner(m.label, source.raw, contentWidth))
-	for _, section := range replaySectionsForWithAssistantRenderer(
-		source.history,
-		contentWidth,
-		renderAssistant,
-	) {
+	b.WriteString(renderLaunchMasthead(m, source.raw, contentWidth))
+	if history := renderReplayHistory(source.history, contentWidth, renderAssistant); history != "" {
+		b.WriteByte('\n')
+		b.WriteString(history)
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func renderReplayHistory(
+	history []provider.Message,
+	contentWidth int,
+	renderAssistant func(string, int) string,
+) string {
+	var b strings.Builder
+	for _, section := range replaySectionsForWithAssistantRenderer(history, contentWidth, renderAssistant) {
 		b.WriteString(section)
 	}
 	return strings.TrimRight(b.String(), "\n")
@@ -146,63 +167,77 @@ func (m chatTUI) renderReplayBundleCopy(
 	})
 }
 
-const assistantTranscriptIndent = "  "
+func (m chatTUI) renderReplayHistoryCopy(source transcriptSource, contentWidth int, prefix string) string {
+	assistantIndex := 0
+	return renderReplayHistory(source.history, contentWidth, func(raw string, width int) string {
+		messagePrefix := prefix + "-" + strconv.Itoa(assistantIndex)
+		assistantIndex++
+		return renderAssistantMarkdownCopy(raw, width, messagePrefix)
+	})
+}
+
+const (
+	assistantTranscriptIndent = "  "
+	assistantTranscriptRail   = "  │ "
+)
+
+func transcriptTimelineLayout(contentWidth int) (indent, rail string, bodyWidth int) {
+	contentWidth = max(contentWidth, 1)
+	switch {
+	case contentWidth > visibleWidth(assistantTranscriptRail):
+		return assistantTranscriptIndent, assistantTranscriptRail, contentWidth - visibleWidth(assistantTranscriptRail)
+	case contentWidth > 2:
+		return "", "│ ", contentWidth - 2
+	default:
+		return "", "", contentWidth
+	}
+}
 
 // renderAssistantMarkdown gives assistant prose the same explicit transcript
-// identity that user, reasoning, tool, and receipt blocks already have. The
-// body keeps a restrained two-cell gutter instead of using a heavy card, and
-// rendering at the reduced width keeps every indented row inside the viewport.
+// identity that user, reasoning, tool, and receipt blocks already have. A quiet
+// vertical rail connects the identity node to every body row without enclosing
+// the response in a card.
 func renderAssistantMarkdown(raw string, contentWidth int) string {
 	contentWidth = max(contentWidth, 1)
-	indent := assistantTranscriptIndent
-	if contentWidth <= visibleWidth(indent) {
-		indent = ""
-	}
-	bodyWidth := max(contentWidth-visibleWidth(indent), 1)
+	indent, rail, bodyWidth := transcriptTimelineLayout(contentWidth)
 	renderer := newMarkdownRenderer(bodyWidth)
 	rendered := renderer.Render(raw)
 	if rendered == "" {
 		rendered = raw
 	}
 	body := strings.TrimRight(rendered, "\n")
-	header := indent + accent("◆") + " " + bold("Reasonix")
+	header := ansi.Truncate(indent+accent("◆")+" "+bold("Patty Code"), contentWidth, "")
 	if body == "" {
 		return header
 	}
-	return header + "\n\n" + indentTranscriptBlock(body, indent)
+	return header + "\n" + railTranscriptBlock(body, rail)
 }
 
 // renderAssistantMarkdownCopy mirrors renderAssistantMarkdown's visible output
 // and adds zero-width math markers for on-demand clipboard reconstruction.
 func renderAssistantMarkdownCopy(raw string, contentWidth int, prefix string) string {
 	contentWidth = max(contentWidth, 1)
-	indent := assistantTranscriptIndent
-	if contentWidth <= visibleWidth(indent) {
-		indent = ""
-	}
-	bodyWidth := max(contentWidth-visibleWidth(indent), 1)
+	indent, rail, bodyWidth := transcriptTimelineLayout(contentWidth)
 	renderer := newMarkdownRenderer(bodyWidth)
 	rendered := renderer.RenderCopy(raw, prefix)
 	if rendered == "" {
 		rendered = raw
 	}
 	body := strings.TrimRight(rendered, "\n")
-	header := indent + accent("◆") + " " + bold("Reasonix")
+	header := ansi.Truncate(indent+accent("◆")+" "+bold("Patty Code"), contentWidth, "")
 	if body == "" {
 		return header
 	}
-	return header + "\n\n" + indentTranscriptBlock(body, indent)
+	return header + "\n" + railTranscriptBlock(body, rail)
 }
 
-func indentTranscriptBlock(block, indent string) string {
-	if indent == "" || block == "" {
+func railTranscriptBlock(block, rail string) string {
+	if rail == "" || block == "" {
 		return block
 	}
 	lines := strings.Split(block, "\n")
 	for i, line := range lines {
-		if line != "" {
-			lines[i] = indent + line
-		}
+		lines[i] = themeFg(activeCLITheme.border, rail) + line
 	}
 	return strings.Join(lines, "\n")
 }
@@ -213,12 +248,12 @@ func renderTurnReceiptBand(receipt string, contentWidth int) string {
 	}
 	contentWidth = max(contentWidth, 1)
 	if contentWidth <= visibleWidth(statusFooterIndent) {
-		rule := themeFg(activeCLITheme.border, strings.Repeat("─", contentWidth))
+		rule := themedRule(contentWidth, activeCLITheme.border)
 		return rule + "\n" + wrapTranscript(receipt, contentWidth)
 	}
 	indent := statusFooterIndent
 	innerWidth := contentWidth - visibleWidth(indent)
-	rule := indent + themeFg(activeCLITheme.border, strings.Repeat("─", innerWidth))
+	rule := indent + themedRule(innerWidth, activeCLITheme.border)
 	body := wrapTranscript(receipt, contentWidth)
 	return rule + "\n" + body
 }
@@ -239,9 +274,38 @@ func (m *chatTUI) commitTranscriptSource(source transcriptSource) {
 	m.appendTranscriptBlock(rendered, source)
 }
 
+func (m *chatTUI) commitLaunchAndReplay(missing string, history []provider.Message) {
+	banner := transcriptSource{kind: transcriptSourceBanner, raw: missing}
+	if len(m.transcriptSources) > 0 && onlyStartupNoticeSources(m.transcriptSources) {
+		rendered := m.renderTranscriptSource(banner, m.width)
+		*m.pendingCommit = append([]string{rendered}, *m.pendingCommit...)
+		m.transcript = append([]string{rendered}, m.transcript...)
+		m.transcriptSources = append([]transcriptSource{banner}, m.transcriptSources...)
+		m.invalidateWrapFrom(0)
+	} else {
+		m.commitTranscriptSource(banner)
+	}
+	if len(history) == 0 {
+		return
+	}
+	m.commitTranscriptSource(transcriptSource{
+		kind:    transcriptSourceReplayHistory,
+		history: append([]provider.Message(nil), history...),
+	})
+}
+
+func onlyStartupNoticeSources(sources []transcriptSource) bool {
+	for _, source := range sources {
+		if source.kind != transcriptSourceStartupNotice {
+			return false
+		}
+	}
+	return len(sources) > 0
+}
+
 const (
-	copyMathStartPrefix = "\x1b]1337;reasonix-copy-math="
-	copyMathEndPrefix   = "\x1b]1337;reasonix-copy-math-end="
+	copyMathStartPrefix = "\x1b]1337;patty-copy-math="
+	copyMathEndPrefix   = "\x1b]1337;patty-copy-math-end="
 	copyMathTerminator  = "\x07"
 )
 
@@ -274,6 +338,10 @@ func (m chatTUI) buildCopyTranscript(contentWidth int) (string, int, bool) {
 			b.WriteString(rendered)
 		case transcriptSourceReplayBundle:
 			rendered := m.renderReplayBundleCopy(source, contentWidth, strconv.Itoa(i))
+			markers += strings.Count(rendered, copyMathStartPrefix)
+			b.WriteString(rendered)
+		case transcriptSourceReplayHistory:
+			rendered := m.renderReplayHistoryCopy(source, contentWidth, strconv.Itoa(i))
 			markers += strings.Count(rendered, copyMathStartPrefix)
 			b.WriteString(rendered)
 		default:

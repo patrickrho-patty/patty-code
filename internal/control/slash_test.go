@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/instruction"
-	"reasonix/internal/memory"
-	"reasonix/internal/skill"
+	"patty/internal/event"
+	"patty/internal/i18n"
+	"patty/internal/instruction"
+	"patty/internal/memory"
+	"patty/internal/skill"
 )
 
 func labelsOf(items []SlashItem) []string {
@@ -31,6 +32,10 @@ func has(items []SlashItem, label string) bool {
 }
 
 func TestSlashArgItems(t *testing.T) {
+	previousLanguage := i18n.CurrentLanguage()
+	t.Cleanup(func() { i18n.DetectLanguage(previousLanguage) })
+	i18n.DetectLanguage("en")
+
 	data := ArgData{
 		Skills:          []skill.Skill{{Name: "explore", Scope: skill.ScopeBuiltin}, {Name: "review", Scope: skill.ScopeBuiltin}},
 		DisabledSkills:  []skill.Skill{{Name: "security-review", Scope: skill.ScopeBuiltin}},
@@ -153,8 +158,8 @@ func TestSlashArgItems(t *testing.T) {
 	}
 	// /reasoning-language
 	items, _ = SlashArgItems("/reasoning-language ", data)
-	if !has(items, "auto") || !has(items, "zh") || !has(items, "en") || has(items, "中文") {
-		t.Errorf("/reasoning-language should offer only auto/zh/en; got %v", labelsOf(items))
+	if !has(items, "auto") || !has(items, "ko-KR") || !has(items, "en") || has(items, "機能整理檢討") {
+		t.Errorf("/reasoning-language should offer only auto/ko-KR/en; got %v", labelsOf(items))
 	}
 	// /currency
 	items, _ = SlashArgItems("/currency ", data)
@@ -163,8 +168,11 @@ func TestSlashArgItems(t *testing.T) {
 	}
 	// /theme
 	items, _ = SlashArgItems("/theme ", data)
-	if !has(items, "auto") || !has(items, "light") || !has(items, "graphite") || !has(items, "glacier") {
+	if !has(items, "auto") || !has(items, "light") || !has(items, "seoul-night") || !has(items, "hanji-light") {
 		t.Errorf("/theme should offer modes and styles; got %v", labelsOf(items))
+	}
+	if has(items, "graphite") || has(items, "glacier") {
+		t.Errorf("/theme should accept but not advertise legacy aliases; got %v", labelsOf(items))
 	}
 	// a non-structured command yields nothing
 	if items, _ := SlashArgItems("/help ", data); len(items) != 0 {
@@ -407,7 +415,7 @@ func TestManagementMemoryRevisionRestore(t *testing.T) {
 }
 
 func TestManagementMemoryArchiveRecoveryAcceptsQuotedPathWithSpaces(t *testing.T) {
-	userDir := filepath.Join(t.TempDir(), "reasonix home with spaces")
+	userDir := filepath.Join(t.TempDir(), "patty home with spaces")
 	cwd := filepath.Join(t.TempDir(), "project")
 	store := memory.StoreFor(userDir, cwd)
 	saved, err := store.SaveWithOptions(memory.Memory{
@@ -495,7 +503,7 @@ func TestManagementMigrateEmitsProgress(t *testing.T) {
 
 func TestManagementMigrateFromImportsExplicitSessions(t *testing.T) {
 	home := isolateControlConfigHome(t)
-	legacySessions := filepath.Join(home, "Old Reasonix", "sessions")
+	legacySessions := filepath.Join(home, "Old Patty Code", "sessions")
 	if err := os.MkdirAll(legacySessions, 0o755); err != nil {
 		t.Fatal(err)
 	}

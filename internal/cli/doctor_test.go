@@ -31,14 +31,14 @@ func TestRunDispatchesDoctor(t *testing.T) {
 			t.Fatalf("Run doctor rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "reasonix dispatch-version doctor") {
+	if !strings.Contains(out, "patcode dispatch-version doctor") {
 		t.Fatalf("doctor output missing header:\n%s", out)
 	}
 }
 
 func TestDoctorSessionCommandWritesBundle(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	sessionDir := filepath.Join(home, "sessions")
 	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -62,7 +62,7 @@ func TestDoctorSessionCommandWritesBundle(t *testing.T) {
 
 func TestDoctorQualityCommandPrintsPublicSafeJSON(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	sessionDir := filepath.Join(home, "sessions")
 	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -112,7 +112,7 @@ func captureStdout(t *testing.T, fn func()) string {
 
 func TestDoctorSessionCommandOutEqualsForm(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	sessionDir := filepath.Join(home, "sessions")
 	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
 		t.Fatal(err)

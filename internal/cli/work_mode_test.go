@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/command"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
-	"reasonix/internal/provider"
-	"reasonix/internal/skill"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/command"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/i18n"
+	"patty/internal/provider"
+	"patty/internal/skill"
 )
 
 func TestRuntimeProfileDisplayLocalizesLabels(t *testing.T) {
@@ -23,8 +23,7 @@ func TestRuntimeProfileDisplayLocalizesLabels(t *testing.T) {
 		economy, balanced, delivery string
 	}{
 		{lang: "en", economy: "economy", balanced: "balanced", delivery: "delivery"},
-		{lang: "zh", economy: "轻量", balanced: "均衡", delivery: "交付"},
-		{lang: "zh-TW", economy: "輕量", balanced: "均衡", delivery: "交付"},
+		{lang: "ko", economy: "경제", balanced: "균형", delivery: "전달"},
 	} {
 		t.Run(tt.lang, func(t *testing.T) {
 			i18n.DetectLanguage(tt.lang)
@@ -88,8 +87,8 @@ func TestWorkModeCompletionPublishesPrimaryCommandAndAliasArguments(t *testing.T
 }
 
 func TestWorkModeHelpAndStatusUseUserFacingName(t *testing.T) {
-	if !hasLabel(builtinHelpItems(), "/work-mode") {
-		t.Fatal("built-in help missing /work-mode")
+	if hasLabel(builtinHelpItems(), "/work-mode") {
+		t.Fatal("built-in help should not advertise /work-mode (runtime profile is hidden)")
 	}
 	if hasLabel(builtinHelpItems(), "/profile") {
 		t.Fatal("built-in help should not duplicate the technical /profile alias")

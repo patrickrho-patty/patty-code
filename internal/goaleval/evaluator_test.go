@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
 type scriptedProvider struct {

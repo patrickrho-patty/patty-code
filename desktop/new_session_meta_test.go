@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/agent"
+	"patty/internal/agent"
 )
 
 func TestPinNewEmptySessionBranchMetaStoresBinding(t *testing.T) {

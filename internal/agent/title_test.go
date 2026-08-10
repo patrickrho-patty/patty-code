@@ -4,8 +4,8 @@ import "testing"
 
 func TestReasoningLanguageDirectiveIsNotUserAuthored(t *testing.T) {
 	for _, injected := range []string{
-		"<reasoning-language>\nUse Simplified Chinese",
-		"<reasoning-language>\nUse Simplified Chinese\n</reasoning-language>",
+		"<reasoning-language>\nUse Standard Korean",
+		"<reasoning-language>\nUse Standard Korean\n</reasoning-language>",
 	} {
 		if IsUserAuthoredTurn(injected) {
 			t.Fatalf("reasoning-language directive %q must not count as user-authored", injected)
@@ -19,8 +19,8 @@ func TestStripPasteDisplayLabel(t *testing.T) {
 		in   string
 		want string
 	}{
-		{name: "simplified Chinese", in: "[已粘贴文本 #1 · 100 行]\npackage main", want: "package main"},
-		{name: "traditional Chinese", in: "[已貼上文字 #2 · 5 行]\r\n帮我看看这段代码", want: "帮我看看这段代码"},
+		{name: "standard Korean", in: "[붙여넣은 텍스트 #1 · 100 줄]\npackage main", want: "package main"},
+		{name: "traditional Korean", in: "[붙여넣은 텍스트 #2 · 5 줄]\r\n이 코드 좀 봐 줘", want: "이 코드 좀 봐 줘"},
 		{name: "English", in: "[Pasted text #3 · 42 lines]\nfunc foo() {}", want: "func foo() {}"},
 		{name: "inline mention", in: "Explain [Pasted text #1 · 2 lines] handling", want: "Explain [Pasted text #1 · 2 lines] handling"},
 		{name: "later standalone line", in: "Keep this\n[Pasted text #1 · 2 lines]\nverbatim", want: "Keep this\n[Pasted text #1 · 2 lines]\nverbatim"},

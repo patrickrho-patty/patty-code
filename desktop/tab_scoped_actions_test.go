@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/provider"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/provider"
 )
 
 type tabScopedActionController struct {

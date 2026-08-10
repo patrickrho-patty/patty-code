@@ -2,13 +2,13 @@
 
 <a href="../README.md">README</a>
 &nbsp;·&nbsp;
-<a href="./ACP.zh-CN.md">简体中文</a>
+<a href="./ACP.ko-KR.md">(Korean)</a>
 &nbsp;·&nbsp;
 <a href="./GUIDE.md">Guide</a>
 &nbsp;·&nbsp;
 <a href="https://agentclientprotocol.com/">ACP specification</a>
 
-Reasonix implements Agent Client Protocol (ACP) v1 as an NDJSON JSON-RPC 2.0
+Patty Code implements Agent Client Protocol (ACP) v1 as an NDJSON JSON-RPC 2.0
 agent over standard input and output. Editors and other ACP hosts launch the
 process, open one or more workspace-scoped sessions, and receive streamed
 messages, tool activity, plans, permission requests, and configuration updates.
@@ -18,23 +18,23 @@ messages, tool activity, plans, permission requests, and configuration updates.
 An ACP host should launch one of these commands:
 
 ```sh
-reasonix acp
-reasonix acp --model deepseek-pro
-reasonix acp --profile delivery
+patcode acp
+patcode acp --model deepseek-pro
+patcode acp --profile delivery
 ```
 
 `--model` selects the startup model when the client does not override it.
 `--profile` sets the startup work mode to `economy`, `balanced`, or `delivery`.
 Both remain session-configurable after initialization.
 
-Standard output is reserved for ACP messages. Reasonix sends diagnostics to
-standard error, so hosts must not merge the two streams. Run `reasonix setup`
+Standard output is reserved for ACP messages. Patty Code sends diagnostics to
+standard error, so hosts must not merge the two streams. Run `patcode setup`
 beforehand when no provider is configured; the initialize response also
-advertises a terminal authentication method that launches `reasonix setup`.
+advertises a terminal authentication method that launches `patcode setup`.
 
 ## Initialize and negotiate capabilities
 
-Clients should call `initialize` before opening a session. Reasonix advertises
+Clients should call `initialize` before opening a session. Patty Code advertises
 the following capability shape (irrelevant fields omitted):
 
 ```json
@@ -58,9 +58,9 @@ the following capability shape (irrelevant fields omitted):
       "sse": false
     },
     "_meta": {
-      "reasonix.io": {
+      "patty-code.io": {
         "sessionSteer": {
-          "method": "_reasonix.io/session/steer"
+          "method": "_patty-code.io/session/steer"
         }
       }
     }
@@ -69,18 +69,18 @@ the following capability shape (irrelevant fields omitted):
 ```
 
 When the client advertises `fs.readTextFile`, `fs.writeTextFile`, or
-`terminal`, Reasonix routes eligible file operations through the editor's
+`terminal`, Patty Code routes eligible file operations through the editor's
 unsaved buffers and eligible foreground commands through a client-owned
 terminal. Every file tool takes part — reads, edits and writes alike — so an
 edit applies to what the editor currently shows instead of to the last saved
 copy on disk. A non-UTF-8 file is not eligible: the ACP file methods are
 text-only, so it stays on the local encoding-preserving path and keeps its
 original charset. Without those client capabilities, the normal workspace
-tools run locally inside the Reasonix process.
+tools run locally inside the Patty Code process.
 
 ## Session lifecycle
 
-Each ACP session owns an independent Reasonix controller, workspace root, model,
+Each ACP session owns an independent Patty Code controller, workspace root, model,
 work mode, collaboration mode, approval mode, MCP set, and persisted transcript.
 State does not leak between sessions.
 
@@ -96,20 +96,20 @@ State does not leak between sessions.
 | `session/delete` | Stops the session and removes its persisted ACP history. |
 
 `session/new`, `session/load`, and `session/resume` may include `mcpServers`.
-Reasonix accepts stdio, Streamable HTTP, and legacy SSE servers. ACP's official `[{"name":"...","value":"..."}]`
+Patty Code accepts stdio, Streamable HTTP, and legacy SSE servers. ACP's official `[{"name":"...","value":"..."}]`
 shape is supported for stdio `env` and HTTP `headers`; the older object-map
 shape remains accepted for compatibility.
 
 ## Session controls
 
-Reasonix exposes independent controls instead of combining unrelated choices in
+Patty Code exposes independent controls instead of combining unrelated choices in
 one mode selector:
 
 | Control | Values | Wire surface |
 | --- | --- | --- |
 | Collaboration mode | `normal`, `plan`, `goal` | `modes` and `session/set_mode` |
 | Model | Configured `provider/model` entries | `configOptions` with id `model` |
-| Reasoning effort | Provider-supported levels or `auto` | `configOptions` with id `effort` |
+| Patty Code effort | Provider-supported levels or `auto` | `configOptions` with id `effort` |
 | Work mode | `economy`, `balanced`, `delivery` | `configOptions` with id `work_mode` |
 | Tool approval | `ask`, `auto`, `yolo` | `configOptions` with id `tool_approval` |
 
@@ -145,7 +145,7 @@ selectors above.
 ## Prompts, updates, and approvals
 
 `session/prompt` accepts text blocks and embedded text resources. Images and
-audio are not advertised. During a turn, Reasonix may send:
+audio are not advertised. During a turn, Patty Code may send:
 
 - agent message and thought chunks;
 - pending and completed tool-call updates;
@@ -155,13 +155,13 @@ audio are not advertised. During a turn, Reasonix may send:
 - `session/request_permission` requests for permission-gated tools and user
   questions.
 
-Hosts should keep the `session/prompt` request open until Reasonix returns its
+Hosts should keep the `session/prompt` request open until Patty Code returns its
 stop reason, while continuing to process requests and notifications in both
 directions.
 
 ## Mid-turn steering extension
 
-Reasonix exposes mid-turn guidance as an ACP v1 vendor extension. It is not a
+Patty Code exposes mid-turn guidance as an ACP v1 vendor extension. It is not a
 core ACP method, and it is not the still-unreleased ACP v2 `session/inject`
 proposal.
 
@@ -170,7 +170,7 @@ proposal.
 Read the method name from:
 
 ```text
-agentCapabilities._meta["reasonix.io"].sessionSteer.method
+agentCapabilities._meta["patty-code.io"].sessionSteer.method
 ```
 
 Do not assume the extension exists, and do not call the unnamespaced
@@ -185,7 +185,7 @@ Call the advertised method while `session/prompt` is active:
 {
   "jsonrpc": "2.0",
   "id": 2,
-  "method": "_reasonix.io/session/steer",
+  "method": "_patty-code.io/session/steer",
   "params": {
     "sessionId": "session-id",
     "prompt": [
@@ -195,11 +195,11 @@ Call the advertised method while `session/prompt` is active:
 }
 ```
 
-A successful `{}` result means the active turn accepted the guidance. Reasonix
+A successful `{}` result means the active turn accepted the guidance. Patty Code
 adds it as a user message before the next safe model-call boundary, without
 cancelling the turn or consuming an extra tool-step budget. The message is
 persisted in normal history; transcript replay shows the original user text,
-not Reasonix's internal steer marker.
+not Patty Code's internal steer marker.
 
 | Condition | JSON-RPC result |
 | --- | --- |
@@ -214,19 +214,19 @@ not silently report the failed steer as accepted.
 
 ## Runtime reload and extension surface
 
-Reasonix advertises two more extension points in
-`agentCapabilities._meta["reasonix.io"]`:
+Patty Code advertises two more extension points in
+`agentCapabilities._meta["patty-code.io"]`:
 
 - `sessionReloadExtensions` — the vendor method
-  `_reasonix.io/session/reloadExtensions`. Calling it reloads the session's
+  `_patty-code.io/session/reloadExtensions`. Calling it reloads the session's
   agent runtime (extensions, tools, skills, commands, hooks, providers) with
   the same fail-atomic semantics as the CLI `/reload` command: while a turn
   or rebuild is active exactly one reload is queued (`{"queued": true}`) and
   runs when the session goes idle; otherwise the runtime is rebuilt and
   swapped atomically, and a failed rebuild keeps the previous runtime. After
-  a successful reload Reasonix pushes a fresh `available_commands_update`.
+  a successful reload Patty Code pushes a fresh `available_commands_update`.
 - `extensionSurface` — structured extension UI support. Clients that also
-  advertise `reasonix.io.extensionSurface` in their initialize `_meta`
+  advertise `patty-code.io.extensionSurface` in their initialize `_meta`
   receive structured extension surface payloads; clients without it receive
   equivalent text fallbacks (`agent_message_chunk` for cards and statuses,
   permission requests for extension forms), so no client-side handling is
@@ -238,7 +238,7 @@ any other slash command.
 
 ## Compatibility and cache behavior
 
-| Surface | Older or non-Reasonix clients | Conclusion |
+| Surface | Older or non-Patty Code clients | Conclusion |
 | --- | --- | --- |
 | Existing ACP v1 methods | Their names and response shapes are unchanged. | Compatible |
 | Capability `_meta` | Unknown metadata may be ignored. | Compatible |
@@ -253,12 +253,12 @@ earlier prefix remains reusable.
 
 ## Client integration checklist
 
-1. Launch `reasonix acp` with separate stdin, stdout, and stderr streams.
+1. Launch `patcode acp` with separate stdin, stdout, and stderr streams.
 2. Call `initialize` and honor both standard and `_meta` capabilities.
 3. Open sessions with absolute workspace paths and keep their ids isolated.
 4. Process agent-to-client filesystem, terminal, and permission requests while
    a prompt is running.
-5. Show steer UI only when the Reasonix capability is advertised and a prompt
+5. Show steer UI only when the Patty Code capability is advertised and a prompt
    is active.
 6. Treat a successful steer response as queued guidance, not immediate model
    completion.

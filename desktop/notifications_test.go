@@ -3,9 +3,9 @@ package main
 import (
 	"testing"
 
-	"reasonix/internal/config"
-	"reasonix/internal/event"
-	"reasonix/internal/notify"
+	"patty/internal/config"
+	"patty/internal/event"
+	"patty/internal/notify"
 )
 
 type desktopRecordSink struct {

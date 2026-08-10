@@ -3,7 +3,7 @@
     {
       "id": "greeting_hello_001",
       "title": "打个招呼",
-      "prompt": "你好！请用一段友好的话介绍一下你自己，然后用中文打个招呼。",
+      "prompt": "你好！请用一段友好的话介绍一下你自己，然后用한국어打个招呼。",
       "interval": "2m",
       "enabled": true,
       "createdAt": 1718550000000

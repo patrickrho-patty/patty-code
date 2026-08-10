@@ -1,8 +1,8 @@
-# Reasonix Guide
+# Patty Code Guide
 
 <a href="../README.md">README</a>
 &nbsp;·&nbsp;
-<a href="./GUIDE.zh-CN.md">简体中文</a>
+<a href="./GUIDE.ko-KR.md">(Korean)</a>
 &nbsp;·&nbsp;
 <a href="./SPEC.md">Spec</a>
 
@@ -16,7 +16,7 @@
 - [Environment variables](#environment-variables)
 - [Serve web frontend](#serve-web-frontend)
 - [Configuration paths](./CONFIG_PATHS.md)
-- [Reasoning language](./REASONING_LANGUAGE.md)
+- [Patty Code language](./PATTY_CODE_LANGUAGE.md)
 - [Task contracts and pause policy](./TASK_CONTRACT.md)
 - [Custom OpenAI-compatible providers](#custom-openai-compatible-providers)
 - [Desktop hooks](#desktop-hooks)
@@ -31,28 +31,28 @@
 
 ## Configuration
 
-Resolution order: **flag > `./reasonix.toml` > the user config file >
-built-in defaults**. Starting with **Reasonix v1.8.1**, the user config lives at
-`~/.reasonix/config.toml` on macOS/Linux and
-`%AppData%\reasonix\config.toml` on Windows; see
+Resolution order: **flag > `./patty.toml` > the user config file >
+built-in defaults**. Starting with **Patty Code v1.8.1**, the user config lives at
+`~/.patty/config.toml` on macOS/Linux and
+`%AppData%\patty\config.toml` on Windows; see
 [Configuration paths](./CONFIG_PATHS.md) for migration and related data paths.
-Fields marked user/global only are not overridden by `./reasonix.toml`.
+Fields marked user/global only are not overridden by `./patty.toml`.
 Provider entries name secrets with `api_key_env`, while the secret values live in
-Reasonix's global `<Reasonix home>/.env`, shared by CLI and desktop. Project
+Patty Code's global `<Patty Code home>/.env`, shared by CLI and desktop. Project
 `.env`, home `.env`, inherited shell environment variables, legacy credentials,
 and the OS keyring are not provider-key runtime fallbacks; legacy credentials are
 only migration sources. Project `.env` still feeds workspace-scoped,
 non-provider `${VAR}` expansion for MCP/plugin settings without importing
-provider keys or Reasonix control variables. See
+provider keys or Patty Code control variables. See
 [Configuration paths](./CONFIG_PATHS.md) for the full `config.toml` and `.env`
 structure.
 
 For the desktop and CLI usage of visible reasoning language, see
-[Reasoning language](./REASONING_LANGUAGE.md).
+[Patty Code language](./PATTY_CODE_LANGUAGE.md).
 
 ```toml
 default_model = "deepseek-flash"   # executor; set [agent].planner_model to add a planner
-# language    = "zh"               # ui language; empty = auto-detect from $LANG / $REASONIX_LANG
+# language    = "zh"               # ui language; empty = auto-detect from $LANG / $PATTY_LANG
 
 [ui]
 # shortcut_layout = "desktop"      # classic|desktop; compatibility setting
@@ -60,7 +60,7 @@ default_model = "deepseek-flash"   # executor; set [agent].planner_model to add 
 show_turn_usage = false             # hide per-request token/cost receipts in the TUI; default true
 
 [agent]
-reasoning_language = "auto"      # visible reasoning text: auto|zh|en
+reasoning_language = "auto"      # visible reasoning text: auto|ko-KR|en
 # plan_mode_read_only_commands = ["gh issue view"]   # legacy compatibility only; Plan bash now uses Permissions
 # planner_model = "deepseek-pro"      # optional low-frequency planner
 # subagent_model = "deepseek-pro"     # optional default for runAs=subagent skills
@@ -108,12 +108,12 @@ allow = ["Bash(go test:*)"]                  # never prompted
 [serve]
 auth_mode = "none"             # none|token|password; use auth before binding beyond localhost
 # token = ""                   # optional fixed token; empty token mode generates one at startup
-# password_hash = ""           # bcrypt hash generated with reasonix serve --hash-password --password '...'
+# password_hash = ""           # bcrypt hash generated with patcode serve --hash-password --password '...'
 # behind_proxy = false         # true only behind a trusted reverse proxy
 
 [[plugins]]
 name    = "example"
-command = "reasonix-plugin-example"
+command = "patty-plugin-example"
 startup_timeout_seconds = 60   # optional initialize + tools/list cap
 call_timeout_seconds = 600   # optional per-server MCP call timeout
 tool_timeout_seconds = { "generate_video" = 1800 }   # optional raw MCP tool names
@@ -135,25 +135,25 @@ read-only tool registry and foreground-command classifier.
 
 ### Environment variables
 
-Most day-to-day settings belong in `config.toml` or the global Reasonix `.env`
+Most day-to-day settings belong in `config.toml` or the global Patty Code `.env`
 described above. The variables below are process-level advanced switches; set
-them before launching Reasonix. Project `.env` files are not a runtime source for
-Reasonix control variables.
+them before launching Patty Code. Project `.env` files are not a runtime source for
+Patty Code control variables.
 
 ### CLI telemetry
 
 The CLI can send a once-per-day anonymous active-install ping and bounded,
-content-free event counters to `https://crash.reasonix.io`. Configure the
+content-free event counters to `https://crash.patty.io`. Configure the
 user-global policy with:
 
 ```bash
-reasonix config telemetry          # print the effective mode
-reasonix config telemetry auto     # default: local interactive TTY only
-reasonix config telemetry on       # also allow local headless `reasonix run`
-reasonix config telemetry off      # disable and delete pending counter files
+patcode config telemetry          # print the effective mode
+patcode config telemetry auto     # default: local interactive TTY only
+patcode config telemetry on       # also allow local headless `patcode run`
+patcode config telemetry off      # disable and delete pending counter files
 ```
 
-On the first eligible release-build interactive session, Reasonix explains the
+On the first eligible release-build interactive session, Patty Code explains the
 exact data boundary and asks once before any telemetry request. The prompt is
 `[Y/n]`: pressing Enter, `y`, or `yes` stores `auto`; `n` or `no` stores `off`
 and deletes pending counters. After the choice is saved, enabled reporting is
@@ -161,7 +161,7 @@ silent and the prompt is not shown again. If the preference cannot be saved,
 nothing is uploaded.
 
 Reporting is always disabled in CI, development builds, and when
-`DO_NOT_TRACK` is set or `REASONIX_TELEMETRY=0`. Under `auto`, redirected/piped
+`DO_NOT_TRACK` is set or `PATTY_TELEMETRY=0`. Under `auto`, redirected/piped
 or otherwise non-interactive sessions do not report. When no choice has been
 saved yet, these ineligible sessions neither prompt nor report. Network failures
 after consent are silent and never change stdout, stderr, or the process exit
@@ -175,14 +175,14 @@ range, generic Provider/tool error class, compaction, recovery counters, and
 normalized UI language. This ID is separate from the desktop install ID and is
 not an account, hardware, repository, or session identifier.
 
-Reasonix never uploads prompts, answers, reasoning, tool names/arguments/output,
+Patty Code never uploads prompts, answers, patty code, tool names/arguments/output,
 paths, repositories/branches, session IDs, exact token or cost values,
 Provider/model names, base URLs, or environment variables.
 
 ### CLI crash reports
 
 An unhandled Go panic that reaches the CLI entrypoint is saved locally as a sanitized report under
-`<Reasonix home>/cli-crash-reports`. Reasonix keeps at most 10 files with owner-only
+`<Patty Code home>/cli-crash-reports`. Patty Code keeps at most 10 files with owner-only
 permissions. The panic value is never serialized. Absolute source paths become
 `<path>/<file>.go:<line>`, function arguments are removed, and the same secret,
 token, email, and long-identifier scrubbers run both when saving and immediately
@@ -191,14 +191,14 @@ before sending.
 Crash reports are never uploaded automatically. Review and manage them with:
 
 ```bash
-reasonix report                 # preview newest; prompt before sending on a TTY
-reasonix report list            # list local reports
-reasonix report show [ID]       # preview without sending
-reasonix report send [ID]       # explicit send; delete locally only after success
-reasonix report delete [ID]     # delete without sending
+patcode report                 # preview newest; prompt before sending on a TTY
+patcode report list            # list local reports
+patcode report show [ID]       # preview without sending
+patcode report send [ID]       # explicit send; delete locally only after success
+patcode report delete [ID]     # delete without sending
 ```
 
-Piped or redirected `reasonix report` calls only preview and never prompt or
+Piped or redirected `patcode report` calls only preview and never prompt or
 send. The CLI telemetry setting does not auto-send or auto-delete
 these separately reviewed reports. Runtime fatal throws, operating-system kills,
 and panics in unwrapped background goroutines cannot be recovered by Go and do
@@ -206,14 +206,14 @@ not produce this local report.
 
 ## Serve web frontend
 
-`reasonix serve` starts the same local engine behind a browser UI. Use it when
+`patcode serve` starts the same local engine behind a browser UI. Use it when
 you want a desktop-style surface without installing the desktop app, when running
-Reasonix on a remote development box through a tunnel, or when you want a
+Patty Code on a remote development box through a tunnel, or when you want a
 shareable view of a live session.
 
 ```bash
 cd your-project
-reasonix serve
+patcode serve
 # open http://127.0.0.1:8787
 ```
 
@@ -223,9 +223,9 @@ tunnel, or put it behind a reverse proxy, enable authentication before sharing
 the URL:
 
 ```bash
-reasonix serve --auth token
-reasonix serve --addr 0.0.0.0:8787 --auth token
-reasonix serve --auth password --password 'temporary-password'
+patcode serve --auth token
+patcode serve --addr 0.0.0.0:8787 --auth token
+patcode serve --auth password --password 'temporary-password'
 ```
 
 Token mode prints a share URL with `?token=...`; pass `--token` or set
@@ -233,9 +233,9 @@ Token mode prints a share URL with `?token=...`; pass `--token` or set
 `--password` at startup or a stored bcrypt hash:
 
 ```bash
-reasonix serve --hash-password --password 'strong-password'
+patcode serve --hash-password --password 'strong-password'
 
-# <Reasonix home>/config.toml
+# <Patty Code home>/config.toml
 [serve]
 auth_mode = "password" # none|token|password
 password_hash = "$2a$12$..."
@@ -253,7 +253,7 @@ user-global `default_model`.
 
 If the selected Provider has no saved API key, a loopback-bound Serve still
 starts and shows a Provider setup page instead of failing before the browser can
-connect. After authentication, enter the key there; Reasonix writes it to this
+connect. After authentication, enter the key there; Patty Code writes it to this
 host's global credential file with restricted permissions, rebuilds the active
 controller in the same process, and opens the normal UI. The credential-writing
 endpoint is disabled for non-loopback listeners. For a remote SSH window,
@@ -262,26 +262,26 @@ not copied from the desktop machine.
 
 ## Editor integrations over ACP
 
-`reasonix acp` exposes Reasonix as an ACP v1 stdio agent for editors and other
+`patcode acp` exposes Patty Code as an ACP v1 stdio agent for editors and other
 host clients. The dedicated **[ACP editor integration](./ACP.md)** guide covers
 startup, capability negotiation, session lifecycle, independent model/work/
 collaboration/approval controls, client filesystem and terminal capabilities,
-MCP servers, permission requests, and the Reasonix mid-turn steering extension.
+MCP servers, permission requests, and the Patty Code mid-turn steering extension.
 
 ## Remote SSH
 
-The remote module runs Reasonix on a remote host and reaches it over your own
+The remote module runs Patty Code on a remote host and reaches it over your own
 SSH connection — VS Code Remote-SSH style. It bootstraps a persistent headless
-`reasonix serve` on the remote host, forwards a local loopback port to it, and
+`patcode serve` on the remote host, forwards a local loopback port to it, and
 opens the existing serve web client through that tunnel. The agent, its tools,
 and its files all live on the remote host at full fidelity; nothing runs through
 a lossy file proxy. V1 supports Linux and macOS remote hosts.
 
 Hosts live in a user-global `[remote]` section of `config.toml`. Like
-`[secrets]`, a project `reasonix.toml` cannot inject or override remote hosts —
-a cloned repo can never steer where Reasonix opens SSH connections. Credentials
+`[secrets]`, a project `patty.toml` cannot inject or override remote hosts —
+a cloned repo can never steer where Patty Code opens SSH connections. Credentials
 follow the provider idiom: the host names an env var (`passphrase_env`,
-`password_env`) whose value lives in Reasonix's global `.env`; key material
+`password_env`) whose value lives in Patty Code's global `.env`; key material
 itself is never stored — `identity_file` is a path.
 
 ```toml
@@ -303,12 +303,12 @@ target = "127.0.0.1:5432"
 CLI:
 
 ```bash
-reasonix remote add gpu-box dev@203.0.113.7 --workspace '~/projects/app'
-reasonix remote import --all              # import aliases; ssh -G resolves Include/Match rules when connecting
-reasonix remote test gpu-box              # dial + auth + host-key confirmation
-reasonix remote connect gpu-box --open    # bootstrap serve, tunnel, open the URL
-reasonix remote serve status gpu-box
-reasonix remote fs ls gpu-box:'~/projects/app'
+patcode remote add gpu-box dev@203.0.113.7 --workspace '~/projects/app'
+patcode remote import --all              # import aliases; ssh -G resolves Include/Match rules when connecting
+patcode remote test gpu-box              # dial + auth + host-key confirmation
+patcode remote connect gpu-box --open    # bootstrap serve, tunnel, open the URL
+patcode remote serve status gpu-box
+patcode remote fs ls gpu-box:'~/projects/app'
 ```
 
 Hosts with `use_ssh_config` enabled resolve the final effective configuration
@@ -323,12 +323,12 @@ Ctrl-C disconnects the local side only — the remote serve keeps running, so th
 next `connect` reuses it. There is no background daemon in V1.
 
 Host keys are verified against your OpenSSH `~/.ssh/known_hosts` (read-only)
-plus a Reasonix-managed `~/.reasonix/remote/known_hosts`. A first-seen key
+plus a Patty Code-managed `~/.patty/remote/known_hosts`. A first-seen key
 prompts for trust-on-first-use and is recorded in the managed file; a key that
 contradicts a recorded one is a hard error that names the offending line and is
 never auto-accepted.
 
-Remote-side state lives under the remote host's `~/.reasonix/remote/`:
+Remote-side state lives under the remote host's `~/.patty/remote/`:
 `serve-<workspace-slug>.json` (pid, bound loopback address, workspace),
 `serve-<slug>.token` (0600; the auth token, passed to serve via `--token-file`
 so it never appears in `ps`), and `serve-<slug>.log`.
@@ -336,14 +336,14 @@ so it never appears in `ps`), and `serve-<slug>.log`.
 In the desktop app, manage hosts under **Settings -> Remote SSH**, then use the
 status-bar chip or the host row's **Remote explorer** button to browse and edit
 files over SFTP, manage port forwards, and start/open the remote workspace.
-Opening a workspace creates a separate native Reasonix window, similar to a
+Opening a workspace creates a separate native Patty Code window, similar to a
 VS Code Remote SSH window. The primary window owns the SSH tunnel; the remote
 window is an isolated, lightweight shell and does not restore or acquire local
 conversation sessions. The remote web page uses the provider configuration and
 API keys on the **remote** host — the desktop never exposes its own providers
 to a remote host. If that host is missing the selected Provider's API key, the
 window shows the authenticated setup page first, saves the key only in the
-remote Reasonix credential file, and activates the Provider without restarting
+remote Patty Code credential file, and activates the Provider without restarting
 the remote Serve process. A transient SSH outage keeps the remote window open;
 the desktop reconnects in the background, re-attaches its loopback forward, and
 reloads the window against the recovered Serve. An authentication or host-key
@@ -359,7 +359,7 @@ For common providers, choose **Add model service -> Recommended preset** instead
 The official DeepSeek service continues to use its specially adapted OpenAI Chat
 Completions path by default; add the optional **DeepSeek Anthropic** preset only
 when Anthropic Messages compatibility is needed. The two entries do not replace
-each other. Reasonix can prefill editable custom-provider entries for Kimi CN,
+each other. Patty Code can prefill editable custom-provider entries for Kimi CN,
 Kimi Global,
 Kimi Coding Plan, MiMo API, MiMo Anthropic, MiMo Token Plan CN/SGP/AMS and their
 Anthropic-compatible variants, MiniMax CN/Global API, MiniMax CN/Global
@@ -372,7 +372,7 @@ HuggingFace Router, NVIDIA NIM, KiloCode, and Ollama Cloud. Plan names describe
 the access/payment route; they include CN/Global only when the provider exposes
 distinct regional endpoints. Kimi Coding Plan is therefore a dedicated plan
 endpoint, while Kimi direct API is split into CN and Global. The preset path
-usually needs only the provider API key: the key value is stored in Reasonix home
+usually needs only the provider API key: the key value is stored in Patty Code home
 `.env`, while `config.toml` stores the endpoint, model list, key
 environment-variable name, context window, vision model metadata, proxy bypass
 for China-only endpoints, MiniMax `reasoning_split`, GLM/MiniMax thinking
@@ -384,7 +384,7 @@ OpenCode Go preset installs are upgraded automatically; edited model catalogs
 are preserved. The Kimi CN and Kimi Global direct-API presets also include
 `kimi-k3` with image input, a 1,048,576-token context window, and the official
 `low`/`high`/`max` effort scale (default `max`). For the official K3 endpoints,
-Reasonix preserves complete assistant messages across turns, sends output limits
+Patty Code preserves complete assistant messages across turns, sends output limits
 as `max_completion_tokens`, and omits K3's fixed sampling parameters. Untouched
 legacy Kimi direct-API catalogs are upgraded automatically without changing the
 default model; custom catalogs and endpoints are preserved. After adding a
@@ -392,14 +392,14 @@ preset, open its provider card if you need to change models, headers, endpoint,
 or compatibility settings.
 
 Fill **API address** with the provider endpoint that should receive the standard
-chat path. In this mode Reasonix previews and sends chat requests to:
+chat path. In this mode Patty Code previews and sends chat requests to:
 
 ```text
 <API address>/chat/completions
 ```
 
 Enable **Full URL** when the service gives you a complete request URL, for
-example `https://gateway.example.com/v1/chat/completions`. Reasonix then sends
+example `https://gateway.example.com/v1/chat/completions`. Patty Code then sends
 chat requests directly to that URL and does not append `/chat/completions`. The
 preview under the field shows the exact request URL that will be used.
 
@@ -423,15 +423,15 @@ For Anthropic-compatible services, such as some coding-plan endpoints, choose
 
 | Field | What it controls | When to change it |
 | --- | --- | --- |
-| `api_key_env` | The environment-variable name used for this provider's API key. Desktop-saved key values are stored in Reasonix home `.env` under this name; the TOML config stores only the name. | Change it when several providers need distinct keys, or leave it blank for a service that does not require an API key. |
+| `api_key_env` | The environment-variable name used for this provider's API key. Desktop-saved key values are stored in Patty Code home `.env` under this name; the TOML config stores only the name. | Change it when several providers need distinct keys, or leave it blank for a service that does not require an API key. |
 | `models_url` | The URL used only for model discovery. Chat requests still use the API address or Full URL above. | Set it when `/models` or `/v1/models` is not where the gateway exposes its model list. |
 | Extra request headers | Static HTTP headers, one `Header: value` per line. | Use for gateways such as OpenRouter that require `HTTP-Referer`, `X-Title`, or similar site headers. Keep bearer/API keys in the key field instead of duplicating them here. |
-| Extra request body | A JSON object merged into the top-level chat request body. | Use only for provider-specific flags such as `{"enable_thinking": true}`. Reasonix still owns core fields such as `model`, `messages`, `tools`, `stream`, and `thinking`, and null values are rejected. |
+| Extra request body | A JSON object merged into the top-level chat request body. | Use only for provider-specific flags such as `{"enable_thinking": true}`. Patty Code still owns core fields such as `model`, `messages`, `tools`, `stream`, and `thinking`, and null values are rejected. |
 | Authorization: Bearer | For Anthropic-compatible providers, sends the saved API key as `Authorization: Bearer <key>` instead of `x-api-key`. | Enable it only when the gateway documents Bearer auth, such as MiniMax Global or Vercel AI Gateway. |
-| Model capability mode | Which reasoning request protocol Reasonix should use for this provider. | Keep **Auto-detect** unless the gateway is misdetected or the model docs require a specific reasoning format. |
+| Model capability mode | Which patty code request protocol Patty Code should use for this provider. | Keep **Auto-detect** unless the gateway is misdetected or the model docs require a specific patty code format. |
 | Thinking override | Provider-specific override for `thinking.type`. | Keep **Auto** unless the backend documents `enabled`, `disabled`, or `adaptive`. Unsupported values can make some OpenAI-compatible gateways reject the request. |
 | Balance URL | Optional endpoint for wallet/balance lookup. | Set it when the provider exposes a balance endpoint and you want the desktop status bar to show it. |
-| Context window | The provider-wide token budget Reasonix uses for automatic context cleanup. `0` disables automatic compaction. | Set it to the provider's model context limit; use a per-model override below when selected models differ. |
+| Context window | The provider-wide token budget Patty Code uses for automatic context cleanup. `0` disables automatic compaction. | Set it to the provider's model context limit; use a per-model override below when selected models differ. |
 
 Each selected model also has an optional **Context window** input. Leave it blank
 to inherit the provider-wide value, or enter a positive token count to override
@@ -446,7 +446,7 @@ Model capability mode options:
 
 | Option | Effect |
 | --- | --- |
-| Auto-detect (recommended) | Reasonix chooses the request shape from model capability metadata and endpoint detection. |
+| Auto-detect (recommended) | Patty Code chooses the request shape from model capability metadata and endpoint detection. |
 | DeepSeek thinking | Uses DeepSeek-style thinking control, including `thinking.type` and DeepSeek-supported reasoning depth. |
 | OpenAI reasoning | Uses the standard OpenAI-compatible `reasoning_effort` levels. |
 | Plain chat | Sends no reasoning or thinking control fields. Use this for text-only proxies that reject reasoning parameters. |
@@ -455,7 +455,7 @@ Thinking override options:
 
 | Option | Effect |
 | --- | --- |
-| Auto (provider default) | Does not write an explicit provider-level `thinking` override. Reasonix uses the provider/model default behavior. |
+| Auto (provider default) | Does not write an explicit provider-level `thinking` override. Patty Code uses the provider/model default behavior. |
 | Enabled | Sends `thinking.type = "enabled"` for compatible providers. |
 | Disabled | Sends `thinking.type = "disabled"` for compatible providers. On DeepSeek-style providers this also avoids sending a reasoning depth hint. |
 | Adaptive (self-adjusting) | Sends or preserves `thinking.type = "adaptive"` only for providers that document adaptive thinking, such as MiniMax-M3-style endpoints. |
@@ -473,7 +473,7 @@ api_key_env = "SPARK_API_KEY"
 extra_body  = { enable_thinking = true }
 ```
 
-`extra_body` is merged into the chat JSON request body. Reasonix keeps core
+`extra_body` is merged into the chat JSON request body. Patty Code keeps core
 fields such as `model`, `messages`, `tools`, `stream`, and `thinking` under its
 own control.
 
@@ -482,21 +482,21 @@ own control.
 Desktop hooks run local commands at lifecycle events such as `SessionStart`,
 `UserPromptSubmit`, `PreToolUse`, and `PreCompact`. A successful `SessionStart`
 hook may write plain text to stdout, or return JSON with
-`hookSpecificOutput.additionalContext`; Reasonix injects that text once into the
+`hookSpecificOutput.additionalContext`; Patty Code injects that text once into the
 next real user turn as `<hook-context event="SessionStart">...</hook-context>`.
 This is intended for plugin or workflow bootstrap context, including
 Superpowers-style startup instructions, without baking that workflow into
-Reasonix's system prompt.
+Patty Code's system prompt.
 
 Plugin packages can provide this startup context through
 `hooks/session-start-codex` or a plugin-root `CLAUDE.md`. Claude-style
-`.claude/settings.json` command hooks are also mapped to matching Reasonix hook
+`.claude/settings.json` command hooks are also mapped to matching Patty Code hook
 events.
 
 The injected hook context is dynamic current-turn context. It does not change
 the stable system prompt, memory prefix, or tool schema, though dynamic content
 can still reduce cache reuse for that turn. The detailed desktop hook schema and
-loading model are documented in [the Chinese desktop hooks guide](./DESKTOP_HOOKS.zh-CN.md).
+loading model are documented in [the Chinese desktop hooks guide](./DESKTOP_HOOKS.ko-KR.md).
 
 ## Keyboard shortcuts
 
@@ -520,7 +520,7 @@ setting does not change desktop or web text fields.
 ### Desktop GUI
 
 Desktop shortcuts are managed from **Settings → Shortcuts**. Pick a configurable
-row, press a new key combination, and Reasonix saves it for the desktop app.
+row, press a new key combination, and Patty Code saves it for the desktop app.
 Standard editing shortcuts such as Undo and Redo are shown as locked rows because
 the WebView's native text history uses those platform chords. Conflicting
 bindings are rejected so one shortcut never triggers two actions. Press `?` or
@@ -547,7 +547,7 @@ Composer shortcuts:
 | `Enter` | Sends the current message | IME composition confirmation is left alone. |
 | `Shift+Enter` | Inserts a newline | The composer keeps focus. |
 | `Shift+Tab` | Toggles Plan on/off | Plan changes the workflow instruction; built-in writers keep the active Ask/Auto/YOLO and Sandbox boundary, while MCP writer/destructive targets stay hard-blocked for the whole planning phase. |
-| `Cmd+Z` on macOS, `Ctrl+Z` on Windows/Linux | Undoes the latest composer edit | Native typing stays in the WebView history; Reasonix-managed paste, cut, folded blocks, and structured tokens are restored as complete transactions. |
+| `Cmd+Z` on macOS, `Ctrl+Z` on Windows/Linux | Undoes the latest composer edit | Native typing stays in the WebView history; Patty Code-managed paste, cut, folded blocks, and structured tokens are restored as complete transactions. |
 | `Cmd+Shift+Z` on macOS, `Ctrl+Shift+Z` on Windows/Linux | Redoes the latest composer edit | On Windows/Linux, `Ctrl+Y` is also accepted after the YOLO shortcut has been rebound. |
 | `Cmd+Y` / `Ctrl+Y` (default) | Toggles YOLO on/off | Turning YOLO off restores the previous Ask/Auto base when known. The current binding is shown in **Settings → Shortcuts**. |
 | `Cmd+V` on macOS, `Ctrl+V` on Windows/Linux | Pastes clipboard content | Clipboard images are attached; images can also be dropped into the composer. |
@@ -599,11 +599,11 @@ Chat and transcript shortcuts:
 | Double `Esc` on an empty idle composer | Opens the rewind picker | Same entry point as `/rewind`. |
 | Transcript text selection | Copies transcript text | Releasing an in-app drag writes through the verified native clipboard path in a local session (`pbcopy` on macOS, the available Wayland/X11 tool on Linux, or the Windows clipboard). SSH falls back to OSC 52 and labels the fallback instead of claiming native success. `Ctrl+C`/`Super+C`/`Meta+C` or right-clicking the active selection copies it again. |
 | Composer text selection | Selects, copies, or replaces draft text | Releasing an in-app drag copies the selection through the same verified clipboard path as transcript text. Typing or pasting replaces the selection; arrow keys collapse it. |
-| Right-click with no active selection | Pastes clipboard text locally | In a local session with in-app mouse capture on, Reasonix reads text only and routes it through the normal bracketed-paste handling. Over SSH, use the terminal paste shortcut because the remote process cannot read the local clipboard; `/mouse` restores the terminal's native right-click menu. Right-click with an active selection still copies that selection. |
-| `/mouse` | Toggles in-app mouse capture | Off hands the mouse back to your terminal, restoring its native click-drag selection and right-click context menu, at the cost of in-app drag-select, the transcript scrollbar, and wheel-scroll. Set `REASONIX_DISABLE_MOUSE=1` to start every session with it off. |
+| Right-click with no active selection | Pastes clipboard text locally | In a local session with in-app mouse capture on, Patty Code reads text only and routes it through the normal bracketed-paste handling. Over SSH, use the terminal paste shortcut because the remote process cannot read the local clipboard; `/mouse` restores the terminal's native right-click menu. Right-click with an active selection still copies that selection. |
+| `/mouse` | Toggles in-app mouse capture | Off hands the mouse back to your terminal, restoring its native click-drag selection and right-click context menu, at the cost of in-app drag-select, the transcript scrollbar, and wheel-scroll. Set `PATTY_DISABLE_MOUSE=1` to start every session with it off. |
 | `Ctrl+C` | Copies, cancels, clears, or quits | Copies an active transcript or composer selection first. Otherwise it cancels a running turn, clears non-empty input, or quits on a second empty-composer press. |
 | `Ctrl+D` | Quits the TUI | Immediate quit. |
-| Your terminal's text-paste shortcut | Pastes text | Text stays on the terminal's bracketed-paste path (`Cmd+V` on macOS, commonly `Ctrl+Shift+V` on Linux, and the terminal's configured shortcut elsewhere). Reasonix consumes the resulting paste event and never probes for an image first. |
+| Your terminal's text-paste shortcut | Pastes text | Text stays on the terminal's bracketed-paste path (`Cmd+V` on macOS, commonly `Ctrl+Shift+V` on Linux, and the terminal's configured shortcut elsewhere). Patty Code consumes the resulting paste event and never probes for an image first. |
 | `Ctrl+V` on macOS/Linux; `Alt+V` on Windows | Pastes a clipboard image | Image paste is a separate application action. The footer shows `Pasting image…` while the clipboard is read, then inserts an editable `[image #N]` token at the cursor. |
 | `/paste-image` | Pastes a clipboard image | Command form of the same image-only action. |
 | A line starting with `!` | Runs a shell command directly | The command runs locally without asking the model. |
@@ -616,7 +616,7 @@ Mode and display shortcuts:
 | `Ctrl+Y` | Toggles YOLO on/off | Turning YOLO off restores the previous Ask/Auto base when known. Terminals that forward Command/Super may also send `Cmd+Y`, but `Ctrl+Y` is the reliable terminal shortcut. |
 | `--yolo`, `--dangerously-skip-permissions` | Starts chat in YOLO | Same runtime mode as `Ctrl+Y`. |
 | `/work-mode [economy|balanced|delivery]` | Shows or switches the current session's work mode | `/profile` is a compatibility alias. Switching rebuilds the runtime atomically, preserves the conversation and approval posture, and is blocked while work is active. |
-| `/theme [auto|light|dark|style]` | Shows or switches the CLI theme | Bare `/theme` lists background modes and named accent palettes. The choice is saved to the user config; `REASONIX_THEME` and `REASONIX_THEME_STYLE` can override it for one run. |
+| `/theme [auto|light|dark|style]` | Shows or switches the CLI theme | Bare `/theme` lists background modes and named accent palettes. The choice is saved to the user config; `PATTY_THEME` and `PATTY_THEME_STYLE` can override it for one run. |
 | `Ctrl+O` | Toggles verbose reasoning display | Also available through `/verbose`. |
 | `Ctrl+B` | Expands or collapses long shell output | Long shell-output hint lines can also be clicked in the transcript; text selection is handled in-app while the full-screen TUI has mouse reporting enabled. |
 | `/goal <objective>`, `/goal --research <objective>`, `/goal --simple <objective>`, `/goal status`, `/goal clear` | Starts, checks, or clears Goal | Goal is not in any keyboard cycle; clearly long-horizon goals automatically enable AutoResearch after Goal is explicitly started. |
@@ -651,7 +651,7 @@ Permissions gate each tool call: `deny` > `ask` > `allow` > fallback. Bash and
 file mutation tools require approval by default; read-only tools generally do
 not. Approvals are stored and matched as permission rules, not button labels:
 for example `Bash(npm run build)`, `Bash(npm run test:*)`, and `Edit(docs/**)`.
-`reasonix` can grant Bash as an exact command or as a conservative command
+`patty` can grant Bash as an exact command or as a conservative command
 prefix (for example `Bash(go test:*)`), while file-editing tools share session
 edit grants and persist path-scoped rules such as `Edit(src/app.go)`.
 Parameter/arithmetic expansions, assignments, heredocs, file redirects, and globs cannot reuse a bare
@@ -666,7 +666,7 @@ Allow fallback, including Auto, cover that class; explicit `ask` and `deny`
 rules still take precedence.
 Because a headless run has no approval UI, the default Ask posture also fails
 closed on ordinary writer fallback and explicit ask rules. Use
-`reasonix run --auto ...`, `-y`, or `--permission-mode auto` when unattended
+`patcode run --auto ...`, `-y`, or `--permission-mode auto` when unattended
 automation should allow ordinary writer fallback; configured `ask` and `deny`
 rules always remain authoritative.
 
@@ -687,7 +687,7 @@ Seatbelt on macOS and bubblewrap on Linux):
 commands may write only those same roots plus platform-specific command
 temp/cache roots, cannot read configured `forbid_read` roots while the OS
 sandbox is active, and reach the network only when `[sandbox] network` is set.
-Reasonix always removes saved provider and bot credential variables from tool
+Patty Code always removes saved provider and bot credential variables from tool
 subprocess environments and automatically adds its global credential `.env` to
 the runtime read-deny boundary. Project `.env` files keep their existing
 workspace-scoped behavior.
@@ -695,7 +695,7 @@ workspace-scoped behavior.
 **Session-private temporary directory.** Within one logical chat session, Bash
 commands share a private temporary directory so consecutive calls can exchange
 files through `$TMPDIR` (and, on Linux under bubblewrap, through literal
-`/tmp`). No user setup is required: Reasonix automatically exports `TMPDIR`,
+`/tmp`). No user setup is required: Patty Code automatically exports `TMPDIR`,
 `TMP`, and `TEMP` for Bash and client-owned ACP terminals. The directory is
 created lazily, is never the host public temporary root, and is rotated on
 `/new`, `/clear`, resume of another session, and branch switches.
@@ -704,7 +704,7 @@ durable storage: resume across process restarts does not restore them, and
 scripts that need long-lived data should write into the workspace or a
 user-specified path.
 
-Reasonix-generated and project scripts should use the standard temporary
+Patty Code-generated and project scripts should use the standard temporary
 environment variables rather than hard-coding `/tmp`; users should not set
 these variables themselves. For example:
 
@@ -727,9 +727,9 @@ inherit the chat session's temporary directory. An approved sandbox-escape
 command still receives the private temp environment variables, but on Linux its
 literal `/tmp` is no longer mapped by bubblewrap.
 
-**Windows note:** Reasonix does not ship an OS-level Bash sandbox on Windows.
+**Windows note:** Patty Code does not ship an OS-level Bash sandbox on Windows.
 The effective mode is fixed to `off`; even an older config containing
-`bash = "enforce"` resolves to `off`, `reasonix doctor` flags the ignored value,
+`bash = "enforce"` resolves to `off`, `patcode doctor` flags the ignored value,
 and the desktop selector is read-only. Bash commands therefore run unconfined,
 while the dedicated file tools still enforce `workspace_root`, `allow_write`,
 and `forbid_read` in process. Saved credential variables are still removed from
@@ -742,14 +742,14 @@ execution instead of running unconfined. Install the platform sandbox backend
 `[sandbox] bash = "off"` to explicitly restore the pre-1.16 unconfined shell
 behavior. On Windows the compatible value is always `off`.
 
-For coding-quality reports, run `reasonix doctor quality <branch-id-or-path>`
+For coding-quality reports, run `patcode doctor quality <branch-id-or-path>`
 (add `--json` for structured output). This reads the selected session but emits
 only content-free counts and profile categories: model family, runtime profile,
 collaboration / approval modes, message and tool-call counts, verification and persisted
 compaction-summary counts, plus desktop token/cache telemetry when available.
 It omits transcript text, paths, session identifiers, tool arguments and output,
 endpoints, and custom model names, so the result is suitable for a public issue
-or Discussion. This differs from `reasonix doctor session`, whose support zip
+or Discussion. This differs from `patcode doctor session`, whose support zip
 contains the complete unredacted transcript and must remain in a trusted support
 channel.
 
@@ -762,31 +762,31 @@ reference, JSON schema, and issue codes:
 
 ```bash
 # Static (default): no network, no MCP child processes
-reasonix doctor capabilities
+patcode doctor capabilities
 
 # Machine-readable (stdout is pure JSON)
-reasonix doctor capabilities --json
+patcode doctor capabilities --json
 
 # Another workspace root
-reasonix doctor capabilities --root /path/to/project
+patcode doctor capabilities --root /path/to/project
 
 # Live MCP probe — only when you explicitly allow starting third-party servers
-reasonix doctor capabilities --live --timeout 5s
+patcode doctor capabilities --live --timeout 5s
 ```
 
 | Surface | How |
 | --- | --- |
-| CLI | `reasonix doctor capabilities` (above) |
+| CLI | `patcode doctor capabilities` (above) |
 | Desktop | **Settings → Diagnostics** — refresh, copy redacted JSON, optional “include current session runtime” (reads the active tab Host only; does **not** start MCP) |
-| Agent | `/reasonix-guide` (built-in inline skill) or ask naturally; it prefers static doctor JSON before `--live` |
+| Agent | `/patty-guide` (built-in inline skill) or ask naturally; it prefers static doctor JSON before `--live` |
 
 Exit code `0` allows warnings/info; `1` means at least one `error` (or a live
-start failure); `2` is bad flags. This is separate from `reasonix doctor`
-(providers/sandbox) and `reasonix plugin doctor <name>` (one package).
+start failure); `2` is bad flags. This is separate from `patcode doctor`
+(providers/sandbox) and `patcode plugin doctor <name>` (one package).
 
 ## Plugins (MCP)
 
-Reasonix is an MCP client. A `[[plugins]]` entry's `type` selects the transport:
+Patty Code is an MCP client. A `[[plugins]]` entry's `type` selects the transport:
 `stdio` (default) launches a local subprocess (`command`/`args`/`env`); `http`
 (Streamable HTTP) connects to a remote `url` with optional static `headers`
 (`${VAR}` / `${VAR:-default}` expanded from the environment, so tokens stay out
@@ -794,18 +794,18 @@ of the file); `sse` connects to servers that still use the legacy persistent
 GET + announced POST endpoint transport.
 
 Browse the official MCP Registry from **Settings → MCP servers → Browse
-registry**, or use `reasonix mcp browse [query]` and
-`reasonix mcp install <registry-name>`. Registry access is explicit and never
+registry**, or use `patcode mcp browse [query]` and
+`patcode mcp install <registry-name>`. Registry access is explicit and never
 runs during startup. Entries that need secrets or required arguments are shown
 as manual setup instead of being installed with an incomplete configuration;
 query-specific cached results remain available during a registry outage.
 
 The normal setup path is intentionally one step. Use Desktop's **Add and
-connect**, `/mcp add`, or ask Reasonix to install a package or URL. These
+connect**, `/mcp add`, or ask Patty Code to install a package or URL. These
 explicit installs are saved to the user-global `config.toml` and are also
 authorization: the server connects in the current session, and no second trust
 step appears now or on the next startup. Servers declared by the current
-project's `reasonix.toml` or `.mcp.json` remain in that project and are trusted
+project's `patty.toml` or `.mcp.json` remain in that project and are trusted
 without a separate launch confirmation. Explicit deny rules still win. The
 server's calls run
 directly, including tools that declare `destructiveHint`. The dedicated Planner
@@ -813,7 +813,7 @@ still refuses destructive tools, and strict read-only sub-agents still expose
 only hinted non-destructive readers.
 
 MCP names are resolved once per workspace. Project declarations override
-same-name global installs; inside a project, `reasonix.toml` overrides
+same-name global installs; inside a project, `patty.toml` overrides
 `.mcp.json`. Editing updates the effective declaration in its original file,
 and removing a higher-priority declaration reveals the next one instead of
 deleting every same-name entry.
@@ -842,26 +842,26 @@ destructive approval setting. Explicit global deny rules still win. The host
 keeps `readOnlyHint` and `destructiveHint` internally for parallel scheduling,
 Plan restrictions, strict read-only sub-agents, and cached-to-live safety
 reclassification; these hints do not add user configuration.
-Reasonix deliberately trusts an installed server to describe those hints
+Patty Code deliberately trusts an installed server to describe those hints
 honestly. Planner/read-only filtering is therefore a workflow boundary for
 trusted servers, not containment against a malicious MCP server; explicit deny
 rules and the process sandbox remain host-controlled boundaries.
 
 The retired `trusted_read_only_tools`, `default_tools_approval_mode`,
 `tools.<raw>.approval_mode`, and `approvals_reviewer` fields are ignored when
-loading older files and removed the next time Reasonix saves that MCP entry.
+loading older files and removed the next time Patty Code saves that MCP entry.
 
 A server's **prompts** surface as `/mcp__<server>__<prompt>` slash commands
 (positional args after the command); its **resources** are pulled in by writing
 `@<server>:<uri>` in a message; `/mcp` lists connected servers and what each
-exposes. `make build` also produces `bin/reasonix-plugin-example` — a runnable
+exposes. `make build` also produces `bin/patty-plugin-example` — a runnable
 reference stdio server (`echo`, `wordcount`, a `review` prompt, a style-guide
 resource) you can copy.
 
 ```toml
 [[plugins]]                       # local stdio server
 name    = "example"
-command = "reasonix-plugin-example"
+command = "patty-plugin-example"
 # startup_timeout_seconds = 60    # optional initialize + tools/list cap
 # call_timeout_seconds = 600       # optional per-server MCP call timeout
 # tool_timeout_seconds = { "generate_video" = 1800 }   # optional raw MCP tool names
@@ -879,7 +879,7 @@ desktop MCP panel to refresh status, reconnect a server, inspect failures, or
 disable a server for the current session. For a read-only config/runtime health
 report across skills, hooks, packages, and MCP (without changing settings), see
 [Capability diagnostics](./CAPABILITY_DIAGNOSTICS.md)
-(`reasonix doctor capabilities` or **Settings → Diagnostics**).
+(`patcode doctor capabilities` or **Settings → Diagnostics**).
 
 An interactive caller waits only briefly for a cold server. If that wait ends,
 the shared startup continues in the background rather than being killed and
@@ -888,10 +888,10 @@ restarted; retry the tool after it comes online. `mcp_startup_timeout_seconds`
 `tools/list` sequence. `mcp_call_timeout_seconds` applies only after the server
 is connected. Either value can be overridden per server.
 
-**Already have an `.mcp.json`?** Drop it in the project root and Reasonix
+**Already have an `.mcp.json`?** Drop it in the project root and Patty Code
 reads it as-is — the `mcpServers` spec (`command`/`args`/`env`, `type`/`url`/
 `headers`, `${VAR}` expansion) maps field-for-field onto `[[plugins]]`. Both
-sources are merged; on a name collision `reasonix.toml` wins.
+sources are merged; on a name collision `patty.toml` wins.
 
 ```json
 {
@@ -902,29 +902,29 @@ sources are merged; on a name collision `reasonix.toml` wins.
 }
 ```
 
-**Upgrading from `0.x`?** Your old `~/.reasonix/config.json` is still read for its
+**Upgrading from `0.x`?** Your old `~/.patty/config.json` is still read for its
 `mcpServers` (honouring `mcpDisabled`) as a lowest-priority source, so MCP servers
-keep working — move them into `reasonix.toml`'s `[[plugins]]` or a `.mcp.json` when
+keep working — move them into `patty.toml`'s `[[plugins]]` or a `.mcp.json` when
 convenient.
 
 ## Slash commands
 
-In an interactive `reasonix` session, built-in commands (`/compact`, `/new`, `/clear`, `/rewind`,
+In an interactive `patty` session, built-in commands (`/compact`, `/new`, `/clear`, `/rewind`,
 `/tree`, `/branch`, `/switch`, `/todo`, `/model`, `/work-mode`, `/mcp`, `/skills`, `/hooks`,
 `/memory`, `/goal`, `/output-style`, `/sandbox`, `/language`,
 `/reasoning-language`, `/help`) run
 locally — `/help` lists them all. Built-in **skills** such as `/init`,
-`/explore`, `/test`, and `/reasonix-guide` also appear in the slash menu and via
+`/explore`, `/test`, and `/patty-guide` also appear in the slash menu and via
 `run_skill` (bodies load on demand; only the index line is cache-stable). Use
-`/reasonix-guide` when you need config or capability troubleshooting; it points
-at `reasonix doctor capabilities` (see
+`/patty-guide` when you need config or capability troubleshooting; it points
+at `patcode doctor capabilities` (see
 [Capability diagnostics](./CAPABILITY_DIAGNOSTICS.md)). `/new` starts a new
 session while saving the previous transcript for history/resume; `/clear` asks
 for confirmation, then discards the current context without saving it. `/tree`
 shows saved conversation branches, `/branch [name]` forks the current
 conversation tip, `/branch <turn> [name]` forks from an earlier checkpointed
 turn, and `/switch <id|name>` loads another branch. **Custom commands** are
-Markdown files under `.reasonix/commands/` (project) or `~/.reasonix/commands/`
+Markdown files under `.patty/commands/` (project) or `~/.patty/commands/`
 (user) — `review.md` becomes `/review`, a subdirectory namespaces it
 (`git/commit.md` → `/git:commit`). The body is a prompt template; invoking the
 command sends it as a turn.
@@ -935,19 +935,19 @@ Subagent profiles are manual Skills with `runAs: subagent` and
 `invocation: manual`. They are stored in the same project/global Skill roots as
 the desktop settings page, so profiles created on either surface are immediately
 available to the other after the session refreshes. In interactive chat, invoke
-one with `/<name> <task>`; Reasonix runs an isolated child loop and keeps only
+one with `/<name> <task>`; Patty Code runs an isolated child loop and keeps only
 the task and final answer in the parent conversation.
 
 The headless CLI provides explicit management and execution commands without
-changing the ordinary `reasonix run` task semantics:
+changing the ordinary `patcode run` task semantics:
 
 ```bash
-reasonix subagent list
-reasonix subagent create reviewer --description "Review changes" --prompt-file reviewer.md --tools read_file,grep,bash
-reasonix subagent edit reviewer --effort high --model deepseek-pro
-reasonix subagent try reviewer "review the current diff"   # always read-only
-reasonix subagent run reviewer "review and fix the current diff"
-reasonix subagent delete reviewer --yes
+patcode subagent list
+patcode subagent create reviewer --description "Review changes" --prompt-file reviewer.md --tools read_file,grep,bash
+patcode subagent edit reviewer --effort high --model deepseek-pro
+patcode subagent try reviewer "review the current diff"   # always read-only
+patcode subagent run reviewer "review and fix the current diff"
+patcode subagent delete reviewer --yes
 ```
 
 `create` defaults to project scope when a workspace is available and to global
@@ -965,7 +965,7 @@ Skill file format, model precedence, safety behavior, and troubleshooting.
 
 Context Engine v2 separates two intentionally different layers:
 
-- **Standing instructions** come from hierarchical `REASONIX.md`, `AGENTS.md`,
+- **Standing instructions** come from hierarchical `PATTY.md`, `AGENTS.md`,
   and `CLAUDE.md` files. Put rules here when they must be present on every
   relevant turn. User-global files load first, then workspace and deeper target
   directories; within one directory, `.local.md` variants win.
@@ -975,7 +975,7 @@ Context Engine v2 separates two intentionally different layers:
   `global`), plus freshness metadata. Facts may be stale, so they never outrank
   the current request or standing instructions.
 
-Reasonix automatically recalls a small set of relevant facts before each real
+Patty Code automatically recalls a small set of relevant facts before each real
 user turn. It searches the raw user message, suppresses generic requests such as
 "continue", prefers project facts over equivalent global fallbacks, down-ranks
 stale facts, and appends at most four facts / 2,400 characters to the user turn.
@@ -1030,20 +1030,20 @@ MCP prompts also appear here as `/mcp__<server>__<prompt>`.
 
 ## Embedded documentation retrieval
 
-Reasonix bundles the Markdown files from `docs/` and the reviewed
+Patty Code bundles the Markdown files from `docs/` and the reviewed
 `release-notes/releases.json` catalog into each CLI and Desktop build. The
 read-only `docs` tool searches that exact offline corpus with local BM25
 retrieval and can read a complete matching section with source provenance. It
 renders every release in both languages under paths such as
-`changelog/v1.19.5.md` and `changelog/v1.19.5.zh-CN.md`, so questions about a
+`changelog/v1.19.5.md` and `changelog/v1.19.5.ko-KR.md`, so questions about a
 specific version, upgrades, fixes, or known risks work offline. The agent should
-use the tool before web search or assumptions when a question concerns Reasonix
+use the tool before web search or assumptions when a question concerns Patty Code
 configuration, CLI/Desktop behavior, release history, permissions, MCP, memory,
 recovery, providers, or maintainer workflows.
 
 No setup, network connection, vector database, or embedding service is needed.
 Search results prefer the query language while retaining explicit `en`,
-`zh-CN`, audience, and catalog filters. Balanced and Delivery profiles expose the
+`ko-KR`, audience, and catalog filters. Balanced and Delivery profiles expose the
 tool directly; Economy connects the `docs` source on demand. Every result reports
 the product version, immutable source revision, and corpus SHA-256 digest. Release
 CI compiles the CLI and rejects publication unless that embedded manifest matches
@@ -1053,14 +1053,14 @@ local guidance or release history.
 
 Use `/docs` to inspect the bundled corpus identity and usage examples without
 calling a model. Use `/docs <question>` (for example,
-`/docs 1.19.5 changelog`) to make Reasonix search the corpus locally first and
+`/docs 1.19.5 changelog`) to make Patty Code search the corpus locally first and
 then pass the version-matched evidence to the currently configured AI for a
 sourced answer. This command path does not depend on the model deciding to call
 the `docs` tool, while ordinary natural-language questions may still use the
 tool automatically. Existing custom commands and compatible plugin or skill
 aliases keep ownership of `/docs`; when that happens, CLI and Desktop normally
-expose the built-in corpus as `/reasonix:docs` instead. If that qualified name is
-also already owned, Reasonix selects the next free `reasonix:`-qualified fallback
+expose the built-in corpus as `/patty:docs` instead. If that qualified name is
+also already owned, Patty Code selects the next free `patty:`-qualified fallback
 without displacing it. A remote Desktop uses the host's resolved command catalog,
 so the displayed entry always matches what that host will execute.
 
@@ -1072,7 +1072,7 @@ why the existing version-matched guidance remains correct.
 ## Goal and AutoResearch
 
 Goal is the unified runtime for long-running objectives. Ordinary `/goal`
-objectives stay lightweight: Reasonix keeps working until the goal is complete,
+objectives stay lightweight: Patty Code keeps working until the goal is complete,
 blocked, paused, or cleared. When a goal is clearly long-horizon, Goal
 automatically enables the AutoResearch strategy instead of requiring a separate
 `/auto-research` skill; `auto-research` is not listed as a standalone built-in
@@ -1109,15 +1109,15 @@ clear", "do not spin", "run experiments", "verify repeatedly", or "turn this
 into a complete plan". It can also trigger when the objective combines multiple
 phases such as research/diagnosis, implementation/fixing, verification/testing,
 optimization/documentation/release, or when the user names an existing
-`.reasonix/autoresearch/<task-id>/` directory. Advanced users can force it with
+`.patty/autoresearch/<task-id>/` directory. Advanced users can force it with
 `/goal --research <objective>` or force lightweight Goal with
 `/goal --simple <objective>`. Outside an explicitly started Goal, those signals
 remain ordinary chat text and do not create durable AutoResearch state.
 
 Once AutoResearch is active, the agent treats the goal as a stateful research
 loop instead of a chat-only continuation. It creates or reuses a project-local
-`.reasonix/autoresearch/<task-id>/` directory. For new tasks, the default id
-shape is `YYYYMMDD-HHMMSS-slug`, such as `20260618-224530-cache-audit`; Reasonix
+`.patty/autoresearch/<task-id>/` directory. For new tasks, the default id
+shape is `YYYYMMDD-HHMMSS-slug`, such as `20260618-224530-cache-audit`; Patty Code
 checks the project directory first and appends `-2`, `-3`, and so on only if
 that id already exists. The task state includes `task_spec.md`, `progress.json`,
 `findings.jsonl`, `directions_tried.json`, and `iteration_log.jsonl`, records
@@ -1130,15 +1130,15 @@ tactic.
 Workers and subagents may explore independently, but the orchestrator owns the
 canonical state files. Completion requires a requirement-by-requirement evidence
 audit against `task_spec.md`; a passing narrow check is not treated as proof of a
-broad requirement. Dynamic run state stays in `.reasonix/autoresearch/...`, not
-in `REASONIX.md`, `AGENTS.md`, project memory, tool schemas, or the cache-stable
+broad requirement. Dynamic run state stays in `.patty/autoresearch/...`, not
+in `PATTY.md`, `AGENTS.md`, project memory, tool schemas, or the cache-stable
 system prompt. Public publishing, destructive operations, credentials, payments,
 and external notifications still follow the normal approval, privacy, and cache
 gates.
 
 ## @ references
 
-Embed `@` references in a message and Reasonix resolves them before sending, as
+Embed `@` references in a message and Patty Code resolves them before sending, as
 tagged context blocks: `@path/to/file` (or `@dir`) injects a local file's
 contents (or a directory listing), and `@<server>:<uri>` injects an MCP
 resource. A local path is only treated as a reference when it actually exists,
@@ -1148,7 +1148,7 @@ time, descend into folders) plus MCP resources.
 
 ## Two-model collaboration
 
-`reasonix setup` manages providers, model lists, credentials, connection tests,
+`patcode setup` manages providers, model lists, credentials, connection tests,
 and the default model. It stages changes until Save and exit, and synchronizes
 provider access with the desktop app. See the [CLI reference](./CLI.md#configure-providers).
 Running two models together (executor + planner, separate cache-stable sessions)
@@ -1159,24 +1159,24 @@ is a one-line edit afterwards — set `planner_model` to any other enabled provi
 planner_model = "deepseek-pro"   # used as the low-frequency planner
 ```
 
-The planner sees loaded `REASONIX.md` / `AGENTS.md` memory and a small read-only
+The planner sees loaded `PATTY.md` / `AGENTS.md` memory and a small read-only
 research tool set, so it can inspect relevant files before handing a plan to the
 executor. Writer and workflow tools remain executor-only.
 
-Reasonix routes each turn deterministically without another classifier model:
+Patty Code routes each turn deterministically without another classifier model:
 questions, short follow-ups, clear atomic edits, and bounded read-only actions
 go straight to the executor; bounded implementation work may receive a short
 light plan. Ambiguous, cross-surface, structured, high-risk, active-Goal, or
 Delivery work receives a full plan unless the request is clearly atomic or
 read-only. Explicit Plan Mode
 remains a separate host workflow and is never planned twice. An explicit
-`plan first` / `先规划` request forces planning, while `just do it` / `直接改`
+`plan first` / `계획 먼저` request forces planning, while `just do it` / `바로 수정`
 goes directly to the executor. Execution boundaries are recognized across the
 request, not only at its beginning, while quoted examples are ignored. Bare
 plan-first requests continue from the planner to the executor automatically.
 Requests that explicitly say to wait for confirmation pause at the host
 approval boundary and continue to the executor after approval. Only an
-explicit `plan only` / `不要执行` request ends the
+explicit `plan only` / `실행하지 않기` request ends the
 current turn with the plan persisted and no execution; a later user instruction
 can continue in the same session. The phase detail records a privacy-safe route,
 depth, and reason code for diagnosis without logging the user prompt.
@@ -1194,7 +1194,7 @@ plan-and-execute work continues with the executor using the original task.
 Plan-only and approval-gated requests remain fail-closed, and the incomplete
 planner turn is rolled back instead of leaving an unusable continuation tail.
 
-Reasonix manages normal execution automatically: if an active todo produces no
+Patty Code manages normal execution automatically: if an active todo produces no
 new completion, unique read, command, or mutation for 8 tool-call rounds, the
 host asks the executor to reassess. After 16 no-progress rounds it pauses with
 saved work that can be resumed in the next user turn. Exact repeats do not count
@@ -1249,7 +1249,7 @@ the strict read-only entrances:
 | `parallel_tasks` (read-only) | Concurrent read-only research children |
 | `fleet` with `read_only: true` | Parallel profile-aware batch (forced read-only per item) |
 | `read_only_skill` | The same isolation driving an existing skill |
-| `reasonix review` (CLI) | Read-only review of a diff or branch |
+| `patcode review` (CLI) | Read-only review of a diff or branch |
 | Desktop preview/review subagents | Read-only desktop analysis surfaces |
 
 In persisted sessions, `parallel_tasks` and `fleet` return a bounded preview
@@ -1301,7 +1301,7 @@ non-destructive MCP, while a strict child requires an explicit reader hint and
 never exposes writers at all.
 
 Choose the startup runtime profile with
-`--profile economy|balanced|delivery` (for example, `reasonix run --profile
+`--profile economy|balanced|delivery` (for example, `patcode run --profile
 delivery "fix and verify this bug"`). Economy starts with nine tools: direct
 read/bash/edit/write, background-shell lifecycle controls, `ask`, and
 `connect_tool_source`. Embedded docs, dedicated search/file/workflow tools,
@@ -1342,13 +1342,13 @@ legacy empty/`full` values remain Balanced.
 
 For interactive frontends, Plan Mode is always an explicit user choice. Select
 Plan in the desktop collaboration-mode control or cycle to Plan with
-`Shift+Tab` in the CLI. Reasonix first drafts a plan, then waits for approval
+`Shift+Tab` in the CLI. Patty Code first drafts a plan, then waits for approval
 before the workflow switches to implementation. Tool calls made while drafting
 still use the current Permissions and Sandbox. Legacy `agent.auto_plan` and
 `agent.auto_plan_classifier` values are ignored and removed from the user config
 during upgrade. The visible reasoning language can be changed with
-`/reasoning-language auto|zh|en` in the
-session, or `reasonix config reasoning-language auto|zh|en` in a shell/script.
+`/reasoning-language auto|ko-KR|en` in the
+session, or `patcode config reasoning-language auto|ko-KR|en` in a shell/script.
 Pass `--local`
 to the reasoning-language shell command only when you intentionally want a
 project-local override.

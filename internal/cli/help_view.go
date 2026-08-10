@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"reasonix/internal/command"
-	"reasonix/internal/control"
-	"reasonix/internal/plugin"
-	"reasonix/internal/skill"
+	"patty/internal/command"
+	"patty/internal/control"
+	"patty/internal/plugin"
+	"patty/internal/skill"
 )
 
 const helpMaxDynamicItems = 8

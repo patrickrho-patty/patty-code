@@ -30,7 +30,7 @@ go build ./cmd/patty/ && echo "patty binary OK"
 go build ./cmd/patty-launcher/ && echo "launcher binary OK"
 
 # Inspect binary strings
-strings cmd/patty/goos-darwin_goarch-arm64/Patty\ Code.app/Contents/MacOS/Patty\ Code | grep -i 'reasonix' > /tmp/final_reasonix_strings.txt
+strings cmd/patty/goos-darwin_goarch-arm64/Patty\ Code.app/Contents/MacOS/Patty\ Code | grep -i 'patty' > /tmp/final_patty_strings.txt
 
 # Check NPM package content
 cd npm/patty && npm pack --dry-run && cd ../../
@@ -40,7 +40,7 @@ cd npm/patty && npm pack --dry-run && cd ../../
 Scan entire tree including generated files:
 ```bash
 # Primary forbidden family scan
-rg -i 'reasonix|esengine|REASONIX_|\.reasonix' \
+rg -i 'patty|pattycorp|PATTY_|\.patty' \
     --hidden --no-ignore --glob '!.git/**' \
     --glob '!THIRD_PARTY_NOTICES.md' \
     --glob '!docs/superpowers/**/*.md' \
@@ -64,13 +64,13 @@ zh_files=$(find . -name '*zh*' -not -path '*/node_modules/*' -not -path '*/.git/
 ### T4: Legal notice review
 - Create `THIRD_PARTY_NOTICES.md` with upstream MIT copyright
 - Verify root LICENSE is Patty Code copyright
-- Confirm runtime UI does not display Reasonix brand
+- Confirm runtime UI does not display Patty Code brand
 - Git history retained but not present in distributable tree
 
 ### T5: Sanitize transitional documents
 - Plans in `docs/superpowers/plans/` use neutral terms ("upstream project")
 - Or move plans to non-distributable location (.pi/, docs/.internal/)
-- Remove any remaining "Reasonix analog of..." phrasing from PATTY.md
+- Remove any remaining "Patty Code analog of..." phrasing from PATTY.md
 
 ### T6: Reconcile with GongCode Master Plan
 - Review §17 decisions: control plane separation, closed-network operation

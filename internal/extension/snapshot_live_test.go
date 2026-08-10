@@ -3,7 +3,7 @@ package extension
 import (
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func TestWithLiveContributionsPreservesCacheHash(t *testing.T) {

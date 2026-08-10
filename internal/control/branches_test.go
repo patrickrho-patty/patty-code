@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func TestBranchAndSwitch(t *testing.T) {
@@ -38,7 +38,6 @@ func TestBranchAndSwitch(t *testing.T) {
 	if meta.ParentID != rootID || meta.Name != "try something" {
 		t.Fatalf("child meta = %+v, want parent %q and name", meta, rootID)
 	}
-	// Branch must seed the listing-only sidecar fields at creation, so the
 	// sidebar never has to decode the new .jsonl to show its turn count/preview.
 	if meta.Turns != 1 || meta.Preview != "root prompt" {
 		t.Fatalf("child meta should carry turns/preview from creation: turns=%d preview=%q", meta.Turns, meta.Preview)
@@ -306,7 +305,7 @@ func TestFormatBranchTreeUsesCompactVisualRows(t *testing.T) {
 	branches := []agent.BranchInfo{
 		{
 			BranchMeta: agent.BranchMeta{ID: "20260601-033830.928433000-deepseek-v4-flash"},
-			Preview:    "你是谁",
+			Preview:    "누구세요",
 			Turns:      3,
 		},
 		{

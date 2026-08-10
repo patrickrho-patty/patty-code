@@ -12,10 +12,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"reasonix/internal/fileutil"
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/provider"
-	"reasonix/internal/store"
+	"patty/internal/fileutil"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/provider"
+	"patty/internal/store"
 )
 
 const (

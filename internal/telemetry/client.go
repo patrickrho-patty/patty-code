@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/fileutil"
-	"reasonix/internal/netclient"
+	"patty/internal/fileutil"
+	"patty/internal/netclient"
 )
 
-const endpoint = "https://crash.reasonix.io/v1"
+const endpoint = "https://crash.patty.io/v1"
 
 var uploadSignals = map[string]bool{
 	"finish_reason": true, "empty_final": true, "provider_error": true,

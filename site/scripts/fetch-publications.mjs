@@ -8,7 +8,7 @@ const catalog = JSON.parse(await readFile(resolve(repoRoot, "release-notes/relea
 const output = resolve(siteRoot, ".generated/publications.json");
 const headers = {
   Accept: "application/vnd.github+json",
-  "User-Agent": "reasonix-site-publications",
+  "User-Agent": "patty-code-site-publications",
 };
 if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
 
@@ -24,7 +24,7 @@ for (const release of catalog.releases) {
   const tag = `v${release.version}`;
   try {
     const response = await fetch(
-      `https://api.github.com/repos/esengine/DeepSeek-Reasonix/releases/tags/${encodeURIComponent(tag)}`,
+      `https://api.github.com/repos/pattycorp/DeepSeek-Patty Code/releases/tags/${encodeURIComponent(tag)}`,
       { headers, signal: AbortSignal.timeout(20_000) },
     );
     if (!response.ok) continue;

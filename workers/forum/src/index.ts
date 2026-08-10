@@ -1,5 +1,5 @@
-// Reasonix Community forum API. Identity from id.reasonix.io; content + anti-abuse
-// state in D1. The Hono app is itself the Workers fetch handler.
+// [[[[[[Patty Code Community forum API. Identity from id.patty.io; content + anti-abuse]]]]]]
+// [[[[[[state in D1. The Hono app is itself the Workers fetch handler.]]]]]]
 import { Hono } from "hono";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -38,7 +38,7 @@ app.use("*", (c, next) => {
 app.use("*", loadMember);
 
 const slugify = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9一-鿿]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "topic";
+  s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "topic";
 
 async function postsToday(c: { env: AppEnv["Bindings"] }, email: string): Promise<number> {
   const since = new Date(Date.now() - 86_400_000).toISOString();

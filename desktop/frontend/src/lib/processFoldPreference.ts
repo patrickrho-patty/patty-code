@@ -1,7 +1,7 @@
 export type ProcessFoldPreference = "auto" | "expanded";
 
-const PROCESS_FOLD_KEY = "reasonix-process-fold";
-const PROCESS_FOLD_EVENT = "reasonix:process-fold";
+const PROCESS_FOLD_KEY = "patty-process-fold";
+const PROCESS_FOLD_EVENT = "patty:process-fold";
 
 export function getProcessFoldPreference(): ProcessFoldPreference {
   if (typeof localStorage === "undefined") return "auto";

@@ -1,0 +1,66 @@
+<style>
+  .focus-card { margin-top:24px; border:1px solid #334155; border-radius:16px; overflow:hidden; }
+  .terminal { padding:28px; background:#07121a; color:#d8e6e8; font:13px/1.42 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+  .masthead { display:flex; align-items:flex-start; gap:18px; }
+  .marks { display:flex; align-items:flex-start; gap:10px; }
+  .mark { white-space:pre; color:#d8e6e8; font-size:9px; font-weight:700; line-height:1.04; }
+  .red { color:#e16162; }.blue { color:#5cb2c0; }
+  .brand { padding-top:2px; }
+  .brand strong { display:block; color:#edf6f7; font-size:17px; letter-spacing:.08em; }
+  .brand span { display:block; margin-top:4px; color:#789aa1; font-size:11px; }
+  .facts { display:flex; flex-wrap:wrap; gap:10px 28px; margin:22px -28px -28px; padding:13px 28px; border-top:1px solid #17333e; background:#07151e; font-size:11px; }
+  .facts b { margin-right:8px; color:#789aa1; font-size:10px; letter-spacing:.08em; }
+  .facts .active { color:#e16162; }.facts .model { color:#5cb2c0; }
+  .note { padding:19px 22px 21px; background:#fff; color:#172033; }
+  .note h3 { margin:0 0 6px; font-size:17px; }.note p { margin:0; color:#64748b; font-size:13px; }
+  .measure { display:inline-block; margin-top:11px; padding:4px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-size:10px; font-weight:800; }
+  @media (max-width:850px) { .masthead { flex-direction:column; }.mark { font-size:7px; } }
+  @media (max-width:570px) { .marks { flex-direction:column; } }
+</style>
+
+<h2>Patty mark · vertical centering corrected</h2>
+<p class="subtitle">The three-pill group now has three empty terminal rows above and below it. The flag and Patty mark retain identical outer dimensions.</p>
+
+<div class="focus-card">
+  <div class="terminal">
+    <div class="masthead">
+      <div class="marks">
+        <div class="mark">+-----------------------------+
+|  =======        ==   ==     |
+|  =======        =======     |
+|  =======        ==   ==     |
+|                             |
+|          <span class="red">@@@@@@@</span>            |
+|        <span class="red">@@@@@@@@</span><span class="blue">@@@</span>          |
+|       <span class="red">@@@@@@</span><span class="blue">@@@@@@@</span>         |
+|       <span class="red">@@@</span><span class="blue">@@@@@@@@@@</span>         |
+|        <span class="blue">@@@@@@@@@@@</span>          |
+|          <span class="blue">@@@@@@@</span>            |
+|                             |
+|  =======        ==   ==     |
+|  ==   ==        ==   ==     |
+|  =======        ==   ==     |
++-----------------------------+</div>
+        <div class="mark">+-----------------------------+
+|                             |
+|                             |
+|                             |
+|    <span class="red">/===================\</span>    |
+|    <span class="red">\===================/</span>    |
+|                             |
+|    <span class="red">/===================\</span>    |
+|    <span class="red">\===================/</span>    |
+|                             |
+|    <span class="red">/===================\</span>    |
+|    <span class="red">\===================/</span>    |
+|                             |
+|                             |
+|                             |
++-----------------------------+</div>
+      </div>
+      <div class="brand"><strong>PATTY / 작업 흐름 07</strong><span>보안 연결됨 · feature/session-fix</span></div>
+    </div>
+    <div class="facts"><span><b>작업</b><strong class="active">자동</strong></span><span><b>모델</b><strong class="model">deepseek-v4</strong></span><span><b>추론</b>보통</span><span><b>여유</b>82%</span></div>
+  </div>
+  <div class="note"><h3>Centered as one optical unit</h3><p>The bars no longer pull toward the top edge. Their center line now matches the flag’s taegeuk center and leaves symmetric negative space.</p><span class="measure">3 rows above · 3 rows below</span></div>
+</div>

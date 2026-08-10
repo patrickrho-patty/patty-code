@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/boot"
-	"reasonix/internal/control"
+	"patty/internal/boot"
+	"patty/internal/control"
 )
 
 func testTab(id, root string) *WorkspaceTab {
@@ -78,7 +78,7 @@ model = "deepseek-v4-flash"
 api_key_env = "PROJECT_API_KEY"
 effort = "max"
 `
-	if err := os.WriteFile(filepath.Join(projectRoot, "reasonix.toml"), []byte(configBody), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectRoot, "patty.toml"), []byte(configBody), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -107,7 +107,7 @@ base_url = "https://proxy.example.com/v1"
 model = "deepseek-v4-flash"
 api_key_env = "PROJECT_API_KEY"
 `
-	if err := os.WriteFile(filepath.Join(projectRoot, "reasonix.toml"), []byte(configBody), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectRoot, "patty.toml"), []byte(configBody), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -176,9 +176,9 @@ name = "deepseek-flash"
 kind = "openai"
 base_url = "https://example.invalid/v1"
 model = "deepseek-v4-flash"
-api_key_env = "REASONIX_TEST_KEY_UNSET"
+api_key_env = "PATTY_TEST_KEY_UNSET"
 `
-	if err := os.WriteFile(filepath.Join(root, "reasonix.toml"), []byte(configBody), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "patty.toml"), []byte(configBody), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -522,7 +522,7 @@ func TestAutoResearchStatusSurfaceForActiveTab(t *testing.T) {
 	if current.TaskPath == "" || current.Status != control.GoalStatusRunning {
 		t.Fatalf("AutoResearchCurrent missing status/path: %+v", current)
 	}
-	heartbeatPath := filepath.Join(root, ".reasonix", "autoresearch", current.TaskID, "logs", "heartbeat.jsonl")
+	heartbeatPath := filepath.Join(root, ".patty", "autoresearch", current.TaskID, "logs", "heartbeat.jsonl")
 	if err := os.WriteFile(heartbeatPath, []byte(`{"status":"turn_done","iteration":1,"created_at":"2026-06-30T00:00:00Z"}`+"\n"), 0o644); err != nil {
 		t.Fatalf("write heartbeat: %v", err)
 	}
@@ -557,7 +557,7 @@ func TestAutoResearchFindingsAreLoadedOnDemand(t *testing.T) {
 	if current.TaskID == "" {
 		t.Fatal("expected active AutoResearch task")
 	}
-	findingsPath := filepath.Join(root, ".reasonix", "autoresearch", current.TaskID, "state", "findings.jsonl")
+	findingsPath := filepath.Join(root, ".patty", "autoresearch", current.TaskID, "state", "findings.jsonl")
 	if err := os.WriteFile(findingsPath, []byte(
 		`{"id":"f1","kind":"test","summary":"old","source":"command","command":"go test ./...","accepted":true,"created_at":"2026-06-29T10:00:00Z"}`+"\n"+
 			`{"id":"f2","kind":"review","summary":"new","source":"manual","accepted":true,"created_at":"2026-06-29T11:00:00Z"}`+"\n",
@@ -737,7 +737,7 @@ func TestSetBypassPreservesPlanMode(t *testing.T) {
 
 func userConfigPathForTest() string {
 	if dir, err := os.UserConfigDir(); err == nil {
-		return dir + "/reasonix/reasonix.toml"
+		return dir + "/patty/patty.toml"
 	}
 	return ""
 }

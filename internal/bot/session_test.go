@@ -9,62 +9,62 @@ func TestBuildSessionKey(t *testing.T) {
 	tests := []struct {
 		name string
 		src  SessionSource
-		// DM 同 chat 不同 user 应返回相同 key
+		// DM에서 같은 chat의 다른 user는 동일한 key를 반환해야 합니다
 		wantSame bool
 		src2     SessionSource
 	}{
 		{
 			name:     "dm same chat different user",
-			src:      SessionSource{Platform: PlatformQQ, ChatType: ChatDM, ChatID: "user123", UserID: "a"},
-			src2:     SessionSource{Platform: PlatformQQ, ChatType: ChatDM, ChatID: "user123", UserID: "b"},
+			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "user123", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "user123", UserID: "b"},
 			wantSame: true,
 		},
 		{
 			name:     "dm different chat",
-			src:      SessionSource{Platform: PlatformQQ, ChatType: ChatDM, ChatID: "user123", UserID: "a"},
-			src2:     SessionSource{Platform: PlatformQQ, ChatType: ChatDM, ChatID: "user456", UserID: "a"},
+			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "user123", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "user456", UserID: "a"},
 			wantSame: false,
 		},
 		{
 			name:     "direct same chat different user",
-			src:      SessionSource{Platform: PlatformQQ, ChatType: ChatDirect, ChatID: "guild123", UserID: "a"},
-			src2:     SessionSource{Platform: PlatformQQ, ChatType: ChatDirect, ChatID: "guild123", UserID: "b"},
+			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDirect, ChatID: "guild123", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatDirect, ChatID: "guild123", UserID: "b"},
 			wantSame: true,
 		},
 		{
 			name:     "direct distinct from dm",
-			src:      SessionSource{Platform: PlatformQQ, ChatType: ChatDirect, ChatID: "shared", UserID: "a"},
-			src2:     SessionSource{Platform: PlatformQQ, ChatType: ChatDM, ChatID: "shared", UserID: "a"},
+			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDirect, ChatID: "shared", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "shared", UserID: "a"},
 			wantSame: false,
 		},
 		{
 			name:     "group same chat different user",
-			src:      SessionSource{Platform: PlatformFeishu, ChatType: ChatGroup, ChatID: "group1", UserID: "a"},
-			src2:     SessionSource{Platform: PlatformFeishu, ChatType: ChatGroup, ChatID: "group1", UserID: "b"},
+			src:      SessionSource{Platform: Platform("feishu"), ChatType: ChatGroup, ChatID: "group1", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("feishu"), ChatType: ChatGroup, ChatID: "group1", UserID: "b"},
 			wantSame: false,
 		},
 		{
 			name:     "group same user different chat",
-			src:      SessionSource{Platform: PlatformFeishu, ChatType: ChatGroup, ChatID: "group1", UserID: "a"},
-			src2:     SessionSource{Platform: PlatformFeishu, ChatType: ChatGroup, ChatID: "group2", UserID: "a"},
+			src:      SessionSource{Platform: Platform("feishu"), ChatType: ChatGroup, ChatID: "group1", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("feishu"), ChatType: ChatGroup, ChatID: "group2", UserID: "a"},
 			wantSame: false,
 		},
 		{
 			name:     "thread shared",
-			src:      SessionSource{Platform: PlatformQQ, ChatType: ChatThread, ChatID: "ch1", ThreadID: "th1", UserID: "a"},
-			src2:     SessionSource{Platform: PlatformQQ, ChatType: ChatThread, ChatID: "ch1", ThreadID: "th1", UserID: "b"},
+			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatThread, ChatID: "ch1", ThreadID: "th1", UserID: "a"},
+			src2:     SessionSource{Platform: Platform("qq"), ChatType: ChatThread, ChatID: "ch1", ThreadID: "th1", UserID: "b"},
 			wantSame: true,
 		},
 		{
 			name:     "different platform same ids",
-			src:      SessionSource{Platform: PlatformQQ, ChatType: ChatDM, ChatID: "123", UserID: "u1"},
-			src2:     SessionSource{Platform: PlatformFeishu, ChatType: ChatDM, ChatID: "123", UserID: "u1"},
+			src:      SessionSource{Platform: Platform("qq"), ChatType: ChatDM, ChatID: "123", UserID: "u1"},
+			src2:     SessionSource{Platform: Platform("feishu"), ChatType: ChatDM, ChatID: "123", UserID: "u1"},
 			wantSame: false,
 		},
 		{
 			name:     "same platform different connection",
-			src:      SessionSource{Platform: PlatformFeishu, ConnectionID: "feishu-feishu", ChatType: ChatDM, ChatID: "123", UserID: "u1"},
-			src2:     SessionSource{Platform: PlatformFeishu, ConnectionID: "feishu-lark", ChatType: ChatDM, ChatID: "123", UserID: "u1"},
+			src:      SessionSource{Platform: Platform("feishu"), ConnectionID: "feishu-feishu", ChatType: ChatDM, ChatID: "123", UserID: "u1"},
+			src2:     SessionSource{Platform: Platform("feishu"), ConnectionID: "feishu-lark", ChatType: ChatDM, ChatID: "123", UserID: "u1"},
 			wantSame: false,
 		},
 	}
@@ -116,28 +116,28 @@ func TestIsSlashBypass(t *testing.T) {
 func TestSessionManager_TryAcquire(t *testing.T) {
 	sm := NewSessionManager(100 * time.Millisecond)
 
-	msg := InboundMessage{Text: "hello", Platform: PlatformQQ, ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
+	msg := InboundMessage{Text: "hello", Platform: Platform("qq"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
 	key := BuildSessionKey(msg.Session())
 
-	// 第一次获取成功
+	// 첫 번째 가져오기 성공
 	acquired, merged := sm.TryAcquire(key, msg)
 	if !acquired || merged {
 		t.Error("first acquire should succeed")
 	}
 
-	// 第二次获取应该排队
+	// 두 번째 가져오기는 큐에 병합되어야 함
 	acquired, merged = sm.TryAcquire(key, InboundMessage{Text: "world"})
 	if acquired || !merged {
 		t.Error("second acquire should merge into queue")
 	}
 
-	// slash bypass 命令应绕过
+	// slash bypass 명령은 우회해야 함
 	acquired, merged = sm.TryAcquire(key, InboundMessage{Text: "/stop"})
 	if !acquired || merged {
 		t.Error("slash bypass should acquire immediately")
 	}
 
-	// 第一次 Release 返回排队消息
+	// 첫 번째 Release는 큐에 있던 메시지를 반환
 	next := sm.Release(key)
 	if next == nil {
 		t.Fatal("expected queued message after first release")
@@ -150,7 +150,7 @@ func TestSessionManager_TryAcquire(t *testing.T) {
 func TestSessionManager_Debounce(t *testing.T) {
 	sm := NewSessionManager(200 * time.Millisecond)
 
-	msg := InboundMessage{Text: "first", Platform: PlatformQQ, ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
+	msg := InboundMessage{Text: "first", Platform: Platform("qq"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
 	key := BuildSessionKey(msg.Session())
 
 	acquired, _ := sm.TryAcquire(key, msg)
@@ -158,16 +158,16 @@ func TestSessionManager_Debounce(t *testing.T) {
 		t.Fatal("first acquire should succeed")
 	}
 
-	// 同 session 消息应合并
+	// 같은 session의 메시지는 병합되어야 함
 	sm.TryAcquire(key, InboundMessage{Text: "second"})
-	// 在 debounce 窗口内发第三条
+	// debounce 창 안에서 세 번째 메시지 전송
 	sm.TryAcquire(key, InboundMessage{Text: "third"})
 
 	next := sm.Release(key)
 	if next == nil {
 		t.Fatal("expected queued message after release")
 	}
-	// "second" 和 "third" 合并在队列里（"first" 已作为 active 被处理）
+	// "second"와 "third"는 큐에서 병합됨（"first"는 이미 active로 처리됨）
 	if next.Text != "second\nthird" {
 		t.Errorf("merged = %q, want %q", next.Text, "second\nthird")
 	}
@@ -176,7 +176,7 @@ func TestSessionManager_Debounce(t *testing.T) {
 func TestSessionManager_ForceRelease(t *testing.T) {
 	sm := NewSessionManager(100 * time.Millisecond)
 
-	msg := InboundMessage{Text: "test", Platform: PlatformQQ, ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
+	msg := InboundMessage{Text: "test", Platform: Platform("qq"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
 	key := BuildSessionKey(msg.Session())
 
 	sm.TryAcquire(key, msg)
@@ -192,7 +192,7 @@ func TestSessionManager_ForceRelease(t *testing.T) {
 
 func TestSessionManagerRunIfIdleSerializesNewAdmission(t *testing.T) {
 	sm := NewSessionManager(100 * time.Millisecond)
-	msg := InboundMessage{Text: "test", Platform: PlatformQQ, ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
+	msg := InboundMessage{Text: "test", Platform: Platform("qq"), ChatType: ChatDM, ChatID: "c1", UserID: "u1"}
 	key := BuildSessionKey(msg.Session())
 	entered := make(chan struct{})
 	release := make(chan struct{})
@@ -248,7 +248,7 @@ func TestHashID(t *testing.T) {
 
 func TestInboundMessage_Session(t *testing.T) {
 	msg := InboundMessage{
-		Platform:     PlatformQQ,
+		Platform:     Platform("qq"),
 		ConnectionID: "qq-main",
 		Domain:       "qq",
 		ChatType:     ChatDM,
@@ -258,7 +258,7 @@ func TestInboundMessage_Session(t *testing.T) {
 	}
 
 	src := msg.Session()
-	if src.Platform != PlatformQQ || src.ConnectionID != "qq-main" || src.Domain != "qq" || src.ChatType != ChatDM || src.ChatID != "chat1" || src.UserID != "user1" || src.ThreadID != "thread1" {
+	if src.Platform != Platform("qq") || src.ConnectionID != "qq-main" || src.Domain != "qq" || src.ChatType != ChatDM || src.ChatID != "chat1" || src.UserID != "user1" || src.ThreadID != "thread1" {
 		t.Error("Session() should copy all fields")
 	}
 }

@@ -14,17 +14,14 @@ import (
 	"time"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
-	"reasonix/internal/agent"
-	"reasonix/internal/checkpoint"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
+	"patty/internal/agent"
+	"patty/internal/checkpoint"
+	"patty/internal/config"
+	"patty/internal/control"
 )
 
-// workspaceStatePath
 
 func TestWorkspaceStatePath(t *testing.T) {
-	// workspaceStatePath depends on config.MemoryUserDir() which needs a
-	// config dir. We just verify it returns a consistent path.
 	p1 := workspaceStatePath()
 	p2 := workspaceStatePath()
 	if p1 != p2 {
@@ -35,12 +32,10 @@ func TestWorkspaceStatePath(t *testing.T) {
 	}
 }
 
-// saveWorkspace / loadWorkspace round-trip
+// saveWorkspace  loadWorkspace round-trip
 
 func TestSaveLoadWorkspaceRoundTrip(t *testing.T) {
-	// workspaceStatePath() resolves via os.UserConfigDir() (HOME on unix,
-	// %AppData% on Windows); isolate both so the round-trip exercises real
-	// persistence instead of no-opping or leaking into the dev config dir.
+// %AppData% on Windows); isolate both so the round-trip exercises real
 	isolateDesktopUserDirs(t)
 	if workspaceStatePath() == "" {
 		t.Fatal("workspaceStatePath() is empty after isolating the user config dir")
@@ -255,9 +250,6 @@ func TestProjectFileUpdatesSerializeReadModifyWrite(t *testing.T) {
 func TestNormalizeProjectsFileMergesEquivalentProjectRoots(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	projectRoot := t.TempDir()
-	// A textually different spelling of the same folder. filepath.Join would
-	// clean the dot segment away and hand back the identical string, so build
-	// the spelling by hand.
 	equivalentRoot := projectRoot + string(filepath.Separator) + "."
 
 	f := normalizeProjectsFile(desktopProjectFile{
@@ -320,9 +312,7 @@ func TestSwitchWorkspaceReaddsRemovedProject(t *testing.T) {
 	}
 }
 
-// flipPathASCIICase returns the path with the case of every ASCII letter
-// swapped — on Windows an equivalent spelling of the same folder that
-// normalizeProjectRoot cannot fold away.
+// swapped  on Windows an equivalent spelling of the same folder that
 func flipPathASCIICase(t *testing.T, path string) string {
 	t.Helper()
 	flipped := strings.Map(func(r rune) rune {
@@ -445,8 +435,6 @@ func TestSyncTabWorkspaceRootSpellingsOnWindows(t *testing.T) {
 	}
 	app.tabOrder = []string{"tab_case"}
 
-	// Re-registering under the flipped spelling self-heals the registry root;
-	// open tabs must follow so the frontend keeps comparing one string form.
 	app.registerProjectRoot(flipped)
 
 	projects := loadProjectsFile().Projects
@@ -466,7 +454,6 @@ func TestFindTopicSessionAfterCaseFlippedReaddOnWindows(t *testing.T) {
 	projectRoot := t.TempDir()
 	flipped := flipPathASCIICase(t, projectRoot)
 
-	// Register under original spelling.
 	if err := addProject(projectRoot, "Project"); err != nil {
 		t.Fatalf("add project: %v", err)
 	}
@@ -474,7 +461,6 @@ func TestFindTopicSessionAfterCaseFlippedReaddOnWindows(t *testing.T) {
 		t.Fatalf("prepend topic: %v", err)
 	}
 
-	// Write a session file with the original root spelling in its meta.
 	sessionDir := desktopSessionDir(projectRoot)
 	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
 		t.Fatalf("mkdir session dir: %v", err)
@@ -493,14 +479,12 @@ func TestFindTopicSessionAfterCaseFlippedReaddOnWindows(t *testing.T) {
 		t.Fatalf("save branch meta: %v", err)
 	}
 
-	// Re-add under the flipped-case spelling — simulates Windows Explorer
-	// or a different shell returning the same folder with different case.
+// Re-add under the flipped-case spelling  simulates Windows Explorer
 	app := NewApp()
 	installNoopRuntimeEvents(app)
 	app.registerProjectRoot(flipped)
 
-	// findTopicSessionForTarget must match the session whose meta carries
-	// the original case spelling against the registry's new (flipped) root.
+// the original case spelling against the registrys new (flipped) root.
 	path, _ := app.findTopicSessionForTarget("project", normalizeProjectRoot(flipped), "topic_case")
 	if path == "" {
 		t.Fatal("findTopicSessionForTarget returned empty path; session with old-case root should still match")
@@ -521,7 +505,7 @@ func TestDialogDefaultDirectoryFallsBackFromMissingWorkspace(t *testing.T) {
 
 func TestDialogDefaultDirectoryUsesFileParent(t *testing.T) {
 	dir := t.TempDir()
-	file := filepath.Join(dir, "reasonix.toml")
+	file := filepath.Join(dir, "patty.toml")
 	if err := os.WriteFile(file, []byte("default_model = \"x\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -575,10 +559,8 @@ func BenchmarkDesktopSessionDir(b *testing.B) {
 	}
 }
 
-// cwdWritable
 
 func TestCwdWritable(t *testing.T) {
-	// In a normal test environment, cwd should be writable.
 	if !cwdWritable() {
 		t.Error("cwd should be writable in test environment")
 	}
@@ -605,7 +587,7 @@ func TestReadFileTrimsPartialUTF8RuneAtPreviewBoundary(t *testing.T) {
 	}
 
 	prefix := strings.Repeat("a", filePreviewLimit-1)
-	if err := os.WriteFile("large.md", []byte(prefix+"你tail"), 0o644); err != nil {
+	if err := os.WriteFile("large.md", []byte(prefix+"너tail"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -633,8 +615,6 @@ func TestReadFilePreviewBinaryClassification(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// NUL is the binary signal, matching the CLI read_file tool once GB18030
-	// decoding meant invalid UTF-8 alone no longer implies binary.
 	if err := os.WriteFile("binary.bin", append([]byte("data"), 0x00, 0x01, 0x02), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -642,8 +622,7 @@ func TestReadFilePreviewBinaryClassification(t *testing.T) {
 		t.Errorf("NUL-containing file should be binary, got Body=%q", p.Body)
 	}
 
-	// Invalid UTF-8 without a NUL is decoded leniently and shown as text, with
-	// U+FFFD where bytes don't map — not hidden behind a binary classification.
+// U+FFFD where bytes don't map — not hidden behind a binary classification.
 	if err := os.WriteFile("invalid.txt", append([]byte("hello"), 0xff, 'x', 'y'), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -680,7 +659,7 @@ func TestReadFileMediaPreview(t *testing.T) {
 	if image.Body != "" {
 		t.Fatalf("media preview should have empty body, got %q", image.Body)
 	}
-	if !strings.HasPrefix(image.URL, "/__reasonix_workspace_media/") || !strings.HasSuffix(image.URL, "/shot.PNG") {
+	if !strings.HasPrefix(image.URL, "/__patty_workspace_media/") || !strings.HasSuffix(image.URL, "/shot.PNG") {
 		t.Fatalf("unexpected media URL: %q", image.URL)
 	}
 
@@ -697,7 +676,7 @@ func TestReadFileMediaPreview(t *testing.T) {
 	if pdf.Body != "" {
 		t.Fatalf("media preview should have empty body, got %q", pdf.Body)
 	}
-	if !strings.HasPrefix(pdf.URL, "/__reasonix_workspace_media/") || !strings.HasSuffix(pdf.URL, "/report.pdf") {
+	if !strings.HasPrefix(pdf.URL, "/__patty_workspace_media/") || !strings.HasSuffix(pdf.URL, "/report.pdf") {
 		t.Fatalf("unexpected media URL: %q", pdf.URL)
 	}
 }
@@ -874,7 +853,7 @@ func TestMediaTokenHandlerBadToken(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/__reasonix_workspace_media/deadbeef/fake.png", nil)
+	req := httptest.NewRequest(http.MethodGet, "/__patty_workspace_media/deadbeef/fake.png", nil)
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -948,7 +927,6 @@ func TestMediaTokenMaxEviction(t *testing.T) {
 	app := NewApp()
 	store := app.mediaTokens
 
-	// Fill beyond max to trigger eviction of oldest.
 	var oldestToken string
 	for i := range mediaTokenMax + 1 {
 		tok := store.create(dir+"/test.png", "test.png", "image/png", "image", 4, time.Time{})
@@ -982,7 +960,6 @@ func TestMediaTokenExpiry(t *testing.T) {
 	store := app.mediaTokens
 	tok := store.create(dir+"/test.png", "test.png", "image/png", "image", 4, time.Time{})
 
-	// Force expiry by rolling back the clock on the entry.
 	store.mu.Lock()
 	store.byTok[tok].expiresAt = time.Now().Add(-1 * time.Second)
 	store.mu.Unlock()
@@ -1031,7 +1008,7 @@ func TestReadFileGB18030(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gb, _ := simplifiedchinese.GB18030.NewEncoder().String("你好世界")
+	gb, _ := simplifiedchinese.GB18030.NewEncoder().String("안녕하세요")
 	if err := os.WriteFile("gbk.txt", []byte(gb), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -1043,12 +1020,11 @@ func TestReadFileGB18030(t *testing.T) {
 	if preview.Binary {
 		t.Fatal("ReadFile should decode GB18030, not mark as binary")
 	}
-	if !strings.Contains(preview.Body, "你好世界") {
-		t.Errorf("expected decoded Chinese text, got %q", preview.Body)
+	if !strings.Contains(preview.Body, "안녕하세요") {
+		t.Errorf("expected decoded Korean text, got %q", preview.Body)
 	}
 }
 
-// RemoveWorkspace cleanup of active pointer
 
 func TestRemoveWorkspaceClearsActivePointerWhenRemovingCurrentWorkspace(t *testing.T) {
 	isolateDesktopUserDirs(t)
@@ -1062,8 +1038,7 @@ func TestRemoveWorkspaceClearsActivePointerWhenRemovingCurrentWorkspace(t *testi
 		t.Fatalf("precondition: loadWorkspace = %q, want %q", got, dir)
 	}
 
-	// Simulate RemoveWorkspace's cleanup logic:
-	// When the removed workspace equals the active one, clearWorkspace should fire.
+// Simulate RemoveWorkspaces cleanup logic:
 	if loadWorkspace() == dir {
 		clearWorkspace()
 	}
@@ -1076,15 +1051,11 @@ func TestRemoveWorkspaceClearsActivePointerWhenRemovingCurrentWorkspace(t *testi
 func TestRemoveWorkspaceFallsBackToRemainingProject(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
-	// Set up two projects and make the first one active.
 	first := t.TempDir()
 	second := t.TempDir()
 	saveWorkspace(first)
 
-	// Simulate: remove the active workspace, fall back to the other.
 	if loadWorkspace() == first {
-		// In the real code, loadProjectsFile() would return remaining projects.
-		// Here we simulate falling back to the second project.
 		saveWorkspace(second)
 	}
 
@@ -1109,13 +1080,11 @@ func TestClearWorkspace(t *testing.T) {
 	if got := loadWorkspace(); got != "" {
 		t.Errorf("loadWorkspace after clearWorkspace = %q, want empty", got)
 	}
-	// Also verify the file is actually removed.
 	if _, err := os.Stat(workspaceStatePath()); !os.IsNotExist(err) {
 		t.Errorf("desktop-workspace file should be removed, stat err = %v", err)
 	}
 }
 
-// OpenProjectTab updates active workspace pointer
 
 func TestOpenProjectTabUpdatesActiveWorkspacePointer(t *testing.T) {
 	isolateDesktopUserDirs(t)
@@ -1628,7 +1597,6 @@ func TestWorkspaceGitHistory(t *testing.T) {
 		t.Errorf("expected older commit message 'init file1', got %q", history[1].Message)
 	}
 
-	// Test history for specific file
 	history, err = app.WorkspaceGitHistory("", "file1.txt")
 	if err != nil {
 		t.Fatalf("WorkspaceGitHistory err = %v", err)
@@ -1758,7 +1726,6 @@ func TestWorkspaceGitCommitDetail(t *testing.T) {
 
 	app := &App{}
 
-	// Test project level detail
 	detail, err := app.WorkspaceGitCommitDetail("", hash, "")
 	if err != nil {
 		t.Fatalf("WorkspaceGitCommitDetail err = %v", err)
@@ -1770,7 +1737,6 @@ func TestWorkspaceGitCommitDetail(t *testing.T) {
 		t.Fatal("expected nil diff for project level")
 	}
 
-	// Test file level detail
 	detail, err = app.WorkspaceGitCommitDetail("", hash, "file1.txt")
 	if err != nil {
 		t.Fatalf("WorkspaceGitCommitDetail err = %v", err)
@@ -1812,8 +1778,6 @@ func gitOutput(t *testing.T, args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// settings_app.go helpers
-// These are unexported but in the same package, so we can test them.
 
 func TestOrDefault(t *testing.T) {
 	if orDefault("", "fallback") != "fallback" {

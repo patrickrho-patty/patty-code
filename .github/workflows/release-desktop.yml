@@ -229,7 +229,7 @@ jobs:
           echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
 
       - name: Require current standalone signing attestation
-        if: ${{ github.repository == 'esengine/DeepSeek-Reasonix' && !inputs.signing_preflight && !inputs.production_signing_smoke && !(inputs.orchestrated && inputs.signing_preflight_verified) }}
+        if: ${{ github.repository == 'pattycorp/DeepSeek-Patty Code' && !inputs.signing_preflight && !inputs.production_signing_smoke && !(inputs.orchestrated && inputs.signing_preflight_verified) }}
         env:
           ACTUAL: ${{ vars.SIGNPATH_RELEASE_SIGNING_ATTESTATION }}
           EXPECTED: ${{ steps.contract.outputs.fingerprint }}
@@ -374,10 +374,10 @@ jobs:
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 
       # Official Windows releases must fail closed. Forks can still exercise
-      # unsigned packaging without repository secrets, but esengine releases
+      # unsigned packaging without repository secrets, but pattycorp releases
       # may never publish an unsigned payload or installer.
       - name: Require Windows Authenticode signing
-        if: runner.os == 'Windows' && github.repository == 'esengine/DeepSeek-Reasonix'
+        if: runner.os == 'Windows' && github.repository == 'pattycorp/DeepSeek-Patty Code'
         run: |
           if [ "$HAS_SIGNPATH" != "true" ]; then
             echo "::error::SIGNPATH_API_TOKEN is required for public Windows Preview and Stable releases"
@@ -397,7 +397,7 @@ jobs:
 
       # Sign every executable that users actually run before rebuilding the
       # portable archive and NSIS installer. Signing only the finished NSIS
-      # container leaves reasonix-desktop.exe and its sidecars unsigned after
+      # container leaves patty-desktop.exe and its sidecars unsigned after
       # installation, which can trigger Defender reputation/ML quarantine.
       - name: Upload unsigned Windows payload for SignPath
         if: runner.os == 'Windows' && env.HAS_SIGNPATH == 'true'
@@ -416,7 +416,7 @@ jobs:
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: DeepSeek-Reasonix
+          project-slug: DeepSeek-Patty Code
           signing-policy-slug: release-signing
           artifact-configuration-slug: windows-payload
           github-artifact-id: ${{ steps.unsigned-windows-payload.outputs.artifact-id }}
@@ -450,13 +450,13 @@ jobs:
           MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
         run: |
           go run ./cmd/sign windows-payload ../signed-payload "${{ needs.resolve.outputs.version }}"
-          go run ./cmd/sign sign ../signed-payload/reasonix-payload.json
-          go run ./cmd/sign verify ../signed-payload/reasonix-payload.json
+          go run ./cmd/sign sign ../signed-payload/patty-code-payload.json
+          go run ./cmd/sign verify ../signed-payload/patty-code-payload.json
 
       - name: Rebuild Windows packages from signed payload
         if: runner.os == 'Windows' && env.HAS_SIGNPATH == 'true'
         env:
-          REASONIX_REQUIRE_PAYLOAD_MANIFEST: "1"
+          PATTY_REQUIRE_PAYLOAD_MANIFEST: "1"
         run: scripts/package-windows-desktop.sh "${{ matrix.platform == 'windows/arm64' && 'arm64' || 'amd64' }}" signed-payload
 
       # The second request signs the rebuilt NSIS container. Release signing
@@ -478,7 +478,7 @@ jobs:
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: DeepSeek-Reasonix
+          project-slug: DeepSeek-Patty Code
           signing-policy-slug: release-signing
           artifact-configuration-slug: windows-installer-v2
           github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
@@ -525,8 +525,8 @@ jobs:
           $arch = if ("${{ matrix.platform }}" -eq "windows/arm64") { "arm64" } else { "amd64" }
           ./release-control/scripts/verify-windows-authenticode.ps1 `
             -PayloadDirectory signed-payload `
-            -InstallerPath "dist/Reasonix-windows-$arch-installer.exe" `
-            -PortableArchivePath "dist/Reasonix-windows-$arch.zip" `
+            -InstallerPath "dist/Patty Code-windows-$arch-installer.exe" `
+            -PortableArchivePath "dist/Patty Code-windows-$arch.zip" `
             -RequireTrusted:$true
 
       - name: Sign artifacts (minisign)
@@ -627,7 +627,7 @@ jobs:
           fi
           bash release-control/scripts/validate-desktop-release-manifest.sh \
             "$validation_channel" "$VERSION" \
-            "https://github.com/esengine/DeepSeek-Reasonix/releases/download/${TAG}/" \
+            "https://github.com/pattycorp/DeepSeek-Patty Code/releases/download/${TAG}/" \
             dist/latest.json "$NOTES_VERSION"
 
       - name: Download orchestrator-reviewed release notes
@@ -684,7 +684,7 @@ jobs:
   attest-signing-contract:
     name: record standalone SignPath attestation
     needs: [signing-contract, build]
-    if: ${{ always() && !cancelled() && inputs.signing_preflight && !inputs.orchestrated && github.repository == 'esengine/DeepSeek-Reasonix' && needs.signing-contract.result == 'success' && needs.build.result == 'success' }}
+    if: ${{ always() && !cancelled() && inputs.signing_preflight && !inputs.orchestrated && github.repository == 'pattycorp/DeepSeek-Patty Code' && needs.signing-contract.result == 'success' && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -714,7 +714,7 @@ jobs:
       actions: write # dispatch pages.yml to re-bake the site version
     # Stable keeps GitHub as a fallback when R2 is unavailable. Preview has no
     # GitHub release, so it must fail closed before attempting publication.
-    if: ${{ always() && !cancelled() && needs.resolve.result == 'success' && needs.publish.result == 'success' && github.repository_owner == 'esengine' }}
+    if: ${{ always() && !cancelled() && needs.resolve.result == 'success' && needs.publish.result == 'success' && github.repository_owner == 'pattycorp' }}
     env:
       HAS_R2: ${{ secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' && secrets.R2_ACCOUNT_ID != '' && secrets.R2_BUCKET != '' }}
     steps:
@@ -786,7 +786,7 @@ jobs:
       - name: Rewrite latest.json URLs to R2
         if: env.HAS_R2 == 'true'
         env:
-          R2_PUBLIC_BASE: https://dl.reasonix.io
+          R2_PUBLIC_BASE: https://dl.patty.io
           TAG: ${{ needs.resolve.outputs.tag }}
         run: |
           f=assets/latest.json
@@ -821,7 +821,7 @@ jobs:
           fi
           bash release-control/scripts/validate-desktop-release-manifest.sh \
             "$validation_channel" "$VERSION" \
-            "https://dl.reasonix.io/${TAG}/" \
+            "https://dl.patty.io/${TAG}/" \
             assets/latest.json "$NOTES_VERSION"
 
       - name: Configure AWS CLI for R2
@@ -869,10 +869,10 @@ jobs:
           if [ "$CHANNEL" != "preview" ] && [ "$PRERELEASE" = "true" ]; then
             validation_channel="any"
           fi
-          asset_base="https://dl.reasonix.io/${TAG}/"
+          asset_base="https://dl.patty.io/${TAG}/"
           existing_manifest=false
 
-          signature_verifier=/tmp/reasonix-desktop-sign
+          signature_verifier=/tmp/patty-desktop-sign
           go -C release-control/desktop build -o "$signature_verifier" ./cmd/sign
           verify_signature_directory() {
             local directory="$1"
@@ -963,12 +963,12 @@ jobs:
             "$published_directory/latest.json" "$published_directory"
 
           aws s3 cp "s3://${R2_BUCKET}/${TAG}/latest.json" \
-            /tmp/reasonix-desktop-tag-latest.json --endpoint-url "$ENDPOINT"
+            /tmp/patty-desktop-tag-latest.json --endpoint-url "$ENDPOINT"
           bash release-control/scripts/validate-desktop-release-manifest.sh \
             "legacy-${validation_channel}" "$VERSION" "$asset_base" \
-            /tmp/reasonix-desktop-tag-latest.json "$NOTES_VERSION"
+            /tmp/patty-desktop-tag-latest.json "$NOTES_VERSION"
           bash release-control/scripts/compare-desktop-release-manifests.sh \
-            assets/latest.json /tmp/reasonix-desktop-tag-latest.json
+            assets/latest.json /tmp/patty-desktop-tag-latest.json
 
           # Internal RCs retain their immutable record but never move a public
           # channel pointer.
@@ -982,7 +982,7 @@ jobs:
             local current_channel="$1"
             local current_version="$2"
             local current_file="$3"
-            local current_base="https://dl.reasonix.io/desktop-${current_version}/"
+            local current_base="https://dl.patty-code.io/desktop-${current_version}/"
             if bash release-control/scripts/validate-desktop-release-manifest.sh \
               "$current_channel" "$current_version" "$current_base" \
               "$current_file"; then
@@ -999,7 +999,7 @@ jobs:
             # Early Preview pointers referenced the mutable desktop-preview/
             # directory. Try that layout only after the immutable legacy layout
             # so later legacy pointers retain their version-bound asset URLs.
-            local legacy_preview_base="https://dl.reasonix.io/desktop-preview/"
+            local legacy_preview_base="https://dl.patty-code.io/desktop-preview/"
             if [ "$current_channel" = "preview" ] && \
               bash release-control/scripts/validate-desktop-release-manifest.sh \
                 legacy-preview "$current_version" "$legacy_preview_base" \
@@ -1016,7 +1016,7 @@ jobs:
           if [ "$CHANNEL" = "preview" ]; then
             preview_manifest=-
             preview_version=""
-            preview_download=/tmp/reasonix-desktop-current-preview.json
+            preview_download=/tmp/patty-desktop-current-preview.json
             if download_optional "preview/latest.json" "$preview_download"; then
               preview_version="$(jq -er '.version | strings' "$preview_download")"
               validate_current_pointer preview "$preview_version" "$preview_download"
@@ -1030,7 +1030,7 @@ jobs:
 
             canary_manifest=-
             canary_version=""
-            canary_download=/tmp/reasonix-desktop-current-canary.json
+            canary_download=/tmp/patty-desktop-current-canary.json
             if download_optional "canary/latest.json" "$canary_download"; then
               canary_version="$(jq -er '.version | strings' "$canary_download")"
               validate_current_pointer preview "$canary_version" "$canary_download"
@@ -1049,7 +1049,7 @@ jobs:
             pointer_state="preview=${preview_version:-unset}, canary=${canary_version:-unset}"
           else
             current_version=""
-            current_manifest=/tmp/reasonix-desktop-current-pointer.json
+            current_manifest=/tmp/patty-desktop-current-pointer.json
             if download_optional "latest/latest.json" "$current_manifest"; then
               current_version="$(jq -er '.version | strings' "$current_manifest")"
               validate_current_pointer stable "$current_version" "$current_manifest"
@@ -1081,7 +1081,7 @@ jobs:
 
           publish_pointer() {
             local destination="$1"
-            local downloaded="/tmp/reasonix-desktop-${destination}-latest.json"
+            local downloaded="/tmp/patty-desktop-${destination}-latest.json"
             aws s3 cp "$pointer_source" "s3://${R2_BUCKET}/${destination}/latest.json" \
               --endpoint-url "$ENDPOINT" \
               --content-type "application/json; charset=utf-8" \
@@ -1097,7 +1097,7 @@ jobs:
             # still observes the old primary and safely retries both writes.
             publish_pointer canary
             publish_pointer preview
-            if ! cmp -s /tmp/reasonix-desktop-canary-latest.json /tmp/reasonix-desktop-preview-latest.json; then
+            if ! cmp -s /tmp/patty-desktop-canary-latest.json /tmp/patty-desktop-preview-latest.json; then
               echo "::error::Desktop Preview and Canary pointers diverged after publication"
               exit 1
             fi
@@ -1108,7 +1108,7 @@ jobs:
           echo "pointer_version=$pointer_version" >> "$GITHUB_OUTPUT"
           echo "Desktop $CHANNEL pointer -> $pointer_version"
 
-      # dl.reasonix.io serves 403 to GitHub Actions egress IPs (Cloudflare bot
+      # dl.patty.io serves 403 to GitHub Actions egress IPs (Cloudflare bot
       # protection), so smoke the mirrored objects over the authenticated S3 API
       # instead of the public edge. This verifies the mirror landed; the public
       # edge itself is not reachable from CI and is covered by end users' traffic.
@@ -1132,40 +1132,40 @@ jobs:
           if [ "$CHANNEL" != "preview" ] && [ "$PRERELEASE" = "true" ]; then
             validation_channel="any"
           fi
-          asset_base="https://dl.reasonix.io/${TAG}/"
+          asset_base="https://dl.patty.io/${TAG}/"
           bash release-control/scripts/validate-desktop-release-manifest.sh \
             "$validation_channel" "$VERSION" "$asset_base" "$f" "$NOTES_VERSION"
 
-          aws s3 cp "s3://${R2_BUCKET}/${TAG}/latest.json" /tmp/reasonix-desktop-tag-latest.json --endpoint-url "$ENDPOINT"
+          aws s3 cp "s3://${R2_BUCKET}/${TAG}/latest.json" /tmp/patty-desktop-tag-latest.json --endpoint-url "$ENDPOINT"
           bash release-control/scripts/validate-desktop-release-manifest.sh \
             "legacy-${validation_channel}" "$VERSION" "$asset_base" \
-            /tmp/reasonix-desktop-tag-latest.json "$NOTES_VERSION"
+            /tmp/patty-desktop-tag-latest.json "$NOTES_VERSION"
           bash release-control/scripts/compare-desktop-release-manifests.sh \
-            "$f" /tmp/reasonix-desktop-tag-latest.json
+            "$f" /tmp/patty-desktop-tag-latest.json
 
           if [ "$POINTER_MOVED" = "true" ]; then
             pointer="latest"
             [ "$CHANNEL" = "preview" ] && pointer="preview"
-            aws s3 cp "s3://${R2_BUCKET}/${pointer}/latest.json" /tmp/reasonix-desktop-pointer-latest.json --endpoint-url "$ENDPOINT"
-            pointer_base="https://dl.reasonix.io/desktop-${POINTER_VERSION}/"
+            aws s3 cp "s3://${R2_BUCKET}/${pointer}/latest.json" /tmp/patty-desktop-pointer-latest.json --endpoint-url "$ENDPOINT"
+            pointer_base="https://dl.patty-code.io/desktop-${POINTER_VERSION}/"
             if ! bash release-control/scripts/validate-desktop-release-manifest.sh \
               "$CHANNEL" "$POINTER_VERSION" "$pointer_base" \
-              /tmp/reasonix-desktop-pointer-latest.json; then
+              /tmp/patty-desktop-pointer-latest.json; then
               legacy_base="$pointer_base"
-              [ "$CHANNEL" = "preview" ] && legacy_base="https://dl.reasonix.io/desktop-preview/"
+              [ "$CHANNEL" = "preview" ] && legacy_base="https://dl.patty-code.io/desktop-preview/"
               bash release-control/scripts/validate-desktop-release-manifest.sh \
                 "legacy-${CHANNEL}" "$POINTER_VERSION" "$legacy_base" \
-                /tmp/reasonix-desktop-pointer-latest.json
+                /tmp/patty-desktop-pointer-latest.json
             fi
             if [ "$CHANNEL" = "preview" ]; then
-              aws s3 cp "s3://${R2_BUCKET}/canary/latest.json" /tmp/reasonix-desktop-canary-latest.json --endpoint-url "$ENDPOINT"
-              cmp -s /tmp/reasonix-desktop-pointer-latest.json /tmp/reasonix-desktop-canary-latest.json
+              aws s3 cp "s3://${R2_BUCKET}/canary/latest.json" /tmp/patty-desktop-canary-latest.json --endpoint-url "$ENDPOINT"
+              cmp -s /tmp/patty-desktop-pointer-latest.json /tmp/patty-desktop-canary-latest.json
             fi
           fi
 
           jq -r '(.platforms[] | .url, .sig), ((.native_packages // {})[] | .url, .sig), ((.downloads // {})[] | .url, .sig)' "$f" | while IFS= read -r asset; do
             [ -n "$asset" ] || continue
-            key="${asset#https://dl.reasonix.io/}"
+            key="${asset#https://dl.patty.io/}"
             aws s3api head-object --bucket "$R2_BUCKET" --key "$key" --endpoint-url "$ENDPOINT" >/dev/null
           done
 
@@ -1193,7 +1193,7 @@ jobs:
           fi
           chan="stable"
           [ "$CHANNEL" = "preview" ] && chan="preview"
-          url="https://crash.reasonix.io/v1/desktop/releases/${chan}/latest.json"
+          url="https://crash.patty.io/v1/desktop/releases/${chan}/latest.json"
           # curl already prints 000 for a transport failure; || true keeps -e
           # from killing the step so the case below can route it.
           code="$(curl -sS -A "Go-http-client/2.0" -o /tmp/gateway-latest.json -w '%{http_code}' "$url" || true)"

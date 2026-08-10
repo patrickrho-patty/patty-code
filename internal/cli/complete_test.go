@@ -9,12 +9,12 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/command"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/skill"
+	"patty/internal/agent"
+	"patty/internal/command"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/skill"
 )
 
 // writeAt creates dir/rel (with parents) holding content, for fs-backed tests.
@@ -113,7 +113,7 @@ func TestSlashCompletionDocsShowsOnlyRuntimeWinner(t *testing.T) {
 			if len(docs) != 1 || docs[0].hint != tt.wantHint {
 				t.Fatalf("/docs completion entries = %+v, want one entry with hint %q", docs, tt.wantHint)
 			}
-			if !hasLabel(m.slashItems(), "/reasonix:docs") {
+			if !hasLabel(m.slashItems(), "/patty:docs") {
 				t.Fatalf("shadowed built-in docs fallback missing: %v", labels(m.slashItems()))
 			}
 		})
@@ -151,7 +151,7 @@ func TestSlashCompletionDocsAccountsForHiddenCompatibilityAliases(t *testing.T) 
 			if hasLabel(items, "/docs") {
 				t.Fatalf("hidden runtime owner left a misleading /docs entry: %v", labels(items))
 			}
-			for _, want := range []string{"/reasonix:docs", tt.wantCanonical} {
+			for _, want := range []string{"/patty:docs", tt.wantCanonical} {
 				if !hasLabel(items, want) {
 					t.Fatalf("completion missing %q: %v", want, labels(items))
 				}
@@ -164,11 +164,11 @@ func TestSlashCompletionDocsDoesNotDisplaceQualifiedCustomCommands(t *testing.T)
 	m := newTestChatTUI()
 	m.commands = []command.Command{
 		{Name: "docs", Description: "custom docs"},
-		{Name: "reasonix:docs", Description: "qualified custom docs"},
-		{Name: "reasonix:builtin:docs", Description: "second qualified custom docs"},
+		{Name: "patty:docs", Description: "qualified custom docs"},
+		{Name: "patty:builtin:docs", Description: "second qualified custom docs"},
 	}
 	items := m.slashItems()
-	for _, want := range []string{"/docs", "/reasonix:docs", "/reasonix:builtin:docs", "/reasonix:builtin:docs:2"} {
+	for _, want := range []string{"/docs", "/patty:docs", "/patty:builtin:docs", "/patty:builtin:docs:2"} {
 		if !hasLabel(items, want) {
 			t.Fatalf("completion displaced %q: %v", want, labels(items))
 		}
@@ -594,7 +594,7 @@ func TestSlashArgCompletionLanguage(t *testing.T) {
 	if !m.completion.active || m.completion.kind != compSlashArg {
 		t.Fatalf("/language should open arg completion: %+v", m.completion)
 	}
-	for _, want := range []string{"auto", "en", "zh"} {
+	for _, want := range []string{"auto", "en", "ko-KR"} {
 		if !hasLabel(m.completion.items, want) {
 			t.Fatalf("/language completion missing %q: %v", want, labels(m.completion.items))
 		}
@@ -622,13 +622,13 @@ func TestSlashArgCompletionReasoningLanguage(t *testing.T) {
 	if !m.completion.active || m.completion.kind != compSlashArg {
 		t.Fatalf("/reasoning-language should open arg completion: %+v", m.completion)
 	}
-	for _, want := range []string{"auto", "zh", "en"} {
+	for _, want := range []string{"auto", "ko-KR", "en"} {
 		if !hasLabel(m.completion.items, want) {
 			t.Fatalf("/reasoning-language completion missing %q: %v", want, labels(m.completion.items))
 		}
 	}
-	if hasLabel(m.completion.items, "中文") {
-		t.Fatalf("/reasoning-language completion should expose only auto|zh|en: %v", labels(m.completion.items))
+	if hasLabel(m.completion.items, "zh") || hasLabel(m.completion.items, "chinese") {
+		t.Fatalf("/reasoning-language completion should expose only auto|ko-KR|en: %v", labels(m.completion.items))
 	}
 }
 

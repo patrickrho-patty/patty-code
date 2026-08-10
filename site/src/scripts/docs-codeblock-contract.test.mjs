@@ -29,7 +29,7 @@ test("the macOS quarantine comment and command remain separate source lines", as
 
   assert.match(
     page,
-    /# Quit Reasonix first, then run in Terminal\.<\/span>\nsudo xattr -rd com\.apple\.quarantine \/Applications\/Reasonix\.app/,
+    /# Quit Patty Code first, then run in Terminal\.<\/span>\nsudo xattr -rd com\.apple\.quarantine \/Applications\/Patty Code\.app/,
   );
 });
 
@@ -39,8 +39,8 @@ test("website documents the version-matched built-in docs command", async () => 
   assert.match(page, /id="embedded-docs"/);
   assert.match(page, /\/docs 1\.19\.5 changelog/);
   assert.match(page, /AI configured for the current session/);
-  assert.match(page, /normally <code>\/reasonix:docs<\/code>/);
-  assert.match(page, /Reasonix never overwrites the existing command/);
+  assert.match(page, /normally <code>\/patty:docs<\/code>/);
+  assert.match(page, /Patty Code never overwrites the existing command/);
   assert.match(page, /Release CI rejects a build when its embedded corpus does not match/);
 });
 
@@ -52,8 +52,8 @@ test("website exposes the Extension Protocol developer path", async () => {
   assert.match(page, /MCP or Extension Protocol\?/);
   assert.match(page, /sdk\/go\/examples\/starterextension/);
   assert.match(page, /plugin_root="\$\(pwd -P\)"/);
-  assert.match(page, /reasonix plugin install "\$plugin_root" --dry-run/);
-  assert.match(page, /reasonix plugin install "\$plugin_root" --link --replace --yes/);
+  assert.match(page, /patcode plugin install "\$plugin_root" --dry-run/);
+  assert.match(page, /patcode plugin install "\$plugin_root" --link --replace --yes/);
   assert.match(page, /sdk\/go\/v1\.0\.0/);
   assert.match(page, /<strong>Full trust:<\/strong>/);
   assert.match(page, /docs\/EXTENSIONS\.md/);

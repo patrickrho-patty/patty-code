@@ -12,9 +12,9 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"reasonix/internal/remote"
-	"reasonix/internal/remote/sftpfs"
-	"reasonix/internal/remote/sshtest"
+	"patty/internal/remote"
+	"patty/internal/remote/sftpfs"
+	"patty/internal/remote/sshtest"
 )
 
 // fakeConn scripts exec responses and shares a real sftpfs.FS backed by an
@@ -90,7 +90,7 @@ func ok(stdout string) (remote.ExecResult, error) {
 }
 
 // TestEnsureServeLaunchesWhenAbsent drives a full cold start: no prior state,
-// reasonix already on PATH, serve writes its port file.
+// patty already on PATH, serve writes its port file.
 func TestEnsureServeLaunchesWhenAbsent(t *testing.T) {
 	skipOnWindows(t)
 	root := t.TempDir()
@@ -99,9 +99,9 @@ func TestEnsureServeLaunchesWhenAbsent(t *testing.T) {
 		switch {
 		case strings.Contains(cmd, "uname"):
 			return ok("Linux x86_64\n")
-		case strings.Contains(cmd, "command -v reasonix"):
+		case strings.Contains(cmd, "command -v patty"):
 			// LocateCommand: report a path and a fresh version.
-			return ok("/usr/bin/reasonix\nreasonix v9.9.0\nportfile:yes\n")
+			return ok("/usr/bin/patty\npatty v9.9.0\nportfile:yes\n")
 		case strings.Contains(cmd, "nohup"):
 			// Simulate serve writing the port file, then echo the pid.
 			if portFile != "" {
@@ -219,8 +219,8 @@ func TestEnsureServeRelaunchesDeadProcess(t *testing.T) {
 			return ok("0\n") // dead
 		case strings.Contains(cmd, "uname"):
 			return ok("Linux aarch64\n")
-		case strings.Contains(cmd, "command -v reasonix"):
-			return ok("/usr/bin/reasonix\nreasonix v9.9.0\nportfile:yes\n")
+		case strings.Contains(cmd, "command -v patty"):
+			return ok("/usr/bin/patty\npatty v9.9.0\nportfile:yes\n")
 		case strings.Contains(cmd, "nohup"):
 			_ = os.WriteFile(paths.PortFile, []byte("127.0.0.1:6001\n"), 0o600)
 			return ok("999\n")
@@ -251,7 +251,7 @@ func TestEnsureServeInstallNeverErrorsWhenAbsent(t *testing.T) {
 		switch {
 		case strings.Contains(cmd, "uname"):
 			return ok("Linux x86_64\n")
-		case strings.Contains(cmd, "command -v reasonix"):
+		case strings.Contains(cmd, "command -v patty"):
 			return ok("\n") // not found anywhere
 		default:
 			return ok("")

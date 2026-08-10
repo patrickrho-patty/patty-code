@@ -1,5 +1,3 @@
-// Package productdocs provides offline retrieval over the official Reasonix
-// documentation embedded in the application binary.
 package productdocs
 
 import (
@@ -26,10 +24,10 @@ import (
 	"github.com/yuin/goldmark/parser"
 	goldmarktext "github.com/yuin/goldmark/text"
 
-	productcontent "reasonix/docs"
-	"reasonix/internal/retrieval"
-	"reasonix/internal/tool"
-	releasenotes "reasonix/release-notes"
+	productcontent "patty/docs"
+	"patty/internal/retrieval"
+	"patty/internal/tool"
+	releasenotes "patty/release-notes"
 )
 
 const (
@@ -89,9 +87,6 @@ type catalog struct {
 	releaseNotes int
 }
 
-// Manifest identifies the exact documentation corpus bundled into one build.
-// Version and Revision describe the product binary; Digest binds the sorted
-// Markdown sources plus the structured release catalog consumed by retrieval.
 type Manifest struct {
 	Version      string `json:"version"`
 	Revision     string `json:"revision"`
@@ -117,15 +112,10 @@ var (
 	defaultOnce    sync.Once
 	defaultCatalog *catalog
 	defaultLoadErr error
-	// linkedVersion and linkedRevision are stamped by official release builds.
-	// Keeping them here gives CLI and Desktop one shared corpus identity.
 	linkedVersion  = "dev"
 	linkedRevision string
 )
 
-// NewTool returns a read-only tool backed by the documentation embedded in the
-// current Reasonix build. Loading stays lazy so merely registering the stable
-// schema does not add Markdown parsing work to application startup.
 func NewTool() tool.Tool {
 	return &docsTool{}
 }
@@ -137,8 +127,6 @@ func loadDefaultCatalog() (*catalog, error) {
 	return defaultCatalog, defaultLoadErr
 }
 
-// EmbeddedManifest returns the identity of the corpus compiled into this
-// binary. Diagnostics and release verification intentionally share it.
 func EmbeddedManifest() (Manifest, error) {
 	c, err := loadDefaultCatalog()
 	if err != nil {
@@ -147,14 +135,10 @@ func EmbeddedManifest() (Manifest, error) {
 	return c.manifest(), nil
 }
 
-// CommandOverview returns the local /docs help text and the identity of the
-// exact corpus compiled into this binary. It never calls a model or the network.
 func CommandOverview(language string) (string, error) {
 	return CommandOverviewFor(language, "/docs")
 }
 
-// CommandOverviewFor is CommandOverview with the invocation name selected by
-// the runtime resolver (for example /reasonix:docs when /docs is occupied).
 func CommandOverviewFor(language, commandName string) (string, error) {
 	c, err := loadDefaultCatalog()
 	if err != nil {
@@ -168,18 +152,13 @@ func CommandOverviewFor(language, commandName string) (string, error) {
 	identity := fmt.Sprintf("version=%s revision=%s digest=%s", m.Version, m.Revision, m.Digest)
 	stats := fmt.Sprintf("documents=%d sections=%d releases=%d", m.Documents, m.Sections, m.ReleaseNotes)
 	switch strings.ToLower(strings.TrimSpace(language)) {
-	case "zh", "zh-cn":
-		return fmt.Sprintf("内置 Reasonix 文档\n%s\n%s\n\n用法：%s <问题>\n示例：%s 1.19.5 更新日志\n\n搜索在本地完成，命中的版本匹配资料会交给当前配置的 AI 组织答案。", identity, stats, commandName, commandName), nil
-	case "zh-tw":
-		return fmt.Sprintf("內建 Reasonix 文件\n%s\n%s\n\n用法：%s <問題>\n範例：%s 1.19.5 更新日誌\n\n搜尋在本機完成，命中的版本匹配資料會交給目前設定的 AI 組織答案。", identity, stats, commandName, commandName), nil
+	case "ko-kr":
+		return fmt.Sprintf("내장된 patty code 문서\n%s\n%s\n\n사용법: %s <질문>\n예시: %s 1.19.5 업데이트 로그\n\n검색은 로컬에서 수행되며, 일치하는 버전의 자료는 현재 설정된 AI 조직에 전달되어 답변을 작성합니다.", identity, stats, commandName, commandName), nil
 	default:
-		return fmt.Sprintf("Embedded Reasonix documentation\n%s\n%s\n\nUsage: %s <question>\nExample: %s 1.19.5 changelog\n\nSearch runs locally, then the version-matched evidence is passed to the configured AI to compose the answer.", identity, stats, commandName, commandName), nil
+		return fmt.Sprintf("Embedded patty code documentation\n%s\n%s\n\nUsage: %s <question>\nExample: %s 1.19.5 changelog\n\nSearch runs locally, then the version-matched evidence is passed to the configured AI to compose the answer.", identity, stats, commandName, commandName), nil
 	}
 }
 
-// SearchEmbedded searches the exact documentation corpus compiled into this
-// binary. It is the host-side retrieval path used by /docs, independent of
-// whether the configured model chooses to call the docs tool itself.
 func SearchEmbedded(ctx context.Context, query string) (string, error) {
 	c, err := loadDefaultCatalog()
 	if err != nil {
@@ -188,8 +167,6 @@ func SearchEmbedded(ctx context.Context, query string) (string, error) {
 	return (&docsTool{catalog: c}).search(ctx, query, "auto", "all", defaultLimit)
 }
 
-// SourceManifest computes the corpus identity from the source Markdown and
-// structured release catalog used by a build.
 func SourceManifest(docsFS, releaseNotesFS fs.FS) (Manifest, error) {
 	c, err := loadCatalogWithReleaseNotes(docsFS, releaseNotesFS)
 	if err != nil {
@@ -249,8 +226,8 @@ func (c *catalog) identityLine() string {
 func (*docsTool) Name() string { return "docs" }
 
 func (*docsTool) Description() string {
-	return "Search and read the official documentation embedded in this exact Reasonix build. " +
-		"Use it before web search or assumptions for Reasonix setup, CLI, Desktop, configuration, permissions, MCP, memory, recovery, provider behavior, and maintainer workflows. " +
+	return "Search and read the official documentation embedded in this exact Patty Code build. " +
+		"Use it before web search or assumptions for patcode setup, CLI, Desktop, configuration, permissions, MCP, memory, recovery, provider behavior, and maintainer workflows. " +
 		"Search first, then read the returned section_id when the full section is needed."
 }
 
@@ -262,7 +239,7 @@ func (*docsTool) Schema() json.RawMessage {
 			"query":{"type":"string","maxLength":4096,"description":"Question, command, configuration key, error phrase, or topic for operation=search."},
 			"section_id":{"type":"string","description":"Exact section_id returned by search or by a document section listing. Used by operation=read."},
 			"path":{"type":"string","description":"Exact docs/*.md path returned by search/list. With operation=read and no section_id, lists that document's sections."},
-			"language":{"type":"string","enum":["auto","all","en","zh-CN"],"description":"Language preference. search defaults to auto from the query; list defaults to all. Explicit en or zh-CN filters results."},
+			"language":{"type":"string","enum":["auto","all","en","ko-KR"],"description":"Language preference. search defaults to auto from the query; list defaults to all. Explicit en or ko-KR filters results."},
 			"audience":{"type":"string","enum":["all","user","developer","maintainer"],"description":"Optional audience filter; defaults to all."},
 			"limit":{"type":"integer","minimum":1,"maximum":10,"description":"Maximum search results, default 5, max 10."}
 		},
@@ -367,8 +344,6 @@ func (t *docsTool) search(ctx context.Context, query, language, audience string,
 			continue
 		}
 		if exactReleaseVersion {
-			// Release-note virtual paths carry the exact requested version. Keep
-			// that stronger than generic terms such as "changelog" or "更新日志".
 			score += 100
 		}
 		for _, term := range queryTerms {
@@ -405,7 +380,7 @@ func (t *docsTool) read(sectionID, documentPath string) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("unknown section_id %q; use operation=search or read with an exact path to list section ids", sectionID)
 		}
-		return fmt.Sprintf("Embedded Reasonix documentation (%s)\nsource: %s\npath: %s\nsection_id: %s\nlocale: %s\naudience: %s\nheading: %s\n\n%s",
+		return fmt.Sprintf("Embedded patty code documentation (%s)\nsource: %s\npath: %s\nsection_id: %s\nlocale: %s\naudience: %s\nheading: %s\n\n%s",
 			t.catalog.identityLine(), section.document.sourceRange(section.startLine, section.endLine), section.document.displayPath(), section.id,
 			section.document.locale, section.document.audience, section.heading, strings.TrimSpace(section.content)), nil
 	}
@@ -430,7 +405,7 @@ func (t *docsTool) read(sectionID, documentPath string) (string, error) {
 
 func (t *docsTool) list(language, audience string) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Embedded Reasonix documentation catalog (%s):\n", t.catalog.identityLine())
+	fmt.Fprintf(&b, "Embedded patty code documentation catalog (%s):\n", t.catalog.identityLine())
 	count := 0
 	for _, doc := range t.catalog.docs {
 		if language != "auto" && language != "all" && doc.locale != language {
@@ -461,7 +436,7 @@ func loadCatalogWithReleaseNotes(docsFS, releaseNotesFS fs.FS) (*catalog, error)
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 	hash := sha256.New()
-	_, _ = hash.Write([]byte("reasonix-product-docs-v1\x00"))
+	_, _ = hash.Write([]byte("patty-product-docs-v1\x00"))
 	markdownParser := goldmark.DefaultParser()
 	c := &catalog{byPath: map[string]*document{}, byID: map[string]*section{}}
 	for _, entry := range entries {
@@ -567,7 +542,7 @@ func parseDocumentWithParser(name, content string, markdownParser parser.Parser)
 	source := []byte(content)
 	doc := &document{
 		path:     path.Clean(name),
-		title:    strings.TrimSuffix(strings.TrimSuffix(name, ".md"), ".zh-CN"),
+		title:    strings.TrimSuffix(strings.TrimSuffix(name, ".md"), ".ko-KR"),
 		locale:   detectDocumentLanguage(name, content),
 		audience: documentAudience(name),
 	}
@@ -719,10 +694,10 @@ func normalizeLanguage(language string) (string, error) {
 		return "all", nil
 	case "en", "en-us", "english":
 		return "en", nil
-	case "zh", "zh-cn", "cn", "chinese":
-		return "zh-CN", nil
+	case "ko-kr", "ko":
+		return "ko-KR", nil
 	default:
-		return "", fmt.Errorf("unknown language %q; use auto, all, en, or zh-CN", language)
+		return "", fmt.Errorf("unknown language %q; use auto, all, en, or ko-KR", language)
 	}
 }
 
@@ -740,16 +715,13 @@ func normalizeAudience(audience string) (string, error) {
 func detectQueryLanguage(query string) string {
 	for _, r := range query {
 		if unicode.In(r, unicode.Han, unicode.Hiragana, unicode.Katakana, unicode.Hangul) {
-			return "zh-CN"
+			return "ko-KR"
 		}
 	}
 	return "en"
 }
 
 func detectDocumentLanguage(name, content string) string {
-	if strings.HasSuffix(strings.ToLower(name), ".zh-cn.md") {
-		return "zh-CN"
-	}
 	han, latin := 0, 0
 	for _, r := range content {
 		switch {
@@ -760,13 +732,13 @@ func detectDocumentLanguage(name, content string) string {
 		}
 	}
 	if han > 100 && han*4 > latin {
-		return "zh-CN"
+		return "ko-KR"
 	}
 	return "en"
 }
 
 func documentAudience(name string) string {
-	stem := strings.TrimSuffix(strings.TrimSuffix(name, ".md"), ".zh-CN")
+	stem := strings.TrimSuffix(strings.TrimSuffix(name, ".md"), ".ko-KR")
 	switch strings.ToUpper(stem) {
 	case "RELEASING", "SIGNPATH_WINDOWS_ADMIN_SOP", "PRODUCTION_CHECKLIST", "THEME_ASSETS":
 		return "maintainer"
@@ -779,10 +751,10 @@ func documentAudience(name string) string {
 
 func formatSearchResults(query, identity string, hits []searchHit) string {
 	if len(hits) == 0 {
-		return fmt.Sprintf("No embedded Reasonix documentation matched %q (%s). Try fewer terms, an exact command/configuration key, language=all, or audience=all.", query, identity)
+		return fmt.Sprintf("No embedded Patty Code documentation matched %q (%s). Try fewer terms, an exact command/configuration key, language=all, or audience=all.", query, identity)
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Embedded Reasonix documentation results for %q (%s):\n", query, identity)
+	fmt.Fprintf(&b, "Embedded patty code documentation results for %q (%s):\n", query, identity)
 	for i, hit := range hits {
 		section := hit.section
 		fmt.Fprintf(&b, "\n%d. score=%.3f source=%s path=%s section_id=%s locale=%s audience=%s\n   heading: %s\n   snippet: %s\n",

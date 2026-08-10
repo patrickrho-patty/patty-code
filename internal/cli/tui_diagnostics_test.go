@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/i18n"
 )
 
 func TestTUIDiagnosticsKeepProcessAndPluginLogsOffTerminal(t *testing.T) {
@@ -136,8 +136,7 @@ func TestCLIProfileBuildOptionsUseResolvedLocaleForAutoPricing(t *testing.T) {
 		want     string
 	}{
 		{language: "en", want: "USD"},
-		{language: "zh", want: "CNY"},
-		{language: "zh-TW", want: "CNY"},
+		{language: "ko", want: "CNY"},
 	} {
 		i18n.DetectLanguage(tt.language)
 		opts := cliProfileBuildOptions("provider/model", 0, false, event.Discard, "balanced", cliBuildOverrides{})

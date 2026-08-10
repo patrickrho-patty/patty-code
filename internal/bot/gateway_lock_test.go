@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/control"
+	"patty/internal/control"
 )
 
 type closeProbeBotController struct {
@@ -108,17 +108,17 @@ func TestBotGatewayStopClosesSessionsWithoutGatewayLock(t *testing.T) {
 }
 
 func TestBotGatewayStopWaitsForDispatchHandler(t *testing.T) {
-	adapter := newFakeAdapter(PlatformFeishu, "fake-feishu")
+	adapter := newFakeAdapter(Platform("feishu"), "fake-feishu")
 	entered := make(chan struct{})
 	release := make(chan struct{})
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled:   map[Platform]bool{PlatformFeishu: true},
+		Enabled:   map[Platform]bool{Platform("feishu"): true},
 		Allowlist: AllowlistConfig{AllowAll: true},
 		OnInbound: func(InboundMessage) {
 			close(entered)
 			<-release
 		},
-	}, []AdapterBinding{{ID: "feishu-lark", Platform: PlatformFeishu, Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, []AdapterBinding{{ID: "feishu-lark", Platform: Platform("feishu"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err := gw.Start(context.Background()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -148,13 +148,13 @@ func TestBotGatewayStopWaitsForDispatchHandler(t *testing.T) {
 }
 
 func TestBotGatewayStopWaitsForTurn(t *testing.T) {
-	adapter := newFakeAdapter(PlatformWeixin, "fake-weixin")
+	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled:   map[Platform]bool{PlatformWeixin: true},
+		Enabled:   map[Platform]bool{Platform("weixin"): true},
 		Allowlist: AllowlistConfig{AllowAll: true},
-	}, []AdapterBinding{{ID: "weixin", Platform: PlatformWeixin, Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, []AdapterBinding{{ID: "weixin", Platform: Platform("weixin"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctrl := &stopWaitBotController{started: make(chan struct{}), release: make(chan struct{})}
-	msg := InboundMessage{Platform: PlatformWeixin, ConnectionID: "weixin", ChatType: ChatDM, ChatID: "chat", UserID: "user", Text: "hello"}
+	msg := InboundMessage{Platform: Platform("weixin"), ConnectionID: "weixin", ChatType: ChatDM, ChatID: "chat", UserID: "user", Text: "hello"}
 	key := BuildSessionKey(msg.Session())
 	gw.controllers[key] = &sessionState{ctrl: ctrl, sink: &sessionEventSink{}}
 	if err := gw.Start(context.Background()); err != nil {
@@ -230,20 +230,20 @@ func (c *cancelPublishBotController) Close() {
 // Run with -race: an unlocked read of state.cancel here is a data race.
 func TestBotGatewayStopBeforeTurnCancelPublication(t *testing.T) {
 	adapter := &typingHoldAdapter{
-		fakeAdapter: newFakeAdapter(PlatformWeixin, "fake-weixin"),
+		fakeAdapter: newFakeAdapter(Platform("weixin"), "fake-weixin"),
 		entered:     make(chan struct{}, 2),
 		release:     make(chan struct{}),
 	}
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled:   map[Platform]bool{PlatformWeixin: true},
+		Enabled:   map[Platform]bool{Platform("weixin"): true},
 		Allowlist: AllowlistConfig{AllowAll: true},
-	}, []AdapterBinding{{ID: "weixin", Platform: PlatformWeixin, Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, []AdapterBinding{{ID: "weixin", Platform: Platform("weixin"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	closeEntered := make(chan struct{}, 2)
 	closeHold := make(chan struct{})
 	turnCtx := make(chan error, 2)
 	chats := []string{"chat-a", "chat-b"}
 	for _, chat := range chats {
-		msg := InboundMessage{Platform: PlatformWeixin, ConnectionID: "weixin", ChatType: ChatDM, ChatID: chat, UserID: "user"}
+		msg := InboundMessage{Platform: Platform("weixin"), ConnectionID: "weixin", ChatType: ChatDM, ChatID: chat, UserID: "user"}
 		gw.controllers[BuildSessionKey(msg.Session())] = &sessionState{
 			ctrl: &cancelPublishBotController{closeEntered: closeEntered, closeHold: closeHold, turnCtx: turnCtx},
 			sink: &sessionEventSink{},
@@ -253,7 +253,7 @@ func TestBotGatewayStopBeforeTurnCancelPublication(t *testing.T) {
 		t.Fatalf("Start: %v", err)
 	}
 	for _, chat := range chats {
-		adapter.msgCh <- InboundMessage{Platform: PlatformWeixin, ConnectionID: "weixin", ChatType: ChatDM, ChatID: chat, UserID: "user", Text: "hello"}
+		adapter.msgCh <- InboundMessage{Platform: Platform("weixin"), ConnectionID: "weixin", ChatType: ChatDM, ChatID: chat, UserID: "user", Text: "hello"}
 	}
 	for range chats {
 		select {
@@ -301,10 +301,10 @@ func TestBotGatewayStopBeforeTurnCancelPublication(t *testing.T) {
 }
 
 func TestBotGatewayStopIsIdempotent(t *testing.T) {
-	adapter := &countingStopAdapter{fakeAdapter: newFakeAdapter(PlatformFeishu, "fake-feishu")}
+	adapter := &countingStopAdapter{fakeAdapter: newFakeAdapter(Platform("feishu"), "fake-feishu")}
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled: map[Platform]bool{PlatformFeishu: true},
-	}, []AdapterBinding{{ID: "feishu-lark", Platform: PlatformFeishu, Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		Enabled: map[Platform]bool{Platform("feishu"): true},
+	}, []AdapterBinding{{ID: "feishu-lark", Platform: Platform("feishu"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err := gw.Start(context.Background()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -318,12 +318,12 @@ func TestBotGatewayStopIsIdempotent(t *testing.T) {
 
 func TestBotGatewayStopCancelsConcurrentStart(t *testing.T) {
 	adapter := &cancelBlockingStartAdapter{
-		fakeAdapter: newFakeAdapter(PlatformFeishu, "fake-feishu"),
+		fakeAdapter: newFakeAdapter(Platform("feishu"), "fake-feishu"),
 		entered:     make(chan struct{}),
 	}
 	gw := NewGatewayWithAdapterBindings(GatewayConfig{
-		Enabled: map[Platform]bool{PlatformFeishu: true},
-	}, []AdapterBinding{{ID: "feishu-lark", Platform: PlatformFeishu, Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		Enabled: map[Platform]bool{Platform("feishu"): true},
+	}, []AdapterBinding{{ID: "feishu-lark", Platform: Platform("feishu"), Adapter: adapter}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	startDone := make(chan error, 1)
 	go func() { startDone <- gw.Start(context.Background()) }()
 	select {
@@ -357,12 +357,12 @@ func TestBotGatewayStopCancelsConcurrentStart(t *testing.T) {
 // sessionOptionsForMessage and the project/session index builders read them.
 // Run with -race; a lock-free read is a concurrent map read/write crash.
 func TestBotGatewayToolApprovalModeConcurrentWithConfigReaders(t *testing.T) {
-	t.Setenv("REASONIX_HOME", t.TempDir())
+	t.Setenv("PATTY_HOME", t.TempDir())
 	gw := &BotGateway{
 		cfg: GatewayConfig{
 			WorkspaceRoot: t.TempDir(),
 			Channels: map[Platform]ChannelConfig{
-				PlatformFeishu: {ToolApprovalMode: control.ToolApprovalAsk},
+				Platform("feishu"): {ToolApprovalMode: control.ToolApprovalAsk},
 			},
 			ConnectionChannels: map[string]ChannelConfig{
 				"feishu-lark": {ToolApprovalMode: control.ToolApprovalAsk},
@@ -388,7 +388,7 @@ func TestBotGatewayToolApprovalModeConcurrentWithConfigReaders(t *testing.T) {
 			mode := modes[i%len(modes)]
 			gw.UpdateConnectionToolApprovalMode("feishu-lark", mode)
 			gw.mu.Lock()
-			gw.updateToolApprovalModeDefaultLocked(InboundMessage{Platform: PlatformFeishu}, mode)
+			gw.updateToolApprovalModeDefaultLocked(InboundMessage{Platform: Platform("feishu")}, mode)
 			gw.updateToolApprovalModeDefaultLocked(InboundMessage{}, mode)
 			gw.mu.Unlock()
 			runtime.Gosched()
@@ -396,10 +396,10 @@ func TestBotGatewayToolApprovalModeConcurrentWithConfigReaders(t *testing.T) {
 	}()
 
 	close(start)
-	connMsg := InboundMessage{Platform: PlatformFeishu, ConnectionID: "feishu-lark", ChatType: ChatDM, ChatID: "chat", UserID: "user"}
+	connMsg := InboundMessage{Platform: Platform("feishu"), ConnectionID: "feishu-lark", ChatType: ChatDM, ChatID: "chat", UserID: "user"}
 	for range iterations {
 		gw.sessionOptionsForMessage(connMsg)
-		gw.sessionOptionsForMessage(InboundMessage{Platform: PlatformFeishu})
+		gw.sessionOptionsForMessage(InboundMessage{Platform: Platform("feishu")})
 		projects := gw.buildProjectIndex()
 		gw.buildSessionIndex(projects)
 		runtime.Gosched()

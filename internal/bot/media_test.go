@@ -27,7 +27,7 @@ func TestSaveInboundMediaStoresWorkspaceImageAttachment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("saveOneInboundMedia: %v", err)
 	}
-	if !strings.HasPrefix(ref, ".reasonix/attachments/") || !strings.HasSuffix(ref, ".png") {
+	if !strings.HasPrefix(ref, ".patty/attachments/") || !strings.HasSuffix(ref, ".png") {
 		t.Fatalf("ref = %q, want png attachment ref", ref)
 	}
 	if _, err := os.Stat(filepath.Join(workspace, filepath.FromSlash(ref))); err != nil {
@@ -89,20 +89,20 @@ func TestSaveInboundMediaItemsLoadsDeferredBytesAfterAdmission(t *testing.T) {
 
 func TestInputTextWithMediaKeepsDeferredFailurePlaceholder(t *testing.T) {
 	workspace := t.TempDir()
-	adapter := newFakeAdapter(PlatformFeishu, "feishu")
-	gw := NewGateway(GatewayConfig{WorkspaceRoot: workspace}, map[Platform]Adapter{PlatformFeishu: adapter}, discardLogger())
+	adapter := newFakeAdapter(Platform("feishu"), "feishu")
+	gw := NewGateway(GatewayConfig{WorkspaceRoot: workspace}, map[Platform]Adapter{Platform("feishu"): adapter}, discardLogger())
 	input := gw.inputTextWithMedia(context.Background(), adapter, InboundMessage{
-		Platform: PlatformFeishu,
+		Platform: Platform("feishu"),
 		ChatType: ChatDM,
 		ChatID:   "chat",
 		Media: []InboundMedia{{
-			FailureText: "[文件下载失败: report.pdf]",
+			FailureText: "[파일 다운로드 실패: report.pdf]",
 			Load: func(context.Context) ([]byte, string, error) {
 				return nil, "", os.ErrNotExist
 			},
 		}},
 	}, nil)
-	if input != "[文件下载失败: report.pdf]" {
+	if input != "[파일 다운로드 실패: report.pdf]" {
 		t.Fatalf("input = %q, want deferred failure placeholder", input)
 	}
 }

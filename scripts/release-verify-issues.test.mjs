@@ -23,7 +23,7 @@ test("issue refs survive the punctuation PR bodies actually use", () => {
 
 test("pull request numbers come from both merge and squash subjects", () => {
   const log = [
-    "Merge pull request #7053 from esengine/fix/cli-colour-profile",
+    "Merge pull request #7053 from pattycorp/fix/cli-colour-profile",
     "fix(cli): resolve colour support from colorprofile",
     "polish(desktop): tighten spacing (#7019)",
   ].join("\n");

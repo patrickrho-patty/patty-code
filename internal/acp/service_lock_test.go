@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/control"
+	"patty/internal/control"
 )
 
 type snapshotLockProbeController struct {

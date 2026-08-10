@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // NewSession
@@ -339,7 +339,7 @@ func TestPreviewSessionStripsTransientReasoningLanguageBlock(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "session.jsonl")
 	s := NewSession("system")
-	s.Add(provider.Message{Role: provider.RoleUser, Content: "<reasoning-language>\nVisible reasoning/thinking text preference: use Simplified Chinese.\n</reasoning-language>\n\nHelp me debug the auth module"})
+	s.Add(provider.Message{Role: provider.RoleUser, Content: "<reasoning-language>\nVisible reasoning/thinking text preference: use Standard Korean.\n</reasoning-language>\n\nHelp me debug the auth module"})
 	s.Save(path)
 
 	preview, turns := previewSession(path)

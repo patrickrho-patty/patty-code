@@ -1,11 +1,11 @@
 /**
- * 通知音效系统
+ * Notification sound system
  *
- * 支持合成音效和 WAV 文件播放两种模式，默认关闭。
- * 两个场景的偏好分别存入 localStorage:
- *   notificationSoundSuccess  —— 生成完成
- *   notificationSoundAttention —— AI 提问
- *   值："off" | "synth" | "positive" | "correct" | "start" | "back"
+ * Supports synthesized sounds and WAV playback; off by default.
+ * Preferences for the two scenarios are stored in localStorage:
+ *   notificationSoundSuccess  — generation complete
+ *   notificationSoundAttention — AI asks a question
+ *   values: "off" | "synth" | "positive" | "correct" | "start" | "back"
  */
 
 export type SoundWavPref = "off" | "synth" | "positive" | "correct" | "start" | "back";

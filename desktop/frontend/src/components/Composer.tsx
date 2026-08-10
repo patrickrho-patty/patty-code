@@ -98,6 +98,11 @@ const PROMPT_HISTORY_PREFETCH_REMAINING = 3;
 const IME_CONFIRM_GRACE_MS = 100;
 const FILE_REF_SEARCH_CACHE_TTL_MS = 5000;
 
+// hideRuntimeProfile hides the runtime-profile (work-mode) selector from the
+// composer. The internal machinery stays intact so sessions keep their default
+// profile; only the user-facing trigger and menu are removed.
+const hideRuntimeProfile = true;
+
 type PastedBlock = {
   label: string;
   text: string;
@@ -3947,7 +3952,7 @@ export function Composer({
           )}
         </div>
       </AnchoredPopover>}
-      {!heroMode && <AnchoredPopover
+      {!heroMode && !hideRuntimeProfile && <AnchoredPopover
         open={profileMenuOpen}
         closing={profileMenuClosing}
         anchorRef={profileMenuAnchorRef}
@@ -4572,7 +4577,7 @@ export function Composer({
                 </Tooltip>
               </div>
             )}
-            {!heroMode && (
+            {!heroMode && !hideRuntimeProfile && (
               <div className="composer-meta__control composer-meta__control--profile">
                 <Tooltip label={runtimeProfileTooltipLabel} disabled={profileMenuOpen || profileMenuClosing || creationChrome}>
                   <button

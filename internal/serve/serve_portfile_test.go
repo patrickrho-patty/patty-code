@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
+	"patty/internal/config"
+	"patty/internal/control"
 )
 
 func newListenerTestServer(t *testing.T) *Server {
 	t.Helper()
-	t.Setenv("REASONIX_HOME", t.TempDir())
+	t.Setenv("PATTY_HOME", t.TempDir())
 	bc := NewBroadcaster()
 	ctrl := control.New(control.Options{
 		Sink:       bc,

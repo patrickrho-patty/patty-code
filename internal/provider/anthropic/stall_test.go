@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // TestStreamStallTimesOut covers issue #3374 for the Anthropic provider: a

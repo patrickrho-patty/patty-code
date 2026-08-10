@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-Replace all Reasonix-specific filesystem paths, environment variables, configuration keys, credential names, session/cache/lock identifiers, and wire-format namespaces with values derived from the ProductProfile. Ensure harness state isolation via signed envelopes.
+Replace all Patty Code-specific filesystem paths, environment variables, configuration keys, credential names, session/cache/lock identifiers, and wire-format namespaces with values derived from the ProductProfile. Ensure harness state isolation via signed envelopes.
 
 ## 2. Scope
 
@@ -29,9 +29,9 @@ Replace all Reasonix-specific filesystem paths, environment variables, configura
 ## 3. Task List
 
 ### T1: Rewrite `internal/config/config.go` path discovery
-- Replace hardcoded `.reasonix`, `REASONIX_HOME`, `reasonix.toml`
+- Replace hardcoded `.patty`, `PATTY_HOME`, `patty.toml`
 - Use Profile-derived UserRoot, EnvPrefix, ConfigFilename
-- Test: clean install writes to `~/.patty/`, not `~/.reasonix/`
+- Test: clean install writes to `~/.patty/`, not `~/.patty/`
 
 ### T2: Update credentials store naming
 - Keychain service name → derived from Profile.KeychainService
@@ -39,11 +39,11 @@ Replace all Reasonix-specific filesystem paths, environment variables, configura
 
 ### T3: Rename cache/lock/session roots
 - Cache root: `<data_root>/.cache/patty`
-- Lock prefix: `patty-` instead of `reasonix-`
+- Lock prefix: `patty-` instead of `patty-code-`
 - Session namespace: bounded by HarnessID in filename
 
 ### T4: Replace database/D1 identities
-- Table/column names referencing reasonix → patty-neutral or profile-derived
+- Table/column names referencing patty code → patty-neutral or profile-derived
 - Migration comments updated
 
 ### T5: Replace event-wire protocol identities
@@ -62,13 +62,13 @@ Replace all Reasonix-specific filesystem paths, environment variables, configura
 
 ### T8: Add clean-install smoke tests
 - Ephemeral temp directory as home
-- Start harness, verify it uses `.patty/`, not `.reasonix/`
-- Verify `REASONIX_*` env vars have no effect
+- Start harness, verify it uses `.patty/`, not `.patty/`
+- Verify `PATTY_*` env vars have no effect
 
 ## 4. Definition of Done
 
-- [ ] No hardcoded `.reasonix` paths in config resolution
-- [ ] No hardcoded `REASONIX_` env var usage
+- [ ] No hardcoded `.patty` paths in config resolution
+- [ ] No hardcoded `PATTY_` env var usage
 - [ ] All storage paths derived from Profile
 - [ ] Envelope rejects cross-harness copied state
 - [ ] Clean-install tests pass with empty roots

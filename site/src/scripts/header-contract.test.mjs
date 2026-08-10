@@ -31,7 +31,7 @@ test("the shared header owns the complete global navigation", async () => {
   assert.match(header, /nav-sign-in/);
   assert.match(header, /nav-install/);
   assert.match(header, /class="nav-github"/);
-  assert.match(header, /https:\/\/github[.]com\/esengine\/DeepSeek-Reasonix/);
+  assert.match(header, /https:\/\/github[.]com\/patty-io\/patty-code/);
   assert.match(header, /target="_blank"/);
-  assert.match(header, /aria-label="Reasonix GitHub repository"/);
+  assert.match(header, /aria-label="Patty Code GitHub repository"/);
 });

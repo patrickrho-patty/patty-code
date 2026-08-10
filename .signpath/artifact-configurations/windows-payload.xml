@@ -3,22 +3,22 @@
      wraps the flat payload directory in this zip before SignPath receives it. -->
 <artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
   <zip-file>
-    <pe-file path="reasonix-desktop.exe">
+    <pe-file path="patty-desktop.exe">
       <authenticode-sign />
     </pe-file>
-    <pe-file path="reasonix-guard.exe">
+    <pe-file path="patty-code-guard.exe">
       <authenticode-sign />
     </pe-file>
-    <pe-file path="reasonix-launcher.exe">
+    <pe-file path="patty-code-launcher.exe">
       <authenticode-sign />
     </pe-file>
-    <pe-file path="reasonix-update-helper.exe">
+    <pe-file path="patty-code-update-helper.exe">
       <authenticode-sign />
     </pe-file>
-    <pe-file path="reasonix-cli.exe">
+    <pe-file path="patty-code-cli.exe">
       <authenticode-sign />
     </pe-file>
-    <pe-file path="reasonix-uninstall.exe">
+    <pe-file path="patty-code-uninstall.exe">
       <authenticode-sign />
     </pe-file>
   </zip-file>

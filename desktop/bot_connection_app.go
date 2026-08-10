@@ -1,22 +1,14 @@
 package main
 
 import (
-	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
 
-	"reasonix/internal/bot"
-	"reasonix/internal/bot/feishu"
-	"reasonix/internal/bot/weixin"
-	"reasonix/internal/botruntime"
-	"reasonix/internal/config"
+	"patty/internal/botruntime"
+	"patty/internal/config"
 )
 
 type BotConnectionCredentialView struct {
@@ -57,27 +49,6 @@ type BotConnectionView struct {
 	UpdatedAt        string                            `json:"updatedAt"`
 }
 
-type BotInstallStartResult struct {
-	OK         bool   `json:"ok"`
-	Provider   string `json:"provider"`
-	Domain     string `json:"domain"`
-	InstallID  string `json:"installId"`
-	URL        string `json:"url"`
-	DeviceCode string `json:"deviceCode"`
-	UserCode   string `json:"userCode"`
-	Interval   int    `json:"interval"`
-	ExpireIn   int    `json:"expireIn"`
-	Message    string `json:"message"`
-}
-
-type BotInstallPollResult struct {
-	Done       bool              `json:"done"`
-	Connection BotConnectionView `json:"connection"`
-	Status     string            `json:"status"`
-	Message    string            `json:"message"`
-	Error      string            `json:"error"`
-}
-
 type BotConnectionDiagnostic struct {
 	ID           string `json:"id"`
 	Label        string `json:"label"`
@@ -91,109 +62,6 @@ type BotConnectionDiagnostic struct {
 	OccurredAt   string `json:"occurredAt"`
 }
 
-type botInstallSession struct {
-	Provider   string
-	Domain     string
-	PollDomain string
-	DeviceCode string
-	UserCode   string
-	StartedAt  time.Time
-	ExpireAt   time.Time
-	Weixin     *weixin.LoginSession
-}
-
-func (a *App) StartBotConnectionInstall(provider, domain string) (BotInstallStartResult, error) {
-	provider, domain = normalizeBotInstallTarget(provider, domain)
-	if provider == "weixin" {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		session, err := weixin.StartLogin(ctx)
-		if err != nil {
-			return BotInstallStartResult{OK: false, Provider: provider, Domain: domain, Message: err.Error()}, nil
-		}
-		installID := randomInstallID()
-		a.mu.Lock()
-		if a.botInstalls == nil {
-			a.botInstalls = map[string]*botInstallSession{}
-		}
-		a.botInstalls[installID] = &botInstallSession{
-			Provider:   provider,
-			Domain:     domain,
-			DeviceCode: session.QRCode,
-			StartedAt:  session.StartedAt,
-			ExpireAt:   time.Now().Add(2 * time.Minute),
-			Weixin:     session,
-		}
-		a.mu.Unlock()
-		return BotInstallStartResult{
-			OK: true, Provider: provider, Domain: domain, InstallID: installID, URL: firstNonEmptyBot(session.QRCodeURL, session.QRCode),
-			DeviceCode: session.QRCode, Interval: 3, ExpireIn: 120, Message: "请使用微信扫码完成连接。",
-		}, nil
-	}
-	if provider != "feishu" {
-		return BotInstallStartResult{OK: false, Provider: provider, Domain: domain, Message: "unsupported bot provider"}, nil
-	}
-	return a.startFeishuConnectionInstall(domain)
-}
-
-func (a *App) PollBotConnectionInstall(installID string) (BotInstallPollResult, error) {
-	installID = strings.TrimSpace(installID)
-	// Copy the session under a.mu: overlapping polls of the same install can
-	// race the locked PollDomain upgrade below with unlocked field reads.
-	a.mu.RLock()
-	sessionPtr := a.botInstalls[installID]
-	var sessionCopy botInstallSession
-	if sessionPtr != nil {
-		sessionCopy = *sessionPtr
-	}
-	a.mu.RUnlock()
-	if sessionPtr == nil {
-		return BotInstallPollResult{Error: "install session not found"}, nil
-	}
-	session := &sessionCopy
-	if time.Now().After(session.ExpireAt) {
-		a.deleteBotInstall(installID)
-		return BotInstallPollResult{Status: "expired", Error: "install session expired"}, nil
-	}
-	if session.Provider == "weixin" {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		result, status, err := weixin.PollLogin(ctx, session.Weixin)
-		if err != nil {
-			return BotInstallPollResult{Status: status, Error: err.Error()}, nil
-		}
-		if result == nil {
-			return BotInstallPollResult{Status: status, Message: weixinInstallStatusMessage(status)}, nil
-		}
-		a.deleteBotInstall(installID)
-		conn, err := a.upsertBotConnection(config.BotConnectionConfig{
-			ID:         connectionID("weixin", "weixin"),
-			Provider:   "weixin",
-			Domain:     "weixin",
-			Label:      "微信",
-			Enabled:    true,
-			Status:     "connected",
-			Access:     botInstallAccess(result.UserID),
-			Credential: config.BotConnectionCredential{AccountID: result.AccountID, TokenEnv: "WEIXIN_BOT_TOKEN"},
-		}, func(c *config.Config) {
-			c.Bot.Enabled = true
-			c.Bot.Weixin.Enabled = true
-			c.Bot.Weixin.AccountID = result.AccountID
-			c.Bot.Weixin.APIBase = result.BaseURL
-			if c.Bot.Weixin.TokenEnv == "" {
-				c.Bot.Weixin.TokenEnv = "WEIXIN_BOT_TOKEN"
-			}
-			c.Bot.Allowlist.WeixinUsers = appendUniqueBotString(c.Bot.Allowlist.WeixinUsers, result.UserID)
-		})
-		if err != nil {
-			return BotInstallPollResult{Status: "error", Error: err.Error()}, nil
-		}
-		a.refreshBotRuntimeAsync()
-		return BotInstallPollResult{Done: true, Status: "connected", Connection: conn, Message: "微信已连接。"}, nil
-	}
-	return a.pollFeishuConnectionInstall(installID, session)
-}
-
 func (a *App) DiagnoseBotConnection(id string) (BotConnectionDiagnostic, error) {
 	cfg, err := a.loadDesktopBotConfig()
 	if err != nil {
@@ -202,35 +70,29 @@ func (a *App) DiagnoseBotConnection(id string) (BotConnectionDiagnostic, error) 
 	for _, conn := range cfg.Bot.Connections {
 		if conn.ID == id {
 			status := "ok"
-			message := "连接配置已保存。"
+			message := "연결 구성이 저장되었습니다."
 			phase := "config"
 			code := "config_ok"
 			reportable := false
 			if !conn.Enabled {
 				status = "disabled"
-				message = "连接已保存但未启用。"
+				message = "연결이 저장되었지만 활성화되지 않았습니다."
 				code = "connection_disabled"
 			} else if conn.Status != "connected" {
 				status = firstNonEmptyBot(conn.Status, "pending")
-				message = firstNonEmptyBot(conn.LastError, "连接还未完成。")
+				message = firstNonEmptyBot(conn.LastError, "연결이 아직 완료되지 않았습니다.")
 				phase = "install"
 				code = "connection_not_connected"
 				reportable = status == "error" || strings.TrimSpace(conn.LastError) != ""
 			} else if conn.Credential.AppSecretEnv != "" && strings.TrimSpace(conn.Credential.AppSecretEnv) != "" && !envIsSet(conn.Credential.AppSecretEnv) {
 				status = "warning"
-				message = conn.Credential.AppSecretEnv + " 未设置。"
+				message = conn.Credential.AppSecretEnv + " 미설정."
 				phase = "credential"
 				code = "secret_missing"
 				reportable = true
 			} else if conn.Credential.TokenEnv != "" && strings.TrimSpace(conn.Credential.TokenEnv) != "" && !botCredentialSecretSet(conn) {
 				status = "warning"
-				message = conn.Credential.TokenEnv + " 未设置，且未找到已保存的登录凭据。"
-				phase = "credential"
-				code = "secret_missing"
-				reportable = true
-			} else if conn.Provider == "weixin" && !botCredentialSecretSet(conn) {
-				status = "warning"
-				message = "未找到已保存的微信登录凭据。"
+				message = conn.Credential.TokenEnv + " 미설정, 저장된 로그인 자격 증명도 없음."
 				phase = "credential"
 				code = "secret_missing"
 				reportable = true
@@ -238,7 +100,7 @@ func (a *App) DiagnoseBotConnection(id string) (BotConnectionDiagnostic, error) 
 			return botConnectionDiagnostic(&conn, conn.ID, status, phase, code, message, reportable), nil
 		}
 	}
-	return botConnectionDiagnostic(nil, id, "missing", "config", "connection_missing", "未找到连接。", true), nil
+	return botConnectionDiagnostic(nil, id, "missing", "config", "connection_missing", "연결을 찾을 수 없습니다.", true), nil
 }
 
 func (a *App) TestBotConnection(id, target string) (BotConnectionDiagnostic, error) {
@@ -254,44 +116,9 @@ func (a *App) TestBotConnection(id, target string) (BotConnectionDiagnostic, err
 		}
 	}
 	if conn == nil {
-		return botConnectionDiagnostic(nil, id, "missing", "config", "connection_missing", "未找到连接。", true), nil
+		return botConnectionDiagnostic(nil, id, "missing", "config", "connection_missing", "연결을 찾을 수 없음.", true), nil
 	}
-	target = firstNonEmptyBot(strings.TrimSpace(target), firstSessionRemoteID(conn.SessionMappings))
-	if conn.Provider != "feishu" && conn.Provider != "weixin" {
-		return botConnectionDiagnostic(conn, conn.ID, "warning", "send", "test_send_unsupported", "当前渠道暂不支持桌面端主动发送测试消息，可使用诊断检查基础配置。", false), nil
-	}
-	if target == "" {
-		return botConnectionDiagnostic(conn, conn.ID, "warning", "send", "test_target_missing", "请输入测试会话 ID 后再发送测试消息。", false), nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	var result bot.SendResult
-	switch conn.Provider {
-	case "feishu":
-		feishuCfg := cfg.Bot.Feishu
-		feishuCfg.Enabled = true
-		feishuCfg.Domain = firstNonEmptyBot(conn.Domain, feishuCfg.Domain)
-		feishuCfg.AppID = firstNonEmptyBot(conn.Credential.AppID, feishuCfg.AppID)
-		feishuCfg.AppSecretEnv = firstNonEmptyBot(conn.Credential.AppSecretEnv, feishuCfg.AppSecretEnv)
-		result, err = feishu.SendText(ctx, feishuCfg, target, "Reasonix bot 测试消息：连接和发送链路可用。")
-	case "weixin":
-		weixinCfg := cfg.Bot.Weixin
-		weixinCfg.Enabled = true
-		weixinCfg.AccountID = firstNonEmptyBot(conn.Credential.AccountID, weixinCfg.AccountID)
-		weixinCfg.TokenEnv = firstNonEmptyBot(conn.Credential.TokenEnv, weixinCfg.TokenEnv)
-		result, err = weixin.SendText(ctx, weixinCfg, target, "Reasonix bot 测试消息：连接和发送链路可用。")
-	}
-	if err != nil {
-		return botConnectionDiagnostic(conn, conn.ID, "error", "send", "test_send_failed", err.Error(), true), nil
-	}
-	_ = a.rememberBotConnectionRemote(conn.ID, target)
-	msg := "测试消息已发送。"
-	if result.MessageID != "" {
-		msg += " Message ID: " + result.MessageID
-	}
-	diag := botConnectionDiagnostic(conn, conn.ID, "ok", "send", "test_send_ok", msg, false)
-	diag.MessageID = result.MessageID
-	return diag, nil
+	return botConnectionDiagnostic(conn, conn.ID, "warning", "send", "test_send_unsupported", "현재 채널은 데스크톱에서 테스트 메시지를 보낼 수 없음. 진단으로 기본 구성을 확인하세요.", false), nil
 }
 
 func botConnectionDiagnostic(conn *config.BotConnectionConfig, id, status, phase, code, message string, reportable bool) BotConnectionDiagnostic {
@@ -441,112 +268,6 @@ func safeBotReportValue(s string) string {
 	return s
 }
 
-func (a *App) startFeishuConnectionInstall(domain string) (BotInstallStartResult, error) {
-	// The official registration SDK always begins on the Feishu accounts domain.
-	// Lark tenants are detected from the first poll response, then polling moves
-	// to the Lark accounts domain for the final credential exchange.
-	beginDomain := "feishu"
-	data, err := postFeishuInstallForm(feishuAccountsBase(beginDomain), map[string]string{
-		"action": "begin", "archetype": "PersonalAgent", "auth_method": "client_secret", "request_user_info": "open_id",
-	})
-	if err != nil {
-		return BotInstallStartResult{OK: false, Provider: "feishu", Domain: domain, Message: err.Error()}, nil
-	}
-	deviceCode := stringValue(data["device_code"])
-	verifyURL := stringValue(data["verification_uri_complete"])
-	userCode := stringValue(data["user_code"])
-	if deviceCode == "" || verifyURL == "" {
-		return BotInstallStartResult{OK: false, Provider: "feishu", Domain: domain, Message: "飞书/Lark 授权响应缺少 device_code 或二维码 URL。"}, nil
-	}
-	qrURL, err := feishuRegistrationQRCodeURL(verifyURL)
-	if err != nil {
-		return BotInstallStartResult{OK: false, Provider: "feishu", Domain: domain, Message: err.Error()}, nil
-	}
-	installID := randomInstallID()
-	interval := intValue(data["interval"], 5)
-	expireIn := intValue(firstAny(data["expire_in"], data["expires_in"]), 300)
-	a.mu.Lock()
-	if a.botInstalls == nil {
-		a.botInstalls = map[string]*botInstallSession{}
-	}
-	a.botInstalls[installID] = &botInstallSession{
-		Provider: "feishu", Domain: domain, PollDomain: beginDomain, DeviceCode: deviceCode, UserCode: userCode,
-		StartedAt: time.Now(), ExpireAt: time.Now().Add(time.Duration(expireIn) * time.Second),
-	}
-	a.mu.Unlock()
-	return BotInstallStartResult{OK: true, Provider: "feishu", Domain: domain, InstallID: installID, URL: qrURL, DeviceCode: deviceCode, UserCode: userCode, Interval: interval, ExpireIn: expireIn}, nil
-}
-
-func (a *App) pollFeishuConnectionInstall(installID string, session *botInstallSession) (BotInstallPollResult, error) {
-	pollDomain := firstNonEmptyBot(session.PollDomain, session.Domain, "feishu")
-	data, statusCode, err := postFeishuInstallFormResult(feishuAccountsBase(pollDomain), map[string]string{"action": "poll", "device_code": session.DeviceCode})
-	if err != nil {
-		return BotInstallPollResult{Status: "error", Error: err.Error()}, nil
-	}
-	if errText := stringValue(data["error"]); errText != "" {
-		if errText == "authorization_pending" || errText == "slow_down" {
-			return BotInstallPollResult{Status: "pending", Message: "等待扫码授权。"}, nil
-		}
-		a.deleteBotInstall(installID)
-		return BotInstallPollResult{Status: "error", Error: firstNonEmptyBot(stringValue(data["error_description"]), errText)}, nil
-	}
-	if statusCode >= 400 {
-		a.deleteBotInstall(installID)
-		return BotInstallPollResult{Status: "error", Error: fmt.Sprintf("HTTP %d", statusCode)}, nil
-	}
-	if feishuInstallDomain(session.Domain, data) == "lark" && pollDomain != "lark" {
-		a.mu.Lock()
-		if current := a.botInstalls[installID]; current != nil {
-			current.PollDomain = "lark"
-		}
-		a.mu.Unlock()
-		return BotInstallPollResult{Status: "pending", Message: "已识别为 Lark 授权，继续等待授权完成。"}, nil
-	}
-	appID := stringValue(data["client_id"])
-	appSecret := stringValue(data["client_secret"])
-	if appID == "" || appSecret == "" {
-		return BotInstallPollResult{Status: "pending", Message: "等待授权完成。"}, nil
-	}
-	a.deleteBotInstall(installID)
-	domain := feishuInstallDomain(firstNonEmptyBot(pollDomain, session.Domain), data)
-	userID := feishuInstallUserID(data)
-	secretEnv := "FEISHU_BOT_APP_SECRET"
-	if domain == "lark" {
-		secretEnv = "LARK_BOT_APP_SECRET"
-	}
-	if err := upsertDotEnv(secretEnv, appSecret); err != nil {
-		return BotInstallPollResult{Status: "error", Error: err.Error()}, nil
-	}
-	label := "飞书"
-	if domain == "lark" {
-		label = "Lark"
-	}
-	conn, err := a.upsertBotConnection(config.BotConnectionConfig{
-		ID:         connectionID("feishu", domain),
-		Provider:   "feishu",
-		Domain:     domain,
-		Label:      label,
-		Enabled:    true,
-		Status:     "connected",
-		Access:     botInstallAccess(userID),
-		Credential: config.BotConnectionCredential{AppID: appID, AppSecretEnv: secretEnv},
-	}, func(c *config.Config) {
-		c.Bot.Enabled = true
-		c.Bot.Feishu.Enabled = true
-		c.Bot.Feishu.Domain = domain
-		c.Bot.Feishu.AppID = appID
-		c.Bot.Feishu.AppSecretEnv = secretEnv
-		c.Bot.Feishu.Mode = "websocket"
-		c.Bot.Feishu.RequireMention = true
-		c.Bot.Allowlist.FeishuUsers = appendUniqueBotString(c.Bot.Allowlist.FeishuUsers, userID)
-	})
-	if err != nil {
-		return BotInstallPollResult{Status: "error", Error: err.Error()}, nil
-	}
-	a.refreshBotRuntimeAsync()
-	return BotInstallPollResult{Done: true, Status: "connected", Connection: conn, Message: label + " 已连接。"}, nil
-}
-
 func (a *App) upsertBotConnection(conn config.BotConnectionConfig, updateLegacy func(*config.Config)) (BotConnectionView, error) {
 	now := time.Now().UTC().Format(time.RFC3339)
 	if conn.CreatedAt == "" {
@@ -633,83 +354,6 @@ func firstSessionRemoteID(mappings []config.BotConnectionSessionMapping) string 
 	return ""
 }
 
-func (a *App) deleteBotInstall(installID string) {
-	a.mu.Lock()
-	delete(a.botInstalls, installID)
-	a.mu.Unlock()
-}
-
-func normalizeBotInstallTarget(provider, domain string) (string, string) {
-	provider = strings.ToLower(strings.TrimSpace(provider))
-	domain = strings.ToLower(strings.TrimSpace(domain))
-	if provider == "lark" {
-		provider = "feishu"
-		domain = "lark"
-	}
-	if provider == "weixin" || provider == "wechat" {
-		return "weixin", "weixin"
-	}
-	if domain != "lark" {
-		domain = "feishu"
-	}
-	return "feishu", domain
-}
-
-func feishuAccountsBase(domain string) string {
-	if domain == "lark" {
-		return "https://accounts.larksuite.com"
-	}
-	return "https://accounts.feishu.cn"
-}
-
-func feishuRegistrationQRCodeURL(rawURL string) (string, error) {
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		return "", err
-	}
-	query := parsedURL.Query()
-	query.Set("from", "sdk")
-	query.Set("tp", "sdk")
-	query.Set("source", "go-sdk")
-	parsedURL.RawQuery = query.Encode()
-	return parsedURL.String(), nil
-}
-
-func postFeishuInstallForm(base string, body map[string]string) (map[string]any, error) {
-	data, status, err := postFeishuInstallFormResult(base, body)
-	if err != nil {
-		return nil, err
-	}
-	if status >= 400 {
-		return nil, fmt.Errorf("HTTP %d: %s", status, firstNonEmptyBot(stringValue(data["error_description"]), stringValue(data["message"])))
-	}
-	return data, nil
-}
-
-func postFeishuInstallFormResult(base string, body map[string]string) (map[string]any, int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	reqBody := url.Values{}
-	for k, v := range body {
-		reqBody.Set(k, v)
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(base, "/")+"/oauth/v1/app/registration", strings.NewReader(reqBody.Encode()))
-	if err != nil {
-		return nil, 0, err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer resp.Body.Close()
-	var out map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, resp.StatusCode, err
-	}
-	return out, resp.StatusCode, nil
-}
-
 func botConnectionView(conn config.BotConnectionConfig) BotConnectionView {
 	return BotConnectionView{
 		ID: conn.ID, Provider: conn.Provider, Domain: conn.Domain, Label: conn.Label, Enabled: conn.Enabled, Status: conn.Status,
@@ -728,37 +372,7 @@ func botCredentialSecretSet(conn config.BotConnectionConfig) bool {
 	if conn.Credential.AppSecretEnv != "" {
 		return envIsSet(conn.Credential.AppSecretEnv)
 	}
-	if conn.Credential.TokenEnv != "" && envIsSet(conn.Credential.TokenEnv) {
-		return true
-	}
-	if conn.Provider == "weixin" {
-		return weixin.HasSavedAccount(conn.Credential.AccountID)
-	}
-	return false
-}
-
-func feishuInstallDomain(fallback string, data map[string]any) string {
-	if userInfo, ok := data["user_info"].(map[string]any); ok {
-		if strings.EqualFold(stringValue(userInfo["tenant_brand"]), "lark") {
-			return "lark"
-		}
-		return "feishu"
-	}
-	if strings.EqualFold(fallback, "lark") {
-		return "lark"
-	}
-	return "feishu"
-}
-
-func feishuInstallUserID(data map[string]any) string {
-	if userInfo, ok := data["user_info"].(map[string]any); ok {
-		return firstNonEmptyBot(
-			stringValue(userInfo["open_id"]),
-			stringValue(userInfo["union_id"]),
-			stringValue(userInfo["user_id"]),
-		)
-	}
-	return ""
+	return conn.Credential.TokenEnv != "" && envIsSet(conn.Credential.TokenEnv)
 }
 
 func botConnectionViews(connections []config.BotConnectionConfig) []BotConnectionView {
@@ -901,25 +515,8 @@ func botInstallAccess(userID string) config.BotAccessConfig {
 	return access
 }
 
-func randomInstallID() string {
-	var b [12]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		return fmt.Sprintf("install-%d", time.Now().UnixNano())
-	}
-	return hex.EncodeToString(b[:])
-}
-
 func envIsSet(name string) bool {
 	return strings.TrimSpace(name) != "" && strings.TrimSpace(os.Getenv(name)) != ""
-}
-
-func firstAny(values ...any) any {
-	for _, value := range values {
-		if value != nil {
-			return value
-		}
-	}
-	return nil
 }
 
 func firstNonEmptyBot(values ...string) string {
@@ -942,41 +539,4 @@ func appendUniqueBotString(values []string, next string) []string {
 		}
 	}
 	return append(values, next)
-}
-
-func stringValue(value any) string {
-	if value == nil {
-		return ""
-	}
-	return strings.TrimSpace(fmt.Sprint(value))
-}
-
-func intValue(value any, fallback int) int {
-	switch v := value.(type) {
-	case float64:
-		if v > 0 {
-			return int(v)
-		}
-	case int:
-		if v > 0 {
-			return v
-		}
-	case string:
-		var n int
-		if _, err := fmt.Sscanf(v, "%d", &n); err == nil && n > 0 {
-			return n
-		}
-	}
-	return fallback
-}
-
-func weixinInstallStatusMessage(status string) string {
-	switch status {
-	case "scaned":
-		return "已扫码，请在微信里确认。"
-	case "scaned_but_redirect":
-		return "已扫码，正在切换微信授权节点。"
-	default:
-		return "等待扫码。"
-	}
 }

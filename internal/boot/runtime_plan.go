@@ -3,11 +3,11 @@ package boot
 import (
 	"strings"
 
-	"reasonix/internal/config"
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/dispatch"
-	"reasonix/internal/extension/sidecar"
-	"reasonix/internal/extensioncontract"
+	"patty/internal/config"
+	"patty/internal/extension"
+	"patty/internal/extension/dispatch"
+	"patty/internal/extension/sidecar"
+	"patty/internal/extensioncontract"
 )
 
 // RuntimeReload is previous-generation state for incremental sidecar adoption
@@ -163,7 +163,7 @@ func planForPreflight(opts Options, toGen uint64) *extension.RuntimePlan {
 	if opts.Extensions == nil && opts.Graph == nil {
 		return nil
 	}
-	toGraph, err := buildRuntimeGraph(config.ReasonixHomeDir(), nil)
+	toGraph, err := buildRuntimeGraph(config.PattyHomeDir(), nil)
 	if err != nil {
 		return nil
 	}
@@ -176,7 +176,7 @@ func finalizeBuildResult(res *BuildResult, publish bool) *BuildResult {
 	if res == nil {
 		return nil
 	}
-	if graph, err := buildRuntimeGraph(config.ReasonixHomeDir(), nil); err == nil {
+	if graph, err := buildRuntimeGraph(config.PattyHomeDir(), nil); err == nil {
 		attachPlanAndStatus(res, nil, graph, 0, nil)
 	}
 	if publish {

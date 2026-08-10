@@ -14,60 +14,60 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/extension/sidecar"
-	"reasonix/internal/pluginpkg"
+	"patty/internal/config"
+	"patty/internal/extension"
+	"patty/internal/extension/protocol"
+	"patty/internal/extension/sidecar"
+	"patty/internal/pluginpkg"
 )
 
 // Boot-level fake sidecar (re-exec helper-process pattern, mirroring the
 // sidecar package's own tests): the boot test binary re-executes itself with
-// REASONIX_BOOT_FAKE_SIDECAR=1 and speaks Extension Protocol v2 over
-// stdin/stdout. REASONIX_BOOT_FAKE_INIT_RESULT overrides the initialize
-// result; REASONIX_BOOT_FAKE_MODE=ignore_shutdown keeps the process alive
+// PATTY_BOOT_FAKE_SIDECAR=1 and speaks Extension Protocol v2 over
+// stdin/stdout. PATTY_BOOT_FAKE_INIT_RESULT overrides the initialize
+// result; PATTY_BOOT_FAKE_MODE=ignore_shutdown keeps the process alive
 // through extension/shutdown. Intercept steering for the dispatch tests:
 //
-//	REASONIX_BOOT_FAKE_BLOCK_EVENT      answer block at this event
-//	REASONIX_BOOT_FAKE_INVALID_EVENT    answer a DTO-violating replace at this event
-//	REASONIX_BOOT_FAKE_REPLACE_PROMPT   answer system_prompt.build replace with this prompt
-//	REASONIX_BOOT_FAKE_REPLACE_INPUT    answer input.receive replace with this text
-//	REASONIX_BOOT_FAKE_EVENT_LOG        append one "event payload" line per extension/event
+//	PATTY_BOOT_FAKE_BLOCK_EVENT      answer block at this event
+//	PATTY_BOOT_FAKE_INVALID_EVENT    answer a DTO-violating replace at this event
+//	PATTY_BOOT_FAKE_REPLACE_PROMPT   answer system_prompt.build replace with this prompt
+//	PATTY_BOOT_FAKE_REPLACE_INPUT    answer input.receive replace with this text
+//	PATTY_BOOT_FAKE_EVENT_LOG        append one "event payload" line per extension/event
 //
 // Provider steering for the stage 7 adapter tests:
 //
-//	REASONIX_BOOT_FAKE_PLUGIN_NAME      the installed plugin name (provider ref namespace)
-//	REASONIX_BOOT_FAKE_PROVIDER         when "1", declare plugin/<name>/fake/x and serve
+//	PATTY_BOOT_FAKE_PLUGIN_NAME      the installed plugin name (provider ref namespace)
+//	PATTY_BOOT_FAKE_PROVIDER         when "1", declare plugin/<name>/fake/x and serve
 //	                                    catalog/stream/open/stream/cancel with a fixed
 //	                                    two-chunk completion plus usage
 //
 // UI steering for the stage 8a hub tests:
 //
-//	REASONIX_BOOT_FAKE_UI_PUBLISH       when "1", publish one credential-bearing
+//	PATTY_BOOT_FAKE_UI_PUBLISH       when "1", publish one credential-bearing
 //	                                    status surface through host/ui/publish after
 //	                                    the handshake completes
 //
 // Process-lifecycle steering for the failure-cleanup tests:
 //
-//	REASONIX_BOOT_FAKE_PID_FILE         write the sidecar PID to this file on start,
+//	PATTY_BOOT_FAKE_PID_FILE         write the sidecar PID to this file on start,
 //	                                    so the parent can poll for a leaked process
-//	REASONIX_BOOT_FAKE_EXIT_IMMEDIATELY when "1", write the PID file (if set) and
+//	PATTY_BOOT_FAKE_EXIT_IMMEDIATELY when "1", write the PID file (if set) and
 //	                                    exit 0 at once — a sidecar that dies before
 //	                                    answering the handshake
 const (
-	bootFakeEnvEnable          = "REASONIX_BOOT_FAKE_SIDECAR"
-	bootFakeEnvInitResult      = "REASONIX_BOOT_FAKE_INIT_RESULT"
-	bootFakeEnvMode            = "REASONIX_BOOT_FAKE_MODE"
-	bootFakeEnvBlockEvent      = "REASONIX_BOOT_FAKE_BLOCK_EVENT"
-	bootFakeEnvInvalidEvent    = "REASONIX_BOOT_FAKE_INVALID_EVENT"
-	bootFakeEnvReplacePrompt   = "REASONIX_BOOT_FAKE_REPLACE_PROMPT"
-	bootFakeEnvReplaceInput    = "REASONIX_BOOT_FAKE_REPLACE_INPUT"
-	bootFakeEnvEventLog        = "REASONIX_BOOT_FAKE_EVENT_LOG"
-	bootFakeEnvPluginName      = "REASONIX_BOOT_FAKE_PLUGIN_NAME"
-	bootFakeEnvProvider        = "REASONIX_BOOT_FAKE_PROVIDER"
-	bootFakeEnvUIPublish       = "REASONIX_BOOT_FAKE_UI_PUBLISH"
-	bootFakeEnvPIDFile         = "REASONIX_BOOT_FAKE_PID_FILE"
-	bootFakeEnvExitImmediately = "REASONIX_BOOT_FAKE_EXIT_IMMEDIATELY"
+	bootFakeEnvEnable          = "PATTY_BOOT_FAKE_SIDECAR"
+	bootFakeEnvInitResult      = "PATTY_BOOT_FAKE_INIT_RESULT"
+	bootFakeEnvMode            = "PATTY_BOOT_FAKE_MODE"
+	bootFakeEnvBlockEvent      = "PATTY_BOOT_FAKE_BLOCK_EVENT"
+	bootFakeEnvInvalidEvent    = "PATTY_BOOT_FAKE_INVALID_EVENT"
+	bootFakeEnvReplacePrompt   = "PATTY_BOOT_FAKE_REPLACE_PROMPT"
+	bootFakeEnvReplaceInput    = "PATTY_BOOT_FAKE_REPLACE_INPUT"
+	bootFakeEnvEventLog        = "PATTY_BOOT_FAKE_EVENT_LOG"
+	bootFakeEnvPluginName      = "PATTY_BOOT_FAKE_PLUGIN_NAME"
+	bootFakeEnvProvider        = "PATTY_BOOT_FAKE_PROVIDER"
+	bootFakeEnvUIPublish       = "PATTY_BOOT_FAKE_UI_PUBLISH"
+	bootFakeEnvPIDFile         = "PATTY_BOOT_FAKE_PID_FILE"
+	bootFakeEnvExitImmediately = "PATTY_BOOT_FAKE_EXIT_IMMEDIATELY"
 )
 
 // TestExtensionFakeSidecarHelperProcess is the re-exec entry point; it skips
@@ -316,7 +316,7 @@ func bootWithFakePlugin(t *testing.T, name string, runtime map[string]any) *Buil
 	dir := robustTempDir(t)
 	t.Chdir(dir)
 	writeRuntimeFixture(t, dir)
-	installBootFakePlugin(t, config.ReasonixHomeDir(), name, runtime)
+	installBootFakePlugin(t, config.PattyHomeDir(), name, runtime)
 	res, err := BuildRuntime(context.Background(), Options{})
 	if err != nil {
 		t.Fatalf("BuildRuntime: %v", err)
@@ -385,11 +385,11 @@ func TestBootFailsWhenTwoRuntimesClaimOneSlot(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
 	writeRuntimeFixture(t, dir)
-	reasonixHome := config.ReasonixHomeDir()
-	installBootFakePlugin(t, reasonixHome, "claim-one", map[string]any{
+	pattyHome := config.PattyHomeDir()
+	installBootFakePlugin(t, pattyHome, "claim-one", map[string]any{
 		"replaces": []string{"system_prompt"},
 	})
-	installBootFakePlugin(t, reasonixHome, "claim-two", map[string]any{
+	installBootFakePlugin(t, pattyHome, "claim-two", map[string]any{
 		"replaces": []string{"system_prompt"},
 	})
 	_, err := BuildRuntime(context.Background(), Options{})
@@ -407,7 +407,7 @@ func TestBootFailsWhenRequiredRuntimeFails(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
 	writeRuntimeFixture(t, dir)
-	installBootFakePlugin(t, config.ReasonixHomeDir(), "required-broken", map[string]any{
+	installBootFakePlugin(t, config.PattyHomeDir(), "required-broken", map[string]any{
 		"required": true,
 		// Extension Protocol v1 is rejected by the v2 host.
 		"env": map[string]string{bootFakeEnvInitResult: `{"protocolVersion":"1","name":"x","version":"1","stateSchemaVersion":0}`},
@@ -443,7 +443,7 @@ func TestRebuildRetiresOldSidecars(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
 	writeRuntimeFixture(t, dir)
-	installBootFakePlugin(t, config.ReasonixHomeDir(), "rebuildplugin", map[string]any{})
+	installBootFakePlugin(t, config.PattyHomeDir(), "rebuildplugin", map[string]any{})
 
 	oldRes, err := BuildRuntime(context.Background(), Options{})
 	if err != nil {

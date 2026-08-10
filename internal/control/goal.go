@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/evidence"
-	"reasonix/internal/fileutil"
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/goaleval"
-	"reasonix/internal/store"
-	"reasonix/internal/taskintent"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/evidence"
+	"patty/internal/fileutil"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/goaleval"
+	"patty/internal/store"
+	"patty/internal/taskintent"
+	"patty/internal/tool"
 )
 
 const (

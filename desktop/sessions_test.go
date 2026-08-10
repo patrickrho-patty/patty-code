@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/jobs"
-	"reasonix/internal/store"
+	"patty/internal/agent"
+	"patty/internal/jobs"
+	"patty/internal/store"
 )
 
 func occupyReadFileWithTimeoutSlots(t *testing.T) func() {
@@ -1241,8 +1241,8 @@ func TestRecordSessionPlannerDisplayConcurrentPreservesEverySession(t *testing.T
 }
 
 func TestRecordSessionPlannerDisplayCrossProcessPreservesEverySession(t *testing.T) {
-	if role := os.Getenv("REASONIX_PLANNER_DISPLAY_HELPER"); role != "" {
-		dir := os.Getenv("REASONIX_PLANNER_DISPLAY_DIR")
+	if role := os.Getenv("PATTY_PLANNER_DISPLAY_HELPER"); role != "" {
+		dir := os.Getenv("PATTY_PLANNER_DISPLAY_DIR")
 		sessionPlannerDisplayLockTimeout = 5 * time.Second
 		attempted := filepath.Join(dir, role+".attempted")
 		loaded := filepath.Join(dir, role+".loaded")
@@ -1274,8 +1274,8 @@ func TestRecordSessionPlannerDisplayCrossProcessPreservesEverySession(t *testing
 	startHelper := func(role string, output *strings.Builder) *exec.Cmd {
 		cmd := exec.Command(os.Args[0], "-test.run=^TestRecordSessionPlannerDisplayCrossProcessPreservesEverySession$")
 		cmd.Env = append(os.Environ(),
-			"REASONIX_PLANNER_DISPLAY_HELPER="+role,
-			"REASONIX_PLANNER_DISPLAY_DIR="+dir,
+			"PATTY_PLANNER_DISPLAY_HELPER="+role,
+			"PATTY_PLANNER_DISPLAY_DIR="+dir,
 		)
 		cmd.Stdout = output
 		cmd.Stderr = output

@@ -4,10 +4,10 @@ import "testing"
 
 func TestPreviewProseDropsLeadingFileRefs(t *testing.T) {
 	for _, tc := range []struct{ in, want string }{
-		{"@src/App.tsx 帮我把这个组件拆一下", "帮我把这个组件拆一下"},
+		{"@src/App.tsx 이 컴포넌트를 분리해 줘", "이 컴포넌트를 분리해 줘"},
 		{"@a.ts @b.ts fix the imports", "fix the imports"},
 		{"  @src/App.tsx\tcheck this", "check this"},
-		{"@__reasonix_external_folder/mock/notes/ summarise", "summarise"},
+		{"@__patty_external_folder/mock/notes/ summarise", "summarise"},
 		{"no refs here", "no refs here"},
 		{"look at @src/App.tsx", "look at @src/App.tsx"},
 	} {

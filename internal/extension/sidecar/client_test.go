@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/extension/rpcwire"
-	"reasonix/internal/pluginpkg"
+	"patty/internal/extension"
+	"patty/internal/extension/protocol"
+	"patty/internal/extension/rpcwire"
+	"patty/internal/pluginpkg"
 )
 
 func TestHandshakeSuccess(t *testing.T) {
@@ -40,7 +40,7 @@ func TestInitializeParamsCarryManifestV2DependencyIdentity(t *testing.T) {
 			Capabilities: []string{"interceptors", "strategies", "providers", "ui"},
 		},
 		requires: []pluginpkg.CapabilityRef{{
-			Namespace: "reasonix", Kind: "provider", ID: "base", VersionRange: ">=1.0.0", Optional: true,
+			Namespace: "patty", Kind: "provider", ID: "base", VersionRange: ">=1.0.0", Optional: true,
 		}},
 		provides: []pluginpkg.CapabilityRef{
 			{Namespace: "plugin/example", Kind: "provider", ID: "fake/echo", Version: "1.0.0", SchemaHash: "sha256:provider"},

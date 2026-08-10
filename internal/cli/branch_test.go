@@ -12,7 +12,7 @@ func TestRenderBranchTreeStylesVisualWeight(t *testing.T) {
 	activeColorProfile = colorprofile.ANSI256
 	defer func() { activeColorProfile = oldColor }()
 
-	got := renderBranchTree("branches:\n├─ 0601-030143.318  你是谁  3 turns\n│  └─ 0601-033937.165  JSON response: success  1 turn\n└─ 0601-035153.346  JSON array  1 turn  current")
+	got := renderBranchTree("branches:\n├─ 0601-030143.318  너는 누구야  3 turns\n│  └─ 0601-033937.165  JSON response: success  1 turn\n└─ 0601-035153.346  JSON array  1 turn  current")
 	for _, want := range []string{
 		accent("branches:"),
 		dim("├─ "),

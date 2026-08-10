@@ -37,13 +37,13 @@ test("a version that was never released is a typo, not an old release", () => {
   const real = parseReportedVersion("### Exact version\n\n1.7.0");
   assert.equal(isStaleVersion(typo, CUTOFF_MINOR, released), false);
   assert.equal(isStaleVersion(real, CUTOFF_MINOR, released), true);
-  // without the tag list there is nothing to catch it, which is why main passes one
+// without the tag list there is nothing to catch it, which is why main passes one
   assert.equal(isStaleVersion(typo), true);
 });
 
 test("a version named elsewhere in the body outranks a wrong form field", () => {
   const released = releasedVersions(["desktop-v1.0.0", "desktop-v1.17.13", "desktop-v1.18.0"]);
-  // real shape: the form field kept its default while the true build is in prose
+// real shape: the form field kept its default while the true build is in prose
   const body = "### Exact version\n\n1.0.0\n\n### Steps to reproduce\n\nwin64 vscode, 软件版本 v1.17.13";
   assert.equal(parseReportedVersion(body).raw, "1.0.0");
   assert.equal(highestMentionedVersion(body, released).raw, "1.17.13");
@@ -112,7 +112,7 @@ test("any reply after the ask cancels the close, whoever wrote it", () => {
     const reply = { body: "still broken", createdAt: daysBefore(1), authorAssociation: association };
     assert.equal(shouldClose({ labels, comments: [asked, reply] }, { now: NOW }), false, association);
   }
-  // a comment predating the ask is not an answer to it
+// a comment predating the ask is not an answer to it
   const older = { body: "me too", createdAt: daysBefore(90), authorAssociation: "NONE" };
   assert.equal(shouldClose({ labels, comments: [older, asked] }, { now: NOW }), true);
 });
@@ -132,6 +132,6 @@ test("the ask states both versions and the deadline; the close invites reopening
   const closed = renderClose({});
   assert.match(closed, /reopens/);
   assert.match(closed, new RegExp(`${WINDOW_DAYS} days`));
-  // stale is a bookkeeping state; claiming a fix we never verified would be a lie
+// stale is a bookkeeping state; claiming a fix we never verified would be a lie
   assert.doesNotMatch(closed, /\bfixed\b|\bresolved\b/i);
 });

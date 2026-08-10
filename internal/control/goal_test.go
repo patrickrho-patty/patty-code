@@ -10,19 +10,17 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/goaleval"
-	"reasonix/internal/provider"
-	"reasonix/internal/store"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/goaleval"
+	"patty/internal/provider"
+	"patty/internal/store"
+	"patty/internal/tool"
 
-	_ "reasonix/internal/tool/builtin"
+	_ "patty/internal/tool/builtin"
 )
 
-// goalRegistry returns a registry carrying the update_goal builtin so scripted
-// goal turns can report dispositions through the structured tool.
 func goalRegistry() *tool.Registry {
 	reg := tool.NewRegistry()
 	if t, ok := tool.LookupBuiltin("update_goal"); ok {
@@ -31,7 +29,6 @@ func goalRegistry() *tool.Registry {
 	return reg
 }
 
-// goalWireStatus maps FSM status values to the update_goal wire enum.
 func goalWireStatus(status string) string {
 	switch status {
 	case GoalStatusComplete:
@@ -43,9 +40,7 @@ func goalWireStatus(status string) string {
 	}
 }
 
-// goalToolTurn models one goal turn's provider sequence: the model calls
-// update_goal with the given disposition, then answers with text. Call IDs are
-// unique per call so recycled scripted turns never collide in the transcript.
+// goalToolTurn models one goal turns provider sequence: the model calls
 func goalToolTurn(status, reason, nextAction string) [][]provider.Chunk {
 	args, err := json.Marshal(map[string]string{"status": goalWireStatus(status), "reason": reason, "next_action": nextAction})
 	if err != nil {
@@ -60,7 +55,6 @@ func goalToolTurn(status, reason, nextAction string) [][]provider.Chunk {
 
 var goalToolCallSeq atomic.Uint64
 
-// fakeGoalEvaluator is a scripted bounded Goal evaluator for tests.
 type fakeGoalEvaluator struct {
 	outcome goaleval.Outcome
 	reason  string
@@ -114,8 +108,6 @@ func TestGoalCommandAutoContinuesUntilComplete(t *testing.T) {
 	}
 }
 
-// flattenTurns concatenates per-goal-turn provider sequences into one flat
-// scripted provider stream.
 func flattenTurns(groups ...[][]provider.Chunk) [][]provider.Chunk {
 	var out [][]provider.Chunk
 	for _, g := range groups {
@@ -124,7 +116,6 @@ func flattenTurns(groups ...[][]provider.Chunk) [][]provider.Chunk {
 	return out
 }
 
-// toolCallChunk builds a provider turn carrying one tool call.
 func toolCallChunk(id, name, args string) provider.Chunk {
 	return provider.Chunk{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: id, Name: name, Arguments: args}}
 }
@@ -165,14 +156,14 @@ func TestPlainInputWithStrongResearchSignalStaysNormal(t *testing.T) {
 		}),
 	})
 
-	c.Submit("持续排查这个线上卡顿直到根因明确，并验证修复")
+	c.Submit("지속적으로 이 온라인 끊김 현상을 근본 원인이 명확해질 때까지 조사하고, 수정을 검증해 줘")
 	waitForTurnDone(t, events)
 
 	if prov.call != 1 {
 		t.Fatalf("provider calls = %d, want 1", prov.call)
 	}
 	first := firstUserMessage(ag.Session().Messages)
-	if !strings.HasSuffix(first, "持续排查这个线上卡顿直到根因明确，并验证修复") {
+	if !strings.HasSuffix(first, "지속적으로 이 온라인 끊김 현상을 근본 원인이 명확해질 때까지 조사하고, 수정을 검증해 줘") {
 		t.Fatalf("ordinary turn should preserve the original prompt suffix: %q", first)
 	}
 	if strings.Contains(first, "<active-goal>") || strings.Contains(first, "AutoResearch protocol") {
@@ -204,7 +195,7 @@ func TestPlainInputWithStrongResearchSignalPreservesRefsWithoutStartingGoal(t *t
 		}),
 	})
 
-	c.Submit("持续排查直到根因明确，并验证 @notes.txt")
+	c.Submit("지속적으로 근본 원인이 명확해질 때까지 조사하고, @notes.txt 파일을 검증해 줘")
 	waitForTurnDone(t, events)
 
 	first := firstUserMessage(ag.Session().Messages)
@@ -221,7 +212,7 @@ func TestPlainInputWithStrongResearchSignalPreservesRefsWithoutStartingGoal(t *t
 	if got := c.GoalStatus(); got != GoalStatusStopped {
 		t.Fatalf("GoalStatus() = %q, want stopped", got)
 	}
-	if _, err := os.Stat(filepath.Join(root, ".reasonix", "autoresearch")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(root, ".patty", "autoresearch")); !os.IsNotExist(err) {
 		t.Fatalf("ordinary prompt created AutoResearch state: err=%v", err)
 	}
 }
@@ -251,7 +242,7 @@ func TestPlainAutoResearchTaskPathDoesNotResumeGoal(t *testing.T) {
 	}
 	c.ClearGoal()
 
-	input := "继续 .reasonix/autoresearch/" + taskID + "/ 这个任务"
+	input := "계속 .patty/autoresearch/" + taskID + "/ 이 작업"
 	c.Submit(input)
 	waitForTurnDone(t, events)
 
@@ -301,7 +292,7 @@ func TestResearchGoalCreatesHostManagedAutoResearchTask(t *testing.T) {
 		"state/findings.jsonl",
 		"logs/heartbeat.jsonl",
 	} {
-		path := filepath.Join(root, ".reasonix", "autoresearch", state.AutoResearchTaskID, rel)
+		path := filepath.Join(root, ".patty", "autoresearch", state.AutoResearchTaskID, rel)
 		if _, err := os.Stat(path); err != nil {
 			t.Fatalf("expected autoresearch file %s: %v", rel, err)
 		}
@@ -312,7 +303,7 @@ func TestResearchGoalCreatesHostManagedAutoResearchTask(t *testing.T) {
 			Required bool   `json:"required"`
 		} `json:"success_criteria"`
 	}
-	readJSONFileForTest(t, filepath.Join(root, ".reasonix", "autoresearch", state.AutoResearchTaskID, "state", "task_spec.json"), &spec)
+	readJSONFileForTest(t, filepath.Join(root, ".patty", "autoresearch", state.AutoResearchTaskID, "state", "task_spec.json"), &spec)
 	if len(spec.SuccessCriteria) != 2 || spec.SuccessCriteria[0].ID != "objective_evidence" || spec.SuccessCriteria[1].ID != "verification" {
 		t.Fatalf("default success criteria = %+v, want objective_evidence and verification", spec.SuccessCriteria)
 	}
@@ -370,7 +361,7 @@ func TestResearchGoalRepeatedSetReusesAutoResearchTask(t *testing.T) {
 		}),
 	})
 
-	goal := "请持续研究当前项目的 AutoResearch 状态栏展示链路，验证任务创建、状态刷新、右侧 Context 面板展示、状态栏 chip 展示是否一致。不要只看表面现象，需要找到根因、记录 evidence，并在完成前确认所有验证步骤通过。不要修改文件"
+	goal := "현재 프로젝트의 AutoResearch 상태 표시줄 표시 흐름을 지속적으로 연구하고, 작업 생성·상태 새로고침·오른쪽 Context 패널 표시·상태 표시줄 chip 표시가 일치하는지 검증해 줘. 표면적인 현상만 보지 말고, 근본 원인을 찾아 evidence를 기록한 뒤, 완료 전에 모든 검증 단계가 통과했는지 확인해 줘. 파일은 수정하지 마세요"
 	c.SetGoalWithResearchMode(goal, GoalResearchOn)
 	_, _, _, firstTaskID := c.goals.snapshot()
 	if firstTaskID == "" {
@@ -384,7 +375,7 @@ func TestResearchGoalRepeatedSetReusesAutoResearchTask(t *testing.T) {
 		t.Fatalf("repeated SetGoal created a new task: got %q, want %q", repeatedTaskID, firstTaskID)
 	}
 
-	entries, err := os.ReadDir(filepath.Join(root, ".reasonix", "autoresearch"))
+	entries, err := os.ReadDir(filepath.Join(root, ".patty", "autoresearch"))
 	if err != nil {
 		t.Fatalf("read autoresearch dir: %v", err)
 	}
@@ -425,7 +416,7 @@ func TestResearchGoalMissingExplicitTaskBlocksInsteadOfCreatingNewTask(t *testin
 		}),
 	})
 
-	c.SetGoalWithResearchMode("resume .reasonix/autoresearch/missing-task/", GoalResearchOn)
+	c.SetGoalWithResearchMode("resume .patty/autoresearch/missing-task/", GoalResearchOn)
 
 	if got := c.GoalStatus(); got != GoalStatusBlocked {
 		t.Fatalf("GoalStatus() = %q, want blocked for missing explicit AutoResearch task", got)
@@ -433,7 +424,7 @@ func TestResearchGoalMissingExplicitTaskBlocksInsteadOfCreatingNewTask(t *testin
 	if got := c.goals.currentAutoResearchTaskID(); got != "" {
 		t.Fatalf("current AutoResearch task id = %q, want none for missing explicit task", got)
 	}
-	entries, err := os.ReadDir(filepath.Join(root, ".reasonix", "autoresearch"))
+	entries, err := os.ReadDir(filepath.Join(root, ".patty", "autoresearch"))
 	if err != nil && !os.IsNotExist(err) {
 		t.Fatalf("ReadDir autoresearch root: %v", err)
 	}
@@ -769,7 +760,7 @@ func TestPlainInputWithWeakResearchSignalStaysNormal(t *testing.T) {
 		}),
 	})
 
-	c.Submit("长期来看这个模块怎么优化？")
+	c.Submit("장기적으로 보면 이 모듈을 어떻게 최적화할까?")
 	waitForTurnDone(t, events)
 
 	first := firstUserMessage(ag.Session().Messages)
@@ -830,9 +821,7 @@ func TestGoalRepeatedBlockedStopsAfterThreeTurns(t *testing.T) {
 	}
 }
 
-// TestGoalBlockedReportTransitionsImmediately pins the FSM decision: a single
-// blocked report ends the goal at once — no three-turn confirmation ritual and
-// no intercept.
+// blocked report ends the goal at once  no three-turn confirmation ritual and
 func TestGoalBlockedReportTransitionsImmediately(t *testing.T) {
 	g := &goalMachine{goal: "wait for user review", status: GoalStatusRunning}
 	g.turnsLimit = 10
@@ -886,16 +875,12 @@ func TestGoalRestartClearsBlockedAndCompletesOnRetry(t *testing.T) {
 	}
 }
 
-// TestIncompleteGoalTodos verifies that formatIncompleteTodos detects
-// unfinished tasks and returns a formatted reminder, and returns empty
-// when all todos are complete.
 func TestIncompleteGoalTodos(t *testing.T) {
 	prov := &scriptedTurns{turns: [][]provider.Chunk{textTurn("done")}}
 	ag := agent.New(prov, tool.NewRegistry(), agent.NewSession(""), agent.Options{}, event.Discard)
 	c := New(Options{Runner: ag, Executor: ag, Sink: event.Discard})
 	reminder := func() string { return formatIncompleteTodos(c.goalTodos(), ag.ReadinessResult().Reason) }
 
-	// Seed with incomplete todos.
 	ag.SeedTodoState([]evidence.TodoItem{
 		{Content: "Fix the parser", Status: "in_progress"},
 		{Content: "Add tests", Status: "pending"},
@@ -914,7 +899,6 @@ func TestIncompleteGoalTodos(t *testing.T) {
 		t.Fatalf("reminder should suggest updating todos via todo_write, got: %q", msg)
 	}
 
-	// Mark all complete.
 	ag.ReplaceTodoState([]evidence.TodoItem{
 		{Content: "Fix the parser", Status: "completed"},
 		{Content: "Add tests", Status: "completed"},
@@ -923,17 +907,12 @@ func TestIncompleteGoalTodos(t *testing.T) {
 		t.Fatalf("formatIncompleteTodos() with all-complete = %q, want empty", got)
 	}
 
-	// Empty todo list.
 	ag.ReplaceTodoState(nil)
 	if got := reminder(); got != "" {
 		t.Fatalf("formatIncompleteTodos() with empty list = %q, want empty", got)
 	}
 }
 
-// TestGoalInterceptsCompleteWithIncompleteTodos verifies that a complete report
-// with unfinished canonical todos is always rejected: the FSM continues with
-// the missing requirements, and completion is accepted only once the todos are
-// actually done (there is no override path anymore).
 func TestGoalInterceptsCompleteWithIncompleteTodos(t *testing.T) {
 	todoWrite, ok := tool.LookupBuiltin("todo_write")
 	if !ok {
@@ -958,7 +937,6 @@ func TestGoalInterceptsCompleteWithIncompleteTodos(t *testing.T) {
 	}
 	prov := &scriptedTurns{turns: flattenTurns(completeTurn, fixedTurn)}
 	ag := agent.New(prov, reg, agent.NewSession(""), agent.Options{}, event.Discard)
-	// Seed incomplete todos before starting.
 	ag.SeedTodoState([]evidence.TodoItem{
 		{Content: "Fix the parser", Status: "in_progress"},
 	})
@@ -982,7 +960,6 @@ func TestGoalInterceptsCompleteWithIncompleteTodos(t *testing.T) {
 	<-done // wait for the entire goal loop to finish
 	close(notices)
 
-	// Collect all notices.
 	var allNotices []string
 	for n := range notices {
 		allNotices = append(allNotices, n)
@@ -1062,10 +1039,6 @@ func TestGoalAdvanceResultCannotCrossGoalLifecycle(t *testing.T) {
 	})
 }
 
-// TestGoalCompletionRequiresAllTodosDone verifies that a goal with seeded
-// incomplete canonical todos cannot complete until the model marks them done;
-// the completing turn force-completes any stragglers via a synthetic todo_write
-// so the frontend panel reflects the final state.
 func TestGoalCompletionRequiresAllTodosDone(t *testing.T) {
 	todoWrite, ok := tool.LookupBuiltin("todo_write")
 	if !ok {
@@ -1115,7 +1088,6 @@ func TestGoalCompletionRequiresAllTodosDone(t *testing.T) {
 		t.Fatalf("GoalStatus() = %q, want complete", c.GoalStatus())
 	}
 
-	// All todos in the executor must be completed.
 	for _, td := range c.executor.CanonicalTodoState() {
 		if td.Status != "completed" {
 			t.Fatalf("canonical todo %q = %s, want completed", td.Content, td.Status)
@@ -1123,8 +1095,6 @@ func TestGoalCompletionRequiresAllTodosDone(t *testing.T) {
 	}
 }
 
-// TestCompleteRemainingGoalTodosEdgeCases verifies that the helper is a no-op
-// when there are no incomplete todos or no todos at all.
 func TestCompleteRemainingGoalTodosEdgeCases(t *testing.T) {
 	t.Run("empty todo list does nothing", func(t *testing.T) {
 		ag := agent.New(nil, nil, agent.NewSession(""), agent.Options{}, event.Discard)
@@ -1171,13 +1141,11 @@ func TestCompleteRemainingGoalTodosEdgeCases(t *testing.T) {
 			}),
 		})
 		c.completeRemainingGoalTodos()
-		// All must be completed.
 		for _, td := range ag.CanonicalTodoState() {
 			if td.Status != "completed" {
 				t.Fatalf("todo %q = %s, want completed", td.Content, td.Status)
 			}
 		}
-		// Must include a ToolDispatch+ToolResult for the synthetic todo_write.
 		if len(captured) != 2 {
 			t.Fatalf("expected 2 synthetic events (dispatch+result), got %d", len(captured))
 		}
@@ -1205,13 +1173,7 @@ func TestCompleteRemainingGoalTodosEdgeCases(t *testing.T) {
 	})
 }
 
-// TestRepeatedCompleteWithIncompleteTodosPausesOnBudget verifies that a goal
-// whose model keeps reporting complete while todos stay unfinished is
-// intercepted every turn (no override path) and finally pauses on the turn
-// budget instead of completing.
 func TestRepeatedCompleteWithIncompleteTodosPausesOnBudget(t *testing.T) {
-	// The write-class budget is 20 turns; give the scripted provider a full
-	// pair per turn so the model keeps reporting complete each time.
 	turns := flattenTurns()
 	for range 21 {
 		turns = append(turns, goalToolTurn(GoalStatusComplete, "", "")...)
@@ -1291,9 +1253,8 @@ func containsNotice(notices []string, needle string) bool {
 }
 
 // TestSessionRotationClearsActiveGoal pins the /new & /clear goal semantics:
-// a fresh session starts with no active goal (so the old goal's text stops
-// injecting into its first turns), while the OLD session's persisted
-// goal-state sidecar keeps the running goal so resuming it restores the goal.
+// a fresh session starts with no active goal (so the old goals text stops
+// injecting into its first turns), while the OLD sessions persisted
 func TestSessionRotationClearsActiveGoal(t *testing.T) {
 	dir := t.TempDir()
 	exec := agent.New(nil, nil, agent.NewSession("sys"), agent.Options{}, event.Discard)
@@ -1317,7 +1278,7 @@ func TestSessionRotationClearsActiveGoal(t *testing.T) {
 	if composed := c.Compose("hello"); strings.Contains(composed, "<active-goal>") {
 		t.Fatalf("old goal leaked into the fresh session's turn: %q", composed)
 	}
-	// The old session keeps its running goal on disk for /resume.
+// The old session keeps its running goal on disk for resume.
 	oldState, err := os.ReadFile(store.SessionGoalState(oldPath))
 	if err != nil {
 		t.Fatalf("read old goal state: %v", err)
@@ -1325,8 +1286,8 @@ func TestSessionRotationClearsActiveGoal(t *testing.T) {
 	if !strings.Contains(string(oldState), "ship the release checklist") || !strings.Contains(string(oldState), GoalStatusRunning) {
 		t.Fatalf("old session's goal state was disturbed by /new: %s", oldState)
 	}
-	// The new session's sidecar records the cleared (stopped) state, so
-	// profile restores read it as "no running goal".
+// The new sessions sidecar records the cleared (stopped) state, so
+// profile restores read it as "no running goal".
 	newState, err := os.ReadFile(store.SessionGoalState(c.SessionPath()))
 	if err != nil {
 		t.Fatalf("read new goal state: %v", err)
@@ -1335,7 +1296,7 @@ func TestSessionRotationClearsActiveGoal(t *testing.T) {
 		t.Fatalf("new session's goal state carries the old goal: %s", newState)
 	}
 
-	// Same contract for /clear.
+// Same contract for clear.
 	c.SetGoal("another goal")
 	if err := c.ClearSession(); err != nil {
 		t.Fatalf("ClearSession: %v", err)

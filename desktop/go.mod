@@ -1,4 +1,4 @@
-module reasonix/desktop
+module patty/desktop
 
 go 1.25.0
 
@@ -6,10 +6,10 @@ toolchain go1.26.5
 
 // The desktop shell is a nested module so its CGO/WebKit build never touches the
 // CLI's CGO_ENABLED=0 single-static-binary guarantee. The replace lets it import
-// the same reasonix/internal/* kernel (the import path stays under reasonix/, so
+// the same patty/internal/* kernel (the import path stays under patty/, so
 // the internal rule still permits it). `go mod tidy` here resolves Wails + its
 // transitive deps; the parent module's go build/test ./... skips this directory.
-require reasonix v0.0.0
+require patty v0.0.0
 
 require (
 	aead.dev/minisign v0.3.0
@@ -79,8 +79,8 @@ require (
 	mvdan.cc/sh/v3 v3.13.1 // indirect
 )
 
-replace reasonix => ../
+replace patty => ../
 
-// Reasonix patches WebView2 monitor-scale detection for mixed-DPI restore
+// Patty Code patches WebView2 monitor-scale detection for mixed-DPI restore
 // (#5862) and isolates its embedded/loopback UI from stale system proxies.
 replace github.com/wailsapp/go-webview2 => ./third_party/go-webview2

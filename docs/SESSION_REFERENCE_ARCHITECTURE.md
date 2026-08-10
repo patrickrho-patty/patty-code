@@ -1,47 +1,47 @@
-# 会话引用功能架构文档
+# 세션 참조 기능 아키텍처 문서
 
-> GitHub Issue: https://github.com/esengine/DeepSeek-Reasonix/issues/3185
+> GitHub Issue: https://github.com/pattycorp/DeepSeek-PattyCode/issues/3185
 
-## 1. 功能需求
+## 1. 기능 요구사항
 
-在当前会话中使用 `@` 引用其他会话的聊天记录作为内容发送给 AI。
+현재 세션에서 `@`를 사용해 다른 세션의 대화 기록을 참조하여 AI에 콘텐츠로 전송합니다.
 
-### 1.1 用户场景
+### 1.1 사용자 시나리오
 
-- 用户在当前会话中想引用之前会话的对话内容
-- 用户想让 AI 参考之前的对话上下文
-- 用户想合并多个会话的讨论结果
+- 사용자가 현재 세션에서 이전 세션의 대화 내용을 참조하려는 경우
+- 사용자가 AI가 이전 대화의 컨텍스트를 참고하길 원하는 경우
+- 사용자가 여러 세션의 논의 결과를 통합하려는 경우
 
-### 1.2 预期行为（P0-MVP）
+### 1.2 기대 동작(P0-MVP)
 
 ```
-输入 @
-→ 显示原有菜单（文件/目录列表）
-→ 菜单顶部新增 "past:chats" 选项
-→ 选择 past:chats
-→ 切换到历史会话列表
-→ 选择一个会话
-→ Composer 上方显示"已引用会话"
-→ 发送时把该会话历史内容附加到当前 prompt/context
+입력 @
+→ 기존 메뉴 표시(파일/디렉터리 목록)
+→ 메뉴 상단에 "past:chats" 옵션 추가
+→ past:chats 선택
+→ 과거 세션 목록으로 전환
+→ 세션 하나 선택
+→ Composer 상단에 "참조된 세션" 표시
+→ 전송 시 해당 세션의 과거 내용을 현재 prompt/context에 첨부
 ```
 
 ---
 
-## 2. 现有代码结构分析
+## 2. 기존 코드 구조 분석
 
-### 2.1 核心文件
+### 2.1 핵심 파일
 
-| 文件 | 作用 |
+| 파일 | 용도 |
 |------|------|
-| `desktop/frontend/src/components/Composer.tsx` | 输入框组件，包含 @ 功能 |
-| `desktop/frontend/src/components/FileMenu.tsx` | @ 文件菜单组件 |
-| `desktop/frontend/src/components/HistoryPanel.tsx` | 历史会话面板 |
-| `desktop/frontend/src/lib/bridge.ts` | 前后端通信接口 |
-| `desktop/frontend/src/lib/types.ts` | 类型定义 |
+| `desktop/frontend/src/components/Composer.tsx` | 입력 상자 컴포넌트, @ 기능 포함 |
+| `desktop/frontend/src/components/FileMenu.tsx` | @ 파일 메뉴 컴포넌트 |
+| `desktop/frontend/src/components/HistoryPanel.tsx` | 과거 세션 패널 |
+| `desktop/frontend/src/lib/bridge.ts` | 프론트엔드-백엔드 통신 인터페이스 |
+| `desktop/frontend/src/lib/types.ts` | 타입 정의 |
 
-### 2.2 现有 @ 功能实现
+### 2.2 기존 @ 기능 구현
 
-**Composer.tsx 第 257-337 行** 实现了文件引用功能：
+**Composer.tsx 257-337행**에 파일 참조 기능이 구현되어 있습니다:
 
 ```typescript
 // --- @ file references ---
@@ -50,76 +50,76 @@ const atRaw = useMemo(() => {
   return m ? m[1] : null;
 }, [text]);
 
-// 文件匹配结果
+// [파일 매칭 결과]
 const atMatches = useMemo(() => {
-  // 过滤本地目录和搜索结果
+// [로컬 디렉터리 및 검색 결과 필터링]
 }, [atRaw, atFrag, entries, searchEntries]);
 
-// 菜单模式判断
+// [메뉴 모드 판단]
 const menuMode: "slash" | "slasharg" | "at" | null = ...;
 
-// 渲染文件菜单
+// [파일 메뉴 렌더링]
 {menuMode === "at" && <FileMenu items={atMatches} ... />}
 ```
 
-### 2.3 已有的会话 API（可复用）
+### 2.3 기존 세션 API(재사용 가능)
 
 ```typescript
 interface AppBindings {
-  // 会话列表
+// [세션 목록]
   ListSessions(): Promise<SessionMeta[]>;
 
-  // 会话操作（可复用读取历史）
+  // 세션 작업(기록 읽기 재사용 가능)
   PreviewSession(path: string): Promise<HistoryMessage[]>;
 }
 ```
 
 ---
 
-## 3. P0-MVP 实施方案
+## 3. P0-MVP 구현 방안
 
-### 3.1 设计思路
+### 3.1 설계 방향
 
-在现有的 `@` 菜单中添加 "past:chats" 选项，而不是创建新的 `@session:` 语法。
+새로운 `@session:` 구문을 만드는(create) 대신, 기존 `@` 메뉴에 "past:chats" 옵션을 추가합니다.
 
-**菜单结构：**
+**메뉴 구조:**
 ```
 @
-├── 📁 past:chats        ← 新增：选择后显示历史会话列表
+├── 📁 past:chats        ← 신규: 선택 시 과거 세션 목록 표시
 ├── 📁 src/
 ├── 📁 docs/
 ├── 📄 README.md
 └── ...
 ```
 
-### 3.2 实施路线
+### 3.2 구현 로드맵
 
 ```
-第一步：后端加搜索接口
+1단계: 백엔드에 검색 API 추가
     ↓
-第二步：前端 bridge.ts 暴露接口
+2단계: 프론트엔드 bridge.ts에 인터페이스 노출
     ↓
-第三步：在 @ 菜单中添加 "past:chats" 选项
+3단계: @ 메뉴에 "past:chats" 옵션 추가
     ↓
-第四步：选择 past:chats 后切换到会话列表
+4단계: past:chats 선택 후 세션 목록으로 전환
     ↓
-第五步：选择会话后添加到引用区域
+5단계: 세션 선택 후 참조 영역에 추가
     ↓
-第六步：发送时附加会话上下文
+6단계: 전송 시 세션 컨텍스트 첨부
 ```
 
-### 3.3 最小改动文件清单
+### 3.3 최소 수정 파일 목록
 
 ```
-desktop/frontend/src/lib/types.ts      — 添加 SessionReference 类型
-desktop/frontend/src/lib/bridge.ts     — 添加 SearchSessions API
-desktop/frontend/src/components/Composer.tsx — 扩展 @ 菜单逻辑
-desktop/frontend/src/components/FileMenu.tsx — 扩展菜单支持会话项
-desktop/app.go                         — 添加 SearchSessions 方法
-desktop/sessions.go                    — 实现会话搜索逻辑
+desktop/frontend/src/lib/types.ts      — SessionReference 타입 추가
+desktop/frontend/src/lib/bridge.ts     — SearchSessions API 추가
+desktop/frontend/src/components/Composer.tsx — @ 메뉴 로직 확장
+desktop/frontend/src/components/FileMenu.tsx — 세션 항목을 지원하도록 메뉴 확장
+desktop/app.go                         — SearchSessions 메서드 추가
+desktop/sessions.go                    — 세션 검색 로직 구현
 ```
 
-### 3.4 类型定义
+### 3.4 타입 정의
 
 ```typescript
 // types.ts
@@ -130,37 +130,37 @@ export interface SessionReference {
   turns?: number;
   createdAt?: number;
   lastActivityAt?: number;
-  messages?: HistoryMessage[]; // P0 先不存，发送时再拉取
+  messages?: HistoryMessage[]; // P0에서는 저장하지 않고, 전송 시에 가져옴
 }
 ```
 
-### 3.5 API 设计
+### 3.5 API 설계
 
 ```typescript
 // bridge.ts
 interface AppBindings {
-  // 新增：搜索会话
+  // 신규: 세션 검색
   SearchSessions(query: string): Promise<SessionMeta[]>;
 
-  // 已有：读取会话历史（复用）
+  // 기존: 세션 기록 읽기(재사용)
   PreviewSession(path: string): Promise<HistoryMessage[]>;
 }
 ```
 
-### 3.6 前端逻辑修改
+### 3.6 프론트엔드 로직 수정
 
-**Composer.tsx 修改：**
+**Composer.tsx 수정:**
 
 ```typescript
-// 1. 添加状态
+// 1. 상태 추가
 const [showPastChats, setShowPastChats] = useState(false);
 const [pastChats, setPastChats] = useState<SessionMeta[]>([]);
 const [sessionRefs, setSessionRefs] = useState<SessionReference[]>([]);
 
-// 2. 修改 @ 菜单渲染
+// 2. @ 메뉴 렌더링 수정
 {menuMode === "at" && (
   showPastChats ? (
-    // 显示会话列表
+// [세션 목록 표시]
     <SessionMenu
       items={pastChats}
       activeIndex={active}
@@ -168,7 +168,7 @@ const [sessionRefs, setSessionRefs] = useState<SessionReference[]>([]);
       onHover={setActive}
     />
   ) : (
-    // 显示文件列表（原有逻辑）
+    // 파일 목록 표시(기존 로직)
     <>
       <button
         className="slashmenu__item slashmenu__item--special"
@@ -179,16 +179,16 @@ const [sessionRefs, setSessionRefs] = useState<SessionReference[]>([]);
       >
         <MessageSquare size={13} />
         <span className="slashmenu__name">past:chats</span>
-        <span className="slashmenu__desc">引用历史会话</span>
+        <span className="slashmenu__desc">과거 세션 참조</span>
       </button>
       <FileMenu items={atMatches} ... />
     </>
   )
 )}
 
-// 3. 选择会话后的处理
+// 3. 세션 선택 후 처리
 const pickSession = (session: SessionMeta) => {
-  // 添加到引用区域
+// [참조 영역에 추가]
   setSessionRefs(prev => [...prev, {
     path: session.path,
     title: session.title || session.preview || "Untitled",
@@ -198,173 +198,173 @@ const pickSession = (session: SessionMeta) => {
     lastActivityAt: session.lastActivityAt,
   }]);
 
-  // 重置状态
+// [상태 초기화]
   setShowPastChats(false);
-  setText(""); // 清空输入框
+  setText(""); // 입력 상자 비우기
 };
 
-// 4. 发送时附加会话上下文
+// 4. 전송 시 세션 컨텍스트 첨부
 const handleSubmit = async () => {
   let context = "";
 
   if (sessionRefs.length > 0) {
-    context = "以下是用户引用的历史会话上下文：\n\n";
+    context = "다음은 사용자가 참조한 과거 세션 컨텍스트입니다.\n\n";
     for (const ref of sessionRefs) {
       const messages = await app.PreviewSession(ref.path);
       const limited = limitMessages(messages, 30, 20000);
       context += formatSessionContext(ref.title, limited);
     }
-    context += "\n\n当前用户问题：\n";
+    context += "\n\n현재 사용자 질문:\n";
   }
 
   onSubmit(context + text);
 };
 ```
 
-### 3.7 限制策略
+### 3.7 제한 정책
 
 ```
-最多引用最近 30 条消息
-或最多 20k 字符
-超出部分截断，并提示"已截断"
+최근 메시지 최대 30개 참조
+또는 최대 20k자
+초과분은 잘라내고 "잘렸습니다" 표시
 ```
 
-### 3.8 发送时的消息格式
+### 3.8 전송 시 메시지 형식
 
 ```
-以下是用户引用的历史会话上下文：
+다음은 사용자가 참조한 과거 세션 컨텍스트입니다:
 
-[会话：修复登录 bug]
-用户：...
-助手：...
-用户：...
+[세션: 로그인 버그 수정]
+사용자: ...
+어시스턴트: ...
+사용자: ...
 
-当前用户问题：
+현재 사용자 질문:
 ...
 ```
 
 ---
 
-## 4. 架构图
+## 4. 아키텍처 다이어그램
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      Composer.tsx                           │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  @ 菜单逻辑                                          │   │
-│  │  - 原有：文件/目录列表                               │   │
-│  │  - 新增：past:chats 选项（在菜单顶部）              │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  @ 메뉴 로직                                          │    │
+│  │  - 기존: 파일/디렉터리 목록                             │    │
+│  │  - 신규: past:chats 옵션(메뉴 상단)                    │    │
+│  └─────────────────────────────────────────────────────┘    │
 │                           │                                 │
 │                           ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  菜单渲染                                            │   │
-│  │  - showPastChats=false → FileMenu + past:chats 按钮 │   │
-│  │  - showPastChats=true  → SessionMenu (会话列表)     │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  메뉴 렌더링                                          │    │
+│  │  - showPastChats=false → FileMenu + past:chats 버튼 │    │
+│  │  - showPastChats=true → SessionMenu(세션 목록)        │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      bridge.ts                              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  新增 API:                                          │   │
-│  │  - SearchSessions(query): Promise<SessionMeta[]>   │   │
-│  │                                                     │   │
-│  │  复用 API:                                          │   │
-│  │  - ListSessions(): Promise<SessionMeta[]>          │   │
-│  │  - PreviewSession(path): Promise<HistoryMessage[]> │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  신규 API:                                            │    │
+│  │  - SearchSessions(query): Promise<SessionMeta[]>     │    │
+│  │                                                       │    │
+│  │  재사용 API:                                          │    │
+│  │  - ListSessions(): Promise<SessionMeta[]>            │    │
+│  │  - PreviewSession(path): Promise<HistoryMessage[]>   │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    desktop/app.go                           │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  新增方法:                                          │   │
-│  │  - SearchSessions(query string) []SessionMeta      │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  신규 메서드:                                         │    │
+│  │  - SearchSessions(query string) []SessionMeta        │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. UI 设计
+## 5. UI 설계
 
-### 5.1 @ 菜单（showPastChats=false）
+### 5.1 @ 메뉴(showPastChats=false)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  @  ← 用户输入                                              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  💬 past:chats        引用历史会话                   │   │
-│  ├─────────────────────────────────────────────────────┤   │
-│  │  📁 src/                                             │   │
-│  │  📁 docs/                                            │   │
-│  │  📄 README.md                                        │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  @  ← 사용자 입력                                            │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  💬 past:chats        과거 세션 참조                   │    │
+│  ├─────────────────────────────────────────────────────┤    │
+│  │  📁 src/                                               │    │
+│  │  📁 docs/                                              │    │
+│  │  📄 README.md                                          │    │
+│  └─────────────────────────────────────────────────────┘    │
 │                                                             │
-│  [输入消息...]                                    [发送]    │
+│  [메시지 입력...]                                    [전송]  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 会话列表（showPastChats=true）
+### 5.2 세션 목록(showPastChats=true)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  @past:chats  ← 用户输入                                    │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  💬 项目架构设计讨论 - 2026-06-04                   │   │
-│  │  💬 数据处理方案 - 2026-06-03                       │   │
-│  │  💬 API 接口设计 - 2026-06-02                       │   │
-│  │  ← 返回文件列表                                     │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  @past:chats  ← 사용자 입력                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  💬 프로젝트 아키텍처 설계 논의 - 2026-06-04          │    │
+│  │  💬 데이터 처리 방안 - 2026-06-03                    │    │
+│  │  💬 API 인터페이스 설계 - 2026-06-02                 │    │
+│  │  ← 파일 목록 반환(return)                             │    │
+│  └─────────────────────────────────────────────────────┘    │
 │                                                             │
-│  [输入消息...]                                    [发送]    │
+│  [메시지 입력...]                                    [전송]  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.3 引用区域
+### 5.3 참조 영역
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  📎 引用的会话:                                              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  📄 项目架构设计讨论 (8 轮)               [×]       │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  📎 참조된 세션:                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  📄 프로젝트 아키텍처 설계 논의 (8턴)      [×]         │    │
+│  └─────────────────────────────────────────────────────┘    │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  [输入消息...]                                    [发送]    │
+│  [메시지 입력...]                                    [전송]  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 6. P1 后续优化（暂不实施）
+## 6. P1 후속 개선(추후 구현)
 
-- 选择单条/多条消息
-- hover 预览会话详情
-- 截断/缓存优化
-- 国际化翻译
-- 搜索会话功能
+- 단일/다중 메시지 선택
+- hover로 세션 상세 미리보기
+- 잘라내기/캐시 최적화
+- 다국어(i18n) 번역
+- 세션 검색 기능
 
 ---
 
-## 7. 验收标准
+## 7. 수용 기준
 
-### P0 验收
+### P0 수용 기준
 
-- [ ] 输入 `@` 显示菜单，包含 "past:chats" 选项
-- [ ] 选择 "past:chats" 显示历史会话列表
-- [ ] 选择会话后显示在引用区域
-- [ ] 可以删除引用的会话
-- [ ] 发送时正确附加会话上下文
-- [ ] 引用内容限制在 30 条消息或 20k 字符内
-- [ ] 超出部分截断并提示
+- [ ] `@` 입력 시 메뉴가 표시되고 "past:chats" 옵션 포함
+- [ ] "past:chats" 선택 시 과거 세션 목록 표시
+- [ ] 세션 선택 후 참조 영역에 표시
+- [ ] 참조한 세션을 삭제할 수 있음
+- [ ] 전송 시 세션 컨텍스트가 올바르게 첨부됨
+- [ ] 참조 내용이 메시지 30개 또는 20k자 이내로 제한됨
+- [ ] 초과분은 잘라내고 안내 표시
 
-### 测试用例
+### 테스트 케이스
 
-- [ ] 无历史会话时的行为
-- [ ] 引用超大会话时的截断
-- [ ] 与现有 @ 文件引用同时使用
-- [ ] 在不同主题下的显示效果
+- [ ] 과거 세션이 없을 때의 동작
+- [ ] 매우 큰 세션 참조 시 잘라내기
+- [ ] 기존 @ 파일 참조와 동시 사용
+- [ ] 다양한 테마에서의 표시 효과

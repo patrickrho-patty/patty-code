@@ -40,22 +40,15 @@ func (a *App) startTray() bool {
 
 	end := startDesktopTray(func() {
 		systray.SetIcon(trayIconBytes)
-		systray.SetTitle("Reasonix")
-		systray.SetTooltip("Reasonix")
-		// Run off the systray Win32 message loop: SetOnTapped fires inside wndProc,
-		// so a blocking showFromTray (a wedged webview after sleep freezes
-		// runtime.WindowShow) would stall the whole tray's message pump (#3834). The
-		// menu items below are already decoupled via goroutines for the same reason.
+		systray.SetTitle("Patty Code")
+		systray.SetTooltip("Patty Code")
 		systray.SetOnTapped(func() { a.goSafe("showFromTray", a.showFromTray) })
-		// Keep secondary/right-click on systray's native menu path.
 		systray.SetOnSecondaryTapped(nil)
 
 		labels := trayMenuLabels(a.trayLocale())
 		openItem := systray.AddMenuItem(labels.openTitle, labels.openTooltip)
 		quitItem := systray.AddMenuItem(labels.quitTitle, labels.quitTooltip)
 
-		// Publish the menu items under a.mu: this callback runs on the systray
-		// goroutine while bound settings calls (updateTrayLocale) read them.
 		a.mu.Lock()
 		t.openItem = openItem
 		t.quitItem = quitItem
@@ -144,18 +137,18 @@ type trayLabels struct {
 }
 
 func trayMenuLabels(locale string) trayLabels {
-	if locale == "zh" {
+	if locale == "ko-KR" {
 		return trayLabels{
-			openTitle:   "打开",
-			openTooltip: "打开 Reasonix 窗口",
-			quitTitle:   "退出",
-			quitTooltip: "退出 Reasonix",
+			openTitle:   "열기",
+			openTooltip: "Patty Code 창 열기",
+			quitTitle:   "종료",
+			quitTooltip: "Patty Code 종료",
 		}
 	}
 	return trayLabels{
 		openTitle:   "Open",
-		openTooltip: "Open the Reasonix window",
+		openTooltip: "Open the patty window",
 		quitTitle:   "Quit",
-		quitTooltip: "Quit Reasonix",
+		quitTooltip: "Quit Patty Code",
 	}
 }

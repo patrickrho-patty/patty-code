@@ -1,7 +1,7 @@
 version: 1
-project_slug: DeepSeek-Reasonix
+project_slug: PattyCode
 signing_policy_slug: release-signing
-repository_url: https://github.com/esengine/DeepSeek-Reasonix.git
+repository_url: https://github.com/pattycorp/PattyCode.git
 allowed_branch_names:
   - main-v2
 allowed_build_definitions:

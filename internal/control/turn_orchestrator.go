@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/autoresearch"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/jobs"
-	"reasonix/internal/provider"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/autoresearch"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/jobs"
+	"patty/internal/provider"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 // turnOrchestrator owns foreground turn execution while Controller keeps the

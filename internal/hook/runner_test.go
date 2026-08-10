@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-// Runner construction
 
 func TestNewRunnerNil(t *testing.T) {
 	var r *Runner
@@ -64,7 +63,6 @@ func TestToolMutationHooksEnabled(t *testing.T) {
 	}
 }
 
-// Runner.PreToolUse
 
 func TestRunnerPreToolUseNoHooks(t *testing.T) {
 	r := NewRunner(nil, "/tmp", nil, nil)
@@ -110,11 +108,9 @@ func TestRunnerPreToolUseBlock(t *testing.T) {
 	}
 }
 
-// Runner.PostToolUse
 
 func TestRunnerPostToolUseNoHooks(t *testing.T) {
 	r := NewRunner(nil, "/tmp", nil, nil)
-	// Should not panic.
 	r.PostToolUse(context.Background(), "bash", nil, "ok")
 }
 
@@ -150,7 +146,6 @@ func TestRunnerPostToolUseFailurePreservesNativeObserver(t *testing.T) {
 	}
 }
 
-// Runner.PermissionRequest
 
 func TestRunnerPermissionRequestPayload(t *testing.T) {
 	hooks := []ResolvedHook{
@@ -226,7 +221,6 @@ func TestRunnerPermissionRequestClaudeDecisions(t *testing.T) {
 	}
 }
 
-// Runner.PromptSubmit
 
 func TestRunnerPromptSubmitBlock(t *testing.T) {
 	hooks := []ResolvedHook{
@@ -242,11 +236,9 @@ func TestRunnerPromptSubmitBlock(t *testing.T) {
 	}
 }
 
-// Runner.Stop
 
 func TestRunnerStopNoHooks(t *testing.T) {
 	r := NewRunner(nil, "/tmp", nil, nil)
-	// Should not panic.
 	r.Stop(context.Background(), "last answer", 1)
 }
 
@@ -380,7 +372,6 @@ func TestRunnerClaudeLifecyclePayloadsShareSessionID(t *testing.T) {
 	}
 }
 
-// Runner.PostLLMCall
 
 func TestRunnerHasPostLLMCall(t *testing.T) {
 	with := NewRunner([]ResolvedHook{{HookConfig: HookConfig{Command: "x"}, Event: PostLLMCall}}, "/tmp", nil, nil)
@@ -399,10 +390,10 @@ func TestRunnerHasPostLLMCall(t *testing.T) {
 func TestRunnerPostLLMCallReplacesReasoning(t *testing.T) {
 	hooks := []ResolvedHook{{HookConfig: HookConfig{Command: "translate"}, Event: PostLLMCall}}
 	spawner := func(_ context.Context, in SpawnInput) SpawnResult {
-		return SpawnResult{ExitCode: 0, Stdout: "  译文  "}
+		return SpawnResult{ExitCode: 0, Stdout: "  번역문  "}
 	}
 	r := NewRunner(hooks, "/tmp", spawner, nil)
-	if got := r.PostLLMCall(context.Background(), "raw reasoning", 2); got != "译文" {
+	if got := r.PostLLMCall(context.Background(), "raw reasoning", 2); got != "번역문" {
 		t.Fatalf("PostLLMCall = %q, want trimmed hook stdout", got)
 	}
 }
@@ -427,7 +418,6 @@ func TestRunnerPostLLMCallKeepsOriginal(t *testing.T) {
 	}
 }
 
-// FormatOutcome
 
 func TestFormatOutcomePass(t *testing.T) {
 	o := Outcome{
@@ -456,7 +446,6 @@ func TestFormatOutcomeWithDetail(t *testing.T) {
 	}
 }
 
-// clipRunes
 
 func TestClipRunes(t *testing.T) {
 	if got := clipRunes("short", 10); got != "short" {
@@ -473,7 +462,6 @@ func TestClipRunes(t *testing.T) {
 	}
 }
 
-// payload JSON
 
 func TestPayloadJSON(t *testing.T) {
 	args := json.RawMessage(`{"command":"echo hi"}`)
@@ -503,11 +491,9 @@ func TestPayloadJSON(t *testing.T) {
 	}
 }
 
-// capping behavior
 
 func TestCappedBuffer(t *testing.T) {
 	var cb cappedBuffer
-	// Write within cap.
 	n, err := cb.Write([]byte("hello"))
 	if err != nil || n != 5 {
 		t.Errorf("small write: n=%d err=%v", n, err)
@@ -519,7 +505,6 @@ func TestCappedBuffer(t *testing.T) {
 		t.Errorf("String() = %q", cb.String())
 	}
 
-	// Write beyond cap.
 	big := make([]byte, outputCapBytes+1000)
 	for i := range big {
 		big[i] = 'x'
@@ -533,7 +518,6 @@ func TestCappedBuffer(t *testing.T) {
 	}
 }
 
-// IsBlocking
 
 func TestIsBlocking(t *testing.T) {
 	if !IsBlocking(PreToolUse) {
@@ -550,7 +534,6 @@ func TestIsBlocking(t *testing.T) {
 	}
 }
 
-// defaultTimeout
 
 func TestDefaultTimeout(t *testing.T) {
 	if defaultTimeout(PreToolUse) != 5*time.Second {
@@ -564,7 +547,6 @@ func TestDefaultTimeout(t *testing.T) {
 	}
 }
 
-// helper
 func contains(s, sub string) bool {
 	for i := 0; i <= len(s)-len(sub); i++ {
 		if s[i:i+len(sub)] == sub {

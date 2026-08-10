@@ -25,28 +25,27 @@ func TestWithResponseLanguageOnlySkipsLeadingInjectedBlock(t *testing.T) {
 
 func TestWithReasoningLanguageOnlySkipsLeadingInjectedBlock(t *testing.T) {
 	userMention := "explain why <reasoning-language> appears in this file"
-	got := WithReasoningLanguage(userMention, "zh")
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") || !strings.HasSuffix(got, userMention) {
+	got := WithReasoningLanguage(userMention, "ko-KR")
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어") || !strings.HasSuffix(got, userMention) {
 		t.Fatalf("WithReasoningLanguage should prefix user-authored tag mentions, got %q", got)
 	}
 
-	alreadyPrefixed := ReasoningLanguageBlock("zh") + "\n\n" + userMention
-	if got := WithReasoningLanguage(alreadyPrefixed, "zh"); got != alreadyPrefixed {
+	alreadyPrefixed := ReasoningLanguageBlock("ko-KR") + "\n\n" + userMention
+	if got := WithReasoningLanguage(alreadyPrefixed, "ko-KR"); got != alreadyPrefixed {
 		t.Fatalf("WithReasoningLanguage duplicated a leading injected block:\n got %q\nwant %q", got, alreadyPrefixed)
 	}
 
 	withLeadingMemory := "<memory-update>\nRemember this.\n</memory-update>\n\n" + alreadyPrefixed
-	if got := WithReasoningLanguage(withLeadingMemory, "zh"); got != withLeadingMemory {
+	if got := WithReasoningLanguage(withLeadingMemory, "ko-KR"); got != withLeadingMemory {
 		t.Fatalf("WithReasoningLanguage duplicated a reasoning block after leading transient context:\n got %q\nwant %q", got, withLeadingMemory)
 	}
 }
 
 func TestReasoningLanguageBlockZhStaysImperative(t *testing.T) {
-	// The imperative form measurably outperforms soft "偏好" phrasing on
+	// The imperative form measurably outperforms soft "선호" phrasing on
 	// Chinese prompts that embed English logs/code; keep it from regressing
-	// back into a suggestion.
-	block := ReasoningLanguageBlock("zh")
-	for _, want := range []string{"必须使用简体中文", "整轮", "不覆盖用户对最终回答语言的明确要求"} {
+	block := ReasoningLanguageBlock("ko-KR")
+	for _, want := range []string{"반드시 한국어로 작성해야 합니다", "전체 턴", "사용자가 최종 답변 언어에 대해 명시적으로 요청한 내용을 덮어쓰지 않습니다"} {
 		if !strings.Contains(block, want) {
 			t.Fatalf("zh reasoning block lost required anchor %q:\n%s", want, block)
 		}
@@ -54,9 +53,9 @@ func TestReasoningLanguageBlockZhStaysImperative(t *testing.T) {
 }
 
 func TestWithReasoningLanguageAutoInfersFromSource(t *testing.T) {
-	chinese := WithReasoningLanguage("解释 AuthHandler 的 panic", "auto")
-	if !strings.HasPrefix(chinese, "<reasoning-language>") || !strings.Contains(chinese, "简体中文") {
-		t.Fatalf("auto reasoning language should infer Chinese, got %q", chinese)
+	korean := WithReasoningLanguage("AuthHandler의 panic을 설명해 주세요", "auto")
+	if korean != "AuthHandler의 panic을 설명해 주세요" {
+		t.Fatalf("auto reasoning language should keep Korean prompts unwrapped, got %q", korean)
 	}
 
 	english := WithReasoningLanguage("explain this module", "auto")
@@ -71,11 +70,11 @@ func TestWithReasoningLanguageAutoInfersFromSource(t *testing.T) {
 }
 
 func TestWithReasoningLanguageAutoUsesRawSourceOverReferencedContext(t *testing.T) {
-	expanded := "Referenced context:\n\n<file path=\"auth.go\">\npackage main\nfunc AuthHandler() error { return errors.New(\"not authorized\") }\n</file>\n\n解释 @auth.go 的报错"
+	expanded := "Referenced context:\n\n<file path=\"auth.go\">\npackage main\nfunc AuthHandler() error { return errors.New(\"not authorized\") }\n</file>\n\n@auth.go의 오류를 설명해 주세요"
 
-	got := WithReasoningLanguageForSource(expanded, "auto", "解释 @auth.go 的报错")
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") {
-		t.Fatalf("auto reasoning language should use raw source over referenced context, got %q", got)
+	got := WithReasoningLanguageForSource(expanded, "auto", "@auth.go의 오류를 설명해 주세요")
+	if got != expanded {
+		t.Fatalf("auto reasoning language should keep Korean prompts unwrapped, got %q", got)
 	}
 	if strings.Contains(got, "use English") {
 		t.Fatalf("referenced English code should not make auto prefer English:\n%s", got)

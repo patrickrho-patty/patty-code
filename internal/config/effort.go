@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"reasonix/internal/provider/openai"
+	"patty/internal/provider/openai"
 )
 
 const (

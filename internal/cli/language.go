@@ -8,8 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"reasonix/internal/config"
-	"reasonix/internal/i18n"
+	"patty/internal/config"
+	"patty/internal/i18n"
 )
 
 func (m *chatTUI) runLanguageSubcommand(input string) tea.Cmd {
@@ -137,10 +137,10 @@ func normalizeLanguageArg(s string) (string, error) {
 		return "", nil
 	case "en", "english":
 		return "en", nil
-	case "zh", "cn", "chinese", "中文":
-		return "zh", nil
+	case "ko-kr", "ko":
+		return "ko-KR", nil
 	default:
-		return "", fmt.Errorf("usage: /language auto|en|zh")
+		return "", fmt.Errorf("usage: /language auto|en|ko")
 	}
 }
 
@@ -156,9 +156,9 @@ func describeLanguages(current, resolved string) string {
 		tag  string
 		hint string
 	}{
-		{"auto", i18n.M.ArgLanguageAuto},
+		{"ko-KR", i18n.M.ArgLanguageKo},
 		{"en", i18n.M.ArgLanguageEn},
-		{"zh", i18n.M.ArgLanguageZh},
+		{"auto", i18n.M.ArgLanguageAuto},
 	}
 	var b strings.Builder
 	for _, it := range items {

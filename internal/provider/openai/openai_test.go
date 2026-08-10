@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // TestStreamRetriesThenSucceeds drives the real retry path end-to-end: the
@@ -586,7 +586,7 @@ func TestStreamSendsCustomHeaders(t *testing.T) {
 			http.Error(w, "authorization was not preserved", http.StatusUnauthorized)
 			return
 		}
-		if r.Header.Get("HTTP-Referer") != "https://app.example" || r.Header.Get("X-Title") != "Reasonix" {
+		if r.Header.Get("HTTP-Referer") != "https://app.example" || r.Header.Get("X-Title") != "Patty Code" {
 			http.Error(w, "custom headers missing", http.StatusForbidden)
 			return
 		}
@@ -608,7 +608,7 @@ func TestStreamSendsCustomHeaders(t *testing.T) {
 			"Authorization": "Bearer wrong",
 			"Accept":        "application/json",
 			"HTTP-Referer":  "https://app.example",
-			"X-Title":       "Reasonix",
+			"X-Title":       "Patty Code",
 		}},
 	})
 	if err != nil {

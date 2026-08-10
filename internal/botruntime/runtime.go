@@ -7,67 +7,34 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/bot"
-	"reasonix/internal/bot/feishu"
-	"reasonix/internal/bot/qq"
-	"reasonix/internal/bot/weixin"
-	"reasonix/internal/config"
+	"patty/internal/bot"
+	"patty/internal/config"
 )
 
 // EnabledPlatforms resolves the requested channel list against the saved config.
-// "lark" is a domain alias for the Feishu adapter platform.
 func EnabledPlatforms(cfg *config.Config, channels []string) (map[bot.Platform]bool, []string) {
 	enabled := make(map[bot.Platform]bool)
 	var warnings []string
 	if len(channels) > 0 {
 		for _, ch := range channels {
 			ch = strings.TrimSpace(ch)
-			switch bot.Platform(ch) {
-			case bot.PlatformQQ:
-				enabled[bot.PlatformQQ] = PlatformConfigured(cfg, bot.PlatformQQ)
-			case bot.PlatformFeishu:
-				enabled[bot.PlatformFeishu] = PlatformConfigured(cfg, bot.PlatformFeishu)
-			case bot.PlatformWeixin:
-				enabled[bot.PlatformWeixin] = PlatformConfigured(cfg, bot.PlatformWeixin)
-			default:
-				if strings.EqualFold(ch, "lark") {
-					enabled[bot.PlatformFeishu] = PlatformConfigured(cfg, bot.PlatformFeishu)
-				} else if ch != "" {
-					warnings = append(warnings, ch)
-				}
+			if ch == "" {
+				continue
+			}
+			if PlatformConfigured(cfg, bot.Platform(ch)) {
+				enabled[bot.Platform(ch)] = true
+			} else {
+				warnings = append(warnings, ch)
 			}
 		}
 		return enabled, warnings
 	}
-	enabled[bot.PlatformQQ] = PlatformConfigured(cfg, bot.PlatformQQ)
-	enabled[bot.PlatformFeishu] = PlatformConfigured(cfg, bot.PlatformFeishu)
-	enabled[bot.PlatformWeixin] = PlatformConfigured(cfg, bot.PlatformWeixin)
-	return enabled, warnings
-}
-
-// RequestedFeishuDomains returns the Feishu-family domains the caller explicitly
-// named ("feishu"/"lark"), or nil when neither was requested (no restriction).
-func RequestedFeishuDomains(channels []string) map[string]bool {
-	domains := make(map[string]bool)
-	for _, ch := range channels {
-		switch {
-		case strings.EqualFold(strings.TrimSpace(ch), string(bot.PlatformFeishu)):
-			domains["feishu"] = true
-		case strings.EqualFold(strings.TrimSpace(ch), "lark"):
-			domains["lark"] = true
+	for _, conn := range cfg.Bot.Connections {
+		if conn.Enabled {
+			enabled[bot.Platform(strings.TrimSpace(conn.Provider))] = true
 		}
 	}
-	if len(domains) == 0 {
-		return nil
-	}
-	return domains
-}
-
-func feishuDomainKey(domain string) string {
-	if strings.EqualFold(strings.TrimSpace(domain), "lark") {
-		return "lark"
-	}
-	return "feishu"
+	return enabled, warnings
 }
 
 func HasEnabledPlatform(enabled map[bot.Platform]bool) bool {
@@ -80,22 +47,8 @@ func HasEnabledPlatform(enabled map[bot.Platform]bool) bool {
 }
 
 func PlatformConfigured(cfg *config.Config, platform bot.Platform) bool {
-	if cfg == nil {
+	if cfg == nil || strings.TrimSpace(string(platform)) == "" {
 		return false
-	}
-	switch platform {
-	case bot.PlatformQQ:
-		if cfg.Bot.QQ.Enabled {
-			return true
-		}
-	case bot.PlatformFeishu:
-		if cfg.Bot.Feishu.Enabled {
-			return true
-		}
-	case bot.PlatformWeixin:
-		if cfg.Bot.Weixin.Enabled {
-			return true
-		}
 	}
 	for _, conn := range cfg.Bot.Connections {
 		if conn.Enabled && bot.Platform(strings.TrimSpace(conn.Provider)) == platform {
@@ -115,9 +68,7 @@ func ChannelConfigs(connections []config.BotConnectionConfig, includeModel bool,
 			continue
 		}
 		plat := bot.Platform(strings.TrimSpace(conn.Provider))
-		switch plat {
-		case bot.PlatformQQ, bot.PlatformFeishu, bot.PlatformWeixin:
-		default:
+		if strings.TrimSpace(string(plat)) == "" {
 			continue
 		}
 		channel := out[plat]
@@ -179,9 +130,6 @@ func ConnectionAccessConfigs(cfg *config.Config) map[string]bot.AccessConfig {
 		return nil
 	}
 	out := make(map[string]bot.AccessConfig)
-	if BotAccessActive(cfg.Bot.QQ.Access) {
-		out[string(bot.PlatformQQ)] = botAccessConfig(cfg.Bot.QQ.Access)
-	}
 	for _, conn := range cfg.Bot.Connections {
 		if !conn.Enabled {
 			continue
@@ -303,61 +251,10 @@ func normalizeToolApprovalMode(mode string) string {
 	}
 }
 
-func AdapterBindings(cfg *config.Config, enabled map[bot.Platform]bool, feishuDomains map[string]bool, logger *slog.Logger) []bot.AdapterBinding {
-	if cfg == nil {
-		return nil
-	}
-	var bindings []bot.AdapterBinding
-	hasConnection := make(map[bot.Platform]bool)
-	for _, conn := range cfg.Bot.Connections {
-		if !conn.Enabled {
-			continue
-		}
-		platform := bot.Platform(strings.TrimSpace(conn.Provider))
-		if !enabled[platform] {
-			continue
-		}
-		id := ConnectionRuntimeID(conn)
-		switch platform {
-		case bot.PlatformQQ:
-			qqCfg := cfg.Bot.QQ
-			qqCfg.Enabled = true
-			qqCfg.AppID = firstNonEmptyString(strings.TrimSpace(conn.Credential.AppID), qqCfg.AppID)
-			qqCfg.AppSecretEnv = firstNonEmptyString(strings.TrimSpace(conn.Credential.AppSecretEnv), qqCfg.AppSecretEnv)
-			bindings = append(bindings, bot.AdapterBinding{ID: id, Domain: strings.TrimSpace(conn.Domain), Platform: platform, Adapter: qq.New(qqCfg, logger)})
-			hasConnection[platform] = true
-		case bot.PlatformFeishu:
-			feishuCfg := cfg.Bot.Feishu
-			feishuCfg.Enabled = true
-			feishuCfg.Domain = firstNonEmptyString(strings.TrimSpace(conn.Domain), feishuCfg.Domain)
-			if feishuDomains != nil && !feishuDomains[feishuDomainKey(feishuCfg.Domain)] {
-				continue
-			}
-			feishuCfg.AppID = firstNonEmptyString(strings.TrimSpace(conn.Credential.AppID), feishuCfg.AppID)
-			feishuCfg.AppSecretEnv = firstNonEmptyString(strings.TrimSpace(conn.Credential.AppSecretEnv), feishuCfg.AppSecretEnv)
-			bindings = append(bindings, bot.AdapterBinding{ID: id, Domain: feishuCfg.Domain, Platform: platform, Adapter: feishu.New(feishuCfg, logger)})
-			hasConnection[platform] = true
-		case bot.PlatformWeixin:
-			weixinCfg := cfg.Bot.Weixin
-			weixinCfg.Enabled = true
-			weixinCfg.AccountID = firstNonEmptyString(strings.TrimSpace(conn.Credential.AccountID), weixinCfg.AccountID)
-			weixinCfg.TokenEnv = firstNonEmptyString(strings.TrimSpace(conn.Credential.TokenEnv), weixinCfg.TokenEnv)
-			bindings = append(bindings, bot.AdapterBinding{ID: id, Domain: strings.TrimSpace(conn.Domain), Platform: platform, Adapter: weixin.New(weixinCfg, logger)})
-			hasConnection[platform] = true
-		}
-	}
-	if enabled[bot.PlatformQQ] && !hasConnection[bot.PlatformQQ] {
-		bindings = append(bindings, bot.AdapterBinding{ID: string(bot.PlatformQQ), Platform: bot.PlatformQQ, Adapter: qq.New(cfg.Bot.QQ, logger)})
-	}
-	if enabled[bot.PlatformFeishu] && !hasConnection[bot.PlatformFeishu] {
-		if feishuDomains == nil || feishuDomains[feishuDomainKey(cfg.Bot.Feishu.Domain)] {
-			bindings = append(bindings, bot.AdapterBinding{ID: string(bot.PlatformFeishu), Domain: cfg.Bot.Feishu.Domain, Platform: bot.PlatformFeishu, Adapter: feishu.New(cfg.Bot.Feishu, logger)})
-		}
-	}
-	if enabled[bot.PlatformWeixin] && !hasConnection[bot.PlatformWeixin] {
-		bindings = append(bindings, bot.AdapterBinding{ID: string(bot.PlatformWeixin), Domain: "weixin", Platform: bot.PlatformWeixin, Adapter: weixin.New(cfg.Bot.Weixin, logger)})
-	}
-	return bindings
+func AdapterBindings(cfg *config.Config, enabled map[bot.Platform]bool, logger *slog.Logger) []bot.AdapterBinding {
+	// Patty Code no longer ships built-in IM platform adapters; connections
+	// with a custom adapter host register their own bindings via NewGatewayWithAdapterBindings.
+	return nil
 }
 
 func ConnectionRuntimeID(conn config.BotConnectionConfig) string {
@@ -389,9 +286,7 @@ func ModelName(cfg *config.Config, override string) string {
 }
 
 func AllowlistUserCount(a config.BotAllowlist) int {
-	return len(a.QQUsers) + len(a.FeishuUsers) + len(a.WeixinUsers) +
-		len(a.QQApprovers) + len(a.FeishuApprovers) + len(a.WeixinApprovers) +
-		len(a.QQAdmins) + len(a.FeishuAdmins) + len(a.WeixinAdmins)
+	return len(a.Users) + len(a.Approvers) + len(a.Admins)
 }
 
 func BotAccessUserCount(access config.BotAccessConfig) int {
@@ -400,9 +295,6 @@ func BotAccessUserCount(access config.BotAccessConfig) int {
 
 func BotConfigHasAccessControl(bc config.BotConfig) bool {
 	if bc.Allowlist.AllowAll || bc.Pairing.Enabled || (bc.Allowlist.Enabled && AllowlistUserCount(bc.Allowlist) > 0) {
-		return true
-	}
-	if BotAccessActive(bc.QQ.Access) {
 		return true
 	}
 	for _, conn := range bc.Connections {
@@ -666,14 +558,7 @@ func rememberAllowlist(allowlist *config.BotAllowlist, platform bot.Platform, us
 	changed := false
 	userID = strings.TrimSpace(userID)
 	if userID != "" {
-		switch platform {
-		case bot.PlatformQQ:
-			allowlist.QQUsers, changed = appendUniqueString(allowlist.QQUsers, userID)
-		case bot.PlatformFeishu:
-			allowlist.FeishuUsers, changed = appendUniqueString(allowlist.FeishuUsers, userID)
-		case bot.PlatformWeixin:
-			allowlist.WeixinUsers, changed = appendUniqueString(allowlist.WeixinUsers, userID)
-		}
+		allowlist.Users, changed = appendUniqueString(allowlist.Users, userID)
 	}
 	if !chatUsesGroupAllowlist(chatType) {
 		return changed
@@ -682,16 +567,9 @@ func rememberAllowlist(allowlist *config.BotAllowlist, platform bot.Platform, us
 	if groupID == "" {
 		return changed
 	}
-	groupChanged := false
-	switch platform {
-	case bot.PlatformQQ:
-		allowlist.QQGroups, groupChanged = appendUniqueString(allowlist.QQGroups, groupID)
-	case bot.PlatformFeishu:
-		allowlist.FeishuGroups, groupChanged = appendUniqueString(allowlist.FeishuGroups, groupID)
-	case bot.PlatformWeixin:
-		allowlist.WeixinGroups, groupChanged = appendUniqueString(allowlist.WeixinGroups, groupID)
-	}
-	return changed || groupChanged
+	groupsChanged := false
+	allowlist.Groups, groupsChanged = appendUniqueString(allowlist.Groups, groupID)
+	return changed || groupsChanged
 }
 
 func appendUniqueString(values []string, next string) ([]string, bool) {

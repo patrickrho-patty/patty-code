@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/fileutil"
-	"reasonix/internal/store"
+	"patty/internal/fileutil"
+	"patty/internal/store"
 )
 
 // Recovery-branch garbage collection. Conflict recovery forks a copy of the
@@ -248,7 +248,7 @@ func TrashReclaimableRecoveryBranch(path, parentDir string) error {
 	if err != nil {
 		return err
 	}
-	// Keep the move invisible until every artifact is staged. Older Reasonix
+	// Keep the move invisible until every artifact is staged. Older Patty Code
 	// versions ignore the non-session staging directory, while new versions can
 	// finish it from the durable in-directory marker after a crash. Publishing is
 	// one same-filesystem rename, so Desktop can never restore or purge a split

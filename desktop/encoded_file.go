@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 func readFileUTF8(path string) ([]byte, error) {

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
 
-const repo = 'esengine/DeepSeek-Reasonix';
+const repo = 'pattycorp/DeepSeek-Patty Code';
 const api = `https://api.github.com/repos/${repo}/contributors?per_page=20&anon=1`;
-const startMarker = '<!-- reasonix-top-contributors:start -->';
-const endMarker = '<!-- reasonix-top-contributors:end -->';
+const startMarker = '<!-- patty-code-top-contributors:start -->';
+const endMarker = '<!-- patty-code-top-contributors:end -->';
 
 const headers = {
   Accept: 'application/vnd.github+json',
-  'User-Agent': 'reasonix-acknowledgments-updater',
+  'User-Agent': 'patty-code-acknowledgments-updater',
 };
 if (process.env.GITHUB_TOKEN) {
   headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -34,7 +34,7 @@ const top = contributors.slice(0, 20).map((c, index) => ({
 }));
 
 await updateReadme('README.md', renderTable(top));
-await updateReadme('README.zh-CN.md', renderTable(top));
+await updateReadme('README.ko-KR.md', renderTable(top));
 
 function renderTable(rows) {
   const header = '| Contributor | Contributor | Contributor | Contributor |\n| --- | --- | --- | --- |';

@@ -4,11 +4,9 @@ import (
 	"sort"
 	"strings"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
-// ProviderPreset is a curated, editable provider starter template. Presets are
-// not secret-bearing: API key values still live only in Reasonix home .env.
 type ProviderPreset struct {
 	ID          string
 	Label       string
@@ -26,10 +24,6 @@ const (
 	deepSeekAnthropicBaseURL     = "https://api.deepseek.com/anthropic"
 )
 
-// CuratedProviderPresets returns one-click provider templates for common
-// OpenAI-compatible and Anthropic-compatible coding-plan services. These are
-// intentionally editable after installation; they reduce setup friction without
-// turning fast-moving third-party catalogs into hard runtime dependencies.
 func CuratedProviderPresets() []ProviderPreset {
 	presets := cloneProviderPresets(curatedProviderPresets)
 	sort.SliceStable(presets, func(i, j int) bool {
@@ -38,7 +32,6 @@ func CuratedProviderPresets() []ProviderPreset {
 	return presets
 }
 
-// CuratedProviderPreset returns a single provider preset by id.
 func CuratedProviderPreset(id string) (ProviderPreset, bool) {
 	id = strings.ToLower(strings.TrimSpace(id))
 	for _, p := range curatedProviderPresets {
@@ -250,7 +243,7 @@ var curatedProviderPresets = []ProviderPreset{
 	{
 		ID:          "token-rhythm",
 		Label:       "Token Rhythm",
-		Description: "Token Rhythm (基元律动) multi-model OpenAI-compatible gateway.",
+		Description: "Token Rhythm (토큰 리듬) multi-model OpenAI-compatible gateway.",
 		KeyEnv:      "TOKEN_RHYTHM_API_KEY",
 		Entries: []ProviderEntry{{
 			Name:           "token-rhythm",
@@ -899,7 +892,7 @@ var curatedProviderPresets = []ProviderPreset{
 			Models:    gmiModels,
 			Default:   "zai-org/GLM-5.2-FP8",
 			APIKeyEnv: "GMI_API_KEY",
-			Headers:   map[string]string{"User-Agent": "Reasonix"},
+			Headers:   map[string]string{"User-Agent": "Patty Code"},
 		}},
 	},
 	{

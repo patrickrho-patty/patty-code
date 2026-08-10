@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/secrets"
+	"patty/internal/secrets"
 )
 
 // defaultStartupTimeout bounds the real initialize + tools/list handshake.

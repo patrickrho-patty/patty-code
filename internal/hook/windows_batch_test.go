@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/sandbox"
+	"patty/internal/pluginpkg"
+	"patty/internal/sandbox"
 )
 
 func TestDefaultSpawnerRunsQuotedPluginBatchHook(t *testing.T) {
@@ -90,8 +90,8 @@ func TestExtensionlessSessionStartHookUsesAutoResolvedBash(t *testing.T) {
 	}
 
 	home := t.TempDir()
-	reasonixHome := filepath.Join(home, ".reasonix")
-	root := filepath.Join(reasonixHome, "plugins", "superpowers")
+	pattyHome := filepath.Join(home, ".patty")
+	root := filepath.Join(pattyHome, "plugins", "superpowers")
 	writeHookTestFile(t, filepath.Join(root, pluginpkg.CodexManifest), `{
   "name": "superpowers",
   "version": "6.1.1"
@@ -100,7 +100,7 @@ func TestExtensionlessSessionStartHookUsesAutoResolvedBash(t *testing.T) {
 input=$(cat)
 printf 'session-start:%s' "$input"
 `)
-	if err := pluginpkg.Upsert(reasonixHome, pluginpkg.InstalledPlugin{
+	if err := pluginpkg.Upsert(pattyHome, pluginpkg.InstalledPlugin{
 		Name:         "superpowers",
 		Root:         "plugins/superpowers",
 		Version:      "6.1.1",
@@ -155,9 +155,9 @@ func TestProjectAndGlobalExtensionlessHooksUseAutoResolvedBash(t *testing.T) {
 	} {
 		writeHookTestFile(t, item.path, "#!/usr/bin/env bash\ninput=$(cat)\nprintf '"+item.prefix+":%s' \"$input\"\n")
 	}
-	writeHookTestFile(t, filepath.Join(workspace, ".reasonix", "settings.json"), `{"hooks":{"SessionStart":[{"command":"hooks/project-start"}]}}`)
-	reasonixHome := filepath.Join(home, ".reasonix")
-	writeHookTestFile(t, filepath.Join(reasonixHome, "settings.json"), `{"hooks":{"SessionStart":[{"command":"hooks/global-start"}]}}`)
+	writeHookTestFile(t, filepath.Join(workspace, ".patty", "settings.json"), `{"hooks":{"SessionStart":[{"command":"hooks/project-start"}]}}`)
+	pattyHome := filepath.Join(home, ".patty")
+	writeHookTestFile(t, filepath.Join(pattyHome, "settings.json"), `{"hooks":{"SessionStart":[{"command":"hooks/global-start"}]}}`)
 
 	hooks := Load(LoadOptions{HomeDir: home, ProjectRoot: workspace})
 	if len(hooks) != 2 {
@@ -211,7 +211,7 @@ func TestDefaultSpawnerRunsCompoundCmdShellHook(t *testing.T) {
 
 func TestDefaultSpawnerRunsPowerShellHookWithNestedQuotes(t *testing.T) {
 	result := DefaultSpawner(context.Background(), SpawnInput{
-		Command: `$items = @("a b", "c'd", 'e"f', "中文", "🧪"); Write-Output ($items -join "|")`,
+		Command: `$items = @("a b", "c'd", 'e"f', "機能整理檢討", "🧪"); Write-Output ($items -join "|")`,
 		Mode:    ExecutionShell,
 		Shell:   "powershell",
 		Timeout: realSpawnTimeout,
@@ -219,7 +219,7 @@ func TestDefaultSpawnerRunsPowerShellHookWithNestedQuotes(t *testing.T) {
 	if result.ExitCode != 0 || result.SpawnErr != nil {
 		t.Fatalf("PowerShell hook failed: %+v", result)
 	}
-	if got, want := result.Stdout, `a b|c'd|e"f|中文|🧪`; got != want {
+	if got, want := result.Stdout, `a b|c'd|e"f|機能整理檢討|🧪`; got != want {
 		t.Fatalf("PowerShell stdout = %q, want %q", got, want)
 	}
 }

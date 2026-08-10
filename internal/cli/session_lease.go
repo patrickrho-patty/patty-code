@@ -5,17 +5,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/control"
+	"patty/internal/agent"
+	"patty/internal/control"
 )
 
-// sessionLeaseResumeRefusal is the startup-time refusal for `reasonix
-// [--resume|--continue]` and `reasonix run --resume/--continue`: it names the
+// sessionLeaseResumeRefusal is the startup-time refusal for `patty
+// [--resume|--continue]` and `patcode run --resume/--continue`: it names the
 // holder and offers the two ways out (close the holder, or continue in a
 // duplicated session via --copy).
 func sessionLeaseResumeRefusal(err error) string {
 	return control.SessionInUseMessage(err) +
-		"; close the other Reasonix window or process, or rerun with --copy to continue in a duplicated session"
+		"; close the other patty window or process, or rerun with --copy to continue in a duplicated session"
 }
 
 // sessionLeaseHeldNotice is the in-TUI refusal for /resume and /switch, where

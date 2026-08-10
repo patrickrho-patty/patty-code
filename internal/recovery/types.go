@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
+	"patty/internal/agent"
+	"patty/internal/event"
 )
 
 // Phase is a derived view of recovery progress for compatibility snapshots.

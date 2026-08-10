@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/permission"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
-	"reasonix/internal/tool/builtin"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/permission"
+	"patty/internal/sandbox"
+	"patty/internal/skill"
+	"patty/internal/tool"
+	"patty/internal/tool/builtin"
 )
 
 // SubagentProfileInput is the desktop-bound shape for authoring a subagent
@@ -269,7 +269,7 @@ func (a *App) DeleteSubagentProfile(name, scope string) error {
 
 // TrySubagentProfile runs a subagent profile once, synchronously, fully
 // isolated from any live session — it builds its own provider and tool
-// registry straight from config, like the standalone `reasonix review` CLI
+// registry straight from config, like the standalone `patcode review` CLI
 // command (internal/cli/review.go), and never touches Controller.RunSkill or
 // any part of the Chat Runtime critical path. Because it needs nothing saved
 // to disk, it runs directly against the caller's current form values (input),
@@ -316,7 +316,7 @@ func (a *App) TrySubagentProfile(input SubagentProfileInput, task string) (strin
 	}()
 
 	// Resolve config against the active tab's workspace, not the desktop
-	// process's CWD — project-level reasonix.toml (sandbox roots, permissions)
+	// process's CWD — project-level patty.toml (sandbox roots, permissions)
 	// must apply to the try run exactly as it would to a real session there.
 	// Snapshot under the lock: WorkspaceRoot is rewritten under a.mu (spelling
 	// normalization, session-binding redirects) and must not be read bare.
@@ -424,7 +424,7 @@ func trySubagentToolRegistry(cfg *config.Config, root string, allowedTools []str
 		ProxySpec:       cfg.NetworkProxySpec(),
 		ReadPaths:       builtin.NewPathResolver(),
 		SessionGuard:    builtin.NewSessionDataGuard(config.MemoryUserDir(), cfg.AllowWriteRoots()),
-		ManagedConfig:   builtin.NewManagedConfigPaths(config.ReasonixManagedConfigPaths()),
+		ManagedConfig:   builtin.NewManagedConfigPaths(config.PattyCodeManagedConfigPaths()),
 	}
 	parentReg := tool.NewRegistry()
 	for _, tl := range ws.Tools() {

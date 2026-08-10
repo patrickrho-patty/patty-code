@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/filelock"
-	"reasonix/internal/fileutil"
-	"reasonix/internal/mcplaunch"
+	"patty/internal/filelock"
+	"patty/internal/fileutil"
+	"patty/internal/mcplaunch"
 )
 
 // MCP activation is the durable enable/disable switch for installed servers.
@@ -42,7 +42,7 @@ type MCPActivationOverride struct {
 	Enabled   bool               `json:"enabled"`
 }
 
-// MCPActivationFile is the on-disk shape of $REASONIX_HOME/mcp-activation.json.
+// MCPActivationFile is the on-disk shape of $PATTY_HOME/mcp-activation.json.
 type MCPActivationFile struct {
 	Version   int                     `json:"version"`
 	Overrides []MCPActivationOverride `json:"overrides"`
@@ -54,19 +54,19 @@ type MCPActivationStore struct {
 	mu   sync.Mutex
 }
 
-// MCPActivationPath returns the durable activation file under Reasonix home.
-func MCPActivationPath(reasonixHome string) string {
-	return filepath.Join(strings.TrimSpace(reasonixHome), mcpActivationFilename)
+// MCPActivationPath returns the durable activation file under patty home.
+func MCPActivationPath(pattyHome string) string {
+	return filepath.Join(strings.TrimSpace(pattyHome), mcpActivationFilename)
 }
 
-// NewMCPActivationStore opens the activation store for reasonixHome.
-func NewMCPActivationStore(reasonixHome string) *MCPActivationStore {
-	return &MCPActivationStore{path: MCPActivationPath(reasonixHome)}
+// NewMCPActivationStore opens the activation store for pattyHome.
+func NewMCPActivationStore(pattyHome string) *MCPActivationStore {
+	return &MCPActivationStore{path: MCPActivationPath(pattyHome)}
 }
 
-// DefaultMCPActivationStore uses the process Reasonix home.
+// DefaultMCPActivationStore uses the process patty home.
 func DefaultMCPActivationStore() *MCPActivationStore {
-	return NewMCPActivationStore(ReasonixHomeDir())
+	return NewMCPActivationStore(PattyHomeDir())
 }
 
 // Path returns the store file path.
@@ -242,7 +242,7 @@ func (s *MCPActivationStore) saveLocked(file MCPActivationFile) error {
 }
 
 // lockUpdates serializes the full read-modify-write transaction across both
-// independent store instances and separate Reasonix processes. Atomic rename
+// independent store instances and separate Patty Code processes. Atomic rename
 // prevents torn JSON; this lock additionally prevents the last writer from
 // silently dropping another server's override.
 func (s *MCPActivationStore) lockUpdates() (func(), error) {

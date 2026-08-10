@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 // crash_pending.go captures Go-side panics to disk and ships them on the next

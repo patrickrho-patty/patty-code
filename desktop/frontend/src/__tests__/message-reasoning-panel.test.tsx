@@ -78,7 +78,7 @@ ok(!document.querySelector(".reasoning__body"), "completed reasoning is collapse
 
 await act(async () => {
   header?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 300));
 });
 
 ok(document.querySelector(".reasoning__body")?.textContent?.includes("line two") ?? false, "clicking the header expands the reasoning body");

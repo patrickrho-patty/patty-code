@@ -8,10 +8,10 @@ export interface InlineMathContext {
 const PURE_NUMBER = /^\d+(?:,\d{3})*(?:\.\d+)?$/;
 
 const CURRENCY_BEFORE =
-  /(?:\b(?:costs?|prices?|priced|pay|paid|worth|fees?|budget|salary|total|amount|spend|spent|save|saved|charge|charged|buy|bought|sell|sold|usd|dollars?)\b|(?:价格|售价|花费|成本|预算|金额|合计|总计|总价|单价|支付|付款|收费|价值|卖价|买价|薪资|工资|优惠|节省|美元|美金))\s*(?:(?:is|was|are|were|of|at)\s+|(?:是|为|达|约|共|了)\s*|[:：=]\s*)?$/i;
+  /(?:\b(?:costs?|prices?|priced|pay|paid|worth|fees?|budget|salary|total|amount|spend|spent|save|saved|charge|charged|buy|bought|sell|sold|usd|dollars?)\b)\s*(?:(?:is|was|are|were|of|at)\s*|[:=]\s*)?$/i;
 
 const CURRENCY_AFTER =
-  /^\s*(?:usd\b|dollars?\b|(?:in\s+)?cash\b|each\b|per\b|\/\s*(?:day|week|month|year)\b|美元|美金|人民币|元|块钱|现金|每(?:个|天|周|月|年))/i;
+  /^\s*(?:usd\b|dollars?\b|(?:in\s+)?cash\b|each\b|per\b|\/\s*(?:day|week|month|year)\b)/i;
 
 const NUMERIC_MATH_BEFORE =
   /(?:\d(?:,\d{3})*(?:\.\d+)?\s*[-–—−]\s*|(?:[=<>≤≥≈≃~+*/^(,[{]|\\(?:approx|sim|le|ge|lt|gt))\s*)$/;

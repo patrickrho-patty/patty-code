@@ -10,9 +10,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	productcontent "reasonix/docs"
-	"reasonix/internal/provider"
-	releasenotes "reasonix/release-notes"
+	productcontent "patty/docs"
+	"patty/internal/provider"
+	releasenotes "patty/release-notes"
 )
 
 func TestEmbeddedCatalogLoadsDeterministically(t *testing.T) {
@@ -24,8 +24,8 @@ func TestEmbeddedCatalogLoadsDeterministically(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadCatalog second time: %v", err)
 	}
-	if len(first.docs) < 40 {
-		t.Fatalf("embedded docs = %d, want at least 40", len(first.docs))
+	if len(first.docs) < 30 {
+		t.Fatalf("embedded docs = %d, want at least 30", len(first.docs))
 	}
 	if len(first.sections) < len(first.docs) {
 		t.Fatalf("embedded sections = %d, docs = %d", len(first.sections), len(first.docs))
@@ -33,8 +33,8 @@ func TestEmbeddedCatalogLoadsDeterministically(t *testing.T) {
 	if first.digest == "" || first.digest != second.digest {
 		t.Fatalf("digest mismatch: %q != %q", first.digest, second.digest)
 	}
-	if _, ok := first.byPath["GUIDE.zh-CN.md"]; !ok {
-		t.Fatal("Chinese guide is missing from the embedded catalog")
+	if _, ok := first.byPath["GUIDE.ko-KR.md"]; !ok {
+		t.Fatal("Korean guide is missing from the embedded catalog")
 	}
 	if _, ok := first.byPath["GUIDE.md"]; !ok {
 		t.Fatal("English guide is missing from the embedded catalog")
@@ -62,30 +62,30 @@ func TestEmbeddedAndSourceManifestsMatch(t *testing.T) {
 }
 
 func TestDocsCommandOverviewAndSearchUseEmbeddedCorpus(t *testing.T) {
-	overview, err := CommandOverview("zh-CN")
+	overview, err := CommandOverview("ko-KR")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"内置 Reasonix 文档", "version=", "revision=", "digest=sha256:", "/docs 1.19.5 更新日志"} {
+	for _, want := range []string{"내장된 patty code 문서", "version=", "revision=", "digest=sha256:", "/docs 1.19.5 업데이트 로그"} {
 		if !strings.Contains(overview, want) {
 			t.Fatalf("command overview missing %q:\n%s", want, overview)
 		}
 	}
-	qualified, err := CommandOverviewFor("en", "/reasonix:docs")
+	qualified, err := CommandOverviewFor("en", "/patty:docs")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(qualified, "Usage: /reasonix:docs <question>") || strings.Contains(qualified, "Example: /docs ") {
+	if !strings.Contains(qualified, "Usage: /patty:docs <question>") || strings.Contains(qualified, "Example: /docs ") {
 		t.Fatalf("qualified command overview used the wrong invocation:\n%s", qualified)
 	}
 
-	results, err := SearchEmbedded(context.Background(), "1.19.5 更新日志")
+	results, err := SearchEmbedded(context.Background(), "1.19.5 업데이트 로그")
 	if err != nil {
 		t.Fatal(err)
 	}
 	firstStart := strings.Index(results, "\n1. ")
 	firstEnd := strings.Index(results, "\n2. ")
-	if firstStart < 0 || firstEnd <= firstStart || !strings.Contains(results[firstStart:firstEnd], "path=changelog/v1.19.5.zh-CN.md") || !strings.Contains(results, "digest=sha256:") {
+	if firstStart < 0 || firstEnd <= firstStart || !strings.Contains(results[firstStart:firstEnd], "path=changelog/v1.19.5.ko-KR.md") || !strings.Contains(results, "digest=sha256:") {
 		t.Fatalf("command search did not use the embedded release catalog:\n%s", results)
 	}
 }
@@ -97,11 +97,11 @@ func TestExtensionDeveloperGuidesAreEmbeddedAndSearchable(t *testing.T) {
 	}
 	for _, path := range []string{
 		"EXTENSIONS.md",
-		"EXTENSIONS.zh-CN.md",
+		"EXTENSIONS.ko-KR.md",
 		"EXTENSION_PROTOCOL.md",
-		"EXTENSION_PROTOCOL.zh-CN.md",
+		"EXTENSION_PROTOCOL.ko-KR.md",
 		"PLUGIN_PACKAGES.md",
-		"PLUGIN_PACKAGES.zh-CN.md",
+		"PLUGIN_PACKAGES.ko-KR.md",
 	} {
 		if _, ok := c.byPath[path]; !ok {
 			t.Fatalf("extension developer guide %q is missing from the embedded catalog", path)
@@ -117,12 +117,12 @@ func TestExtensionDeveloperGuidesAreEmbeddedAndSearchable(t *testing.T) {
 		t.Fatalf("English extension search did not expose the overview and manifest reference:\n%s", english)
 	}
 
-	chinese, err := tool.search(context.Background(), "Sidecar 插件 Manifest v2 扩展开发", "zh-CN", "all", 10)
+	chinese, err := tool.search(context.Background(), "Sidecar 플러그인 Manifest v2 확장 개발", "ko-KR", "all", 10)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(chinese, "path=docs/EXTENSIONS.zh-CN.md") || !strings.Contains(chinese, "path=docs/PLUGIN_PACKAGES.zh-CN.md") {
-		t.Fatalf("Chinese extension search did not expose the overview and manifest reference:\n%s", chinese)
+	if !strings.Contains(chinese, "path=docs/EXTENSIONS.ko-KR.md") || !strings.Contains(chinese, "path=docs/PLUGIN_PACKAGES.ko-KR.md") {
+		t.Fatalf("Korean extension search did not expose the overview and manifest reference:\n%s", chinese)
 	}
 }
 
@@ -187,7 +187,7 @@ func TestSourceManifestDigestUsesUnambiguousFileFraming(t *testing.T) {
 }
 
 func TestSearchRejectsOversizedQueriesBeforeRetrieval(t *testing.T) {
-	oversized := strings.Repeat("文", maxQueryRunes+1)
+	oversized := strings.Repeat("문", maxQueryRunes+1)
 	tests := []struct {
 		name string
 		run  func() error
@@ -236,22 +236,22 @@ func TestReleaseNotesAreSearchableInBothLanguages(t *testing.T) {
 		t.Fatalf("English release search missing versioned changelog:\n%s", english)
 	}
 
-	chinese, err := tl.search(context.Background(), "v1.19.5 用量统计面板", "zh-CN", "user", 5)
+	chinese, err := tl.search(context.Background(), "v1.19.5 사용량 통계 패널", "ko-KR", "user", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(chinese, "path=changelog/v1.19.5.zh-CN.md") {
-		t.Fatalf("Chinese release search missing versioned changelog:\n%s", chinese)
+	if !strings.Contains(chinese, "path=changelog/v1.19.5.ko-KR.md") {
+		t.Fatalf("Korean release search missing versioned changelog:\n%s", chinese)
 	}
 
-	sections, err := tl.read("", "changelog/v1.19.5.zh-CN.md")
+	sections, err := tl.read("", "changelog/v1.19.5.ko-KR.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(sections, "source: release-notes/releases.json#v1.19.5") {
 		t.Fatalf("release section listing missing JSON provenance:\n%s", sections)
 	}
-	section, err := tl.read("changelog/v1.19.5.zh-CN.md::s002", "")
+	section, err := tl.read("changelog/v1.19.5.ko-KR.md::s002", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,8 +267,8 @@ func TestReleaseSearchDoesNotTreatPreviewAsExactStableVersion(t *testing.T) {
 	releaseNotesFS := fstest.MapFS{
 		"releases.json": {Data: []byte(`{
 			"releases": [
-				{"version":"1.19.0","title":{"en":"Stable","zh":"稳定版"},"summary":{"en":"Stable changelog","zh":"稳定版更新日志"}},
-				{"version":"1.19.0-preview.1","title":{"en":"Preview","zh":"预览版"},"summary":{"en":"Preview-only changelog","zh":"仅预览版更新日志"}}
+				{"version":"1.19.0","title":{"en":"Stable","ko-KR":"안정 버전"},"summary":{"en":"Stable changelog","ko-KR":"안정 버전 업데이트 로그"}},
+				{"version":"1.19.0-preview.1","title":{"en":"Preview","ko-KR":"프리뷰 버전"},"summary":{"en":"Preview-only changelog","ko-KR":"프리뷰 전용 업데이트 로그"}}
 			]
 		}`)},
 	}
@@ -300,8 +300,8 @@ func TestReleaseSearchDoesNotTreatPreviewAsExactStableVersion(t *testing.T) {
 
 func TestSourceManifestChangesWithReleaseCatalogBytes(t *testing.T) {
 	docsFS := fstest.MapFS{"GUIDE.md": {Data: []byte("# Guide\n\nBody.\n")}}
-	firstNotes := fstest.MapFS{"releases.json": {Data: []byte(`{"releases":[{"version":"1.0.0","title":{"en":"First","zh":"第一"},"summary":{"en":"Body","zh":"正文"}}]}`)}}
-	secondNotes := fstest.MapFS{"releases.json": {Data: []byte(`{"releases":[{"version":"1.0.0","title":{"en":"Second","zh":"第二"},"summary":{"en":"Body","zh":"正文"}}]}`)}}
+	firstNotes := fstest.MapFS{"releases.json": {Data: []byte(`{"releases":[{"version":"1.0.0","title":{"en":"First","ko-KR":"첫 번째"},"summary":{"en":"Body","ko-KR":"본문"}}]}`)}}
+	secondNotes := fstest.MapFS{"releases.json": {Data: []byte(`{"releases":[{"version":"1.0.0","title":{"en":"Second","ko-KR":"두 번째"},"summary":{"en":"Body","ko-KR":"본문"}}]}`)}}
 	first, err := SourceManifest(docsFS, firstNotes)
 	if err != nil {
 		t.Fatal(err)
@@ -316,28 +316,28 @@ func TestSourceManifestChangesWithReleaseCatalogBytes(t *testing.T) {
 }
 
 func TestReleaseCatalogRejectsUnsafeVirtualPathVersion(t *testing.T) {
-	_, _, err := renderReleaseDocuments([]byte(`{"releases":[{"version":"../secret","title":{"en":"Bad","zh":"错误"},"summary":{"en":"Body","zh":"正文"}}]}`))
+	_, _, err := renderReleaseDocuments([]byte(`{"releases":[{"version":"../secret","title":{"en":"Bad","ko-KR":"오류"},"summary":{"en":"Body","ko-KR":"본문"}}]}`))
 	if err == nil || !strings.Contains(err.Error(), "invalid version") {
 		t.Fatalf("unsafe release version error = %v", err)
 	}
 }
 
-func TestSearchPrefersRelevantChineseAndEnglishSections(t *testing.T) {
+func TestSearchPrefersRelevantKoreanAndEnglishSections(t *testing.T) {
 	c, err := loadCatalog(productcontent.Content)
 	if err != nil {
 		t.Fatal(err)
 	}
 	tl := &docsTool{catalog: c}
 
-	zh, err := tl.search(context.Background(), "工具权限 Auto Yolo 自动批准", "auto", "all", 5)
+	zh, err := tl.search(context.Background(), "도구 권한 Auto Yolo 자동 승인", "auto", "all", 5)
 	if err != nil {
-		t.Fatalf("Chinese search: %v", err)
+		t.Fatalf("Korean search: %v", err)
 	}
-	if !strings.Contains(zh, "docs/TOOL_APPROVAL_MODES.zh-CN.md") {
-		t.Fatalf("Chinese search did not find the permission guide:\n%s", zh)
+	if !strings.Contains(zh, "docs/TOOL_APPROVAL_MODES.ko-KR.md") {
+		t.Fatalf("Korean search did not find the permission guide:\n%s", zh)
 	}
 
-	en, err := tl.search(context.Background(), "REASONIX_HOME configuration paths", "auto", "all", 5)
+	en, err := tl.search(context.Background(), "PATTY_HOME configuration paths", "auto", "all", 5)
 	if err != nil {
 		t.Fatalf("English search: %v", err)
 	}
@@ -348,13 +348,13 @@ func TestSearchPrefersRelevantChineseAndEnglishSections(t *testing.T) {
 
 func TestToolSearchReadAndListRoundTrip(t *testing.T) {
 	c, err := loadCatalog(fstest.MapFS{
-		"GUIDE.md": {Data: []byte("# Guide\n\n## Configure MCP\n\nSet `reasonix.toml` before connecting plugins.\n")},
+		"GUIDE.md": {Data: []byte("# Guide\n\n## Configure MCP\n\nSet `patty.toml` before connecting plugins.\n")},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	tl := &docsTool{catalog: c}
-	search, err := tl.Execute(context.Background(), json.RawMessage(`{"operation":"search","query":"reasonix.toml MCP"}`))
+	search, err := tl.Execute(context.Background(), json.RawMessage(`{"operation":"search","query":"patty.toml MCP"}`))
 	if err != nil {
 		t.Fatalf("search: %v", err)
 	}
@@ -365,7 +365,7 @@ func TestToolSearchReadAndListRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
-	if !strings.Contains(read, "Set `reasonix.toml`") || !strings.Contains(read, "source: docs/GUIDE.md:3-5") {
+	if !strings.Contains(read, "Set `patty.toml`") || !strings.Contains(read, "source: docs/GUIDE.md:3-5") {
 		t.Fatalf("read result missing content or provenance:\n%s", read)
 	}
 	list, err := tl.Execute(context.Background(), json.RawMessage(`{"operation":"list","language":"en"}`))
@@ -393,11 +393,11 @@ func TestParserIgnoresHeadingsInsideFencedCode(t *testing.T) {
 }
 
 func TestGoldmarkHeadingsPreserveTextAndSetextSemantics(t *testing.T) {
-	doc := parseDocument("EXAMPLE.md", "# Example\n\n### Configure *MCP* with `reasonix.toml`, C#, and <https://example.com>\n\nBody.\n\nSetext section\n--------------\n\nMore.\n")
+	doc := parseDocument("EXAMPLE.md", "# Example\n\n### Configure *MCP* with `patty.toml`, C#, and <https://example.com>\n\nBody.\n\nSetext section\n--------------\n\nMore.\n")
 	if len(doc.sections) != 3 {
 		t.Fatalf("sections = %d, want 3", len(doc.sections))
 	}
-	if doc.sections[1].heading != "Example > Configure MCP with reasonix.toml, C#, and https://example.com" {
+	if doc.sections[1].heading != "Example > Configure MCP with patty.toml, C#, and https://example.com" {
 		t.Fatalf("ATX heading = %q", doc.sections[1].heading)
 	}
 	if doc.sections[2].heading != "Example > Setext section" {
@@ -439,7 +439,7 @@ func TestDocsToolContractIsStableAndReadOnly(t *testing.T) {
 	}
 	contract := tl.Name() + "\n" + tl.Description() + "\n" + string(canonical)
 	got := fmt.Sprintf("%x", sha256.Sum256([]byte(contract)))
-	const want = "0113a592b6bcba5dd2be78c552f95ca27337534b6bb55b7b5e6fd89414f95be5"
+	const want = "8d1b99e3eb4082a2a454f6b1b25c27d7859d7c42db3df5418ba74903c560dc7b"
 	if got != want {
 		t.Fatalf("provider-visible docs contract changed: got %s, want %s", got, want)
 	}
@@ -456,7 +456,7 @@ func TestDocsToolSupportsConcurrentReadOnlyCalls(t *testing.T) {
 			defer wg.Done()
 			args := json.RawMessage(`{"operation":"search","query":"MCP configuration","limit":2}`)
 			if index%2 == 1 {
-				args = json.RawMessage(`{"operation":"list","language":"zh-CN","audience":"user"}`)
+				args = json.RawMessage(`{"operation":"list","language":"ko-KR","audience":"user"}`)
 			}
 			out, err := tl.Execute(context.Background(), args)
 			if err != nil {

@@ -6,11 +6,6 @@ import (
 	"unicode/utf8"
 )
 
-// heuristicInputIsTask reports whether a user input reads as an actionable
-// task rather than conversational chat. The delivery evidence gate uses it to
-// decide when a turn should be held to acceptance-criteria expectations
-// (NeedsEvidence); greetings and acknowledgements must not arm the
-// delivery gates.
 func heuristicInputIsTask(input string) bool {
 	trimmed := strings.TrimSpace(input)
 	if trimmed == "" {
@@ -19,12 +14,11 @@ func heuristicInputIsTask(input string) bool {
 
 	normalized := strings.ToLower(strings.Trim(trimmed, " \t\r\n.!?。！？,，;；:："))
 
-	// Very short greeting/acknowledgement whitelist (1-3 words).
 	shortGreetings := []string{
-		"hello", "hi", "hey", "你好", "您好", "nihao",
-		"thanks", "thank you", "谢谢", "谢了",
-		"ok", "okay", "好的", "嗯", "行",
-		"got it", "i see", "明白", "了解", "收到", "我知道了", "先不用",
+		"hello", "hi", "hey", "안녕", "안녕하세요", "nihao",
+		"thanks", "thank you", "감사", "감사합니다",
+		"ok", "okay", "좋습니다", "응", "좋음",
+		"got it", "i see", "이해", "이해했어요", "확인", "알겠습니다", "일단 괜찮아요",
 	}
 
 	words := strings.Fields(normalized)
@@ -34,21 +28,16 @@ func heuristicInputIsTask(input string) bool {
 		}
 	}
 
-	// Polite acknowledgements can contain action words from the completed
-	// task ("thanks for fixing") but should stay conversational.
 	chatPhrases := []string{
 		"thanks for", "thank you for", "i'll check later", "i will check later",
 		"i'll test it later", "i will test it later", "that test was helpful", "the test was helpful",
-		"谢谢你", "辛苦了",
+		"고마워요", "수고하셨습니다",
 	}
 	for _, phrase := range chatPhrases {
 		before, after, ok := strings.Cut(normalized, phrase)
 		if !ok {
 			continue
 		}
-		// Acknowledgement wording only short-circuits a purely conversational
-		// turn. Preserve a real task before it or after an explicit transition,
-		// e.g. "thanks for fixing that; now update the tests".
 		if prefix := strings.TrimSpace(before); prefix != "" && heuristicInputHasStrongTaskSignal(prefix) {
 			return true
 		}
@@ -57,37 +46,24 @@ func heuristicInputIsTask(input string) bool {
 		}
 		return false
 	}
-	// Ambiguous prose stays conversational. Delivery evidence gates require a
-	// concrete host-observable signal rather than using message length as a
-	// proxy; explicit mutations, files, commands, failures, and audit verbs are
-	// still classified below.
 	return heuristicInputHasStrongTaskSignal(normalized)
 }
 
 func heuristicInputHasStrongTaskSignal(input string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(input))
-	// File references and concrete commands are strong task signals. Shared
-	// parsing keeps email addresses and remote product names from accidentally
-	// arming the delivery gate while covering ordinary repository file types.
 	if deliveryTaskHasFileReference(normalized) || deliveryTaskHasCommand(normalized) {
 		return true
 	}
-	// Mutation intent has a richer, negation-aware vocabulary than this generic
-	// task heuristic. Reuse it so short requests such as "push the branch" do not
-	// bypass delivery gates merely because the two keyword lists drift apart.
 	if deliveryTaskHasMutationIntent(normalized) || NeedsPersistentAction(normalized) {
 		return true
 	}
 
-	// Failure/help descriptions are actionable even when phrased without an
-	// imperative verb, e.g. "the auth isn't working". Shared fault signals keep
-	// task recognition and Goal budget classification from drifting apart.
 	if taskInputHasFaultSignal(normalized) {
 		return true
 	}
 	helpPhrases := []string{
 		"can you help", "help with", "cannot", "can't",
-		"无法", "不能",
+		"불가능합니다", "할 수 없습니다",
 	}
 	for _, phrase := range helpPhrases {
 		if strings.Contains(normalized, phrase) {
@@ -95,7 +71,6 @@ func heuristicInputHasStrongTaskSignal(input string) bool {
 		}
 	}
 
-	// Action keyword detection.
 	actionNeedles := []string{
 		"fix", "debug", "repair", "resolve", "reproduce",
 		"create", "add", "write", "edit", "update", "change", "delete", "remove", "rename",
@@ -103,10 +78,10 @@ func heuristicInputHasStrongTaskSignal(input string) bool {
 		"configure", "upgrade", "downgrade", "enable", "disable", "merge", "make changes", "make a change", "make the changes",
 		"make the requested changes", "make the necessary changes", "make these changes", "make those changes", "make code changes",
 		"continue work", "continue the", "continue this",
-		"修复", "调试", "解决", "复现", "创建", "新建", "添加", "编写", "编辑", "修改", "更新",
-		"删除", "移除", "重命名", "评审", "检查", "分析", "审计", "验证", "测试", "运行", "构建", "实现", "重构", "继续处理",
-		"调整", "替换", "移动", "升级", "降级", "启用", "禁用", "合并", "改动", "打补丁",
-		"看看", "看下", "帮我看", "帮我看下", "处理下", "处理一下", "排查", "定位",
+		"복구", "디버깅", "해겵", "재현", "생성하기", "새로 만들기", "추가", "사작", "편집", "수정", "업데이트",
+		"삭제", "제거", "이름 재정의", "검토", "검사", "분석", "감사", "검증", "테스트", "실행", "빌드", "구현", "리팩토링", "계속처리",
+		"조정", "바꿔기", "이동", "액스레이제이션", "다웄그레이제이션", "확성화", "비확성화", "벵합", "변경", "패치",
+		"봐주세요", "한번 봐주세요", "보여주세요", "처리해 주세요", "추적", "위치 파악",
 	}
 
 	for _, needle := range actionNeedles {
@@ -130,7 +105,7 @@ func deliveryTaskHasFollowUpAfterChat(input string) bool {
 	}
 	for _, cue := range []string{
 		" but ", " however ", " nevertheless ", " now ", " then ", " and ", " please ", " so ", " therefore ",
-		"但是", "但请", "不过", "现在", "然后", "所以", "请", "继续", "再",
+		"하지만", "하지만 부탁드립니다", "그런데", "지금", "그다음", "그래서", "부탁드립니다", "계속", "다시",
 	} {
 		for rest := input; ; {
 			index := strings.Index(rest, cue)

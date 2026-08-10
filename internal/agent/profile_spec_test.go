@@ -3,7 +3,7 @@ package agent
 import (
 	"testing"
 
-	"reasonix/internal/tool"
+	"patty/internal/tool"
 )
 
 func TestIntersectToolLists(t *testing.T) {

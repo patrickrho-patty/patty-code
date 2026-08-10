@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/jobs"
+	"patty/internal/agent"
+	"patty/internal/jobs"
 )
 
 type machineTask struct {

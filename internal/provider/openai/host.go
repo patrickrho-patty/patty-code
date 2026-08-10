@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // matchesVendorHost reports whether baseURL points at one of the canonical

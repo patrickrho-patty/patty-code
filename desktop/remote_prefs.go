@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"reasonix/internal/config"
-	"reasonix/internal/fileutil"
+	"patty/internal/config"
+	"patty/internal/fileutil"
 )
 
 var remotePrefsMu sync.Mutex

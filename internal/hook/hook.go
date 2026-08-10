@@ -1,14 +1,9 @@
-// Package hook runs user-configured shell-command hooks around the agent loop:
-// PreToolUse / PostToolUse fire around each tool call, PermissionRequest fires
-// before a tool approval prompt is shown, UserPromptSubmit before a turn, Stop
-// after it. Hooks come from settings.json — a project
-// (.reasonix/settings.json, only when the project is trusted) and a global
-// (<Reasonix home>/settings.json) file. A hook's exit
-// code is its verdict: 0 = pass, 2 = block (only on the gating events), other =
-// warn. The payload is delivered as JSON on stdin; output is captured (capped)
-// and surfaced to the user. This package only loads, matches, and runs hooks;
-// the agent and controller decide what a block means (see internal/agent,
-// internal/control).
+// [PreToolUse  PostToolUse fire around each tool call, PermissionRequest fires]
+// [after it. Hooks come from settings.json  a project]
+// [(.pattysettings.json, only when the project is trusted) and a global]
+// [(<patty home>/settings.json) file. A hook's exit]
+// [the agent and controller decide what a block means (see internalagent,]
+// [internalcontrol).]
 package hook
 
 import (
@@ -29,15 +24,14 @@ import (
 	"time"
 	"unicode/utf16"
 
-	"reasonix/internal/config"
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/proc"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/secrets"
+	"patty/internal/config"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/pluginpkg"
+	"patty/internal/proc"
+	"patty/internal/sandbox"
+	"patty/internal/secrets"
 )
 
-// Event is a point in the agent loop a hook can fire at.
 type Event string
 
 const (
@@ -48,17 +42,11 @@ const (
 	UserPromptSubmit   Event = "UserPromptSubmit"
 	Stop               Event = "Stop"
 	StopFailure        Event = "StopFailure"
-	// PostLLMCall fires after every model turn completes (streaming finishes) but
-	// before the reasoning_content is stored in the session. The hook receives the
-	// raw reasoning text in the payload; its stdout, if non-empty on exit 0,
-	// replaces the reasoning stored and displayed to the user. It can't block — a
-	// non-zero exit or empty stdout leaves the reasoning unchanged.
+// [replaces the reasoning stored and displayed to the user. It can't block — a]
 	PostLLMCall Event = "PostLLMCall"
-	// SessionStart fires once when a session becomes active (fresh, resumed, or
-	// after /new). SessionEnd fires when it is closed or rotated. SubagentStop
-	// fires when a `task` sub-agent finishes. Notification fires when the agent
-	// needs the user's attention (e.g. a pending approval). PreCompact fires just
-	// before a compaction pass; its stdout is injected as extra summary guidance.
+// [after new). SessionEnd fires when it is closed or rotated. SubagentStop]
+// [fires when a `task` sub-agent finishes. Notification fires when the agent]
+// [needs the users attention (e.g. a pending approval). PreCompact fires just]
 	SessionStart Event = "SessionStart"
 	SessionEnd   Event = "SessionEnd"
 	SubagentStop Event = "SubagentStop"
@@ -66,32 +54,27 @@ const (
 	PreCompact   Event = "PreCompact"
 )
 
-// Events is every event, in a stable order — drives loading and `/hooks`.
+// [Events is every event, in a stable order — drives loading and `/hooks`.]
 var Events = []Event{
 	PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, UserPromptSubmit, Stop, StopFailure,
 	PostLLMCall,
 	SessionStart, SessionEnd, SubagentStop, Notification, PreCompact,
 }
 
-// IsBlocking reports whether a non-zero/exit-2 (or timed-out) hook on this event
-// can block the loop. Only the gating events qualify. (PreCompact does not block;
-// it only contributes guidance via stdout.) This governs native Reasonix hooks;
-// see claudePermissionBlocking for the Claude-imported PermissionRequest case.
+// [IsBlocking reports whether a non-zeroexit-2 (or timed-out) hook on this event]
 func IsBlocking(e Event) bool { return e == PreToolUse || e == UserPromptSubmit }
 
-// claudePermissionBlocking reports whether exit code 2 (or a timeout) on h
-// aborts the action even though PermissionRequest is not one of Reasonix's own
-// blocking events (docs/DESKTOP_HOOKS.md: "只有 PreToolUse 和 UserPromptSubmit
-// 是阻塞型事件"). Claude's own PermissionRequest contract denies the permission
-// on exit 2 the same way PreToolUse does (https://code.claude.com/docs/en/hooks),
-// so an imported Claude hook (PayloadFormat "claude") honors that instead of
-// silently downgrading to a notification.
+// [aborts the action even though PermissionRequest is not one of Patty Codes own]
+// [blocking events (docs/DESKTOP_HOOKS.md: " PreToolUse  UserPromptSubmit]
+// ["). Claude's own PermissionRequest contract denies the permission]
+// [on exit 2 the same way PreToolUse does (https://code.claude.com/docs/en/hooks),]
+// [so an imported Claude hook (PayloadFormat "claude") honors that instead of]
 func claudePermissionBlocking(h ResolvedHook) bool {
 	return h.Event == PermissionRequest && h.PayloadFormat == "claude"
 }
 
-// defaultTimeout is the per-event timeout when a hook sets none. Tool/prompt
-// hooks gate progress, so they're tight; post/stop hooks get more room.
+// [defaultTimeout is the per-event timeout when a hook sets none. Toolprompt]
+// [hooks gate progress, so they're tight; post/stop hooks get more room.]
 func defaultTimeout(e Event) time.Duration {
 	switch e {
 	case PreToolUse, PermissionRequest, UserPromptSubmit:
@@ -101,8 +84,6 @@ func defaultTimeout(e Event) time.Duration {
 	}
 }
 
-// Scope records which settings.json a hook came from. Project hooks fire before
-// global ones.
 type Scope string
 
 const (
@@ -111,10 +92,6 @@ const (
 	ScopeGlobal  Scope = "global"
 )
 
-// ExecutionMode is the contract between a hook manifest and its process
-// launcher. The zero value is the legacy Reasonix settings behavior, where a
-// command string is interpreted by the platform shell after compatibility
-// repairs. Plugin manifests can opt into an unambiguous exec or shell form.
 type ExecutionMode string
 
 const (
@@ -123,44 +100,30 @@ const (
 	ExecutionShell  ExecutionMode = "shell"
 )
 
-// HookConfig is one hook as written in settings.json.
 type HookConfig struct {
-	// Match is an anchored regex selecting tools (Pre/PostToolUse and
-	// PermissionRequest only); "" or "*" = every tool. Anchored: "file" won't
-	// match "read_file" — use ".*file".
+// [Match is an anchored regex selecting tools (PrePostToolUse and]
+// [PermissionRequest only); "" or "*" = every tool. Anchored: "file" won't]
+// [match "read_file" — use ".*file".]
 	Match string `json:"match,omitempty"`
-	// Command is the executable, shell script, or legacy shell command to run,
-	// according to ExecutionMode.
 	Command string `json:"command"`
-	// Argv is the literal argument vector for exec-form plugin hooks.
 	Argv []string `json:"-"`
-	// ExecutionMode and Shell are internal plugin-package metadata. Native
-	// Reasonix settings retain their legacy shell-command behavior.
 	ExecutionMode ExecutionMode `json:"-"`
 	Shell         string        `json:"-"`
-	// ContextFile is an internal plugin-package helper: when set, the hook reads
-	// this file and treats it as stdout instead of spawning a shell command.
 	ContextFile string `json:"contextFile,omitempty"`
-	// Description is an optional human label surfaced in `/hooks`.
+// [Description is an optional human label surfaced in `/hooks`.]
 	Description string `json:"description,omitempty"`
-	// Timeout overrides the per-event default, in milliseconds.
 	Timeout int `json:"timeout,omitempty"`
-	// Cwd overrides the working directory (defaults to the payload's cwd).
+// [Cwd overrides the working directory (defaults to the payloads cwd).]
 	Cwd string `json:"cwd,omitempty"`
-	// Env adds environment variables for this hook invocation.
 	Env map[string]string `json:"env,omitempty"`
-	// Async and PayloadFormat are internal compatibility metadata populated for
-	// imported Claude hooks. Native Reasonix settings keep their old behavior.
 	Async         bool   `json:"-"`
 	PayloadFormat string `json:"-"`
 }
 
-// Settings is the shape of a settings.json (only hooks for now).
 type Settings struct {
 	Hooks map[Event][]HookConfig `json:"hooks"`
 }
 
-// ResolvedHook is a loaded hook with its origin baked in.
 type ResolvedHook struct {
 	HookConfig
 	Event  Event
@@ -175,27 +138,22 @@ func (h ResolvedHook) timeout() time.Duration {
 	return defaultTimeout(h.Event)
 }
 
-// SettingsDirname / SettingsFilename locate a scope's settings.json.
+// [SettingsDirname / SettingsFilename locate a scope's settings.json.]
 const (
-	SettingsDirname  = ".reasonix"
+	SettingsDirname  = ".patty"
 	SettingsFilename = "settings.json"
 )
 
-// GlobalSettingsPath is <Reasonix home>/settings.json (homeDir overrides ~ for
-// tests and legacy callers).
+// [GlobalSettingsPath is <patty home>/settings.json (homeDir overrides ~ for]
 func GlobalSettingsPath(homeDir string) string {
-	return filepath.Join(reasonixHome(homeDir), SettingsFilename)
+	return filepath.Join(pattyHome(homeDir), SettingsFilename)
 }
 
-// ProjectSettingsPath is <root>/.reasonix/settings.json.
+// [ProjectSettingsPath is <root>/.patty/settings.json.]
 func ProjectSettingsPath(projectRoot string) string {
 	return filepath.Join(projectRoot, SettingsDirname, SettingsFilename)
 }
 
-// ContextFileUsable reports whether a plugin contextFile can take the same
-// execution path as readContextFile. Keep machine status and diagnostics on
-// this shared predicate so a path that merely exists (for example, a
-// directory) is not advertised as runnable.
 func ContextFileUsable(path string) bool {
 	path = strings.TrimSpace(path)
 	if path == "" {
@@ -212,25 +170,17 @@ func ContextFileUsable(path string) bool {
 	return file.Close() == nil
 }
 
-// LoadOptions configure Load.
 type LoadOptions struct {
 	ProjectRoot string
-	// HomeDir overrides the OS user home used by legacy callers and tests. The
-	// derived global path is <HomeDir>/.reasonix unless ReasonixHomeDir is set.
+// [derived global path is <HomeDir>.patty unless PattyHomeDir is set.]
 	HomeDir string
-	// ReasonixHomeDir is the exact current Reasonix home (settings.json lives
-	// directly under it). When set, it takes precedence over HomeDir for global
-	// settings and plugin hooks so Windows %APPDATA%/reasonix and REASONIX_HOME
-	// isolation stay consistent across hook/doctor/capdiag (#7411, #7331).
-	ReasonixHomeDir string
-	// Trusted is retained for source compatibility. Project hooks are enabled
-	// automatically now, so callers no longer need to set it.
+// [settings and plugin hooks so Windows %APPDATA%/patty and PATTY_HOME]
+// [isolation stay consistent across hook/doctor/capdiag (#7411, #7331).]
+	PattyHomeDir string
 	Trusted bool
 }
 
-// Load resolves hooks: project first, then global; within a scope,
-// settings.json array order. A malformed file yields no hooks (never an error
-// — a typo shouldn't take down the CLI).
+// [— a typo shouldn't take down the CLI).]
 func Load(opts LoadOptions) []ResolvedHook {
 	var out []ResolvedHook
 	if opts.ProjectRoot != "" {
@@ -239,10 +189,10 @@ func Load(opts LoadOptions) []ResolvedHook {
 			appendResolved(&out, s, ScopeProject, p)
 		}
 	}
-	reasonixHomeDir := reasonixHomeForOptions(opts)
-	appendPluginHooks(&out, reasonixHomeDir, opts.ProjectRoot)
-	g := filepath.Join(reasonixHomeDir, SettingsFilename)
-	if reasonixHomeDir == "" {
+	pattyHomeDir := pattyHomeForOptions(opts)
+	appendPluginHooks(&out, pattyHomeDir, opts.ProjectRoot)
+	g := filepath.Join(pattyHomeDir, SettingsFilename)
+	if pattyHomeDir == "" {
 		g = GlobalSettingsPath(opts.HomeDir)
 	}
 	if s := readSettings(g); s != nil {
@@ -257,8 +207,7 @@ func Load(opts LoadOptions) []ResolvedHook {
 	return out
 }
 
-// ProjectDefinesHooks reports whether a project's settings.json exists and
-// declares at least one hook.
+// [ProjectDefinesHooks reports whether a projects settings.json exists and]
 func ProjectDefinesHooks(projectRoot string) bool {
 	s := readSettings(ProjectSettingsPath(projectRoot))
 	if s == nil {
@@ -309,11 +258,11 @@ func appendResolved(out *[]ResolvedHook, s *Settings, scope Scope, source string
 	}
 }
 
-func appendPluginHooks(out *[]ResolvedHook, reasonixHomeDir, projectRoot string) {
-	if strings.TrimSpace(reasonixHomeDir) == "" {
+func appendPluginHooks(out *[]ResolvedHook, pattyHomeDir, projectRoot string) {
+	if strings.TrimSpace(pattyHomeDir) == "" {
 		return
 	}
-	installed, _ := pluginpkg.LoadInstalled(reasonixHomeDir)
+	installed, _ := pluginpkg.LoadInstalled(pattyHomeDir)
 	for _, item := range installed {
 		pkg := item.Package
 		events := make([]string, 0, len(pkg.Manifest.Hooks))
@@ -352,14 +301,14 @@ func appendPluginHooks(out *[]ResolvedHook, reasonixHomeDir, projectRoot string)
 				for key, value := range env {
 					env[key] = expandPluginRoot(value, pkg.Root)
 				}
-				env["REASONIX_PLUGIN_ROOT"] = pkg.Root
-				env["REASONIX_PLUGIN_NAME"] = item.Installed.Name
-				env["REASONIX_HOME"] = reasonixHomeDir
-				env["REASONIX_WORKSPACE_ROOT"] = projectRoot
+				env["PATTY_PLUGIN_ROOT"] = pkg.Root
+				env["PATTY_PLUGIN_NAME"] = item.Installed.Name
+				env["PATTY_HOME"] = pattyHomeDir
+				env["PATTY_WORKSPACE_ROOT"] = projectRoot
 				env["CLAUDE_PROJECT_DIR"] = projectRoot
 				env["CLAUDE_PLUGIN_ROOT"] = pkg.Root
 				if item.Installed.Version != "" {
-					env["REASONIX_PLUGIN_VERSION"] = item.Installed.Version
+					env["PATTY_PLUGIN_VERSION"] = item.Installed.Version
 				}
 				*out = append(*out, ResolvedHook{
 					HookConfig: HookConfig{
@@ -401,9 +350,6 @@ func pluginHookExecutionConfigForPlatform(h pluginpkg.Hook, root, goos string) H
 }
 
 func expandPluginRoot(value, root string) string {
-	// Plugin hook manifests are host configuration, not platform-native shell
-	// scripts. Scan the manifest value once so text inside the resolved root is
-	// never mistaken for another placeholder and expanded recursively.
 	lastWrite := 0
 	replaced := false
 	var out strings.Builder
@@ -436,9 +382,9 @@ var pluginRootTokens = [...]struct {
 	{value: "${CLAUDE_PLUGIN_ROOT}"},
 	{value: "$CLAUDE_PLUGIN_ROOT", needsBoundary: true},
 	{value: "%CLAUDE_PLUGIN_ROOT%"},
-	{value: "${REASONIX_PLUGIN_ROOT}"},
-	{value: "$REASONIX_PLUGIN_ROOT", needsBoundary: true},
-	{value: "%REASONIX_PLUGIN_ROOT%"},
+	{value: "${PATTY_PLUGIN_ROOT}"},
+	{value: "$PATTY_PLUGIN_ROOT", needsBoundary: true},
+	{value: "%PATTY_PLUGIN_ROOT%"},
 }
 
 func pluginRootTokenLen(value string) int {
@@ -472,9 +418,6 @@ func cloneEnv(in map[string]string) map[string]string {
 	return out
 }
 
-// MatchesTool reports whether a hook applies to toolName. The match field is an
-// anchored regex; non-tool events always match. A malformed regex never fires
-// (safer than firing on everything).
 func MatchesTool(h ResolvedHook, toolName string) bool {
 	if !UsesToolMatcher(h.Event) {
 		return true
@@ -493,23 +436,18 @@ func MatchesTool(h ResolvedHook, toolName string) bool {
 	return slices.ContainsFunc(claudeMatchNames(toolName), re.MatchString)
 }
 
-// claudeAgentSpawningTools are every Reasonix tool that spawns a subagent and
-// so corresponds to Claude's single "Agent" tool: the general task delegator
-// (task/read_only_task/parallel_tasks) and the dedicated named wrappers
-// around a runAs=subagent skill (BuiltinSubagentTools in
-// internal/skill/tools.go — each is a distinct, directly-callable tool, not
-// routed through run_skill). A Claude "Agent" safety matcher must see all of
-// them, or a hook scoped to it silently misses whichever entry point wasn't
-// mapped.
+// [so corresponds to Claude's single "Agent" tool: the general task delegator]
+// [(task/read_only_task/parallel_tasks) and the dedicated named wrappers]
+// [internal/skill/tools.go — each is a distinct, directly-callable tool, not]
+// [routed through run_skill). A Claude "Agent" safety matcher must see all of]
+// [them, or a hook scoped to it silently misses whichever entry point wasnt]
 var claudeAgentSpawningTools = []string{
 	"task", "read_only_task", "parallel_tasks",
 	"explore", "research", "review", "security_review",
 }
 
-// claudeAgentDefaultDescriptions fill Claude Agent's required description
-// field when the corresponding Reasonix tool does not expose one or the model
-// omitted Reasonix's optional description. These are stable operation labels;
-// the complete task remains in prompt for hook policy decisions.
+// [claudeAgentDefaultDescriptions fill Claude Agents required description]
+// [omitted Patty Codes optional description. These are stable operation labels;]
 var claudeAgentDefaultDescriptions = map[string]string{
 	"task":            "Run delegated subagent task",
 	"read_only_task":  "Run read-only research task",
@@ -520,11 +458,9 @@ var claudeAgentDefaultDescriptions = map[string]string{
 	"security_review": "Review security risks",
 }
 
-// claudeToolNames maps Reasonix's own tool names to the *current* Claude Code
-// built-in tool name (https://code.claude.com/docs/en/tools-reference) — what
-// an imported hook's emitted tool_name payload field shows, and a script's own
-// tool_name check is written against. MCP tool names already share the
-// mcp__<server>__<tool> convention in both systems.
+// [claudeToolNames maps Patty Code's own tool names to the *current* Claude Code]
+// [built-in tool name (https://code.claude.com/docs/en/tools-reference) — what]
+// [an imported hook's emitted tool_name payload field shows, and a script's own]
 var claudeToolNames = buildClaudeToolNames()
 
 func buildClaudeToolNames() map[string]string {
@@ -552,13 +488,10 @@ func buildClaudeToolNames() map[string]string {
 	return out
 }
 
-// claudeToolMatchAliases lists every tool name — current and legacy — an
-// imported hook's matcher may have been authored against for a Reasonix
-// tool, so a matcher written against an older Claude Code tool name keeps
-// firing after Claude renames the tool (Task became Agent; BashOutput/KillShell
-// became TaskOutput/TaskStop). claudeFacingToolName (the emitted tool_name
-// payload) always reports the current name; only matcher evaluation considers
-// aliases.
+// [claudeToolMatchAliases lists every tool name — current and legacy — an]
+// [imported hooks matcher may have been authored against for a patty]
+// [firing after Claude renames the tool (Task became Agent; BashOutputKillShell]
+// [became TaskOutputTaskStop). claudeFacingToolName (the emitted tool_name]
 var claudeToolMatchAliases = buildClaudeToolMatchAliases()
 
 func buildClaudeToolMatchAliases() map[string][]string {
@@ -572,8 +505,7 @@ func buildClaudeToolMatchAliases() map[string][]string {
 	return out
 }
 
-// claudeMatchNames returns every name an imported hook's matcher should be
-// tried against for a Reasonix tool call.
+// [claudeMatchNames returns every name an imported hooks matcher should be]
 func claudeMatchNames(name string) []string {
 	if aliases, ok := claudeToolMatchAliases[name]; ok {
 		return aliases
@@ -581,11 +513,8 @@ func claudeMatchNames(name string) []string {
 	return []string{claudeFacingToolName(name)}
 }
 
-// claudeFacingToolName returns the current Claude tool name a Claude-imported
-// hook's tool_name payload field should see for a Reasonix tool call.
-// Reasonix-only tools (wait, code_index, move_file, ...) have no Claude
-// equivalent and pass through unchanged — an imported hook can't have been
-// authored against a name Claude never had.
+// [hooks tool_name payload field should see for a patty tool call.]
+// [equivalent and pass through unchanged — an imported hook can't have been]
 func claudeFacingToolName(name string) string {
 	if mapped, ok := claudeToolNames[name]; ok {
 		return mapped
@@ -593,20 +522,16 @@ func claudeFacingToolName(name string) string {
 	return name
 }
 
-// claudeToolInputKeyRenames maps, per Reasonix tool name, JSON keys in its
-// tool-call arguments that must be renamed to Claude's own tool_input field
-// name — Reasonix's file tools use "path", Claude's use "file_path" — so a
-// hook script reading e.g. ".tool_input.file_path" sees the value instead of
-// failing open on an empty field. Only tools whose Reasonix schema differs
-// from Claude's by a plain key rename are listed: Bash's "command",
-// Glob/Grep's "pattern"/"path", web_fetch's "url", ask's "questions",
-// todo_write's "todos", and task/read_only_task's "prompt"/"description"
-// already use Claude's field names. Agent description can still be absent and
-// is filled separately below. NotebookEdit's cell_number (a
-// 0-based index) has no Claude field — Claude targets cells only by the
-// opaque cell_id, which Reasonix also accepts — so it passes through as an
-// extra key. parallel_tasks is a structural mismatch handled separately in
-// claudeFacingToolInput.
+// [tool-call arguments that must be renamed to Claudes own tool_input field]
+// [name — Patty Code's file tools use "path", Claude's use "file_path" — so a]
+// [hook script reading e.g. ".tool_input.file_path" sees the value instead of]
+// [from Claude's by a plain key rename are listed: Bash's "command",]
+// [Glob/Grep's "pattern"/"path", web_fetch's "url", ask's "questions",]
+// [todo_write's "todos", and task/read_only_task's "prompt"/"description"]
+// [already use Claudes field names. Agent description can still be absent and]
+// [is filled separately below. NotebookEdits cell_number (a]
+// [0-based index) has no Claude field  Claude targets cells only by the]
+// [opaque cell_id, which Patty Code also accepts  so it passes through as an]
 var claudeToolInputKeyRenames = map[string]map[string]string{
 	"read_file":       {"path": "file_path"},
 	"write_file":      {"path": "file_path"},
@@ -617,29 +542,23 @@ var claudeToolInputKeyRenames = map[string]map[string]string{
 	"read_only_skill": {"name": "skill", "arguments": "args"},
 	"bash_output":     {"job_id": "task_id"},
 	"kill_shell":      {"job_id": "task_id"},
-	// The dedicated subagent wrappers take their task text as "task";
-	// Claude's Agent tool calls the same thing "prompt".
+// [The dedicated subagent wrappers take their task text as "task";]
+// [Claude's Agent tool calls the same thing "prompt".]
 	"explore":         {"task": "prompt"},
 	"research":        {"task": "prompt"},
 	"review":          {"task": "prompt"},
 	"security_review": {"task": "prompt"},
 }
 
-// claudeAbsolutePathInputKeys are the translated tool_input keys whose Claude
-// schema demands an absolute path ("must be absolute, not relative" on
-// Read/Write/Edit/NotebookEdit). Reasonix's file tools accept relative paths
-// and resolve them against the workspace root (resolveIn in
-// internal/tool/builtin/workspace.go); the payload resolves against
-// payload.Cwd — the same root — so a prefix-matching guard inspects the path
-// the tool actually accesses, not a relative spelling it never compares.
+// [schema demands an absolute path ("must be absolute, not relative" on]
+// [Read/Write/Edit/NotebookEdit). Patty Code's file tools accept relative paths]
+// [internal/tool/builtin/workspace.go); the payload resolves against]
+// [payload.Cwd — the same root — so a prefix-matching guard inspects the path]
 var claudeAbsolutePathInputKeys = []string{"file_path", "notebook_path"}
 
-// claudeFacingToolInput adapts tool-call arguments to the tool_input a
-// Claude-authored hook script was written against: keys are renamed per
-// claudeToolInputKeyRenames, file paths are made absolute, current TaskOutput
-// fields and required Agent/AskUserQuestion/TodoWrite fields are supplied, and
-// parallel_tasks synthesizes Agent's "prompt". Args needing no translation, or
-// that aren't a JSON object, pass through unchanged.
+// [fields and required Agent/AskUserQuestion/TodoWrite fields are supplied, and]
+// [parallel_tasks synthesizes Agent's "prompt". Args needing no translation, or]
+// [that arent a JSON object, pass through unchanged.]
 func claudeFacingToolInput(toolName string, args json.RawMessage, cwd string) json.RawMessage {
 	renames := claudeToolInputKeyRenames[toolName]
 	defaultAgentDescription, isAgent := claudeAgentDefaultDescriptions[toolName]
@@ -689,9 +608,9 @@ func claudeFacingToolInput(toolName string, args json.RawMessage, cwd string) js
 				obj["task_id"] = body
 			}
 		}
-		// An unbounded Reasonix wait omits TaskOutput's optional timeout
-		// entirely: in Claude's schema timeout is the maximum wait in ms, so
-		// claiming 0 would read as "don't wait" — the opposite of the call.
+// [An unbounded Patty Code wait omits TaskOutputs optional timeout]
+// [entirely: in Claudes schema timeout is the maximum wait in ms, so]
+// [claiming 0 would read as "don't wait" — the opposite of the call.]
 		var timeoutSeconds int64
 		if err := json.Unmarshal(obj["timeout_seconds"], &timeoutSeconds); err == nil && timeoutSeconds > 0 && timeoutSeconds <= (1<<63-1)/1000 {
 			if body, err := json.Marshal(timeoutSeconds * 1000); err == nil {
@@ -706,12 +625,10 @@ func claudeFacingToolInput(toolName string, args json.RawMessage, cwd string) js
 	if toolName == "todo_write" && fillClaudeTodoDefaults(obj) {
 		changed = true
 	}
-	// parallel_tasks maps to Claude's Agent tool but carries an array of
-	// sub-tasks where Agent has a single prompt — a structural difference no
-	// key rename bridges. Synthesize "prompt" from every sub-task's prompt
-	// (the original "tasks" array stays alongside) so an Agent-scoped guard
-	// reading .tool_input.prompt inspects all dispatched work instead of
-	// failing open on a missing field.
+// [parallel_tasks maps to Claudes Agent tool but carries an array of]
+// [sub-tasks where Agent has a single prompt  a structural difference no]
+// [key rename bridges. Synthesize "prompt" from every sub-task's prompt]
+// [(the original "tasks" array stays alongside) so an Agent-scoped guard]
 	if toolName == "parallel_tasks" {
 		if prompt := joinedParallelTaskPrompts(obj["tasks"]); prompt != "" {
 			if v, err := json.Marshal(prompt); err == nil {
@@ -758,9 +675,6 @@ func claudeFacingToolInput(toolName string, args json.RawMessage, cwd string) js
 	return out
 }
 
-// fillClaudeAskDefaults supplies fields Claude requires but Reasonix treats as
-// optional. Empty option descriptions are honest (Reasonix has no explanation
-// to add), and omitted multiSelect has the same false default in both systems.
 func fillClaudeAskDefaults(obj map[string]json.RawMessage) bool {
 	var questions []map[string]json.RawMessage
 	if err := json.Unmarshal(obj["questions"], &questions); err != nil {
@@ -803,8 +717,7 @@ func fillClaudeAskDefaults(obj map[string]json.RawMessage) bool {
 	return true
 }
 
-// fillClaudeTodoDefaults supplies Claude's required activeForm label from the
-// Reasonix task content when the caller omitted it.
+// [fillClaudeTodoDefaults supplies Claudes required activeForm label from the]
 func fillClaudeTodoDefaults(obj map[string]json.RawMessage) bool {
 	var todos []map[string]json.RawMessage
 	if err := json.Unmarshal(obj["todos"], &todos); err != nil {
@@ -839,8 +752,8 @@ func fillClaudeTodoDefaults(obj map[string]json.RawMessage) bool {
 	return true
 }
 
-// joinedParallelTaskPrompts flattens a parallel_tasks "tasks" array into one
-// prompt string, blank-line separated. Malformed or empty input yields "".
+// [joinedParallelTaskPrompts flattens a parallel_tasks "tasks" array into one]
+// [prompt string, blank-line separated. Malformed or empty input yields .]
 func joinedParallelTaskPrompts(tasks json.RawMessage) string {
 	if len(tasks) == 0 {
 		return ""
@@ -860,7 +773,7 @@ func joinedParallelTaskPrompts(tasks json.RawMessage) string {
 	return strings.Join(prompts, "\n\n")
 }
 
-// Payload is the JSON envelope written to a hook's stdin.
+// [Payload is the JSON envelope written to a hooks stdin.]
 type Payload struct {
 	Event            Event           `json:"event"`
 	SessionID        string          `json:"sessionId,omitempty"`
@@ -882,7 +795,7 @@ type Payload struct {
 	IsInterrupt      bool            `json:"isInterrupt,omitempty"`
 }
 
-// Decision is a single hook invocation's verdict.
+// [Decision is a single hook invocations verdict.]
 type Decision string
 
 const (
@@ -892,7 +805,6 @@ const (
 	DecisionError Decision = "error" // spawn failed (ENOENT, EACCES, …)
 )
 
-// Outcome records one hook invocation.
 type Outcome struct {
 	Hook      ResolvedHook
 	Decision  Decision
@@ -904,37 +816,30 @@ type Outcome struct {
 	Duration  time.Duration
 }
 
-// Report aggregates the outcomes of running an event's hooks.
+// [Report aggregates the outcomes of running an events hooks.]
 type Report struct {
 	Event    Event
 	Outcomes []Outcome
 	Blocked  bool // at least one outcome blocked (only meaningful on gating events)
-	// Allowed is set when a Claude-imported PermissionRequest hook returned an
-	// explicit JSON "allow" decision on exit 0 (see claudeJSONAllow) — the
-	// caller should treat this as an auto-approval instead of prompting.
+// [explicit JSON "allow" decision on exit 0 (see claudeJSONAllow) — the]
 	Allowed bool
 }
 
-// HookOutput is the parsed, model-facing part of a successful hook stdout.
 type HookOutput struct {
 	AdditionalContext string
-	// Deny and DenyReason carry a Claude-style JSON deny decision returned on
-	// exit 0: hookSpecificOutput.permissionDecision for PreToolUse,
-	// hookSpecificOutput.decision.behavior for PermissionRequest, or a
-	// top-level decision:"block" for UserPromptSubmit. Claude hooks commonly
-	// deny this way instead of exiting 2; see
-	// https://code.claude.com/docs/en/hooks.
+// [top-level decision:"block" for UserPromptSubmit. Claude hooks commonly]
+// [https://code.claude.com/docs/en/hooks.]
 	Deny       bool
 	DenyReason string
-	// Allow carries a Claude PermissionRequest "allow" decision
-	// (hookSpecificOutput.decision.behavior == "allow"): the hook answers the
-	// permission dialog on the user's behalf instead of only observing it.
+// [Allow carries a Claude PermissionRequest "allow" decision]
+// [(hookSpecificOutput.decision.behavior == "allow"): the hook answers the]
+// [permission dialog on the users behalf instead of only observing it.]
 	Allow bool
 }
 
 type hookJSONOutput struct {
-	// Decision and Reason are UserPromptSubmit's (and Stop/SubagentStop's)
-	// top-level deny shape: {"decision":"block","reason":"..."}.
+// [Decision and Reason are UserPromptSubmit's (and Stop/SubagentStop's)]
+// [top-level deny shape: {"decision":"block","reason":"..."}.]
 	Decision           string `json:"decision"`
 	Reason             string `json:"reason"`
 	HookSpecificOutput struct {
@@ -948,8 +853,6 @@ type hookJSONOutput struct {
 	} `json:"hookSpecificOutput"`
 }
 
-// ParseOutput extracts hook-specific context from stdout. Plain text is accepted
-// for SessionStart compatibility; JSON output must identify the current event.
 func ParseOutput(event Event, stdout string) (HookOutput, []string) {
 	stdout = strings.TrimSpace(stdout)
 	if stdout == "" {
@@ -988,7 +891,6 @@ func ParseOutput(event Event, stdout string) (HookOutput, []string) {
 	return out, nil
 }
 
-// decideOutcome maps a spawn result to a verdict for hook h.
 func decideOutcome(h ResolvedHook, r SpawnResult) Decision {
 	blocking := IsBlocking(h.Event) || claudePermissionBlocking(h)
 	switch {
@@ -1008,13 +910,10 @@ func decideOutcome(h ResolvedHook, r SpawnResult) Decision {
 	}
 }
 
-// claudeJSONDeny reports whether a Claude-format hook's exit-0 stdout still
-// carries a JSON deny decision (see HookOutput.Deny). Reasonix must honor it
-// for the events it claims Claude hook compatibility for, or a plugin's
-// "block this dangerous command" hook silently no-ops whenever the script
-// signals deny via JSON instead of exit code 2. UserPromptSubmit uses a
-// top-level decision:"block" instead of PreToolUse/PermissionRequest's
-// hookSpecificOutput shape; ParseOutput handles both.
+// [claudeJSONDeny reports whether a Claude-format hooks exit-0 stdout still]
+// [for the events it claims Claude hook compatibility for, or a plugins]
+// ["block this dangerous command" hook silently no-ops whenever the script]
+// [top-level decision:"block" instead of PreToolUse/PermissionRequest's]
 func claudeJSONDeny(event Event, stdout string) (bool, string) {
 	if event != PreToolUse && event != PermissionRequest && event != UserPromptSubmit {
 		return false, ""
@@ -1023,10 +922,10 @@ func claudeJSONDeny(event Event, stdout string) (bool, string) {
 	return out.Deny, out.DenyReason
 }
 
-// claudeJSONAllow reports whether a Claude-format PermissionRequest hook's
-// exit-0 stdout carries an explicit "allow" decision
-// (hookSpecificOutput.decision.behavior == "allow"): the hook answers the
-// permission dialog on the user's behalf, same as an exit-2 deny preempts it.
+// [claudeJSONAllow reports whether a Claude-format PermissionRequest hooks]
+// [exit-0 stdout carries an explicit "allow" decision]
+// [(hookSpecificOutput.decision.behavior == "allow"): the hook answers the]
+// [permission dialog on the users behalf, same as an exit-2 deny preempts it.]
 func claudeJSONAllow(event Event, stdout string) bool {
 	if event != PermissionRequest {
 		return false
@@ -1035,7 +934,7 @@ func claudeJSONAllow(event Event, stdout string) bool {
 	return out.Allow
 }
 
-// SpawnInput / SpawnResult / Spawner are the test seam around the real spawn.
+// [SpawnInput / SpawnResult / Spawner are the test seam around the real spawn.]
 type SpawnInput struct {
 	Command string
 	Args    []string
@@ -1047,14 +946,10 @@ type SpawnInput struct {
 	Timeout time.Duration
 }
 
-// RuntimeOptions carries resolved host dependencies into Hook execution.
-// It is runtime-only and never changes persisted Hook configuration.
 type RuntimeOptions struct {
 	BashPath string
 }
 
-// RuntimeOptionsForShell carries an explicitly configured Bash path into Hook
-// execution while leaving other interpreter preferences independent.
 func RuntimeOptionsForShell(prefer, path string) RuntimeOptions {
 	if !strings.EqualFold(strings.TrimSpace(prefer), "bash") {
 		return RuntimeOptions{}
@@ -1062,15 +957,12 @@ func RuntimeOptionsForShell(prefer, path string) RuntimeOptions {
 	return RuntimeOptions{BashPath: strings.TrimSpace(path)}
 }
 
-// RuntimeIssue identifies one plugin Hook whose host dependency is unavailable.
 type RuntimeIssue struct {
 	Event       Event
 	Description string
 	Err         error
 }
 
-// CheckPackageRuntime validates every Hook exported by a plugin package without
-// launching commands.
 func CheckPackageRuntime(pkg pluginpkg.Package, options RuntimeOptions) []RuntimeIssue {
 	events := make([]string, 0, len(pkg.Manifest.Hooks))
 	for event := range pkg.Manifest.Hooks {
@@ -1101,13 +993,9 @@ type SpawnResult struct {
 
 type Spawner func(ctx context.Context, in SpawnInput) SpawnResult
 
-// outputCapBytes bounds per-stream capture so a runaway child can't blow up the
-// heap between spawn and timeout.
+// [outputCapBytes bounds per-stream capture so a runaway child cant blow up the]
 const outputCapBytes = 256 * 1024
 
-// Run executes the hooks matching payload.Event (and, for tool events, the tool
-// name), feeding each the JSON payload on stdin. It stops at the first block so
-// a gating hook can prevent later hooks running against a phantom success.
 func Run(ctx context.Context, payload Payload, hooks []ResolvedHook, spawner Spawner) Report {
 	if spawner == nil {
 		spawner = DefaultSpawner
@@ -1198,14 +1086,11 @@ func marshalPayload(payload Payload, format string) string {
 	return string(body) + "\n"
 }
 
-// claudeToolResponse adapts a Reasonix tool result to the tool_response a
-// Claude-authored PostToolUse hook reads. Claude's Bash response is an object
-// — {stdout, stderr, interrupted}, the fields the official security-guidance
-// plugin's commit/push checks read (a non-object response is treated as empty
-// and the check silently passes) — while Reasonix's bash returns one combined
-// output string, so it is wrapped with the failure error as stderr. Other
-// tools' results pass through as before: raw JSON when the result is a JSON
-// document, else the plain string.
+// [Claude-authored PostToolUse hook reads. Claudes Bash response is an object]
+// [{stdout, stderr, interrupted}, the fields the official security-guidance]
+// [plugin's commit/push checks read (a non-object response is treated as empty]
+// [and the check silently passes) — while Patty Code's bash returns one combined]
+// [tools results pass through as before: raw JSON when the result is a JSON]
 func claudeToolResponse(p Payload) any {
 	if (p.Event == PostToolUse || p.Event == PostToolUseFailure) && claudeFacingToolName(p.ToolName) == "Bash" {
 		return map[string]any{
@@ -1241,8 +1126,6 @@ func readContextFile(path string) SpawnResult {
 	return SpawnResult{ExitCode: 0, Stdout: string(body), Truncated: truncated}
 }
 
-// stderrFor returns the best human message for an outcome: real stderr, else a
-// spawn-error message, else a timeout note.
 func stderrFor(r SpawnResult, timeout time.Duration) string {
 	if r.Stderr != "" {
 		return r.Stderr
@@ -1256,15 +1139,10 @@ func stderrFor(r SpawnResult, timeout time.Duration) string {
 	return ""
 }
 
-// DefaultSpawner executes the hook according to its explicit execution
-// contract, with the payload on stdin, capped output, and both per-hook timeout
-// and parent-context cancellation.
 func DefaultSpawner(ctx context.Context, in SpawnInput) SpawnResult {
 	return defaultSpawner(ctx, in, RuntimeOptions{})
 }
 
-// NewDefaultSpawner returns the standard Hook spawner with effective host
-// runtime paths supplied by boot configuration.
 func NewDefaultSpawner(options RuntimeOptions) Spawner {
 	return func(ctx context.Context, in SpawnInput) SpawnResult {
 		return defaultSpawner(ctx, in, options)
@@ -1298,8 +1176,7 @@ func defaultSpawner(ctx context.Context, in SpawnInput, options RuntimeOptions) 
 	var outBuf, errBuf cappedBuffer
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
-	// WaitDelay bounds Wait even if a grandchild keeps a pipe open after the
-	// shell is killed on timeout/cancel.
+// [shell is killed on timeoutcancel.]
 	cmd.WaitDelay = 500 * time.Millisecond
 
 	err := cmd.Run()
@@ -1327,10 +1204,7 @@ func defaultSpawner(ctx context.Context, in SpawnInput, options RuntimeOptions) 
 	return res
 }
 
-// spawnCommand picks the execution vehicle from the manifest contract.
-// Explicit exec-form hooks pass their argv directly to the executable;
-// explicit shell-form hooks pass the raw command to the selected interpreter.
-// Legacy settings retain Reasonix's historical shell behavior and repairs.
+// [Legacy settings retain pattys historical shell behavior and repairs.]
 func spawnCommand(ctx context.Context, command string, mode ExecutionMode, shell string, args []string, options RuntimeOptions) (*exec.Cmd, error) {
 	switch mode {
 	case ExecutionExec:
@@ -1361,18 +1235,13 @@ func spawnExecCommand(ctx context.Context, command string, args []string, option
 	return exec.CommandContext(ctx, command, args...), nil
 }
 
-// spawnLegacyCommand preserves the pre-contract behavior:
-//   - a command this call just repaired (its broken quoting means it never
-//     worked through a shell, so there is no expansion behavior to preserve);
-//   - on Windows, a recognized node -e stdin-hook command: `cmd /c` mangles
-//     quoted JS (&, %, nested quotes), which is the breakage this repair
-//     exists for, and cmd performs no POSIX-style $ expansion to preserve.
-//   - on Windows, an explicit `sh -c` / `bash -c` command: Git Bash is often
-//     installed outside cmd.exe's PATH, and direct exec preserves its quoting.
+// [- on Windows, a recognized node -e stdin-hook command: `cmd /c` mangles]
+// [quoted JS (&, %, nested quotes), which is the breakage this repair]
+// [exists for, and cmd performs no POSIX-style  expansion to preserve.]
+// [- on Windows, an explicit `sh -c` / `bash -c` command: Git Bash is often]
+// [installed outside cmd.exes PATH, and direct exec preserves its quoting.]
 //
-// POSIX commands that were already well-formed keep their shell semantics
-// verbatim — normalizeStaticNodeEval's rendering escapes $ and backticks, so
-// even repaired commands re-entering here behave identically under sh -c.
+// [verbatim — normalizeStaticNodeEval's rendering escapes $ and backticks, so]
 func spawnLegacyCommand(ctx context.Context, command string, args []string, options RuntimeOptions) (*exec.Cmd, error) {
 	if args != nil {
 		return spawnExecCommand(ctx, command, args, options)
@@ -1411,9 +1280,8 @@ func spawnShellCommand(ctx context.Context, command, preferred string, options R
 	switch preferred {
 	case "", "auto":
 		if runtime.GOOS == "windows" {
-			// Retain the established #6668 compatibility path for the common
-			// quoted .cmd/.bat hook shape. More complex scripts continue to
-			// the selected shell without being parsed or re-rendered.
+// [Retain the established 6668 compatibility path for the common]
+// [quoted .cmd.bat hook shape. More complex scripts continue to]
 			if cmd, matched := windowsBatchCommand(ctx, command); matched {
 				return cmd, nil
 			}
@@ -1453,7 +1321,6 @@ func spawnShellCommand(ctx context.Context, command, preferred string, options R
 	}
 }
 
-// CheckRuntime reports an unavailable host dependency without running a Hook.
 func CheckRuntime(config HookConfig, options RuntimeOptions) error {
 	return checkRuntimeForPlatform(config, options, runtime.GOOS, resolveWindowsHookBash)
 }
@@ -1482,12 +1349,9 @@ func rawShellCommand(ctx context.Context, sh sandbox.Shell, command string) (*ex
 }
 
 func powerShellCommand(ctx context.Context, path, command string) *exec.Cmd {
-	// PowerShell's native command-line parser does not follow
-	// CommandLineToArgvW consistently for a complex -Command argument.
-	// -EncodedCommand transports the exact script as UTF-16LE and avoids a
-	// second layer of quote/backslash interpretation. Force captured output to
-	// UTF-8 before encoding so Windows PowerShell does not emit the host console
-	// code page into Reasonix's stdout/stderr text contract.
+// [PowerShells native command-line parser does not follow]
+// [second layer of quotebackslash interpretation. Force captured output to]
+// [code page into patty's stdout/stderr text contract.]
 	command = sandbox.PowerShellUTF8Script(command)
 	codeUnits := utf16.Encode([]rune(command))
 	raw := make([]byte, len(codeUnits)*2)
@@ -1506,9 +1370,6 @@ func shellInvocation(command string) (string, []string) {
 	return "sh", []string{"-c", command}
 }
 
-// cappedBuffer is an io.Writer that stops storing after outputCapBytes and
-// records that it truncated, but keeps reporting full writes so the child never
-// sees a short-write error.
 type cappedBuffer struct {
 	buf       bytes.Buffer
 	truncated bool
@@ -1532,11 +1393,11 @@ func (c *cappedBuffer) Write(p []byte) (int, error) {
 func (c *cappedBuffer) Bytes() []byte  { return c.buf.Bytes() }
 func (c *cappedBuffer) String() string { return c.buf.String() }
 
-func reasonixHome(override string) string {
+func pattyHome(override string) string {
 	if override != "" {
 		return filepath.Join(override, SettingsDirname)
 	}
-	if dir := config.ReasonixHomeDir(); dir != "" {
+	if dir := config.PattyHomeDir(); dir != "" {
 		return dir
 	}
 	if h, err := os.UserHomeDir(); err == nil {
@@ -1545,22 +1406,22 @@ func reasonixHome(override string) string {
 	return ""
 }
 
-func reasonixHomeForOptions(opts LoadOptions) string {
-	if dir := strings.TrimSpace(opts.ReasonixHomeDir); dir != "" {
+func pattyHomeForOptions(opts LoadOptions) string {
+	if dir := strings.TrimSpace(opts.PattyHomeDir); dir != "" {
 		return filepath.Clean(dir)
 	}
-	return reasonixHome(opts.HomeDir)
+	return pattyHome(opts.HomeDir)
 }
 
 func legacyGlobalSettingsPath(homeDir string) string {
-	dir := legacyReasonixHome(homeDir)
+	dir := legacyPattyCodeHome(homeDir)
 	if dir == "" {
 		return ""
 	}
 	return filepath.Join(dir, SettingsFilename)
 }
 
-func legacyReasonixHome(override string) string {
+func legacyPattyCodeHome(override string) string {
 	if override != "" {
 		return ""
 	}
@@ -1572,7 +1433,7 @@ func legacyReasonixHome(override string) string {
 		return ""
 	}
 	legacy := filepath.Join(home, SettingsDirname)
-	if sameCleanPath(legacy, reasonixHome("")) {
+	if sameCleanPath(legacy, pattyHome("")) {
 		return ""
 	}
 	return legacy

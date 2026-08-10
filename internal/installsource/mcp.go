@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"reasonix/internal/config"
-	fileencoding "reasonix/internal/fileutil/encoding"
+	"patty/internal/config"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 // mcpEntryAction assembles the DTO for a single MCP server install. The

@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
-	"reasonix/internal/workspacelease"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
+	"patty/internal/workspacelease"
 )
 
 func TestParallelTasksToolIsReadOnly(t *testing.T) {
@@ -233,8 +233,8 @@ func TestParallelTasksInheritLanguagePreferencesFromContext(t *testing.T) {
 	task := newTestTaskTool(t, promptRoutingProvider{}, tool.NewRegistry(), "sys", "", "", nil)
 	parallel := NewParallelTasksTool(task, tool.NewRegistry())
 	ctx := withCallContext(context.Background(), "parallel-call", event.Discard, nil, false)
-	ctx = WithResponseLanguagePreference(ctx, "zh")
-	ctx = WithReasoningLanguagePreference(ctx, "zh")
+	ctx = WithResponseLanguagePreference(ctx, "ko-KR")
+	ctx = WithReasoningLanguagePreference(ctx, "ko-KR")
 
 	out, err := parallel.Execute(ctx, json.RawMessage(`{"tasks":[{"prompt":"inspect one"},{"prompt":"inspect two"}]}`))
 	if err != nil {

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/planmode"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/planmode"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 type planSafeTool struct {

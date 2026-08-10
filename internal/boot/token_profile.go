@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"reasonix/internal/tool"
+	"patty/internal/tool"
 )
 
 const (
@@ -95,7 +95,7 @@ type toolSourceConnector struct {
 func (*toolSourceConnector) Name() string { return "connect_tool_source" }
 
 func (*toolSourceConnector) Description() string {
-	return "Economy mode only: enable optional tools for the current task, including embedded Reasonix docs. For mcp, pass a configured server name or omit it to list servers. Enabled tools are available on the next model request."
+	return "Economy mode only: enable optional tools for the current task, including embedded Patty Code docs. For mcp, pass a configured server name or omit it to list servers. Enabled tools are available on the next model request."
 }
 
 func (*toolSourceConnector) ReadOnly() bool { return true }

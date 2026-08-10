@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/bot"
-	"reasonix/internal/event"
+	"patty/internal/bot"
+	"patty/internal/event"
 )
 
 type bridgeNotifyCall struct {
@@ -114,9 +114,9 @@ func (env *bridgeTestEnv) expectNoNotification(t *testing.T) {
 
 func testWatchRoute() bot.DesktopWatchRoute {
 	return bot.DesktopWatchRoute{
-		ConnectionID: "feishu-main",
-		Domain:       "feishu",
-		Platform:     bot.PlatformFeishu,
+		ConnectionID: "generic-main",
+		Domain:       "generic",
+		Platform:     bot.Platform("generic"),
 		ChatType:     bot.ChatDM,
 		ChatID:       "chat-god",
 	}
@@ -130,7 +130,7 @@ func testGroupRoute() bot.DesktopWatchRoute {
 }
 
 func TestBridgeTakeoverRejectsGroupChat(t *testing.T) {
-	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "会话一", Ready: true}})
+	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1", Ready: true}})
 	if _, err := env.hub.Takeover(testGroupRoute(), "tab-1"); err == nil {
 		t.Fatal("takeover from a group chat must be rejected (non-admin members could otherwise drive it)")
 	}
@@ -169,7 +169,7 @@ func TestBridgeTakeoverSwitchAnnouncesReleaseToOldTab(t *testing.T) {
 }
 
 func TestBridgeDriveInputBusyReturnsBusyMessage(t *testing.T) {
-	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "会话一", Ready: true}})
+	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1", Ready: true}})
 	route := testWatchRoute()
 	if _, err := env.hub.Takeover(route, "tab-1"); err != nil {
 		t.Fatalf("Takeover: %v", err)
@@ -177,13 +177,13 @@ func TestBridgeDriveInputBusyReturnsBusyMessage(t *testing.T) {
 	<-env.announced
 	env.driveErr = errDriveBusy
 	_, err := env.hub.DriveInput(route, "hi")
-	if err == nil || !strings.Contains(err.Error(), "正在执行中") {
+	if err == nil || !strings.Contains(err.Error(), "실행 중입니다") {
 		t.Fatalf("busy drive should surface a clean busy message, got %v", err)
 	}
 }
 
 func TestBridgeApprovalRedactsSubjectInGroup(t *testing.T) {
-	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "会话一"}})
+	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1"}})
 	env.hub.SetWatch(testGroupRoute(), true)
 	<-env.persisted
 	env.hub.observe("tab-1", event.Event{Kind: event.ApprovalRequest, Approval: event.Approval{ID: "a1", Tool: "bash", Subject: "rm -rf /secret"}})
@@ -201,7 +201,7 @@ func TestBridgeApprovalRedactsSubjectInGroup(t *testing.T) {
 }
 
 func TestBridgeApprovalShowsSubjectInDM(t *testing.T) {
-	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "会话一"}})
+	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1"}})
 	env.hub.SetWatch(testWatchRoute(), true)
 	<-env.persisted
 	env.hub.observe("tab-1", event.Event{Kind: event.ApprovalRequest, Approval: event.Approval{ID: "a1", Tool: "bash", Subject: "rm -rf build"}})
@@ -212,7 +212,7 @@ func TestBridgeApprovalShowsSubjectInDM(t *testing.T) {
 }
 
 func TestBridgeAskRedactsPromptAndOptionsInGroup(t *testing.T) {
-	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "会话一"}})
+	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1"}})
 	if err := env.hub.SetWatch(testGroupRoute(), true); err != nil {
 		t.Fatalf("SetWatch: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestBridgeAskRedactsPromptAndOptionsInGroup(t *testing.T) {
 }
 
 func TestBridgeSessionsIncludePendingIDs(t *testing.T) {
-	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "会话一"}})
+	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1"}})
 	env.hub.observe("tab-1", event.Event{Kind: event.ApprovalRequest, Approval: event.Approval{ID: "a1", Tool: "bash"}})
 	env.hub.observe("tab-1", event.Event{Kind: event.AskRequest, Ask: event.Ask{ID: "q1", Questions: []event.AskQuestion{{ID: "x", Prompt: "?"}}}})
 	found := map[string]bool{}
@@ -252,8 +252,6 @@ func TestBridgeSessionsIncludePendingIDs(t *testing.T) {
 
 func TestBridgePersistDropsStaleSnapshot(t *testing.T) {
 	env := newBridgeTestEnvSessions(nil)
-	// Two subscribes: the second (newer seq) must be the persisted result even
-	// though we invoke the seed-restore afterward.
 	env.hub.SetWatch(testWatchRoute(), true)
 	<-env.persisted
 	env.hub.SetWatch(testGroupRoute(), true)
@@ -264,7 +262,7 @@ func TestBridgePersistDropsStaleSnapshot(t *testing.T) {
 }
 
 func TestBridgeApprovalNotifiesWatchersAndRoutesApproval(t *testing.T) {
-	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "修复登录"}})
+	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "로그인 복구"}})
 	env.hub.SetWatch(testWatchRoute(), true)
 
 	env.hub.observe("tab-1", event.Event{Kind: event.ApprovalRequest, Approval: event.Approval{
@@ -272,10 +270,10 @@ func TestBridgeApprovalNotifiesWatchersAndRoutesApproval(t *testing.T) {
 	}})
 
 	call := env.waitNotification(t)
-	if call.connectionID != "feishu-main" || call.msg.ChatID != "chat-god" {
-		t.Fatalf("notification routed to %s/%s, want feishu-main/chat-god", call.connectionID, call.msg.ChatID)
+	if call.connectionID != "generic-main" || call.msg.ChatID != "chat-god" {
+		t.Fatalf("notification routed to %s/%s, want generic-main/chat-god", call.connectionID, call.msg.ChatID)
 	}
-	for _, want := range []string{"修复登录", "bash", "rm -rf build", "/desktop approve appr-1"} {
+	for _, want := range []string{"로그인 복구", "bash", "rm -rf build", "/desktop approve appr-1"} {
 		if !strings.Contains(call.msg.Text, want) {
 			t.Fatalf("notification text = %q, want it to contain %q", call.msg.Text, want)
 		}
@@ -288,7 +286,7 @@ func TestBridgeApprovalNotifiesWatchersAndRoutesApproval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Approve: %v", err)
 	}
-	if !strings.Contains(feedback, "先到者为准") {
+	if !strings.Contains(feedback, "먼저 처리한 쪽이 우선됩니다") {
 		t.Fatalf("feedback = %q, want first-wins note", feedback)
 	}
 	select {
@@ -300,14 +298,14 @@ func TestBridgeApprovalNotifiesWatchersAndRoutesApproval(t *testing.T) {
 		t.Fatal("approve was not routed to the tab")
 	}
 
-	// 同一 ID 第二次应答:pending 已清,返回未找到。
+	// 동일 ID에 대한 두 번째 응답: pending이 비워져 있어 반환값을 찾을 수 없음.
 	if _, err := env.hub.Approve("appr-1", false); err == nil {
 		t.Fatal("second Approve on the same id should fail")
 	}
 }
 
 func TestBridgePendingRecordedWithoutWatchers(t *testing.T) {
-	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "会话"}})
+	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "세션"}})
 
 	env.hub.observe("tab-1", event.Event{Kind: event.ApprovalRequest, Approval: event.Approval{ID: "appr-2", Tool: "bash"}})
 	env.expectNoNotification(t)
@@ -326,7 +324,7 @@ func TestBridgePendingRecordedWithoutWatchers(t *testing.T) {
 }
 
 func TestBridgeTurnDoneClearsPendingAndNotifies(t *testing.T) {
-	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "会话一"}})
+	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "세션 1"}})
 	env.hub.SetWatch(testWatchRoute(), true)
 
 	env.hub.observe("tab-1", event.Event{Kind: event.ApprovalRequest, Approval: event.Approval{ID: "appr-3", Tool: "bash"}})
@@ -334,7 +332,7 @@ func TestBridgeTurnDoneClearsPendingAndNotifies(t *testing.T) {
 
 	env.hub.observe("tab-1", event.Event{Kind: event.TurnDone})
 	call := env.waitNotification(t)
-	if !strings.Contains(call.msg.Text, "✅") || !strings.Contains(call.msg.Text, "会话一") {
+	if !strings.Contains(call.msg.Text, "✅") || !strings.Contains(call.msg.Text, "세션 1") {
 		t.Fatalf("turn-done text = %q", call.msg.Text)
 	}
 
@@ -344,7 +342,7 @@ func TestBridgeTurnDoneClearsPendingAndNotifies(t *testing.T) {
 }
 
 func TestBridgeSuppressesCanceledTurnAndErrorsNotify(t *testing.T) {
-	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "会话一"}})
+	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "세션 1"}})
 	env.hub.SetWatch(testWatchRoute(), true)
 
 	env.hub.observe("tab-1", event.Event{Kind: event.TurnDone, Err: errors.New("context canceled")})
@@ -358,7 +356,7 @@ func TestBridgeSuppressesCanceledTurnAndErrorsNotify(t *testing.T) {
 }
 
 func TestBridgeRecoveryPauseNotifiesAsControlledPause(t *testing.T) {
-	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "会话一"}})
+	env := newBridgeTestEnv([]TabMeta{{ID: "tab-1", Label: "세션 1"}})
 	env.hub.SetWatch(testWatchRoute(), true)
 
 	env.hub.observe("tab-1", event.Event{
@@ -367,20 +365,20 @@ func TestBridgeRecoveryPauseNotifiesAsControlledPause(t *testing.T) {
 		Outcome: event.TurnOutcomeRecoveryPaused,
 	})
 	call := env.waitNotification(t)
-	if strings.Contains(call.msg.Text, "❌") || !strings.Contains(call.msg.Text, "已暂停自动重试") || !strings.Contains(call.msg.Text, "继续") {
+	if strings.Contains(call.msg.Text, "❌") || !strings.Contains(call.msg.Text, "자동 재시도 일시 중지") || !strings.Contains(call.msg.Text, "계속") {
 		t.Fatalf("recovery pause text = %q, want a neutral actionable pause notice", call.msg.Text)
 	}
 }
 
 func TestBridgeAskAnswerRoundTrip(t *testing.T) {
-	env := newBridgeTestEnv([]TabMeta{{ID: "tab-2", Label: "问答会话"}})
+	env := newBridgeTestEnv([]TabMeta{{ID: "tab-2", Label: "Q&A 세션"}})
 	env.hub.SetWatch(testWatchRoute(), true)
 
 	env.hub.observe("tab-2", event.Event{Kind: event.AskRequest, Ask: event.Ask{
 		ID: "ask-1",
 		Questions: []event.AskQuestion{{
 			ID:      "q1",
-			Prompt:  "选一个方案",
+			Prompt:  "하나를 선택하세요",
 			Options: []event.AskOption{{Label: "A"}, {Label: "B"}},
 		}},
 	}})
@@ -440,7 +438,7 @@ func TestBridgeSetWatchPersistsAndSeedRestores(t *testing.T) {
 		t.Fatal("SetWatch did not persist watchers")
 	}
 
-	// 模拟重启:全新 hub 从配置种子恢复。
+	// 재시작 시뮬레이션: 새 hub가 구성 시드에서 복원됩니다.
 	env2 := newBridgeTestEnv(nil)
 	env2.hub.seedWatchers([]bot.DesktopWatchRoute{route}, env2.hub.watcherVersion())
 	if !env2.hub.Watching(route) {
@@ -461,8 +459,6 @@ func TestBridgeSeedDoesNotOverwriteNewerRuntimeWatch(t *testing.T) {
 	}
 	<-env.persisted
 
-	// Simulate a runtime refresh carrying a config snapshot loaded before the
-	// watch command persisted. It must not erase the newer in-process route.
 	env.hub.seedWatchers(nil, staleVersion)
 	if !env.hub.Watching(route) {
 		t.Fatal("stale config seed overwrote the newer runtime subscription")
@@ -501,7 +497,7 @@ func TestBridgeSeedAppliesFreshExternalConfig(t *testing.T) {
 
 func TestBridgeApprovalRoutesToDetachedSession(t *testing.T) {
 	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{
-		{TabID: "tab-bg", Label: "后台任务", Detached: true, Ready: true},
+		{TabID: "tab-bg", Label: "백그라운드 작업", Detached: true, Ready: true},
 	})
 
 	env.hub.observe("tab-bg", event.Event{Kind: event.ApprovalRequest, Approval: event.Approval{ID: "appr-bg", Tool: "bash"}})
@@ -520,12 +516,12 @@ func TestBridgeApprovalRoutesToDetachedSession(t *testing.T) {
 
 func TestBridgeTakeoverLifecycle(t *testing.T) {
 	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{
-		{TabID: "tab-1", Label: "会话一", Ready: true},
-		{TabID: "tab-bg", Label: "后台", Detached: true},
+		{TabID: "tab-1", Label: "세션 1", Ready: true},
+		{TabID: "tab-bg", Label: "백그라운드", Detached: true},
 	})
 	route := testWatchRoute()
 
-	// 后台会话拒绝接管。
+	// 백그라운드 세션은 인수 거부.
 	if _, err := env.hub.Takeover(route, "tab-bg"); err == nil {
 		t.Fatal("takeover of a detached session should fail")
 	}
@@ -534,7 +530,7 @@ func TestBridgeTakeoverLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Takeover: %v", err)
 	}
-	if !strings.Contains(feedback, "已接管") {
+	if !strings.Contains(feedback, "인수했습니다") {
 		t.Fatalf("feedback = %q", feedback)
 	}
 	if env.hub.TakeoverTab(route) != "tab-1" {
@@ -542,34 +538,34 @@ func TestBridgeTakeoverLifecycle(t *testing.T) {
 	}
 	select {
 	case got := <-env.announced:
-		if got[0] != "tab-1" || !strings.Contains(got[1], "接管") {
+		if got[0] != "tab-1" || !strings.Contains(got[1], "인수됨") {
 			t.Fatalf("announce = %v", got)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("takeover was not announced to the desktop transcript")
 	}
 
-	// 驱动输入路由到 tab。
-	if _, err := env.hub.DriveInput(route, "跑一下测试"); err != nil {
+	// 구동 입력이 tab으로 라우팅됩니다.
+	if _, err := env.hub.DriveInput(route, "테스트 실행"); err != nil {
 		t.Fatalf("DriveInput: %v", err)
 	}
 	select {
 	case got := <-env.driven:
-		if got[0] != "tab-1" || got[1] != "跑一下测试" {
+		if got[0] != "tab-1" || got[1] != "테스트 실행" {
 			t.Fatalf("driven = %v", got)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("drive input was not routed")
 	}
 
-	// 另一个聊天抢同一会话被拒。
+	// 다른 채팅이 같은 세션을 빼앗으려 하면 거부됩니다.
 	other := route
 	other.ChatID = "chat-other"
 	if _, err := env.hub.Takeover(other, "tab-1"); err == nil {
 		t.Fatal("takeover by another chat should be rejected while held")
 	}
 
-	// 释放。
+	// 해제.
 	if _, err := env.hub.Release(route); err != nil {
 		t.Fatalf("Release: %v", err)
 	}
@@ -583,21 +579,21 @@ func TestBridgeTakeoverLifecycle(t *testing.T) {
 
 func TestBridgeDriveInputRejectsRunningSession(t *testing.T) {
 	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{
-		{TabID: "tab-1", Label: "会话一", Ready: true, Running: true},
+		{TabID: "tab-1", Label: "세션 1", Ready: true, Running: true},
 	})
 	route := testWatchRoute()
 	if _, err := env.hub.Takeover(route, "tab-1"); err != nil {
 		t.Fatalf("Takeover: %v", err)
 	}
 	<-env.announced
-	if _, err := env.hub.DriveInput(route, "hello"); err == nil || !strings.Contains(err.Error(), "正在执行中") {
+	if _, err := env.hub.DriveInput(route, "hello"); err == nil || !strings.Contains(err.Error(), "실행 중입니다") {
 		t.Fatalf("DriveInput on running session = %v, want busy rejection", err)
 	}
 }
 
 func TestBridgeReclaimFromDesktopNotifiesController(t *testing.T) {
 	env := newBridgeTestEnvSessions([]bot.DesktopSessionInfo{
-		{TabID: "tab-1", Label: "会话一", Ready: true},
+		{TabID: "tab-1", Label: "세션 1", Ready: true},
 	})
 	route := testWatchRoute()
 	if _, err := env.hub.Takeover(route, "tab-1"); err != nil {
@@ -610,11 +606,11 @@ func TestBridgeReclaimFromDesktopNotifiesController(t *testing.T) {
 		t.Fatal("reclaim should clear the binding")
 	}
 	call := env.waitNotification(t)
-	if !strings.Contains(call.msg.Text, "收回") || call.msg.ChatID != route.ChatID {
+	if !strings.Contains(call.msg.Text, "회수했습니다") || call.msg.ChatID != route.ChatID {
 		t.Fatalf("reclaim notification = %+v", call)
 	}
 
-	// 未接管 tab 的 reclaim 是 no-op。
+	// 인수되지 않은 tab의 reclaim은 no-op입니다.
 	env.hub.reclaimFromDesktop("tab-1")
 	env.expectNoNotification(t)
 }

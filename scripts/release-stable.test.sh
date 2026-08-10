@@ -3,10 +3,10 @@ set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 release_script="$repo_root/scripts/release-stable.sh"
-test_root="$(mktemp -d "${TMPDIR:-/tmp}/reasonix-stable-tag-test.XXXXXX")"
+test_root="$(mktemp -d "${TMPDIR:-/tmp}/patty-code-stable-tag-test.XXXXXX")"
 cleanup() {
 	case "$test_root" in
-	*/reasonix-stable-tag-test.*) rm -rf -- "$test_root" ;;
+	*/patty-code-stable-tag-test.*) rm -rf -- "$test_root" ;;
 	*) echo "refusing to clean unexpected test directory: $test_root" >&2 ;;
 	esac
 }

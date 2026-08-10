@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/store"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/store"
 )
 
 const (

@@ -7,15 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/guardian"
-	"reasonix/internal/permission"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/guardian"
+	"patty/internal/permission"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
-const dynamicBashCommand = "git status $(touch /tmp/reasonix-dynamic-approval)"
+const dynamicBashCommand = "git status $(touch /tmp/patty-dynamic-approval)"
 
 type dynamicApprovalResult struct {
 	allow bool
@@ -29,7 +29,7 @@ func requestDynamicBashApproval(c *Controller) <-chan dynamicApprovalResult {
 			context.Background(),
 			"bash",
 			dynamicBashCommand,
-			json.RawMessage(`{"command":"git status $(touch /tmp/reasonix-dynamic-approval)"}`),
+			json.RawMessage(`{"command":"git status $(touch /tmp/patty-dynamic-approval)"}`),
 		)
 		done <- dynamicApprovalResult{allow: allow, err: err}
 	}()
@@ -254,7 +254,7 @@ func TestDynamicBashSkipsGuardianAllow(t *testing.T) {
 }
 
 func TestHeadlessDynamicBashApprovalModes(t *testing.T) {
-	args := json.RawMessage(`{"command":"git status $(touch /tmp/reasonix-dynamic-approval)"}`)
+	args := json.RawMessage(`{"command":"git status $(touch /tmp/patty-dynamic-approval)"}`)
 	for _, tt := range []struct {
 		mode string
 		want bool

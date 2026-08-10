@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"reasonix/internal/retrieval"
-	"reasonix/internal/tool"
+	"patty/internal/retrieval"
+	"patty/internal/tool"
 )
 
 const (

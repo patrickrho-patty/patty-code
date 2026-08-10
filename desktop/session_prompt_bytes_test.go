@@ -8,11 +8,11 @@ import (
 	"sync"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 // capturingProvider records the exact message list of every request it

@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reasonix/internal/event"
+	"patty/internal/event"
 	"strings"
 	"testing"
 
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 // fakeProvider returns a fixed reply and records the messages it was asked to

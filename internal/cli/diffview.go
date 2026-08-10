@@ -15,8 +15,8 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
+	"patty/internal/event"
+	"patty/internal/i18n"
 )
 
 const tabWidth = 4

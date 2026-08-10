@@ -18,22 +18,22 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/checkpoint"
-	"reasonix/internal/command"
-	"reasonix/internal/config"
-	"reasonix/internal/event"
-	"reasonix/internal/guardian"
-	"reasonix/internal/hook"
-	"reasonix/internal/i18n"
-	"reasonix/internal/jobs"
-	"reasonix/internal/memory"
-	"reasonix/internal/permission"
-	"reasonix/internal/plugin"
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/provider"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/checkpoint"
+	"patty/internal/command"
+	"patty/internal/config"
+	"patty/internal/event"
+	"patty/internal/guardian"
+	"patty/internal/hook"
+	"patty/internal/i18n"
+	"patty/internal/jobs"
+	"patty/internal/memory"
+	"patty/internal/permission"
+	"patty/internal/plugin"
+	"patty/internal/pluginpkg"
+	"patty/internal/provider"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 type typedNilControllerSink struct{}
@@ -85,7 +85,7 @@ func isolateControlConfigHome(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
@@ -595,7 +595,7 @@ func TestSetGoalDurableRollsBackAutoResearchTaskAndNotice(t *testing.T) {
 	if err := c.SetGoalDurable(goal, ""); err == nil {
 		t.Fatal("SetGoalDurable succeeded despite an invalid sidecar parent")
 	}
-	entries, err := os.ReadDir(filepath.Join(root, ".reasonix", "autoresearch"))
+	entries, err := os.ReadDir(filepath.Join(root, ".patty", "autoresearch"))
 	if err != nil && !os.IsNotExist(err) {
 		t.Fatalf("read autoresearch dir: %v", err)
 	}
@@ -680,25 +680,25 @@ func TestResumeRestoresRunningAutoResearchGoalFromSidecar(t *testing.T) {
 	}
 	path := filepath.Join(root, "session.jsonl")
 	taskID := "investigate-runtime-resume"
-	if err := os.MkdirAll(filepath.Join(root, ".reasonix", "autoresearch", taskID, "state"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".patty", "autoresearch", taskID, "state"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, ".reasonix", "autoresearch", taskID, "logs"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".patty", "autoresearch", taskID, "logs"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".reasonix", "autoresearch", taskID, "state", "task_spec.json"), []byte(`{"id":"investigate-runtime-resume","goal":"investigate runtime resume","status":"running","created_at":"2026-06-30T00:00:00Z","updated_at":"2026-06-30T00:00:00Z","success_criteria":[{"id":"criterion-1","description":"resume keeps AutoResearch active","required":true}]}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".patty", "autoresearch", taskID, "state", "task_spec.json"), []byte(`{"id":"investigate-runtime-resume","goal":"investigate runtime resume","status":"running","created_at":"2026-06-30T00:00:00Z","updated_at":"2026-06-30T00:00:00Z","success_criteria":[{"id":"criterion-1","description":"resume keeps AutoResearch active","required":true}]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".reasonix", "autoresearch", taskID, "state", "progress.json"), []byte(`{"task_id":"investigate-runtime-resume","iteration":2,"current_direction":"verify resume","stale_count":1,"pivot_count":0,"updated_at":"2026-06-30T00:00:00Z"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".patty", "autoresearch", taskID, "state", "progress.json"), []byte(`{"task_id":"investigate-runtime-resume","iteration":2,"current_direction":"verify resume","stale_count":1,"pivot_count":0,"updated_at":"2026-06-30T00:00:00Z"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".reasonix", "autoresearch", taskID, "state", "directions_tried.json"), []byte(`{"task_id":"investigate-runtime-resume","directions":[]}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".patty", "autoresearch", taskID, "state", "directions_tried.json"), []byte(`{"task_id":"investigate-runtime-resume","directions":[]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".reasonix", "autoresearch", taskID, "state", "findings.jsonl"), nil, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".patty", "autoresearch", taskID, "state", "findings.jsonl"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".reasonix", "autoresearch", taskID, "logs", "heartbeat.jsonl"), nil, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".patty", "autoresearch", taskID, "logs", "heartbeat.jsonl"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(goalStatePath(path), []byte(`{"goal":"investigate runtime resume","status":"running","researchMode":1,"autoResearchTaskID":"investigate-runtime-resume"}`), 0o644); err != nil {
@@ -2429,7 +2429,7 @@ func TestNewSessionResetsTwoModelPlannerContext(t *testing.T) {
 func TestTwoModelPlannerApprovalUsesHostGate(t *testing.T) {
 	dir := t.TempDir()
 	planner := &recordingProvider{name: "planner", streams: [][]provider.Chunk{
-		textTurn("Plan:\n1. Edit main.go\n\n是否批准这个方案？"),
+		textTurn("Plan:\n1. Edit main.go\n\n이 방안을 승인할까요?"),
 	}}
 	execProv := &recordingProvider{name: "executor", streams: [][]provider.Chunk{
 		textTurn("approved execution complete"),
@@ -2486,7 +2486,7 @@ func TestTwoModelPlannerApprovalUsesHostGate(t *testing.T) {
 		t.Fatal("executor did not run after approval")
 	}
 	reqText := requestMessagesText(execProv.requests[0].Messages)
-	if !strings.Contains(reqText, "Reasonix executor handoff") || !strings.Contains(reqText, "Edit main.go") {
+	if !strings.Contains(reqText, "Patty Code executor handoff") || !strings.Contains(reqText, "Edit main.go") {
 		t.Fatalf("approved executor request missing planner handoff:\n%s", reqText)
 	}
 }
@@ -2494,7 +2494,7 @@ func TestTwoModelPlannerApprovalUsesHostGate(t *testing.T) {
 func TestTwoModelPlannerUserDecisionUsesAskGate(t *testing.T) {
 	dir := t.TempDir()
 	planner := &recordingProvider{name: "planner", streams: [][]provider.Chunk{
-		textTurn("需要用户选择方案：\n方案一：小改当前逻辑\n方案二：重构控制流\n请选择哪个方案。"),
+		textTurn("사용자 방안 선택 필요:\n방안 1: 현재 로직 소폭 수정\n방안 2: 제어 흐름 리팩토링\n어느 방안을 선택할지 정해 주세요."),
 	}}
 	execProv := &recordingProvider{name: "executor", streams: [][]provider.Chunk{
 		textTurn("selected execution complete"),
@@ -2534,7 +2534,7 @@ func TestTwoModelPlannerUserDecisionUsesAskGate(t *testing.T) {
 	if len(ask.Questions) != 1 || ask.Questions[0].ID != "planner_user_decision" {
 		t.Fatalf("ask questions = %+v, want planner decision question", ask.Questions)
 	}
-	c.AnswerQuestion(ask.ID, []event.AskAnswer{{QuestionID: "planner_user_decision", Selected: []string{"方案二：重构控制流"}}})
+	c.AnswerQuestion(ask.ID, []event.AskAnswer{{QuestionID: "planner_user_decision", Selected: []string{"방안 2: 제어 흐름 리팩토링"}}})
 	select {
 	case err := <-done:
 		if err != nil {
@@ -2547,7 +2547,7 @@ func TestTwoModelPlannerUserDecisionUsesAskGate(t *testing.T) {
 		t.Fatal("executor did not run after user decision")
 	}
 	reqText := requestMessagesText(execProv.requests[0].Messages)
-	if !strings.Contains(reqText, "Host user answer to planner question") || !strings.Contains(reqText, "方案二") {
+	if !strings.Contains(reqText, "Host user answer to planner question") || !strings.Contains(reqText, "방안 2") {
 		t.Fatalf("executor request missing host user answer:\n%s", reqText)
 	}
 }
@@ -2635,8 +2635,8 @@ func TestTwoModelShortChoiceReplySkipsPlanner(t *testing.T) {
 		textTurn("selected option 1"),
 	}}
 	execSess := agent.NewSession("exec sys")
-	execSess.Add(provider.Message{Role: provider.RoleUser, Content: "先给我两个执行方案"})
-	execSess.Add(provider.Message{Role: provider.RoleAssistant, Content: "两个执行方式可选：\n\n1. Subagent-Driven（推荐）\n2. 当前会话执行\n\n你选哪种？"})
+	execSess.Add(provider.Message{Role: provider.RoleUser, Content: "먼저 실행 방안 두 개를 줘"})
+	execSess.Add(provider.Message{Role: provider.RoleAssistant, Content: "실행 방식은 두 가지입니다:\n\n1. Subagent-Driven(권장)\n2. 현재 세션에서 실행\n\n어느 쪽을 선택할래?"})
 	exec := agent.New(execProv, tool.NewRegistry(), execSess, agent.Options{}, event.Discard)
 	coord := agent.NewCoordinator(planner, agent.NewSession("planner sys"), nil, tool.NewRegistry(), agent.Options{}, exec, 0, event.Discard, NewPlannerGate())
 	c := New(Options{Runner: coord, Executor: exec, SystemPrompt: "exec sys", SessionDir: dir, SessionPath: filepath.Join(dir, "session.jsonl"), Label: "test"})
@@ -2655,7 +2655,7 @@ func TestTwoModelShortChoiceReplySkipsPlanner(t *testing.T) {
 	if !strings.Contains(reqText, "1. Subagent-Driven") {
 		t.Fatalf("executor request lost the previous assistant options:\n%s", reqText)
 	}
-	if strings.Contains(reqText, "Reasonix executor handoff") {
+	if strings.Contains(reqText, "Patty Code executor handoff") {
 		t.Fatalf("short choice reply should not be wrapped as a planner handoff:\n%s", reqText)
 	}
 	if got := lastUserMessage(execProv.requests[0].Messages); got != "1" {
@@ -2724,7 +2724,7 @@ func TestDisconnectMCPServerRemovesLazyPlaceholder(t *testing.T) {
 }
 
 func TestRegisterMCPServerOnDemandDefersConnectionUntilFirstUse(t *testing.T) {
-	t.Setenv("REASONIX_CACHE_HOME", t.TempDir())
+	t.Setenv("PATTY_CACHE_HOME", t.TempDir())
 	var requests atomic.Int32
 	var initializes atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -2798,7 +2798,7 @@ func TestRegisterMCPServerOnDemandDefersConnectionUntilFirstUse(t *testing.T) {
 }
 
 func TestControllerMCPHotLifecycleUpdatesCapabilityRuntime(t *testing.T) {
-	t.Setenv("REASONIX_CACHE_HOME", t.TempDir())
+	t.Setenv("PATTY_CACHE_HOME", t.TempDir())
 	host := plugin.NewHost()
 	defer host.Close()
 	reg := tool.NewRegistry()
@@ -2858,7 +2858,7 @@ func TestAddMCPServerAuthorizesExplicitUserAddBeforeConnecting(t *testing.T) {
 func TestAddMCPServerWritesGlobalConfigWithoutShadowingProject(t *testing.T) {
 	isolateControlConfigHome(t)
 	workspace := t.TempDir()
-	projectPath := filepath.Join(workspace, "reasonix.toml")
+	projectPath := filepath.Join(workspace, "patty.toml")
 	if err := os.WriteFile(projectPath, []byte(`
 [[plugins]]
 name = "project-only"
@@ -2921,7 +2921,7 @@ command = "project-only"
 func TestAddMCPServerRejectsProjectNameCollision(t *testing.T) {
 	isolateControlConfigHome(t)
 	workspace := t.TempDir()
-	if err := os.WriteFile(filepath.Join(workspace, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(workspace, "patty.toml"), []byte(`
 [[plugins]]
 name = "shared"
 command = "project-shared"
@@ -2978,7 +2978,7 @@ func TestConnectConfiguredProjectMCPIsTrustedByDefault(t *testing.T) {
 		})
 	}))
 	defer server.Close()
-	if err := os.WriteFile(filepath.Join(workspace, "reasonix.toml"), fmt.Appendf(nil, `
+	if err := os.WriteFile(filepath.Join(workspace, "patty.toml"), fmt.Appendf(nil, `
 [[plugins]]
 name = "project-docs"
 type = "http"
@@ -3154,7 +3154,7 @@ func TestRemoveMCPServerRemovesUnconnectedLazyPlaceholder(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("AppData", filepath.Join(home, "AppData", "Roaming"))
 	t.Chdir(dir)
-	if err := os.WriteFile("reasonix.toml", []byte(`
+	if err := os.WriteFile("patty.toml", []byte(`
 [[plugins]]
 name = "mock"
 command = "mock-mcp"
@@ -3197,7 +3197,7 @@ func TestConfiguredMCPNamesUseControllerWorkspaceInsteadOfProcessCWD(t *testing.
 	workspace := t.TempDir()
 	other := t.TempDir()
 	t.Chdir(other)
-	if err := os.WriteFile(filepath.Join(workspace, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(workspace, "patty.toml"), []byte(`
 [[plugins]]
 name = "workspace-mcp"
 command = "workspace-mcp"
@@ -3231,20 +3231,20 @@ func TestRemoveMCPServerKeepsRuntimeOnlyToolsWhenPersistenceRemovalFails(t *test
 
 func TestRemoveMCPServerRejectsPluginManagedTools(t *testing.T) {
 	home := isolateControlConfigHome(t)
-	reasonixHome := filepath.Join(home, ".reasonix")
-	t.Setenv("REASONIX_HOME", reasonixHome)
-	root := filepath.Join(reasonixHome, "plugins", "superpowers")
+	pattyHome := filepath.Join(home, ".patty")
+	t.Setenv("PATTY_HOME", pattyHome)
+	root := filepath.Join(pattyHome, "plugins", "superpowers")
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, pluginpkg.NativeManifest), []byte(`{"apiVersion":"reasonix.io/plugin/v2","name":"superpowers","version":"1.0.0","mcpServers":{"helper":{"command":"bin/helper"}}}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, pluginpkg.NativeManifest), []byte(`{"apiVersion":"patty.io/plugin/v2","name":"superpowers","version":"1.0.0","mcpServers":{"helper":{"command":"bin/helper"}}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := pluginpkg.Upsert(reasonixHome, pluginpkg.InstalledPlugin{
+	if err := pluginpkg.Upsert(pattyHome, pluginpkg.InstalledPlugin{
 		Name:         "superpowers",
 		Root:         "plugins/superpowers",
 		Version:      "1.0.0",
-		ManifestKind: "reasonix",
+		ManifestKind: "patty",
 		Enabled:      true,
 	}); err != nil {
 		t.Fatal(err)
@@ -3588,7 +3588,7 @@ func TestMemoryApprovalRequestShowsRememberPayload(t *testing.T) {
 		t.Fatal("memory approval request was not emitted")
 	}
 	for _, want := range []string{
-		`Save/update memory "stable-retrieval-conclusion"`,
+		`메모리 저장/업데이트 "stable-retrieval-conclusion"`,
 		"[feedback]",
 		"History retrieval should reuse stable synthesized conclusions.",
 		"repeated history scans are expensive",
@@ -3770,16 +3770,16 @@ func TestHeadlessGateRefusesFreshHumanApprovalTools(t *testing.T) {
 
 func TestMemoryApprovalSubjectsAndNotifications(t *testing.T) {
 	forgetSubject := approvalDisplaySubject("forget", "", json.RawMessage(`{"name":"wrong-memory"}`))
-	if forgetSubject != `Archive memory "wrong-memory"` {
+	if forgetSubject != `메모리 보관 "wrong-memory"` {
 		t.Fatalf("forget approval subject = %q", forgetSubject)
 	}
-	if got := approvalNotificationText("remember", "Save/update memory with private details"); got != "approval needed: remember" {
+	if got := approvalNotificationText("remember", "메모리 저장/업데이트"); got != "승인 필요: remember" {
 		t.Fatalf("remember notification = %q", got)
 	}
-	if got := approvalNotificationText("forget", `Archive memory "wrong-memory"`); got != "approval needed: forget" {
+	if got := approvalNotificationText("forget", `메모리 보관 "wrong-memory"`); got != "승인 필요: forget" {
 		t.Fatalf("forget notification = %q", got)
 	}
-	if got := approvalNotificationText("bash", "go test ./..."); got != "approval needed: bash go test ./..." {
+	if got := approvalNotificationText("bash", "go test ./..."); got != "승인 필요: bash go test ./..." {
 		t.Fatalf("bash notification = %q", got)
 	}
 	moveSubject := approvalDisplaySubject("move_file", "src/a.md", json.RawMessage(`{"source_path":"src/a.md","destination_path":"docs/a.md"}`))
@@ -4046,7 +4046,7 @@ func TestApprovalPersistentBashPrefixRememberRule(t *testing.T) {
 		}),
 		OnRemember: func(rule string) RememberResult {
 			remembered = rule
-			return RememberResult{Rule: rule, Path: "reasonix.toml", Saved: true}
+			return RememberResult{Rule: rule, Path: "patty.toml", Saved: true}
 		},
 	})
 	go func() {
@@ -4060,7 +4060,7 @@ func TestApprovalPersistentBashPrefixRememberRule(t *testing.T) {
 	if remembered != "Bash(go test:*)" {
 		t.Fatalf("remembered rule = %q, want Bash(go test:*)", remembered)
 	}
-	if len(notices) != 1 || !strings.Contains(notices[0], "Bash(go test:*)") || !strings.Contains(notices[0], "reasonix.toml") {
+	if len(notices) != 1 || !strings.Contains(notices[0], "Bash(go test:*)") || !strings.Contains(notices[0], "patty.toml") {
 		t.Fatalf("notices = %v, want saved rule notice", notices)
 	}
 }
@@ -4080,7 +4080,7 @@ func TestApprovalPersistenceFailureKeepsSessionGrant(t *testing.T) {
 			}
 		}),
 		OnRemember: func(rule string) RememberResult {
-			return RememberResult{Rule: rule, Path: "reasonix.toml", Err: errors.New("disk unavailable")}
+			return RememberResult{Rule: rule, Path: "patty.toml", Err: errors.New("disk unavailable")}
 		},
 	})
 	go func() {
@@ -4120,7 +4120,7 @@ func TestPlanModeReadOnlyTrustApprovalPersistsBashCommandTrust(t *testing.T) {
 		}),
 		OnRememberPlanModeReadOnlyCommand: func(prefix string) PlanModeReadOnlyCommandTrustResult {
 			rememberedPrefix = prefix
-			return PlanModeReadOnlyCommandTrustResult{Prefix: prefix, Path: "reasonix.toml", Saved: true}
+			return PlanModeReadOnlyCommandTrustResult{Prefix: prefix, Path: "patty.toml", Saved: true}
 		},
 	})
 
@@ -4137,7 +4137,7 @@ func TestPlanModeReadOnlyTrustApprovalPersistsBashCommandTrust(t *testing.T) {
 	if err != nil || !allow || reason != "" {
 		t.Fatalf("CheckPlanModeReadOnlyTrust = (%v,%q,%v), want allow", allow, reason, err)
 	}
-	if approval.Tool != agent.PlanModeReadOnlyCommandApprovalTool || !strings.Contains(approval.Subject, `Trust "gh issue view"`) || !strings.Contains(approval.Subject, "gh issue view 5867") || !strings.Contains(approval.Reason, "Auto/YOLO") {
+	if approval.Tool != agent.PlanModeReadOnlyCommandApprovalTool || !strings.Contains(approval.Subject, `읽기 전용 명령 접두사로 신뢰`) || !strings.Contains(approval.Subject, "gh issue view 5867") || !strings.Contains(approval.Reason, "Auto/YOLO") {
 		t.Fatalf("approval = %+v, want plan-mode bash read-only command trust prompt", approval)
 	}
 	if rememberedPrefix != "gh issue view" {
@@ -4158,23 +4158,23 @@ func TestPlanModeReadOnlyTrustApprovalPersistsBashCommandTrust(t *testing.T) {
 	}
 }
 
-func TestApprovalSubjectsUseChineseCatalog(t *testing.T) {
-	i18n.DetectLanguage("zh")
+func TestApprovalSubjectsUseKoreanCatalog(t *testing.T) {
+	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	rememberArgs := json.RawMessage(`{"name":"prefers-vitest","type":"user","description":"Preferred test framework","body":"Use Vitest for frontend tests."}`)
-	if got := approvalDisplaySubject(memoryRememberTool, "", rememberArgs); !strings.Contains(got, "保存/更新记忆") || !strings.Contains(got, "正文: Use Vitest") {
-		t.Fatalf("remember approval subject = %q, want Chinese labels", got)
+	if got := approvalDisplaySubject(memoryRememberTool, "", rememberArgs); !strings.Contains(got, "메모리 저장/업데이트") || !strings.Contains(got, "본문: Use Vitest") {
+		t.Fatalf("remember approval subject = %q, want Korean catalog labels", got)
 	}
 
 	forgetArgs := json.RawMessage(`{"name":"old-fact"}`)
-	if got := approvalDisplaySubject(memoryForgetTool, "", forgetArgs); got != `归档记忆 "old-fact"` {
-		t.Fatalf("forget approval subject = %q, want Chinese archive label", got)
+	if got := approvalDisplaySubject(memoryForgetTool, "", forgetArgs); got != `메모리 보관 "old-fact"` {
+		t.Fatalf("forget approval subject = %q, want Korean archive label", got)
 	}
 }
 
-func TestPlanModeReadOnlyTrustApprovalUsesChineseCatalog(t *testing.T) {
-	i18n.DetectLanguage("zh")
+func TestPlanModeReadOnlyTrustApprovalUsesKoreanCatalog(t *testing.T) {
+	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	approvalRequests := make(chan event.Approval, 1)
@@ -4211,18 +4211,18 @@ func TestPlanModeReadOnlyTrustApprovalUsesChineseCatalog(t *testing.T) {
 	case <-time.After(30 * time.Second):
 		t.Fatal("plan-mode bash trust approval request was not emitted")
 	}
-	if !strings.Contains(approval.Subject, "在计划模式中信任") || !strings.Contains(approval.Subject, "gh issue view 5867") {
-		t.Fatalf("approval subject = %q, want Chinese plan-mode trust subject", approval.Subject)
+	if !strings.Contains(approval.Subject, "읽기 전용 명령 접두사로 신뢰") || !strings.Contains(approval.Subject, "gh issue view 5867") {
+		t.Fatalf("approval subject = %q, want plan-mode trust subject", approval.Subject)
 	}
-	if !strings.Contains(approval.Reason, "不在 Reasonix 内置只读集合中") {
-		t.Fatalf("approval reason = %q, want Chinese plan-mode trust reason", approval.Reason)
+	if !strings.Contains(approval.Reason, "내장 읽기 전용 집합") {
+		t.Fatalf("approval reason = %q, want plan-mode trust reason", approval.Reason)
 	}
 
 	c.Approve(approval.ID, false, false, false)
 	select {
 	case got := <-done:
-		if got.err != nil || got.allow || !strings.Contains(got.reason, "用户拒绝") {
-			t.Fatalf("rejected trust result = %+v, want Chinese denial", got)
+		if got.err != nil || got.allow || !strings.Contains(got.reason, "읽기 전용으로 신뢰하지 않았습니다") {
+			t.Fatalf("rejected trust result = %+v, want denial", got)
 		}
 	case <-time.After(30 * time.Second):
 		t.Fatal("plan-mode bash trust approval stayed blocked after rejection")
@@ -4699,9 +4699,9 @@ func TestApprovedPlanAutoApproveEndsWithExecutionTurn(t *testing.T) {
 	}
 
 	// The plan approval auto-approves writers for the execution turn only. A later
-	// turn does not inherit it, and "继续" carries no special meaning — Compose must
+	// turn does not inherit it, and "계속" carries no special meaning — Compose must
 	// not inject any marker, and the next writer falls back to per-tool approval.
-	if got := c.Compose("继续"); StripComposePrefixes(got) != "继续" {
+	if got := c.Compose("계속"); StripComposePrefixes(got) != "계속" {
 		t.Fatalf("a paused approved plan must not marker-prefix the next turn, got %q", got)
 	}
 	allow, _, err := gateApprover{c}.Approve(context.Background(), "write_file", "/tmp/a", nil)
@@ -4750,7 +4750,7 @@ func TestApprovedPlanDoesNotAutoApproveNonContinuationTurn(t *testing.T) {
 	if err := c.runTurn(context.Background(), "plan this"); err != nil {
 		t.Fatal(err)
 	}
-	if got := c.Compose("先别继续"); StripComposePrefixes(got) != "先别继续" {
+	if got := c.Compose("계속하지 마세요"); StripComposePrefixes(got) != "계속하지 마세요" {
 		t.Fatalf("non-continuation input should not be marker-prefixed, got %q", got)
 	}
 
@@ -4829,7 +4829,7 @@ func TestReloadCommandsFromFilesystem(t *testing.T) {
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 
 	wsRoot := t.TempDir()
-	cmdDir := filepath.Join(wsRoot, ".reasonix", "commands")
+	cmdDir := filepath.Join(wsRoot, ".patty", "commands")
 	writeCmdFile(t, cmdDir, "review", "Review code", "Review $1")
 	writeCmdFile(t, cmdDir, "test", "Run tests", "Test $1")
 
@@ -4927,7 +4927,7 @@ func TestReloadCommandsDeleteFile(t *testing.T) {
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 
 	wsRoot := t.TempDir()
-	cmdDir := filepath.Join(wsRoot, ".reasonix", "commands")
+	cmdDir := filepath.Join(wsRoot, ".patty", "commands")
 	writeCmdFile(t, cmdDir, "alpha", "Alpha cmd", "Alpha $1")
 	writeCmdFile(t, cmdDir, "beta", "Beta cmd", "Beta $1")
 
@@ -4982,7 +4982,7 @@ func TestReloadCommandsMalformedFile(t *testing.T) {
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 
 	wsRoot := t.TempDir()
-	cmdDir := filepath.Join(wsRoot, ".reasonix", "commands")
+	cmdDir := filepath.Join(wsRoot, ".patty", "commands")
 	writeCmdFile(t, cmdDir, "good", "Good cmd", "Good $1")
 
 	// Write a malformed file (no valid frontmatter)
@@ -5024,8 +5024,8 @@ func TestReloadCommandsMalformedFile(t *testing.T) {
 
 // TestReloadCommandsSameNameAcrossDirs verifies that when the same command
 // name exists in multiple convention directories, the later-scanned directory
-// (higher priority) wins. ConventionDirs = [".reasonix", ".agents", ".agent",
-// ".claude"], scanned in reverse, so .reasonix is highest priority.
+// (higher priority) wins. ConventionDirs = [".patty", ".agents", ".agent",
+// ".claude"], scanned in reverse, so .patty is highest priority.
 func TestReloadCommandsSameNameAcrossDirs(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -5039,9 +5039,9 @@ func TestReloadCommandsSameNameAcrossDirs(t *testing.T) {
 	claudeDir := filepath.Join(wsRoot, ".claude", "commands")
 	writeCmdFile(t, claudeDir, "greet", "Claude greet", "Hello from Claude: $1")
 
-	// Higher priority: .reasonix/commands
-	reasonixDir := filepath.Join(wsRoot, ".reasonix", "commands")
-	writeCmdFile(t, reasonixDir, "greet", "Reasonix greet", "Hello from Reasonix: $1")
+	// Higher priority: .patty/commands
+	pattyDir := filepath.Join(wsRoot, ".patty", "commands")
+	writeCmdFile(t, pattyDir, "greet", "Patty Code greet", "Hello from Patty Code: $1")
 
 	reg := tool.NewRegistry()
 	c := New(Options{
@@ -5066,13 +5066,13 @@ func TestReloadCommandsSameNameAcrossDirs(t *testing.T) {
 		t.Fatalf("expected exactly 1 'greet' command, got %d", count)
 	}
 
-	// The winning version should be from .reasonix (highest priority)
+	// The winning version should be from .patty (highest priority)
 	sent, ok := c.CustomCommand("/greet world")
 	if !ok {
 		t.Fatal("/greet should be found")
 	}
-	if !strings.Contains(sent, "Hello from Reasonix") {
-		t.Errorf("expected .reasonix version to win, got render: %q", sent)
+	if !strings.Contains(sent, "Hello from Patty Code") {
+		t.Errorf("expected .patcode version to win, got render: %q", sent)
 	}
 }
 
@@ -5082,10 +5082,10 @@ func TestReloadCommandsUsesCanonicalPluginNameAlongsideProjectShortName(t *testi
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
-	reasonixHome := filepath.Join(home, ".reasonix")
-	t.Setenv("REASONIX_HOME", reasonixHome)
+	pattyHome := filepath.Join(home, ".patty")
+	t.Setenv("PATTY_HOME", pattyHome)
 
-	pluginRoot := filepath.Join(reasonixHome, "plugins", "pwf")
+	pluginRoot := filepath.Join(pattyHome, "plugins", "pwf")
 	if err := os.MkdirAll(filepath.Join(pluginRoot, ".claude-plugin"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -5094,12 +5094,12 @@ func TestReloadCommandsUsesCanonicalPluginNameAlongsideProjectShortName(t *testi
 	}
 	writeCmdFile(t, filepath.Join(pluginRoot, "commands"), "plan", "Plugin plan", "PLUGIN $1")
 	writeCmdFile(t, filepath.Join(pluginRoot, "commands"), "status", "Plugin status", "STATUS $1")
-	if err := pluginpkg.Upsert(reasonixHome, pluginpkg.InstalledPlugin{Name: "pwf", Root: "plugins/pwf", ManifestKind: "claude", Enabled: true}); err != nil {
+	if err := pluginpkg.Upsert(pattyHome, pluginpkg.InstalledPlugin{Name: "pwf", Root: "plugins/pwf", ManifestKind: "claude", Enabled: true}); err != nil {
 		t.Fatal(err)
 	}
 
 	workspace := t.TempDir()
-	writeCmdFile(t, filepath.Join(workspace, ".reasonix", "commands"), "plan", "Project plan", "PROJECT $1")
+	writeCmdFile(t, filepath.Join(workspace, ".patty", "commands"), "plan", "Project plan", "PROJECT $1")
 	c := New(Options{Sink: &typedNilControllerSink{}, Registry: tool.NewRegistry(), WorkspaceRoot: workspace})
 	if err := c.ReloadCommands(context.Background()); err != nil {
 		t.Fatalf("ReloadCommands: %v", err)
@@ -5144,7 +5144,7 @@ func TestReloadCommandsEmptySet(t *testing.T) {
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 
 	wsRoot := t.TempDir()
-	cmdDir := filepath.Join(wsRoot, ".reasonix", "commands")
+	cmdDir := filepath.Join(wsRoot, ".patty", "commands")
 	writeCmdFile(t, cmdDir, "temp", "Temp cmd", "Temp $1")
 
 	sk := skill.Skill{
@@ -5207,7 +5207,7 @@ func TestReloadCommandsDesktopManagementNotice(t *testing.T) {
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 
 	wsRoot := t.TempDir()
-	cmdDir := filepath.Join(wsRoot, ".reasonix", "commands")
+	cmdDir := filepath.Join(wsRoot, ".patty", "commands")
 	writeCmdFile(t, cmdDir, "hello", "Greet", "Hello $1")
 	writeCmdFile(t, cmdDir, "review", "Review code", "Review $1")
 
@@ -5288,8 +5288,8 @@ func cmdNames(cmds []command.Command) []string {
 	return names
 }
 
-// TestCacheColdAfterFailureFallsBackTo24h：配置加载失败/模型解析失败时
-// 保守回退 24h（评审 #7168 第 4 点）——不得用 10m 提前触发 prune。
+// TestCacheColdAfterFailureFallsBackTo24h: 설정 로드 실패/모델 파싱 실패 시
+// 24h로 보수적 폴백(검토 #7168 4번째 항목)——10m로 prune을 일찍 트리거하면 안 됨.
 func TestCacheColdAfterFailureFallsBackTo24h(t *testing.T) {
 	c := New(Options{})
 	orig := c.workspaceRoot
@@ -5298,7 +5298,7 @@ func TestCacheColdAfterFailureFallsBackTo24h(t *testing.T) {
 	if got := c.cacheColdAfter(); got != 24*time.Hour {
 		t.Fatalf("load failure must fall back to 24h, got %v", got)
 	}
-	// 未知模型同样 24h
+	// 알 수 없는 모델도 동일하게 24h
 	c2 := New(Options{})
 	c2.modelRef = "definitely-not-a-real-model-xyz"
 	if got := c2.cacheColdAfter(); got != 24*time.Hour {

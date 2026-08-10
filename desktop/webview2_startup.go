@@ -12,14 +12,10 @@ const windowsWebView2StartupFallbackDelay = 15 * time.Second
 
 const windowsWebView2StartupFallbackMessage = "The desktop interface did not become ready within 15 seconds. " +
 	"An unavailable Windows system proxy or a WebView2 failure may be blocking startup. " +
-	"Check the system proxy, then restart Reasonix. If the problem continues, repair Microsoft Edge WebView2 Runtime or reinstall Reasonix.\n\n" +
-	"桌面界面在 15 秒内未能就绪。不可用的 Windows 系统代理或 WebView2 故障可能阻塞了启动。" +
-	"请检查系统代理后重启 Reasonix；如果问题仍然存在，请修复 Microsoft Edge WebView2 Runtime 或重新安装 Reasonix。"
+	"Check the system proxy, then restart Patty Code. If the problem continues, repair Microsoft Edge WebView2 Runtime or reinstall Patty Code.\n\n" +
+	"데스크톱 인터페이스가 15초 내에 준비되지 않았습니다. 사용할 수 없는 Windows 시스템 프록시 또는 WebView2 오류로 시작이 차단되었을 수 있습니다." +
+	"시스템 프록시를 확인한 후 Patty Code를 다시 시작하세요. 문제가 지속되면 Microsoft Edge WebView2 Runtime을 복구하거나 Patty Code를 다시 설치하세요."
 
-// startWindowsWebView2StartupFallback prevents StartHidden from turning a slow
-// or failed WebView2 navigation into an apparently missing application. Proxy
-// isolation is the primary repair; this watchdog is the last-resort visible
-// recovery path for policy-forced proxies and unrelated WebView2 failures.
 func (a *App) startWindowsWebView2StartupFallback(ctx context.Context) {
 	if !shouldStartWindowsWebView2StartupFallback(goruntime.GOOS, a.remoteWindowTicket != "") {
 		return
@@ -31,15 +27,13 @@ func (a *App) startWindowsWebView2StartupFallback(ctx context.Context) {
 			return
 		}
 
-		// Show the native shell first so a dialog failure can never leave the app
-		// completely invisible. The dark native background is already configured.
 		runtime.WindowShow(ctx)
 		if a.startupReady.Load() {
 			return
 		}
 		_, _ = runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
 			Type:          runtime.WarningDialog,
-			Title:         "Reasonix startup delayed / Reasonix 启动延迟",
+			Title:         "Patty Code startup delayed / Patty Code 시작 지연",
 			Message:       windowsWebView2StartupFallbackMessage,
 			Buttons:       []string{"OK"},
 			DefaultButton: "OK",

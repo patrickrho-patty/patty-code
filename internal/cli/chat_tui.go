@@ -22,24 +22,24 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/command"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/hook"
-	"reasonix/internal/i18n"
-	"reasonix/internal/memory"
-	"reasonix/internal/migration"
-	"reasonix/internal/outputstyle"
-	"reasonix/internal/permission"
-	"reasonix/internal/plugin"
-	"reasonix/internal/provider"
-	"reasonix/internal/recovery"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/command"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/hook"
+	"patty/internal/i18n"
+	"patty/internal/memory"
+	"patty/internal/migration"
+	"patty/internal/outputstyle"
+	"patty/internal/permission"
+	"patty/internal/plugin"
+	"patty/internal/provider"
+	"patty/internal/recovery"
+	"patty/internal/sandbox"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 // chatTUI is a bubbletea Model that normally owns the terminal with an
@@ -65,9 +65,9 @@ type chatTUI struct {
 	// mouseCaptureOff releases mouse ownership back to the terminal (View() sets
 	// tea.MouseModeNone instead of MouseModeCellMotion) so its native
 	// click-drag selection and right-click context menu work again. Toggled by
-	// "/mouse" or REASONIX_DISABLE_MOUSE at startup; trades away in-app
+	// "/mouse" or PATTY_DISABLE_MOUSE at startup; trades away in-app
 	// drag-select, the transcript scrollbar, and wheel-scroll while it's on,
-	// since the terminal no longer forwards those events to Reasonix.
+	// since the terminal no longer forwards those events to patty.
 	mouseCaptureOff bool
 
 	input       textarea.Model
@@ -216,6 +216,9 @@ type chatTUI struct {
 	scrollMode scrollFollowMode
 	eventCh    chan event.Event
 	started    bool // banner + resumed history committed once
+	// launchMastheadRevision prevents static artwork/replay rendering on every
+	// Bubble Tea message while still refreshing facts when their inputs change.
+	launchMastheadRevision string
 
 	// transcript holds every finalized line commitLine emits; the viewport
 	// renders a scrollable window of it (alt-screen owns the grid, so there's no
@@ -326,7 +329,7 @@ type chatTUI struct {
 	// (/mcp) from it.
 	host *plugin.Host
 
-	// commands are custom slash commands loaded from .reasonix/commands; each renders
+	// commands are custom slash commands loaded from .patty/commands; each renders
 	// its template with the typed args and sends the result as a turn.
 	commands []command.Command
 
@@ -392,7 +395,8 @@ type chatTUI struct {
 	gitStatus     gitStatus
 
 	// statusLineCount is the number of terminal rows the status block occupies
-	// (wrapped working line + wrapped status line + wrapped data line). Updated
+	// (wrapped working line + any transient interaction line + optional data
+	// line). Updated
 	// each frame via computeStatusLineCount so bottomRows can reserve the correct
 	// height; starts at 2 (unwrapped) until first render.
 	statusLineCount int
@@ -656,7 +660,7 @@ func newChatTUI(ctrl control.SessionAPI, missing string, eventCh chan event.Even
 		commands:             ctrl.Commands(),
 		skills:               ctrl.SlashSkills(),
 		viewport:             viewport.New(viewport.WithWidth(termW)),
-		statusLineCount:      3,
+		statusLineCount:      0,
 	}
 }
 
@@ -672,28 +676,19 @@ func transcriptContentWidth(termW int, nativeScrollback bool) int {
 // menu and click-drag selection matter more than the scrollbar and
 // wheel-scroll) without having to type "/mouse" each session.
 func mouseCaptureOffByDefault() bool {
-	v := strings.TrimSpace(os.Getenv("REASONIX_DISABLE_MOUSE"))
+	v := strings.TrimSpace(os.Getenv("PATTY_DISABLE_MOUSE"))
 	return v != "" && v != "0"
 }
 
 func configureChatTextarea(ti *textarea.Model) {
-	// Keep a stable two-cell input affordance, matching the prompt treatment in
-	// other coding TUIs. Continuation rows receive two spaces so text and the
-	// real terminal cursor stay aligned without repeating the arrow.
-	ti.SetPromptFunc(composerPromptWidth, func(info textarea.PromptInfo) string {
-		if info.LineNumber != 0 {
-			return ""
-		}
-		if info.Focused {
-			return accent("❯ ")
-		}
-		return dim("❯ ")
+	// Keep a stable two-cell gutter on every visual row. It gives the text and
+	// real terminal cursor a quiet alignment anchor without borrowing the
+	// chevron prompt used by the reference harness.
+	ti.SetPromptFunc(composerPromptWidth, func(textarea.PromptInfo) string {
+		return strings.Repeat(" ", composerPromptWidth)
 	})
 	ti.CharLimit = 16384
-	// The prompt and real terminal cursor already show where typing starts. Keep
-	// the idle composer quiet; modal free-text questions set their own temporary
-	// placeholder through refreshInputPlaceholder.
-	ti.Placeholder = ""
+	ti.Placeholder = i18n.M.ChatComposerPlaceholder
 	ti.DynamicHeight = true
 	ti.MinHeight = 1
 	ti.MaxHeight = maxInputRows
@@ -721,7 +716,7 @@ func (m *chatTUI) refreshInputPlaceholder() {
 		m.input.Placeholder = i18n.M.AskTypeSomething
 		return
 	}
-	m.input.Placeholder = ""
+	m.input.Placeholder = i18n.M.ChatComposerPlaceholder
 }
 
 func isTermuxTerminal() bool {
@@ -893,7 +888,9 @@ func (m chatTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	prevLines := len(m.transcript)
 	prevWidth := m.width
 	prevHeight := m.height
+	prevViewportHeight := m.viewport.Height()
 	prevYOff := m.viewport.YOffset()
+	prevNaturalStartup := m.isNaturalStartupFrame()
 	var resizeAnchor transcriptResizeAnchor
 	if size, ok := msg.(tea.WindowSizeMsg); ok && size.Width != m.width && !followTail {
 		resizeAnchor = captureTranscriptResizeAnchor(m.transcript, m.viewport.Width(), prevYOff)
@@ -901,6 +898,7 @@ func (m chatTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	next, cmd := m.update(msg)
 	cm := next.(chatTUI)
+	cm.refreshLaunchMasthead()
 	if logFirstFrame {
 		cm.firstFrameLogged = true
 		if cm.diagnostics != nil {
@@ -979,7 +977,18 @@ func (m chatTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// newest output) shifts the whole window. Some terminals (Warp) mishandle
 	// the renderer's scroll/insert-line optimization and strand stale rows, so
 	// force a full clear+redraw whenever the offset actually moved.
-	if cm.viewport.YOffset() != prevYOff && !cm.nativeScrollback && !cm.sessionSwitch {
+	_, viewportEvent := msg.(tea.WindowSizeMsg)
+	if _, ok := msg.(agentEventMsg); ok {
+		viewportEvent = true
+	}
+	viewportHeightChanged := cm.viewport.Height() != prevViewportHeight
+	naturalStartupChanged := cm.isNaturalStartupFrame() &&
+		(!prevNaturalStartup || len(cm.transcript) != prevLines || cm.width != prevWidth || cm.height != prevHeight)
+	if naturalStartupChanged && !cm.nativeScrollback && !cm.sessionSwitch {
+		cm.sessionSwitch = false
+		return cm, batchCmds(tea.ClearScreen, mouseCmd, cmd)
+	}
+	if ((viewportEvent && viewportHeightChanged) || cm.viewport.YOffset() != prevYOff) && !cm.nativeScrollback && !cm.sessionSwitch {
 		cm.sessionSwitch = false
 		return cm, batchCmds(tea.ClearScreen, mouseCmd, cmd)
 	}
@@ -1023,9 +1032,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.started {
 			m.started = true
 			history := append([]provider.Message(nil), m.history...)
-			m.commitTranscriptSource(transcriptSource{
-				kind: transcriptSourceReplayBundle, raw: m.missing, history: history,
-			})
+			m.commitLaunchAndReplay(m.missing, history)
 			m.history = nil
 		}
 
@@ -1060,7 +1067,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.MouseClickMsg:
-		// Match the complete terminal right-click convention while Reasonix owns
+		// Match the complete terminal right-click convention while Patty Code owns
 		// the mouse: copy an active selection, otherwise paste clipboard text into
 		// the visible composer. Left-press begins a selection unless it lands on
 		// the transcript scrollbar or a shell-output hint line.
@@ -1099,17 +1106,18 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.composerSel = composerSelection{}
 		}
-		if msg.Button == tea.MouseLeft && m.inScrollbar(msg.X, msg.Y) {
+		transcriptY, overTranscript := m.transcriptLocalY(msg.Y)
+		if msg.Button == tea.MouseLeft && overTranscript && m.inScrollbar(msg.X, transcriptY) {
 			m.sel = selection{}
 			m.autoScroll = 0
 			m.scrollbarDrag = true
-			m.scrollbarGrabOffset = m.scrollbarGrabRowOffset(msg.Y)
-			m.dragScrollbar(msg.Y)
+			m.scrollbarGrabOffset = m.scrollbarGrabRowOffset(transcriptY)
+			m.dragScrollbar(transcriptY)
 			return m, nil
 		}
-		if msg.Button == tea.MouseLeft && msg.Y < m.viewport.Height() {
+		if msg.Button == tea.MouseLeft && overTranscript {
 			// Check if the clicked line is a shell-output hint.
-			lineIdx := m.viewport.YOffset() + msg.Y
+			lineIdx := m.viewport.YOffset() + transcriptY
 			if lineIdx >= 0 && lineIdx < len(m.wrappedLines) {
 				clicked := m.wrappedLines[lineIdx]
 				if strings.Contains(clicked, "more lines") && strings.Contains(clicked, "Ctrl+B") {
@@ -1117,7 +1125,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, finalize(m, cmds)
 				}
 			}
-			at := m.transcriptCaret(msg.X, msg.Y)
+			at := m.transcriptCaret(msg.X, transcriptY)
 			m.sel = selection{active: true, anchor: at, head: at}
 			m.autoScroll = 0
 		}
@@ -1131,7 +1139,8 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.scrollbarDrag {
-			m.dragScrollbar(msg.Y)
+			transcriptY, _ := m.transcriptLocalY(msg.Y)
+			m.dragScrollbar(transcriptY)
 			return m, nil
 		}
 		// Drag extends the live selection (CellMotion only reports motion while
@@ -1139,10 +1148,11 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// bottom edge starts an auto-scroll ticker so the selection can run past
 		// the visible window.
 		if m.sel.active {
-			m.sel.head = m.transcriptCaret(msg.X, msg.Y)
+			transcriptY, _ := m.transcriptLocalY(msg.Y)
+			m.sel.head = m.transcriptCaret(msg.X, transcriptY)
 			m.dragX = msg.X
 			prev := m.autoScroll
-			m.autoScroll = edgeScrollDir(msg.Y, m.viewport.Height())
+			m.autoScroll = edgeScrollDir(transcriptY, m.viewport.Height())
 			if m.autoScroll != 0 && prev == 0 {
 				return m, autoScrollTick()
 			}
@@ -1182,7 +1192,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.composerSel = composerSelection{}
 				return m, nil
 			}
-			// The terminal cannot see Reasonix's application-owned highlight, and
+			// The terminal cannot see Patty Code's application-owned highlight, and
 			// macOS commonly consumes Cmd+C before it reaches the TUI. Copy on drag
 			// release just like transcript selection so the visible selection always
 			// has a usable clipboard result.
@@ -1516,7 +1526,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Terminal-convention copy without Ctrl+C's destructive side
 			// effects: copy an active selection if there is one, otherwise do
 			// nothing (no clear-input, no cancel, no quit). The selection lives
-			// in-app because Reasonix owns the mouse, so the terminal's own
+			// in-app because Patty Code owns the mouse, so the terminal's own
 			// Ctrl+Insert (which copies the terminal selection) would see an
 			// empty one.
 			if sel.active && !sel.empty() {
@@ -2128,7 +2138,7 @@ func (m *chatTUI) commitSpacer() {
 
 // bottomRows is the terminal-row height of the pinned bottom region: any open
 // bottom panels (todo / approval / chooser / rewind / completion), the composer
-// when visible, and the two fixed status rows. Full-screen managers such as MCP
+// when visible, and the status rows. Full-screen managers such as MCP
 // and skills normally render inside the main transcript area; in native
 // scrollback mode they join the bottom rail because there is no main viewport.
 func (m chatTUI) bottomRows() int {
@@ -2148,10 +2158,10 @@ func (m chatTUI) bottomRows() int {
 			rows += strings.Count(s, "\n") + 1
 		}
 	}
-	// Remove the hardcoded working-line increment — it is counted inside
-	// statusLineCount via computeStatusLineCount, which also accounts for
-	// wrapping. The fallback to 2 (unwrapped) covers the initial frame and
-	// tests that don't call Update first.
+	// The working line and operational footer are counted together inside
+	// statusLineCount via computeStatusLineCount, which accounts for wrapping.
+	// A zero count is valid before the first resize; the first rendered frame
+	// synchronizes it from the same layout used by View.
 	if m.nativeScrollback {
 		if main := m.renderMainManager(); main != "" {
 			rows += strings.Count(main, "\n") + 1
@@ -2161,12 +2171,28 @@ func (m chatTUI) bottomRows() int {
 		rows += strings.Count(footer, "\n") + 1
 	}
 	if !m.hideComposer() {
-		rows += m.input.Height() + 2
+		rows += m.composerRowCount()
 	}
-	if m.statusLineCount > 0 {
-		return rows + m.statusLineCount
+	return rows + max(m.statusLineCount, 0)
+}
+
+// composerRowCount mirrors the exact composer string appended by View. The
+// localized hint groups may wrap on narrow terminals, so treating the heading
+// and hints as two permanently fixed rows under-reserves the bottom rail.
+func (m chatTUI) composerRowCount() int {
+	if m.hideComposer() {
+		return 0
 	}
-	return rows + 2 // fallback for tests that don't set statusLineCount
+	if m.isMinimalTerminal() {
+		return 1
+	}
+	if m.isCompactTerminal() {
+		return 1 + m.input.Height()
+	}
+	if m.isNaturalStartupFrame() {
+		return 1 + m.input.Height()
+	}
+	return 1 + m.input.Height() + composerHintRowCount(max(m.width, 10))
 }
 
 // hideComposer is the single ownership gate for the bottom composer.
@@ -2188,10 +2214,146 @@ func (m chatTUI) hideComposer() bool {
 	return m.chooser != nil && !m.chooser.typing
 }
 
+// shouldFillTranscriptViewport keeps the first idle frame intrinsic instead of
+// painting a full-height blank canvas. The composer and its status rail still
+// render at their natural height; once a real transcript block or live turn
+// exists, the transcript takes the remaining terminal rows as a reading view.
+func (m chatTUI) shouldFillTranscriptViewport() bool {
+	if m.nativeScrollback {
+		return false
+	}
+	// Below the compact rail threshold there is no meaningful spare canvas to
+	// collapse; keeping the frame at terminal height prevents the header and
+	// input from being clipped by the alt-screen renderer.
+	if m.height > 0 && m.height <= compactTerminalRows {
+		return true
+	}
+	if m.renderMainManager() != "" {
+		return true
+	}
+	if m.state == tuiRunning || m.answerIdx >= 0 || m.reasoningLineIdx >= 0 || m.toolStreamIdx >= 0 {
+		return true
+	}
+	if m.isLaunchChromeOnlyTranscript() {
+		return false
+	}
+	return m.hasConversationTranscript()
+}
+
+func (m chatTUI) isLaunchChromeOnlyTranscript() bool {
+	if m.height <= 0 || !m.started || m.nativeScrollback {
+		return false
+	}
+	if m.renderMainManager() != "" {
+		return false
+	}
+	if m.completion.active || m.chooserTyping() {
+		return false
+	}
+	if m.state == tuiRunning || m.answerIdx >= 0 || m.reasoningLineIdx >= 0 || m.toolStreamIdx >= 0 {
+		return false
+	}
+	if len(m.transcriptSources) == 0 {
+		return false
+	}
+	for i, source := range m.transcriptSources {
+		switch source.kind {
+		case transcriptSourceBanner, transcriptSourceStartupNotice:
+			continue
+		case transcriptSourceReplayBundle, transcriptSourceReplayHistory:
+			if !replayHistoryHasVisibleContent(source.history) {
+				continue
+			}
+			return false
+		case transcriptSourceFixed:
+			if i < len(m.transcript) && strings.TrimSpace(ansi.Strip(m.transcript[i])) == "" {
+				continue
+			}
+			return false
+		default:
+			return false
+		}
+	}
+	for i := len(m.transcriptSources); i < len(m.transcript); i++ {
+		if strings.TrimSpace(ansi.Strip(m.transcript[i])) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func (m chatTUI) hasConversationTranscript() bool {
+	for i, source := range m.transcriptSources {
+		switch source.kind {
+		case transcriptSourceBanner, transcriptSourceStartupNotice:
+			// The launch identity is chrome, not conversation. It must not
+			// force an otherwise empty startup into a giant blank viewport.
+			continue
+		case transcriptSourceReplayBundle, transcriptSourceReplayHistory:
+			if replayHistoryHasVisibleContent(source.history) {
+				return true
+			}
+		default:
+			if i < len(m.transcript) && strings.TrimSpace(ansi.Strip(m.transcript[i])) != "" {
+				return true
+			}
+		}
+	}
+	// A few focused tests and recovery paths construct rendered transcript
+	// lines before their semantic source slice is populated. Treat those lines
+	// as real conversation rather than accidentally collapsing their viewport.
+	for i := len(m.transcriptSources); i < len(m.transcript); i++ {
+		if strings.TrimSpace(ansi.Strip(m.transcript[i])) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func replayHistoryHasVisibleContent(history []provider.Message) bool {
+	for _, msg := range history {
+		if msg.LocalOnly {
+			if strings.TrimSpace(msg.ReasoningContent) != "" ||
+				strings.TrimSpace(msg.Content) != "" ||
+				len(msg.ToolCalls) > 0 ||
+				msg.InterruptedTurn != nil {
+				return true
+			}
+			continue
+		}
+		switch msg.Role {
+		case provider.RoleUser:
+			if _, isSteer := agent.SteerText(msg.Content); isSteer {
+				return true
+			}
+			if strings.TrimSpace(control.StripComposePrefixes(msg.Content)) != "" {
+				return true
+			}
+		case provider.RoleAssistant:
+			if strings.TrimSpace(msg.ReasoningContent) != "" ||
+				strings.TrimSpace(msg.Content) != "" ||
+				len(msg.ToolCalls) > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // transcriptHeight is the row budget left for the transcript viewport once the
-// pinned bottom region is accounted for (at least one row).
+// persistent session header and pinned bottom region are accounted for.
 func (m chatTUI) transcriptHeight() int {
-	if h := m.height - m.bottomRows(); h > 1 {
+	if m.isLaunchChromeOnlyTranscript() {
+		available := m.height - m.sessionHeaderRowCount() - m.bottomRows()
+		if available <= 1 {
+			return 1
+		}
+		return min(available, m.launchStageHeight(max(m.width, 1)))
+	}
+	if !m.shouldFillTranscriptViewport() {
+		return 1
+	}
+	if h := m.height - m.sessionHeaderRowCount() - m.bottomRows(); h > 1 {
 		return h
 	}
 	return 1
@@ -3256,12 +3418,12 @@ func freshApprovalAllowsSession(toolName string) bool {
 }
 
 var (
-	// Input box: only top + bottom borders, no sides. The concrete colors are
-	// refreshed from the active CLI theme during startup.
-	inputBoxStyle    lipgloss.Style
-	todoPanelStyle   lipgloss.Style
-	statusBlockStyle lipgloss.Style
-	workingStyle     lipgloss.Style
+	// The composer surface is deliberately borderless. Its heading and hint row
+	// provide structure while semantic colors come from the active CLI theme.
+	composerInputStyle lipgloss.Style
+	todoPanelStyle     lipgloss.Style
+	statusBlockStyle   lipgloss.Style
+	workingStyle       lipgloss.Style
 )
 
 func (m chatTUI) cancelRequested() bool {
@@ -3307,6 +3469,7 @@ func (m chatTUI) runningWorkingLine(cancelRequested, styled bool) string {
 func (m chatTUI) View() tea.View {
 	if m.themeSweep != nil {
 		v := tea.NewView(m.themeSweep.render())
+		applyViewTheme(&v)
 		if !m.nativeScrollback {
 			v.AltScreen = true
 			if m.mouseCaptureOff {
@@ -3321,33 +3484,12 @@ func (m chatTUI) View() tea.View {
 	hideComposer := m.hideComposer()
 	shellMode := strings.HasPrefix(strings.TrimSpace(m.input.Value()), "!")
 	cancelRequested := m.cancelRequested()
-	var box string
+	var composer string
 	if !hideComposer {
-		style := inputBoxStyle.Width(boxW)
-		if shellMode {
-			style = withThemeBorderFG(style, statusShellColor)
-		}
-		box = style.Render(m.renderComposerInput())
+		composer = renderComposerChrome(m, boxW)
 	}
 
-	var modeTag string
-	if shellMode {
-		modeTag = modeTagStyle(statusShellColor, modeTagLight).Render("Shell")
-	} else {
-		background := statusAutoColor
-		foreground := modeTagDark
-		switch {
-		case m.ctrl.AutoApproveTools():
-			background = statusYoloColor
-			foreground = modeTagLight
-		case m.planMode:
-			background = statusPlanColor
-			foreground = modeTagLight
-		}
-		modeTag = modeTagStyle(background, foreground).Render(m.modeTagText())
-	}
-
-	primaryStatus := m.primaryStatusLine(modeTag, shellMode, cancelRequested)
+	primaryStatus := m.primaryStatusLine(shellMode, cancelRequested)
 	// The spinning "thinking…" indicator is its own line ABOVE the input box (shown
 	// only while a turn runs); the status/data rows stay below. This mirrors Claude
 	// Code: live progress over the composer, shortcuts + stats under it.
@@ -3413,37 +3555,57 @@ func (m chatTUI) View() tea.View {
 		parts = append(parts, footer)
 		rowsAboveBox += strings.Count(footer, "\n") + 1
 	}
-	statusBlock := m.renderStatusBlock(primaryStatus, boxW)
+	statusBlock := m.renderFrameStatusBlock(primaryStatus, boxW)
 	if !hideComposer {
 		if qi := m.renderQueueIndicator(); qi != "" {
 			parts = append(parts, qi)
 			rowsAboveBox += strings.Count(qi, "\n") + 1
 		}
-		parts = append(parts, box)
+		parts = append(parts, composer)
 	}
-	parts = append(parts, statusBlockStyle.Width(boxW).MaxWidth(boxW).Render(statusBlock))
+	if statusBlock != "" {
+		parts = append(parts, statusBlockStyle.Width(boxW).MaxWidth(boxW).Render(statusBlock))
+	}
 
 	if m.nativeScrollback {
-		v := tea.NewView(strings.Join(parts, "\n"))
+		content := strings.Join(parts, "\n")
+		if m.sessionHeaderRowCount() > 0 {
+			content = renderSessionHeader(m, boxW) + "\n" + content
+		}
+		v := tea.NewView(content)
+		applyViewTheme(&v)
 		if !hideComposer {
 			if cur := m.composerCursor(); cur != nil {
-				cur.X += 1
-				cur.Y += rowsAboveBox + 1
+				cur.X += composerCursorChromeOffset
+				cur.Y += m.sessionHeaderRowCount() + rowsAboveBox + 1
 				v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 			}
 		}
 		return v
 	}
 
-	// Full-screen frame: the transcript viewport on top (it pads to exactly its
-	// height), the pinned bottom region beneath. Alt-screen owns the grid, so
+	// Full-screen frame: persistent session chrome on top, the transcript
+	// viewport in the middle, and the pinned composer/status region beneath.
+	// Alt-screen owns the grid, so
 	// resize repaints cleanly — no scrollback reflow, no ghost borders.
+	naturalStartup := m.isNaturalStartupFrame()
 	mainArea := m.renderTranscript()
+	if naturalStartup {
+		mainArea = m.renderNaturalStartupTranscript(boxW, m.viewport.Height())
+	}
 	if card := m.renderMainManager(); card != "" {
 		mainArea = m.renderTranscriptWithMainManager(card)
 	}
-	v := tea.NewView(mainArea + "\n" + strings.Join(parts, "\n"))
-	v.AltScreen = true
+	content := mainArea + "\n" + strings.Join(parts, "\n")
+	if m.sessionHeaderRowCount() > 0 {
+		content = renderSessionHeader(m, boxW) + "\n" + content
+	}
+	if naturalStartup && m.height > 0 {
+		content = strings.TrimRight(content, "\n")
+	}
+	v := tea.NewView(content)
+	applyViewTheme(&v)
+	v.AltScreen = !naturalStartup
 	if m.mouseCaptureOff {
 		// Release the mouse to the terminal: native click-drag selection and
 		// right-click context menu work again, at the cost of the in-app
@@ -3454,17 +3616,114 @@ func (m chatTUI) View() tea.View {
 	}
 	// Anchor the real terminal cursor at the textarea's insertion point only when
 	// the composer is visible. input.Cursor() is relative to the textarea; offset
-	// by the viewport height + rows above + the box's top border row (+1 column
-	// for PaddingLeft). Clamp to terminal bounds so VS Code fullscreen / resize
+	// by the viewport height + rows above + the composer heading row (+1 column
+	// for its left padding). Clamp to terminal bounds so VS Code fullscreen / resize
 	// storms cannot leave the caret off-grid (#6282, #7236).
 	if !hideComposer {
 		if cur := m.composerCursor(); cur != nil {
-			cur.X += 1
-			cur.Y += m.viewport.Height() + rowsAboveBox + 1
+			cur.X += composerCursorChromeOffset
+			cur.Y += m.sessionHeaderRowCount() + m.viewport.Height() + rowsAboveBox + 1
 			v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 		}
 	}
 	return v
+}
+
+func (m chatTUI) renderNaturalStartupTranscript(width, height int) string {
+	width = max(width, 1)
+	height = max(height, 1)
+	var blocks []string
+	if width >= visibleWidth(approvedTaegeukgiRows[0]) {
+		blocks = append(blocks, renderLaunchArtwork(min(width, fullLaunchArtworkWidth)))
+	}
+	if tip := strings.TrimSpace(i18n.M.ChatTip); tip != "" {
+		blocks = append(blocks, ansi.Truncate(dim(tip), width, ""))
+	}
+	if missing := strings.TrimSpace(m.missing); missing != "" {
+		blocks = append(blocks, renderStartupWarning("! "+missing, width))
+	}
+	for i, source := range m.transcriptSources {
+		if source.kind != transcriptSourceStartupNotice {
+			continue
+		}
+		if i < len(m.transcript) && strings.TrimSpace(ansi.Strip(m.transcript[i])) != "" {
+			blocks = append(blocks, m.transcript[i])
+		} else if strings.TrimSpace(ansi.Strip(source.raw)) != "" {
+			blocks = append(blocks, source.raw)
+		}
+	}
+	if len(blocks) == 0 {
+		return strings.Repeat(" ", width)
+	}
+	return centerBlock(strings.Join(blocks, "\n"), width, height)
+}
+
+func (m chatTUI) launchStageHeight(width int) int {
+	width = max(width, 1)
+	rows := 1
+	if width >= visibleWidth(approvedTaegeukgiRows[0]) {
+		rows = strings.Count(renderLaunchArtwork(min(width, fullLaunchArtworkWidth)), "\n") + 1
+	}
+	if strings.TrimSpace(i18n.M.ChatTip) != "" {
+		rows++
+	}
+	if missing := strings.TrimSpace(m.missing); missing != "" {
+		rows += strings.Count(renderStartupWarning("! "+missing, width), "\n") + 1
+	}
+	for _, source := range m.transcriptSources {
+		if source.kind == transcriptSourceStartupNotice && strings.TrimSpace(ansi.Strip(source.raw)) != "" {
+			rows += strings.Count(source.raw, "\n") + 1
+		}
+	}
+	return min(max(rows, 8), launchStageMaxRows)
+}
+
+func centerBlock(block string, width, height int) string {
+	width = max(width, 1)
+	height = max(height, 1)
+	lines := strings.Split(strings.TrimRight(block, "\n"), "\n")
+	if len(lines) > height {
+		lines = lines[len(lines)-height:]
+	}
+	topPad := max((height-len(lines))/2, 0)
+	rows := make([]string, 0, height)
+	blank := strings.Repeat(" ", width)
+	for range topPad {
+		rows = append(rows, blank)
+	}
+	for _, line := range lines {
+		rows = append(rows, centerLine(line, width))
+	}
+	for len(rows) < height {
+		rows = append(rows, blank)
+	}
+	return strings.Join(rows, "\n")
+}
+
+func centerLine(line string, width int) string {
+	width = max(width, 1)
+	line = ansi.Truncate(line, width, "")
+	left := max((width-visibleWidth(line))/2, 0)
+	right := max(width-left-visibleWidth(line), 0)
+	return strings.Repeat(" ", left) + line + strings.Repeat(" ", right)
+}
+
+func renderStartupWarning(text string, width int) string {
+	width = max(width, 1)
+	wrapped := ansi.Hardwrap(strings.TrimSpace(text), width, false)
+	lines := strings.Split(wrapped, "\n")
+	for i, line := range lines {
+		lines[i] = themeFg(activeCLITheme.warn, line)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func applyViewTheme(view *tea.View) {
+	if view == nil || !colorOn() {
+		return
+	}
+	view.ForegroundColor = themeLipColor(activeCLITheme.strong)
+	view.BackgroundColor = themeLipColor(activeCLITheme.background)
 }
 
 // clampCursorToTerminal keeps the reported caret inside [0,w) × [0,h).
@@ -3887,21 +4146,12 @@ func wrapStatusLine(s string, width int) string {
 // bottomRows().
 // Use the same width (m.width) that View() passes to wrapStatusLine.
 func (m chatTUI) computeStatusLineCount(width int) int {
-	if m.ctrl == nil {
-		return 3 // two information rows plus their divider
-	}
 	shellMode := strings.HasPrefix(strings.TrimSpace(m.input.Value()), "!")
 	cancelRequested := m.cancelRequested()
 
-	// Replicate the first status line (mode tag + state) from View().
-	// ModeTag is rendered with Padding(0,1) in View() — add the same padding
-	// here so the visible width matches exactly.
-	modeTag := " " + m.modeTagText() + " "
-	if shellMode {
-		modeTag = " Shell "
-	}
-	primaryStatus := m.primaryStatusLine(modeTag, shellMode, cancelRequested)
-	statusBlock := m.renderStatusBlock(primaryStatus, width)
+	// Replicate the operational interaction line from View().
+	primaryStatus := m.primaryStatusLine(shellMode, cancelRequested)
+	statusBlock := m.renderFrameStatusBlock(primaryStatus, width)
 
 	// Replicate the working (spinner) line from View(), shown only while a turn runs.
 	working := m.runningWorkingLine(cancelRequested, false)
@@ -3912,7 +4162,9 @@ func (m chatTUI) computeStatusLineCount(width int) int {
 		// working (spinner) line — wraps independently of the status block below.
 		lines += strings.Count(wrapStatusLine(working, width), "\n") + 1
 	}
-	lines += strings.Count(statusBlock, "\n") + 1
+	if statusBlock != "" {
+		lines += strings.Count(statusBlock, "\n") + 1
+	}
 	return lines
 }
 
@@ -3922,8 +4174,8 @@ func (m chatTUI) computeStatusLineCount(width int) int {
 const maxInputRows = 8
 
 const (
-	composerBorderRows = 2
-	minTranscriptRows  = 3
+	composerChromeRows = 2
+	minTranscriptRows  = 1
 )
 const foldedPasteMinChars = 1000
 const foldedPasteMinLines = 5
@@ -3949,19 +4201,21 @@ func (m chatTUI) inputHeightLimit() int {
 	}
 
 	limit := maxInputRows
-	// Match the bounded-composer convention used by other coding TUIs: borders
-	// are part of the half-screen budget, not extra rows added afterward.
-	halfScreen := max(1, m.height/2-composerBorderRows)
+	composerRows := m.composerRowCount()
+	decorativeRows := max(composerRows-m.input.Height(), composerChromeRows)
+	// The heading and hint row are part of the half-screen budget, not extra rows
+	// added afterward.
+	halfScreen := max(1, m.height/2-decorativeRows)
 	limit = min(limit, halfScreen)
 
 	// bottomRows includes the current composer. Remove it to get the fixed
-	// panels/status budget, then reserve the input borders and a readable slice
+	// panels/status budget, then reserve the composer chrome and a readable slice
 	// of transcript. On extremely short terminals one editable row still wins.
 	fixedBottomRows := m.bottomRows()
 	if !m.hideComposer() {
-		fixedBottomRows -= m.input.Height() + composerBorderRows
+		fixedBottomRows -= composerRows
 	}
-	available := max(1, m.height-fixedBottomRows-composerBorderRows-minTranscriptRows)
+	available := max(1, m.height-m.sessionHeaderRowCount()-fixedBottomRows-decorativeRows-minTranscriptRows)
 	return max(1, min(limit, available))
 }
 
@@ -4103,7 +4357,7 @@ func (m *chatTUI) toggleVerboseReasoning(notify bool) {
 		_ = m.cfg.SetShowReasoning(m.showReasoning)
 		path := config.SourcePath()
 		if path == "" {
-			path = "reasonix.toml"
+			path = "patty.toml"
 		}
 		saveErr = config.EditConfigFile(path, func(cfg *config.Config) error {
 			return cfg.SetShowReasoning(m.showReasoning)
@@ -4123,7 +4377,7 @@ func (m *chatTUI) toggleVerboseReasoning(notify bool) {
 	}
 }
 
-// toggleMouseCapture flips whether Reasonix owns the mouse. It's session-only
+// toggleMouseCapture flips whether Patty Code owns the mouse. It's session-only
 // (unlike /verbose, this accommodates the terminal/multiplexer at hand rather
 // than recording a lasting preference) — mirrors nativeScrollback, which is
 // likewise never persisted to config. Clears any in-app selection/scrollbar
@@ -4382,7 +4636,12 @@ func (m *chatTUI) ingestEvent(e event.Event) {
 			glyph = "!"
 		}
 		m.finalizeStreamed()
-		m.commitLine(fmt.Sprintf("  %s %s", glyph, e.Text))
+		notice := fmt.Sprintf("  %s %s", glyph, e.Text)
+		if m.isLaunchDiagnosticNotice(e.Text) {
+			m.commitTranscriptSource(transcriptSource{kind: transcriptSourceStartupNotice, raw: renderNoticeLine(glyph, e.Text)})
+		} else {
+			m.commitLine(notice)
+		}
 
 	case event.GuardianAssessment:
 		m.finalizeStreamed()
@@ -4504,6 +4763,13 @@ func (m *chatTUI) ingestEvent(e event.Event) {
 	}
 }
 
+func (m chatTUI) isLaunchDiagnosticNotice(text string) bool {
+	if !isStartupDiagnosticNotice(text) {
+		return false
+	}
+	return m.state == tuiIdle && m.answerIdx < 0 && m.reasoningLineIdx < 0 && m.toolStreamIdx < 0
+}
+
 // finalizeStreamed freezes any in-progress reasoning + answer into scrollback so
 // a following event line lands after them, preserving chronological order.
 func (m *chatTUI) finalizeStreamed() {
@@ -4557,8 +4823,7 @@ func (m *chatTUI) runSlashCommand(input string) tea.Cmd {
 		m.echoLocalCommand(input)
 		m.finalizeStreamed()
 		m.clearTranscriptDisplay()
-		m.commitLine(strings.TrimRight(
-			renderTUIBanner(m.label, "", transcriptContentWidth(m.width, m.nativeScrollback)), "\n"))
+		m.commitTranscriptSource(transcriptSource{kind: transcriptSourceBanner})
 		m.transcriptDirty = true
 		m.forceGotoBottom = true
 		m.notice(i18n.M.SlashClsDone)
@@ -4785,9 +5050,6 @@ func (m *chatTUI) showStatusDetails() {
 			lines = append(lines, "  context    "+tag)
 		}
 	}
-	if tag := m.workModeTag(); tag != "" {
-		lines = append(lines, "  profile    "+tag)
-	}
 	if m.effortLevel != "" {
 		// The persistent footer uses an uppercase semantic label. The expanded
 		// diagnostic view keeps its sentence-like wording for readability.
@@ -4816,7 +5078,7 @@ func (m *chatTUI) showStatusDetails() {
 	m.commitLine(strings.Join(lines, "\n"))
 }
 
-// activeConfigTag names the config file actually in effect. A ./reasonix.toml
+// activeConfigTag names the config file actually in effect. A ./patty.toml
 // outranks the user-global file, so a session started in a directory holding
 // one silently ignores global edits unless the source is visible (#3317).
 func activeConfigTag() string {
@@ -4969,7 +5231,7 @@ func (m *chatTUI) runExportCommand(input string) {
 	}
 
 	var b strings.Builder
-	b.WriteString("# reasonix session\n\n")
+	b.WriteString("# patcode session\n\n")
 	lastRole := provider.Role("")
 	exportedMessages := 0
 	for _, msg := range msgs {
@@ -5038,7 +5300,7 @@ func (m *chatTUI) echoLocalCommand(input string) {
 	if input == "" {
 		return
 	}
-	m.commitLine(dim("  › " + input))
+	m.commitTranscriptSource(transcriptSource{kind: transcriptSourceUser, raw: input})
 }
 
 // commandNames renders the custom command list for /help, "" when there are none.
@@ -5182,8 +5444,8 @@ func (m *chatTUI) notice(note string) {
 }
 
 // showRemoteHosts renders a read-only summary of configured remote hosts. The
-// remote session lives in a `reasonix serve` on the remote host, so connecting
-// happens from a terminal (`reasonix remote connect`), not inside this chat.
+// remote session lives in a `patcode serve` on the remote host, so connecting
+// happens from a terminal (`patcode remote connect`), not inside this chat.
 func (m *chatTUI) showRemoteHosts() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -5205,7 +5467,7 @@ func (m *chatTUI) showRemoteHosts() {
 		}
 		fmt.Fprintf(&b, "  · %s  %s\n", h.Name, target)
 	}
-	fmt.Fprintf(&b, "  run `reasonix remote connect <name>` in a terminal to open the remote workspace")
+	fmt.Fprintf(&b, "  run `patcode remote connect <name>` in a terminal to open the remote workspace")
 	m.commitLine(dim(b.String()))
 }
 
@@ -5299,18 +5561,6 @@ func interruptedTurnDisplayNotice() string {
 	return i18n.M.InterruptedRecovery
 }
 
-// renderTUIBanner is the title + tip + optional missing-key warning printed once
-// at the top of the session.
-func renderTUIBanner(label, missing string, width int) string {
-	var b strings.Builder
-	b.WriteString(accent("◆") + " " + bold("reasonix") + "  " + dim("· "+label) + "\n")
-	b.WriteString(dim("  "+i18n.M.ChatTip) + "\n")
-	if missing != "" {
-		b.WriteString(wrapForViewport("  ! "+missing, width, activeCLITheme.warn) + "\n")
-	}
-	return b.String()
-}
-
 // wrapForViewport hard-wraps text to fit width columns and colours every line.
 func wrapForViewport(text string, width int, fg cliColor) string {
 	if width <= 0 {
@@ -5319,22 +5569,25 @@ func wrapForViewport(text string, width int, fg cliColor) string {
 	return themeStyle(fg).Width(width).Render(text)
 }
 
-// renderUserBubble renders the just-submitted prompt as a transcript line. Keep
-// it visually lighter than the real bottom composer so a fresh session does not
-// look like it has a second input box in the transcript.
+// renderUserBubble renders the submitted prompt as a compact timeline node.
+// Its rail shares the assistant geometry, making the conversation scan as a
+// vertical flow without recreating the bordered composer in scrollback.
 func renderUserBubble(line string, width int, planMode bool) string {
 	line = displayLineForImageRefs(line)
-	prefix := "› "
+	indent, rail, bodyWidth := transcriptTimelineLayout(max(width, 1))
+	label := i18n.M.ChatUserLabel
 	if planMode {
-		prefix = "› [plan] "
+		label += " · " + i18n.M.ChatPlanLabel
 	}
-	if !colorOn() {
-		return "│ " + prefix + line
+	header := ansi.Truncate(indent+themeFg(activeCLITheme.signal, "●")+" "+themeStyle(activeCLITheme.strong).Bold(true).Render(label), max(width, 1), "")
+	if line == "" {
+		return header
 	}
-	return "  " + accent(prefix+line)
+	body := ansi.Hardwrap(line, bodyWidth, true)
+	return header + "\n" + railTranscriptBlock(body, rail)
 }
 
-var cliImageRefRe = regexp.MustCompile(`(?:^|\s)@\.reasonix/attachments/clipboard-\d{8}-\d{6}\.\d+(?:-(?:\d{6}|[a-f0-9]{8}))?\.(?:png|jpg|jpeg|gif|webp)`)
+var cliImageRefRe = regexp.MustCompile(`(?:^|\s)@\.patty/attachments/clipboard-\d{8}-\d{6}\.\d+(?:-(?:\d{6}|[a-f0-9]{8}))?\.(?:png|jpg|jpeg|gif|webp)`)
 
 func displayLineForImageRefs(line string) string {
 	idx := 0

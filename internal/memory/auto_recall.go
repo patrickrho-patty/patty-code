@@ -10,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"reasonix/internal/retrieval"
+	"patty/internal/retrieval"
 )
 
 const (
@@ -29,18 +29,12 @@ const autoRecallPreamble = "Automatically recalled low-authority background fact
 
 var localHomePath = regexp.MustCompile(`(?i)(?:[a-z]:[\\/](?:users|documents and settings)[\\/][^\\/\s]+|/(?:users|home)/[^/\s]+)`)
 
-// RecallOptions bounds automatic host-side recall. Zero values select
-// conservative defaults; Now exists so freshness behavior is deterministic in
-// tests and diagnostics.
 type RecallOptions struct {
 	Limit    int
 	MaxChars int
 	Now      time.Time
 }
 
-// RecallHit is one provider-visible fact plus the explanation needed by context
-// diagnostics. Path is deliberately absent so provider prompts cannot expose
-// machine-local directory names.
 type RecallHit struct {
 	Memory    Memory
 	Score     float64
@@ -49,8 +43,6 @@ type RecallHit struct {
 	Snippet   string
 }
 
-// RecallResult records both the selected facts and the budget decision. Block
-// returns the exact provider-visible suffix assembled by AutoRecall.
 type RecallResult struct {
 	Query      string
 	Hits       []RecallHit
@@ -64,16 +56,12 @@ type RecallResult struct {
 
 func (r RecallResult) Block() string { return r.block }
 
-// Override explains one project fact that shadows an equivalent global fact
-// during automatic recall. Both facts remain visible to management surfaces.
 type Override struct {
 	Project Memory
 	Global  Memory
 	Key     string
 }
 
-// FindOverrides returns the project-over-global decisions used by automatic
-// recall without changing the legacy List behavior.
 func FindOverrides(all []Memory) []Override {
 	projects := map[string]Memory{}
 	for _, fact := range all {
@@ -113,8 +101,6 @@ func FindOverrides(all []Memory) []Override {
 	return out
 }
 
-// FreshnessFor exposes the same type-aware freshness classification used by
-// automatic recall to local management and diagnostic surfaces.
 func FreshnessFor(fact Memory, now time.Time) string {
 	return memoryFreshness(fact, now)
 }
@@ -126,9 +112,6 @@ type autoRecallDoc struct {
 	length int
 }
 
-// AutoRecall conservatively selects saved facts for a real user turn. It is
-// intentionally stricter than the explicit memory search tool: generic prompts
-// and one-common-word matches return no block rather than spending context.
 func AutoRecall(store Store, query string, opts RecallOptions) RecallResult {
 	result := RecallResult{Query: strings.TrimSpace(query), CharBudget: recallCharBudget(opts.MaxChars)}
 	queryTerms, err := retrieval.QueryTerms(result.Query)
@@ -250,7 +233,7 @@ func recallLimit(value int) int {
 func genericRecallQuery(query string) bool {
 	normalized := strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(query)), " "))
 	switch normalized {
-	case "continue", "please continue", "go on", "next", "ok", "okay", "yes", "no", "继续", "好的", "好", "是", "否", "下一步":
+	case "continue", "please continue", "go on", "next", "ok", "okay", "yes", "no", "계속", "좋습니다", "좋음", "예", "아니오", "다음 단계":
 		return true
 	default:
 		return false

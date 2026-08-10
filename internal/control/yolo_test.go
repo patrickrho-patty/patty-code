@@ -7,16 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/permission"
-	"reasonix/internal/provider"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/permission"
+	"patty/internal/provider"
+	"patty/internal/sandbox"
+	"patty/internal/tool"
 )
 
-// TestAutoApproveToolsStillRequiresExplicitPlanApproval proves that YOLO/full
-// tool access does not bypass the separate Plan Mode collaboration gate.
+// TestAutoApproveToolsStillRequiresExplicitPlanApproval proves that YOLOfull
 func TestAutoApproveToolsStillRequiresExplicitPlanApproval(t *testing.T) {
 	prov := &scriptedTurns{turns: [][]provider.Chunk{
 		textTurn("Plan:\n1. Add the config field\n2. Wire it into boot\n3. Add tests"),
@@ -43,7 +42,7 @@ func TestAutoApproveToolsStillRequiresExplicitPlanApproval(t *testing.T) {
 	c.SetAutoApproveTools(true)
 	c.SetPlanMode(true)
 
-	input := "实现 issue #2395：新增配置项、自动判断复杂任务、补测试和文档"
+	input := "issue #2395 구현: 설정 항목 추가, 복잡한 작업 자동 판단, 테스트와 문서 보완"
 	done := make(chan error, 1)
 	go func() { done <- c.runTurnWithRaw(context.Background(), input, input) }()
 
@@ -87,9 +86,6 @@ func TestAutoApproveToolsStillRequiresExplicitPlanApproval(t *testing.T) {
 	}
 }
 
-// TestRequestApprovalHonorsAutoApproveTools guards the underlying gate: ordinary
-// tool approvals must return allow immediately without emitting anything under
-// tool auto-approval.
 func TestRequestApprovalHonorsAutoApproveTools(t *testing.T) {
 	var approvalRequested bool
 	c := New(Options{
@@ -220,7 +216,6 @@ func TestToolApprovalModeYoloForcesMemoryAskRules(t *testing.T) {
 			t.Fatalf("%s under yolo mode = %v, want ask", toolName, got)
 		}
 	}
-	// Verify that regular tools ARE auto-allowed in YOLO (sanity check).
 	if got := gate.Policy.Decide("bash", false, json.RawMessage(`{"command":"go test ./..."}`)); got != permission.Allow {
 		t.Fatalf("regular tool under yolo mode = %v, want allow", got)
 	}
@@ -420,9 +415,7 @@ func TestPlanApprovalIgnoresAutoApproveTools(t *testing.T) {
 	}
 }
 
-// TestSetAutoApproveToolsAllowsPendingApproval covers the desktop case where the
-// approval card is already visible, then the user switches to YOLO/full access.
-// Turning tool auto-approval on must unblock that pending tool gate too.
+// approval card is already visible, then the user switches to YOLOfull access.
 func TestSetAutoApproveToolsAllowsPendingApproval(t *testing.T) {
 	c, ids, _ := approvalIDs()
 
@@ -693,9 +686,6 @@ func TestSetAutoApproveToolsDoesNotDrainPendingMemoryApproval(t *testing.T) {
 	}
 }
 
-// TestSetModeYoloDrainsPendingApproval is the SetMode-path twin of the
-// SetAutoApproveTools case: applying YOLO atomically must also unblock an
-// approval already waiting.
 func TestSetModeYoloDrainsPendingApproval(t *testing.T) {
 	c, ids, _ := approvalIDs()
 
@@ -723,9 +713,6 @@ func TestSetModeYoloDrainsPendingApproval(t *testing.T) {
 	}
 }
 
-// TestSetModeAppliesBothGates checks SetMode sets plan and tool auto-approval
-// together so the composer never has to sequence two calls and risk a
-// half-applied window.
 func TestSetModeAppliesBothGates(t *testing.T) {
 	c, _, _ := approvalIDs()
 
@@ -947,7 +934,7 @@ func TestBypassDoesNotAutoAnswerAsk(t *testing.T) {
 	done := askController(t, c, sampleAskQuestions())
 	ask := waitAskRequest(t, askCh)
 
-	// Even with bypass/YOLO on, Ask must wait for the user's non-default choice.
+// Even with bypass/YOLO on, Ask must wait for the user's non-default choice.
 	c.AnswerQuestion(ask.ID, userAnswers)
 	result := waitAskResult(t, done)
 	assertAskAnswers(t, result.answers, userAnswers)
@@ -984,8 +971,7 @@ func TestAskPromptsAcrossInteractiveModes(t *testing.T) {
 			done := askController(t, c, sampleAskQuestions())
 			ask := waitAskRequest(t, askCh)
 
-			// Answer with non-recommended options to prove this is the user's
-			// selection, not an automatic recommended-option fallback.
+// Answer with non-recommended options to prove this is the users
 			c.AnswerQuestion(ask.ID, userAnswers)
 			result := waitAskResult(t, done)
 			assertAskAnswers(t, result.answers, userAnswers)
@@ -1097,8 +1083,6 @@ func TestAskSerializesBehindPromptLockEvenWithAutoApproveTools(t *testing.T) {
 	}()
 	<-started
 
-	// Give the goroutine a chance to reach promptMu, then prove it did not emit
-	// AskRequest while another prompt owns the user-decision slot.
 	time.Sleep(20 * time.Millisecond)
 	select {
 	case ask := <-askCh:
@@ -1106,7 +1090,6 @@ func TestAskSerializesBehindPromptLockEvenWithAutoApproveTools(t *testing.T) {
 	default:
 	}
 
-	// Enable tool auto-approval while Ask is queued behind promptMu.
 	c.SetAutoApproveTools(true)
 	select {
 	case ask := <-askCh:
@@ -1114,7 +1097,7 @@ func TestAskSerializesBehindPromptLockEvenWithAutoApproveTools(t *testing.T) {
 	default:
 	}
 
-	// Release the lock — Ask proceeds but must still emit an AskRequest.
+// Release the lock  Ask proceeds but must still emit an AskRequest.
 	c.approval.promptMu.Unlock()
 
 	var ask event.Ask
@@ -1174,8 +1157,6 @@ func TestAskSerializesBehindPromptLockEvenWithBypass(t *testing.T) {
 		done <- answers
 	}()
 
-	// Give the goroutine a chance to reach promptMu, then prove it did not emit
-	// AskRequest while another prompt owns the user-decision slot.
 	time.Sleep(20 * time.Millisecond)
 	select {
 	case ask := <-askCh:
@@ -1183,12 +1164,10 @@ func TestAskSerializesBehindPromptLockEvenWithBypass(t *testing.T) {
 	default:
 	}
 
-	// Enable bypass while Ask is queued behind promptMu.
 	c.SetBypass(true)
-	// Release the lock — Ask proceeds but must still emit an AskRequest.
+// Release the lock  Ask proceeds but must still emit an AskRequest.
 	c.approval.promptMu.Unlock()
 
-	// Post-unlock assertion: Ask must emit AskRequest now that it holds the lock.
 	var ask event.Ask
 	select {
 	case err := <-errs:
@@ -1198,7 +1177,7 @@ func TestAskSerializesBehindPromptLockEvenWithBypass(t *testing.T) {
 		t.Fatal("Ask did not emit AskRequest after acquiring promptMu with bypass on; bypass should not suppress ask")
 	}
 
-	// Answer and verify we get the user's choice.
+// Answer and verify we get the users choice.
 	c.AnswerQuestion(ask.ID, []event.AskAnswer{
 		{QuestionID: "q1", Selected: []string{"Alternative"}},
 	})
@@ -1216,11 +1195,7 @@ func TestAskSerializesBehindPromptLockEvenWithBypass(t *testing.T) {
 	}
 }
 
-// TestApplyToolApprovalModeReportsDrainedIDs pins the drain-report contract
-// the desktop frontend relies on (#6432): a posture switch returns exactly
-// the pending approval ids it auto-allowed, so the UI dismisses those cards
-// and keeps the ones still pending here. Fresh user decisions (plan) never
-// drain, and auto keeps approvals an allow policy would not cover.
+// the desktop frontend relies on (6432): a posture switch returns exactly
 func TestApplyToolApprovalModeReportsDrainedIDs(t *testing.T) {
 	c := New(Options{
 		Policy: permission.New("ask", nil, []string{"bash(git commit*)"}, nil),
@@ -1261,7 +1236,6 @@ func TestApplyToolApprovalModeReportsDrainedIDs(t *testing.T) {
 		t.Fatal("yolo-drained approval reply not signaled")
 	}
 
-	// The fresh plan decision survives both switches and stays pending.
 	select {
 	case <-planReply:
 		t.Fatal("fresh plan approval must never drain on a posture switch")

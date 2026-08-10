@@ -23,13 +23,13 @@ DESKTOP="$ROOT/desktop"
 INSTALLER_DIR="$DESKTOP/build/windows/installer"
 BIN_DIR="$DESKTOP/build/bin"
 DIST="$ROOT/dist"
-APPNAME="Reasonix"
-BINNAME="reasonix-desktop"
-GUARDNAME="reasonix-guard"
-LAUNCHERNAME="reasonix-launcher"
-UPDATE_HELPER="reasonix-update-helper.exe"
-WINDOWS_CLINAME="reasonix-cli"
-PAYLOAD_MANIFEST="reasonix-payload.json"
+APPNAME="Patty Code"
+BINNAME="patty-desktop"
+GUARDNAME="patty-code-guard"
+LAUNCHERNAME="patty-code-launcher"
+UPDATE_HELPER="patty-code-update-helper.exe"
+WINDOWS_CLINAME="patty-code-cli"
+PAYLOAD_MANIFEST="patty-code-payload.json"
 PAYLOAD_SIGNATURE="$PAYLOAD_MANIFEST.minisig"
 
 [ -d "$payload_input" ] || { echo "Windows payload directory is missing: $payload_input" >&2; exit 1; }
@@ -41,7 +41,7 @@ required_payload=(
 	"$LAUNCHERNAME.exe"
 	"$UPDATE_HELPER"
 	"$WINDOWS_CLINAME.exe"
-	"reasonix-uninstall.exe"
+	"patty-code-uninstall.exe"
 )
 for name in "${required_payload[@]}"; do
 	[ -s "$PAYLOAD/$name" ] || { echo "Windows payload file is missing or empty: $name" >&2; exit 1; }
@@ -61,7 +61,7 @@ if [ "$manifest_present" != "$signature_present" ]; then
 	echo "Windows payload manifest and signature must be provided together" >&2
 	exit 1
 fi
-if [ "${REASONIX_REQUIRE_PAYLOAD_MANIFEST:-0}" = "1" ] && [ "$manifest_present" != "1" ]; then
+if [ "${PATTY_CODE_REQUIRE_PAYLOAD_MANIFEST:-0}" = "1" ] && [ "$manifest_present" != "1" ]; then
 	echo "signed Windows packaging requires $PAYLOAD_MANIFEST and $PAYLOAD_SIGNATURE" >&2
 	exit 1
 fi
@@ -98,7 +98,7 @@ if command -v cygpath >/dev/null 2>&1; then
 fi
 binary_define="ARG_WAILS_AMD64_BINARY"
 [ "$arch" = arm64 ] && binary_define="ARG_WAILS_ARM64_BINARY"
-uninstaller_path="$PAYLOAD/reasonix-uninstall.exe"
+uninstaller_path="$PAYLOAD/patty-code-uninstall.exe"
 if command -v cygpath >/dev/null 2>&1; then
 	uninstaller_path="$(cygpath -w "$uninstaller_path")"
 fi
@@ -106,7 +106,7 @@ fi
 	cd "$INSTALLER_DIR"
 	makensis \
 		"-D${binary_define}=${binary_path}" \
-		"-DARG_REASONIX_SIGNED_UNINSTALLER=${uninstaller_path}" \
+		"-DARG_PATTY_CODE_SIGNED_UNINSTALLER=${uninstaller_path}" \
 		project.nsi
 )
 

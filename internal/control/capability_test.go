@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/capability"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/capability"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 type capabilityRecordingRunner struct {
@@ -73,14 +73,14 @@ func TestRunInjectsCapabilityRouteForRelevantSkill(t *testing.T) {
 		Registry: reg,
 	})
 
-	if err := c.Run(context.Background(), "帮我看看这段代码有没有问题"); err != nil {
+	if err := c.Run(context.Background(), "이 코드에 문제가 있는지 검토해 주세요"); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if !strings.Contains(runner.input, `<capability-route version="1">`) ||
 		!strings.Contains(runner.input, "skill:review prefer") {
 		t.Fatalf("input missing capability route:\n%s", runner.input)
 	}
-	if got := StripComposePrefixes(runner.input); got != "帮我看看这段代码有没有问题" {
+	if got := StripComposePrefixes(runner.input); got != "이 코드에 문제가 있는지 검토해 주세요" {
 		t.Fatalf("StripComposePrefixes = %q", got)
 	}
 }

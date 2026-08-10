@@ -1,5 +1,5 @@
 {
-  "name": "reasonix-accounts",
+  "name": "patty-code-accounts",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,8 +7,8 @@
     "deploy": "wrangler deploy",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "db:apply:local": "wrangler d1 migrations apply reasonix-accounts --local",
-    "db:apply:remote": "wrangler d1 migrations apply reasonix-accounts --remote"
+    "db:apply:local": "wrangler d1 migrations apply patty-code-accounts --local",
+    "db:apply:remote": "wrangler d1 migrations apply patty-code-accounts --remote"
   },
   "dependencies": {
     "hono": "^4.12.34",

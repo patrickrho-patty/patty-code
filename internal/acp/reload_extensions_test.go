@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/command"
-	"reasonix/internal/control"
+	"patty/internal/command"
+	"patty/internal/control"
 )
 
 // reloadFactory wraps configurableFactory with the SessionRebuilder seam the

@@ -4,19 +4,12 @@ import (
 	"sort"
 	"strings"
 
-	"reasonix/internal/tool"
+	"patty/internal/tool"
 )
 
-// Built-in skills ship with Reasonix and back the dedicated subagent tools
-// (explore / research / review / security_review) plus inline playbooks such as
-// test. A user/project file with the same name overrides the
-// built-in (see Store.List / Store.Read). Tool names in the bodies match
-// internal/tool/builtin.
 
-// negativeClaimRule keeps subagents honest about "found nothing" answers.
 const negativeClaimRule = `When you claim something does NOT exist (no caller, no usage, not implemented), say which searches you ran to reach that conclusion — a negative claim is only as trustworthy as the search behind it.`
 
-// tuiFormatting nudges concise, terminal-friendly output.
 const tuiFormatting = `Keep the final answer compact and terminal-friendly: short paragraphs or bullets, no walls of text, no restating the question.`
 
 const optionalCodeGraphHint = `Optional installed code graph MCP tools are available in this session. Choose the semantic tool that fits the task: use LSP for language semantics (definitions, references, hover, diagnostics), use code graph tools first for call graph, impact analysis, and architecture relationships, use code_index only as the built-in outline/definition-candidate fallback, and verify textual or negative claims with read_file or grep.`
@@ -63,7 +56,7 @@ Your final answer:
 
 The 'task' the parent gave you is the research question. Stay on it.`
 
-const builtinInstallCapabilityBody = `This skill is INLINED. Use it when the user asks to install a Reasonix MCP server or skill from a URL, local file, local folder, .mcp.json, or package name. For removing a previously installed skill or MCP server, follow the "Uninstall" rules at the bottom — same tool, different op.
+const builtinInstallCapabilityBody = `This skill is INLINED. Use it when the user asks to install a patty MCP server or skill from a URL, local file, local folder, .mcp.json, or package name. For removing a previously installed skill or MCP server, follow the "Uninstall" rules at the bottom — same tool, different op.
 
 Operate as an installer, not as a shell-script guesser:
 1. Extract the source string exactly from the user's request. It may be an https URL, GitHub URL, local path, .mcp.json, executable path, or npm package name.
@@ -170,7 +163,7 @@ Lead each turn with a one-line status (e.g. "▸ running go test ./… ", "▸ 2
 const builtinInitBody = `This skill is INLINED — you run in the parent loop. The user invoked /init: bootstrap (or refresh) this project's AGENTS.md — the durable memory file folded into every future session. Analyze the codebase, then write a concise, high-signal AGENTS.md.
 
 How to operate:
-1. Check for an existing memory doc first: list the project root and look for AGENTS.md / REASONIX.md / CLAUDE.md. If one exists, read it and IMPROVE it in place (fix stale facts, fill gaps) — write back to that same filename, don't clobber it wholesale or create a second file.
+1. Check for an existing memory doc first: list the project root and look for AGENTS.md / PATTY_CODE.md / CLAUDE.md. If one exists, read it and IMPROVE it in place (fix stale facts, fill gaps) — write back to that same filename, don't clobber it wholesale or create a second file.
 2. Explore enough to be accurate, not exhaustive:
    - Project shape: ls / directory listing, the manifest (go.mod, package.json, pyproject.toml, Cargo.toml, …), the README.
    - Build / test / run commands: derive them from the manifest + scripts and verify the exact names — don't guess.
@@ -190,8 +183,6 @@ Rules:
 - Don't fabricate conventions the code doesn't demonstrate.
 - After writing, summarize in one or two lines what you captured and tell the user to review and edit it.`
 
-// CodeGraphReadTools returns read-only tool names that look like an installed
-// codegraph MCP surface. Writable or untrusted tools stay out of subagents.
 func CodeGraphReadTools(reg *tool.Registry) []string {
 	if reg == nil {
 		return nil
@@ -240,9 +231,6 @@ func withOptionalCodeGraphHint(body string, enabled bool) string {
 	return body + "\n\n" + optionalCodeGraphHint
 }
 
-// WithCodeGraphTools enables user-installed codegraph MCP tools for built-in
-// code-reading subagent skills. The caller passes names discovered from its live
-// registry so desktop tabs/sessions never share mutable skill state.
 func WithCodeGraphTools(sk Skill, names []string) Skill {
 	names = normalizeExtraToolNames(names)
 	if len(names) == 0 || sk.Scope != ScopeBuiltin || !codeReadingBuiltin(sk.Name) {
@@ -278,13 +266,8 @@ func appendUniqueToolNames(base []string, extra ...string) []string {
 	return out
 }
 
-// builtinSkills returns the shipped skills. A fresh slice each call so callers
-// can't mutate the shared set.
 func builtinSkills() []Skill {
 	readCodeTools := []string{"read_file", "ls", "glob", "grep", "code_index"}
-	// use_capability is the stable MCP proxy for strict review children: they
-	// never inherit direct mcp__* schemas, so the proxy must be allowlisted or
-	// review/security-review cannot discover authorized read-only MCP readers.
 	reviewTools := append(append([]string(nil), readCodeTools...), "bash", "use_capability")
 	base := []Skill{
 		{
@@ -294,7 +277,7 @@ func builtinSkills() []Skill {
 			Scope:       ScopeBuiltin,
 			Path:        "(builtin)",
 			RunAs:       RunInline,
-			Triggers:    []string{"agents.md", "initialize project", "bootstrap project", "初始化项目", "项目记忆", "生成 agents.md"},
+			Triggers:    []string{"agents.md", "initialize project", "bootstrap project", "프로젝트 초기화", "프로젝트메모리", "agents.md 생성"},
 			AutoUse:     "suggest",
 		},
 		{
@@ -305,7 +288,7 @@ func builtinSkills() []Skill {
 			Path:         "(builtin)",
 			RunAs:        RunSubagent,
 			AllowedTools: append([]string(nil), readCodeTools...),
-			Triggers:     []string{"how does", "find all", "architecture", "callers", "references", "impact analysis", "代码架构", "怎么实现", "如何实现", "调用链", "所有引用", "影响范围", "分析代码"},
+			Triggers:     []string{"how does", "find all", "architecture", "callers", "references", "impact analysis", "코드 아키텍처", "어떻게 구현", "어떻게 구현", "호출 체인", "모든 참조", "영향 범위", "코드 분석"},
 			AutoUse:      "suggest",
 		},
 		{
@@ -316,18 +299,18 @@ func builtinSkills() []Skill {
 			Path:           "(builtin)",
 			RunAs:          RunSubagent,
 			AllowedTools:   append(append([]string(nil), readCodeTools...), "web_fetch"),
-			Triggers:       []string{"canonical", "documentation", "specification", "compare against", "is supported", "official docs", "官方文档", "规范", "是否支持", "对比实现", "外部资料", "最新文档"},
+			Triggers:       []string{"canonical", "documentation", "specification", "compare against", "is supported", "official docs", "공식 문서", "표준", "지원 여부", "구현 비교", "외부 자료", "최신 문서"},
 			AutoUse:        "suggest",
 			NeedsFreshData: true,
 		},
 		{
 			Name:        "install-capability",
-			Description: "Install or uninstall Reasonix MCP servers and skills from a URL, GitHub/raw file, local path/folder, .mcp.json, executable, or package name. Plans with install_source (op=install or op=uninstall) before applying, surfacing per-action riskLevel.",
+			Description: "Install or uninstall Patty Code MCP servers and skills from a URL, GitHub/raw file, local path/folder, .mcp.json, executable, or package name. Plans with install_source (op=install or op=uninstall) before applying, surfacing per-action riskLevel.",
 			Body:        builtinInstallCapabilityBody,
 			Scope:       ScopeBuiltin,
 			Path:        "(builtin)",
 			RunAs:       RunInline,
-			Triggers:    []string{"install skill", "install mcp", "install plugin", "安装 skill", "安装 mcp", "安装插件"},
+			Triggers:    []string{"install skill", "install mcp", "install plugin", "설치 skill", "설치 mcp", "플러그인 설치"},
 			AutoUse:     "suggest",
 		},
 		{
@@ -339,7 +322,7 @@ func builtinSkills() []Skill {
 			RunAs:        RunSubagent,
 			AllowedTools: append([]string(nil), reviewTools...),
 			ReadOnly:     true,
-			Triggers:     []string{"review changes", "review diff", "code review", "评审变更", "审查代码", "检查改动"},
+			Triggers:     []string{"review changes", "review diff", "code review", "변경 검토", "코드 검토", "변경 확인"},
 			AutoUse:      "suggest",
 		},
 		{
@@ -351,7 +334,7 @@ func builtinSkills() []Skill {
 			RunAs:        RunSubagent,
 			AllowedTools: append([]string(nil), reviewTools...),
 			ReadOnly:     true,
-			Triggers:     []string{"security review", "authentication", "authorization", "token handling", "injection", "安全评审", "安全审查", "鉴权", "权限", "令牌", "注入", "漏洞"},
+			Triggers:     []string{"security review", "authentication", "authorization", "token handling", "injection", "보안 검토", "보안 검토", "인증", "권한", "토큰", "주입", "취약점"},
 			AutoUse:      "suggest",
 		},
 		{
@@ -361,17 +344,13 @@ func builtinSkills() []Skill {
 			Scope:       ScopeBuiltin,
 			Path:        "(builtin)",
 			RunAs:       RunInline,
-			Triggers:    []string{"run tests", "test failure", "failing test", "ci failure", "运行测试", "测试失败", "修复测试", "ci 失败"},
+			Triggers:    []string{"run tests", "test failure", "failing test", "ci failure", "실행테스트", "테스트 실패", "복구테스트", "ci 실패"},
 			AutoUse:     "suggest",
 		},
 	}
-	// Embedded directory skills (reasonix-guide, …) append after the const
-	// playbooks so the index order stays deterministic and bodies stay on-demand.
 	return append(base, loadEmbeddedBuiltins()...)
 }
 
-// BuiltinNames returns the built-in skill names, used by callers that wire
-// dedicated subagent tools for the subagent built-ins.
 func BuiltinNames() []string {
 	skills := builtinSkills()
 	names := make([]string, len(skills))

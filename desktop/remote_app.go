@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/netclient"
-	"reasonix/internal/remote"
-	"reasonix/internal/remote/bootstrap"
-	"reasonix/internal/remote/forward"
+	"patty/internal/config"
+	"patty/internal/netclient"
+	"patty/internal/remote"
+	"patty/internal/remote/bootstrap"
+	"patty/internal/remote/forward"
 )
 
 // ── View structs mirrored in frontend/src/lib/types.ts ──
@@ -1569,9 +1569,9 @@ func desktopCLIBinaryPath() string {
 
 func desktopCLIBinaryNames(goos string) (packaged, command string) {
 	if goos == "windows" {
-		return "reasonix-cli.exe", "reasonix.exe"
+		return "patcode-cli.exe", "patcode.exe"
 	}
-	return "reasonix", "reasonix"
+	return "patcode", "patcode"
 }
 
 func desktopNormalizeBind(bind string) string {
@@ -1591,14 +1591,14 @@ func preserveRemoteHostHiddenFields(entry *config.RemoteHostEntry, existing conf
 }
 
 // Importing an already-managed SSH alias refreshes only its OpenSSH lookup
-// fields. Reasonix-specific workspace and bootstrap policy remain user-owned.
+// fields. Patty Code-specific workspace and bootstrap policy remain user-owned.
 func preserveRemoteHostImportSettings(entry *config.RemoteHostEntry, existing config.RemoteHostEntry) {
 	entry.Workspace = existing.Workspace
 	entry.ServeInstall = existing.ServeInstall
 }
 
 // applyRemoteCredentialInput maps plaintext received from the one-shot Wails
-// call into Reasonix-owned credential slots. Blank fields preserve the current
+// call into patty-owned credential slots. Blank fields preserve the current
 // reference; explicit clear flags remove only slots that this desktop created.
 func applyRemoteCredentialInput(entry *config.RemoteHostEntry, in RemoteHostInput) (changes []config.CredentialChange, removalCandidates []string) {
 	if in.ClearPassword {

@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"reasonix/internal/shellsafe"
+	"patty/internal/shellsafe"
 )
 
 // BashCommandIsReadOnly reports whether a bash tool call is a known foreground

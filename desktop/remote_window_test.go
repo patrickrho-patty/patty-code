@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/remote"
-	"reasonix/internal/remote/bootstrap"
-	"reasonix/internal/remote/sshtest"
+	"patty/internal/config"
+	"patty/internal/remote"
+	"patty/internal/remote/bootstrap"
+	"patty/internal/remote/sshtest"
 )
 
 type reconnectWindowSink struct {
@@ -75,7 +75,7 @@ func waitRemoteWindowHelperExit(t *testing.T, proc *os.Process) {
 func TestRemoteWindowTicketRoundTripAndRemoval(t *testing.T) {
 	launch := remoteWindowLaunch{
 		URL:     "http://127.0.0.1:54321/?token=secret-token",
-		Title:   "Reasonix [SSH: box]",
+		Title:   "Patty Code [SSH: box]",
 		HostKey: "host-key-digest",
 	}
 	ticket, err := writeRemoteWindowLaunch(launch)
@@ -113,7 +113,7 @@ func TestRemoteWindowTicketRoundTripAndRemoval(t *testing.T) {
 func TestConsumeInitialRemoteWindowLaunchIsIdempotentAcrossDomReady(t *testing.T) {
 	launch := remoteWindowLaunch{
 		URL:     "http://127.0.0.1:54321/?token=secret-token",
-		Title:   "Reasonix [SSH: box]",
+		Title:   "Patty Code [SSH: box]",
 		HostKey: "host-key-digest",
 	}
 	ticket, err := writeRemoteWindowLaunch(launch)
@@ -469,7 +469,7 @@ func TestRemoteWindowAssetMiddlewarePassesThroughMainApp(t *testing.T) {
 }
 
 func TestRemoteWindowTitleSanitizesHostLabel(t *testing.T) {
-	if got := remoteWindowTitle(" box\nprod "); got != "Reasonix [SSH: boxprod]" {
+	if got := remoteWindowTitle(" box\nprod "); got != "Patty Code [SSH: boxprod]" {
 		t.Fatalf("title = %q", got)
 	}
 }

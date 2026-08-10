@@ -8,21 +8,17 @@ import (
 	"time"
 	"unicode"
 
-	"reasonix/internal/event"
+	"patty/internal/event"
 )
 
-// messageEditor 是适配器的可选能力：原地编辑已发送的消息。实现它的适配器
-// （目前是飞书，经 Im.Message.Patch）获得回合中的流式输出——渲染器不断更新
-// 同一条“live 消息”，而不是攒到回合结束一次性分段发送。
 type messageEditor interface {
 	EditMessage(ctx context.Context, messageID string, msg OutboundMessage) error
 }
 
-// renderSink 将 Reasonix 事件流渲染为平台消息。
 type renderSink struct {
 	ctx        context.Context
 	adapter    Adapter
-	editor     messageEditor // 非 nil 时启用原地编辑流式输出
+	editor     messageEditor //
 	connID     string
 	domain     string
 	chatID     string
@@ -34,7 +30,6 @@ type renderSink struct {
 	onApproval func(event.Approval)
 	onAsk      func(event.Ask)
 
-	// 渲染缓冲
 	buf           strings.Builder
 	thinking      strings.Builder
 	inThinking    bool
@@ -43,10 +38,9 @@ type renderSink struct {
 	lastProgress  time.Time
 	progressCount int
 
-	// 流式 live 消息状态（editor != nil 时使用）
-	liveMsgID     string    // 正在原地编辑的消息 ID；空表示当前块还没创建消息
-	liveSentBytes int       // buf 前缀中已成功送达 live 消息的字节数
-	lastEdit      time.Time // 上次成功 create/edit 的时间，用于限频
+	liveMsgID     string    // 지금 편집 중인 메시지 ID；비어 있으면 현재 블록이 아직 메시지를 생성하지 않았음을 의미
+	liveSentBytes int       // buf 앞부분에서 이미 live 메시지로 전송된 바이트 수
+	lastEdit      time.Time // 마지막으로 create/edit에 성공한 시간(속도 제한용)
 }
 
 const (
@@ -104,7 +98,6 @@ func (s *renderSink) Emit(e event.Event) {
 		s.maybeStream()
 
 	case event.Message:
-		// full message received, do nothing extra
 
 	case event.ToolDispatch:
 		if e.Tool.Refreshed {
@@ -112,7 +105,7 @@ func (s *renderSink) Emit(e event.Event) {
 		}
 		name := renderToolName(e.Tool)
 		s.toolNames[e.Tool.ID] = name
-		s.sendProgress(fmt.Sprintf("正在执行: %s", name), false)
+		s.sendProgress(fmt.Sprintf("실행 중: %s", name), false)
 
 	case event.ToolResult:
 		name := s.toolNames[e.Tool.ID]
@@ -120,15 +113,12 @@ func (s *renderSink) Emit(e event.Event) {
 			name = renderToolName(e.Tool)
 		}
 		if e.Tool.Err != "" {
-			s.sendProgress(fmt.Sprintf("%s 执行失败，稍后会在结果中说明。", name), true)
+			s.sendProgress(fmt.Sprintf("%s 실행 실패，나중에 결과에서 설명하겠습니다。", name), true)
 		}
 
 	case event.ToolProgress:
-		// Keep streaming tool output out of IM channels; the session transcript
-		// still records the complete controller turn for desktop review.
 
 	case event.ApprovalRequest:
-		// 发送审批请求
 		if s.onApproval != nil {
 			s.onApproval(e.Approval)
 		}
@@ -141,27 +131,12 @@ func (s *renderSink) Emit(e event.Event) {
 			Text:         approvalText,
 			ReplyToMsgID: s.replyTo,
 		}
-		switch s.adapter.Platform() {
-		case PlatformQQ:
-			if isRecoveryApproval(e.Approval) {
-				msg.Keyboard = recoveryKeyboard(e.Approval)
-			} else {
-				msg.Keyboard = approvalKeyboard(e.Approval.ID)
-			}
-		case PlatformFeishu:
-			if isRecoveryApproval(e.Approval) {
-				msg.Card = recoveryCard(e.Approval, s.chatType, s.userID)
-			} else {
-				msg.Card = approvalCard(e.Approval, s.chatType, s.userID)
-			}
-		}
 		_ = s.send(msg)
 
 	case event.AskRequest:
 		if s.onAsk != nil {
 			s.onAsk(e.Ask)
 		}
-		// 发送问答请求
 		askText := renderAskText(e.Ask)
 		msg := OutboundMessage{
 			ConnectionID: s.connID,
@@ -171,13 +146,9 @@ func (s *renderSink) Emit(e event.Event) {
 			Text:         askText,
 			ReplyToMsgID: s.replyTo,
 		}
-		if s.adapter.Platform() == PlatformFeishu {
-			msg.Card = askCard(e.Ask, askText, s.chatType, s.userID)
-		}
 		_ = s.send(msg)
 
 	case event.TurnDone:
-		// 刷新缓冲
 		s.flush()
 		if e.Err != nil {
 			if !strings.Contains(e.Err.Error(), "context canceled") {
@@ -186,7 +157,7 @@ func (s *renderSink) Emit(e event.Event) {
 					Domain:       s.domain,
 					ChatID:       s.chatID,
 					ChatType:     s.chatType,
-					Text:         fmt.Sprintf("❌ 执行出错: %v", e.Err),
+					Text:         fmt.Sprintf("❌ 실행 오류: %v", e.Err),
 					ReplyToMsgID: s.replyTo,
 				})
 			}
@@ -194,9 +165,6 @@ func (s *renderSink) Emit(e event.Event) {
 
 	case event.Notice:
 		if e.Audience == event.NoticeAudienceOperator {
-			// Persistence recovery remains available through controller logs and
-			// local operator surfaces. It is not actionable for the remote chat
-			// participant and must not interrupt their conversation (#7215).
 			s.logger.Debug("bot suppressed operator notice", "code", e.Code)
 			break
 		}
@@ -217,7 +185,7 @@ func (s *renderSink) Emit(e event.Event) {
 			Domain:       s.domain,
 			ChatID:       s.chatID,
 			ChatType:     s.chatType,
-			Text:         "🔄 正在压缩上下文...",
+			Text:         "🔄 컨텍스트 압축 중...",
 			ReplyToMsgID: s.replyTo,
 		})
 	}
@@ -226,12 +194,6 @@ func (s *renderSink) Emit(e event.Event) {
 func (s *renderSink) flush() {
 	for strings.TrimSpace(s.buf.String()) != "" {
 		raw := s.buf.String()
-		// When streaming into a live message, finalize the whole remaining text
-		// with one edit instead of splitting at a semantic boundary — otherwise
-		// a final answer that does not end on a boundary (code block, list, URL)
-		// gets shrunk in place and its tail re-sent as a separate message,
-		// defeating the point of in-place streaming. Only fall back to boundary
-		// chunking when the remainder genuinely exceeds the hard cap.
 		if s.editor != nil && s.liveMsgID != "" && len([]rune(raw)) < renderHardChunkRunes {
 			s.flushPrefix(len(raw))
 			continue
@@ -260,14 +222,8 @@ func (s *renderSink) flushPrefix(idx int) {
 		s.lastFlush = time.Now()
 		return
 	}
-	// resumeFrom marks where the not-yet-delivered remainder starts. On success
-	// it is idx (the block boundary). On edit failure the live message is frozen
-	// at raw[:liveSentBytes], so anything already shown past idx must NOT be
-	// re-queued — the resume point becomes max(idx, liveSentBytes), otherwise the
-	// [idx, liveSentBytes] span is both displayed and re-sent (duplication).
 	resumeFrom := idx
 	if s.liveMsgID != "" {
-		// 当前块已有 live 消息：把最终内容原地编辑进去，而不是再发一条。
 		if err := s.editLive(text); err != nil {
 			s.logger.Warn("bot live message final edit failed; sending tail as new message", "err", err)
 			if tail := strings.TrimSpace(raw[min(s.liveSentBytes, idx):idx]); tail != "" {
@@ -291,16 +247,12 @@ func (s *renderSink) flushPrefix(idx int) {
 	s.lastFlush = time.Now()
 }
 
-// maybeStream 在每个文本增量后驱动流式输出：把已缓冲文本 create/edit 到
-// live 消息。仅当适配器支持原地编辑时启用；限频间隔复用 renderSoftFlushAfter
-// （1.2s，低于飞书单消息 Patch 的 QPS 上限）。
 func (s *renderSink) maybeStream() {
 	if s.editor == nil {
 		return
 	}
 	raw := s.buf.String()
 	if len([]rune(raw)) >= renderHardChunkRunes {
-		// 当前块过长：按语义边界收尾 live 消息，剩余文本进入下一块。
 		idx := lastSemanticBoundary(raw, renderMaxChunkRunes)
 		if idx <= 0 {
 			idx = byteIndexForRuneLimit(raw, renderMaxChunkRunes)
@@ -322,15 +274,11 @@ func (s *renderSink) maybeStream() {
 	if s.liveMsgID == "" {
 		res, err := s.adapter.Send(s.ctx, s.textMessage(text))
 		if err != nil {
-			// 创建失败（可能是瞬时网络错误）：文本留在 buf 里，限频后重试；
-			// 就算一直失败，回合末的 flush 也会兜底发送。
 			s.logger.Warn("bot live message create failed", "err", err)
 			s.lastFlush = time.Now()
 			return
 		}
 		if strings.TrimSpace(res.MessageID) == "" {
-			// 平台没回消息 ID，无法编辑：本回合退回“攒到回合末分段发送”，
-			// 已发出的前缀从 buf 里去掉避免重复。
 			s.editor = nil
 			s.cutBufPrefix(len(raw))
 			return
@@ -341,8 +289,6 @@ func (s *renderSink) maybeStream() {
 		return
 	}
 	if err := s.editLive(text); err != nil {
-		// 编辑失败（限频/超长/消息被撤回）：结束这个块，已送达前缀不再重发，
-		// 未送达的尾部留在 buf 里由下一条消息续上。
 		s.logger.Warn("bot live message edit failed; rotating to new message", "err", err)
 		s.cutBufPrefix(s.liveSentBytes)
 		s.liveMsgID = ""
@@ -361,7 +307,6 @@ func (s *renderSink) editLive(text string) error {
 	return err
 }
 
-// cutBufPrefix 从 buf 头部移除 n 个字节（已送达 live 消息的内容）。
 func (s *renderSink) cutBufPrefix(n int) {
 	raw := s.buf.String()
 	if n <= 0 {
@@ -513,8 +458,8 @@ func (s *renderSink) send(msg OutboundMessage) error {
 func approvalKeyboard(id string) *InlineKeyboard {
 	return &InlineKeyboard{Rows: []InlineKeyboardRow{{
 		Buttons: []InlineKeyboardButton{
-			{ID: "allow_once", Label: "允许一次", Style: 1, CallbackID: "/approve " + id},
-			{ID: "deny", Label: "拒绝", Style: 2, CallbackID: "/deny " + id},
+			{ID: "allow_once", Label: "한 번 허용", Style: 1, CallbackID: "/approve " + id},
+			{ID: "deny", Label: "거절", Style: 2, CallbackID: "/deny " + id},
 		},
 	}}}
 }
@@ -522,16 +467,16 @@ func approvalKeyboard(id string) *InlineKeyboard {
 func recoveryKeyboard(a event.Approval) *InlineKeyboard {
 	if isRecoveryPlanChange(a) {
 		return &InlineKeyboard{Rows: []InlineKeyboardRow{{Buttons: []InlineKeyboardButton{
-			{ID: "recovery_continue", Label: "1 采用并继续", Style: 0, CallbackID: "/recovery-continue " + a.ID},
-			{ID: "recovery_revise", Label: "2 不采用并调整", Style: 0, CallbackID: "/recovery-revise " + a.ID},
+			{ID: "recovery_continue", Label: "1 채택하고 계속", Style: 0, CallbackID: "/recovery-continue " + a.ID},
+			{ID: "recovery_revise", Label: "2 채택하지 않고 조정", Style: 0, CallbackID: "/recovery-revise " + a.ID},
 		}}}}
 	}
-	buttons := []InlineKeyboardButton{{ID: "recovery_continue", Label: "1 继续一次", Style: 1, CallbackID: "/recovery-continue " + a.ID}}
+	buttons := []InlineKeyboardButton{{ID: "recovery_continue", Label: "1 한 번 계속", Style: 1, CallbackID: "/recovery-continue " + a.ID}}
 	if a.Recovery != nil && a.Recovery.CanGrantTask {
-		buttons = append(buttons, InlineKeyboardButton{ID: "recovery_continue_task", Label: "2 本任务允许同类", Style: 0, CallbackID: "/recovery-continue-task " + a.ID})
-		return &InlineKeyboard{Rows: []InlineKeyboardRow{{Buttons: buttons}, {Buttons: []InlineKeyboardButton{{ID: "recovery_revise", Label: "3 换个办法", Style: 0, CallbackID: "/recovery-revise " + a.ID}}}}}
+		buttons = append(buttons, InlineKeyboardButton{ID: "recovery_continue_task", Label: "2 본 작업에서 동일 유형 허용", Style: 0, CallbackID: "/recovery-continue-task " + a.ID})
+		return &InlineKeyboard{Rows: []InlineKeyboardRow{{Buttons: buttons}, {Buttons: []InlineKeyboardButton{{ID: "recovery_revise", Label: "3 다른 방법으로", Style: 0, CallbackID: "/recovery-revise " + a.ID}}}}}
 	}
-	buttons = append(buttons, InlineKeyboardButton{ID: "recovery_revise", Label: "2 换个办法", Style: 0, CallbackID: "/recovery-revise " + a.ID})
+	buttons = append(buttons, InlineKeyboardButton{ID: "recovery_revise", Label: "2 다른 방법으로", Style: 0, CallbackID: "/recovery-revise " + a.ID})
 	return &InlineKeyboard{Rows: []InlineKeyboardRow{{Buttons: buttons}}}
 }
 
@@ -555,58 +500,58 @@ func renderApprovalText(a event.Approval) string {
 	if isRecoveryApproval(a) {
 		return renderRecoveryText(a)
 	}
-	return fmt.Sprintf("⚠️ 需要批准操作:\n工具: %s\n操作: %s\n\nID: `%s`\n回复 1 批准，回复 2 拒绝；也可用 /approve %s 或 /deny %s。",
+	return fmt.Sprintf("⚠️ 승인 필요:\n도구: %s\n작업: %s\n\nID: `%s`\n1을 답변하면 승인，2를 답변하면 거절；/approve %s 또는 /deny %s를 사용할 수도 있습니다.",
 		a.Tool, a.Subject, a.ID, a.ID, a.ID)
 }
 
 func renderRecoveryText(a event.Approval) string {
 	var b strings.Builder
 	if isRecoveryPlanChange(a) {
-		b.WriteString("⚠️ 执行计划需要你的决定\n")
+		b.WriteString("⚠️ 실행 계획 결정 필요\n")
 	} else {
-		b.WriteString("⚠️ 执行前确认\n")
+		b.WriteString("⚠️ 실행 전 확인\n")
 	}
 	rec := a.Recovery
 	if rec != nil {
 		if isRecoveryPlanChange(a) && (strings.TrimSpace(rec.PlanBefore) != "" || strings.TrimSpace(rec.PlanAfter) != "") {
 			if before := clipBotPlan(rec.PlanBefore); before != "" {
-				fmt.Fprintf(&b, "原计划:\n%s\n", before)
+				fmt.Fprintf(&b, "기존 계획:\n%s\n", before)
 			}
 			if after := clipBotPlan(rec.PlanAfter); after != "" {
-				fmt.Fprintf(&b, "新计划:\n%s\n", after)
+				fmt.Fprintf(&b, "새 계획:\n%s\n", after)
 			}
 		} else if next := firstNonEmptyBot(rec.NextAction, a.Subject, a.Tool); next != "" {
-			fmt.Fprintf(&b, "即将执行: %s\n", next)
+			fmt.Fprintf(&b, "곧 실행: %s\n", next)
 		}
 		why := firstNonEmptyBot(rec.ChangeRationale, rec.ReviewRationale, a.Reason)
 		if why != "" {
-			fmt.Fprintf(&b, "原因: %s\n", why)
+			fmt.Fprintf(&b, "이유: %s\n", why)
 		}
 	} else {
-		fmt.Fprintf(&b, "即将执行: %s\n", firstNonEmptyBot(a.Subject, a.Tool))
+		fmt.Fprintf(&b, "곧 실행: %s\n", firstNonEmptyBot(a.Subject, a.Tool))
 	}
 	if isRecoveryPlanChange(a) {
-		fmt.Fprintf(&b, "\nID: `%s`\n回复 1 采用新计划并继续，2 不采用并让 Auto 调整。需要给出具体意见时，可使用 `/recovery-revise %s <调整意见>`。", a.ID, a.ID)
+		fmt.Fprintf(&b, "\nID: `%s`\n1을 답변하여 새 계획을 채택하고 계속하세요，2 채택하지 않고 Auto에게 조정 요청。구체적인 의견이 필요하면 `/recovery-revise %s <조정 의견>`을 사용하세요。", a.ID, a.ID)
 	} else if rec != nil && rec.CanGrantTask {
 		if scope := strings.TrimSpace(rec.TaskGrantScope); scope != "" {
-			fmt.Fprintf(&b, "授权范围: %s\n", scope)
+			fmt.Fprintf(&b, "권한 범위: %s\n", scope)
 		}
-		fmt.Fprintf(&b, "\nID: `%s`\n回复 1 继续一次，2 在本任务内允许同类操作，3 换个办法。范围扩大或风险升级仍会再次确认。", a.ID)
+		fmt.Fprintf(&b, "\nID: `%s`\n1을 답변하면 한 번 계속，2를 답변하면 이 작업 내에서 동일한 유형의 작업 허용，3을 답변하면 다른 방법으로。범위 확대나 위험 레벨 상승 시 다시 확인할 수 있습니다。", a.ID)
 	} else {
-		fmt.Fprintf(&b, "\nID: `%s`\n回复 1 继续，2 换个办法。", a.ID)
+		fmt.Fprintf(&b, "\nID: `%s`\n1을 답변하면 계속，2를 답변하면 다른 방법으로。", a.ID)
 	}
 	return b.String()
 }
 
 func approvalCard(a event.Approval, chatType ChatType, userID string) *InteractiveCard {
 	return &InteractiveCard{
-		Header: "需要批准操作",
+		Header: "승인 필요",
 		Elements: []InteractiveCardElement{
-			{Tag: "markdown", Content: fmt.Sprintf("**工具**: %s\n\n**操作**: %s\n\nID: `%s`", a.Tool, a.Subject, a.ID)},
+			{Tag: "markdown", Content: fmt.Sprintf("**도구**: %s\n\n**작업**: %s\n\nID: `%s`", a.Tool, a.Subject, a.ID)},
 			{Tag: "action", Extra: map[string]any{
 				"actions": []map[string]any{
-					{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "允许一次"}, "type": "primary", "value": cardActionValue("/approve "+a.ID, chatType, userID)},
-					{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "拒绝"}, "type": "danger", "value": cardActionValue("/deny "+a.ID, chatType, userID)},
+					{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "한 번 허용"}, "type": "primary", "value": cardActionValue("/approve "+a.ID, chatType, userID)},
+					{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "거절"}, "type": "danger", "value": cardActionValue("/deny "+a.ID, chatType, userID)},
 				},
 			}},
 		},
@@ -616,27 +561,27 @@ func approvalCard(a event.Approval, chatType ChatType, userID string) *Interacti
 func recoveryCard(a event.Approval, chatType ChatType, userID string) *InteractiveCard {
 	if isRecoveryPlanChange(a) {
 		return &InteractiveCard{
-			Header: "执行计划需要你的决定",
+			Header: "실행 계획 결정 필요",
 			Elements: []InteractiveCardElement{
 				{Tag: "markdown", Content: renderRecoveryText(a)},
 				{Tag: "action", Extra: map[string]any{
 					"actions": []map[string]any{
-						{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "采用并继续"}, "type": "default", "value": cardActionValue("/recovery-continue "+a.ID, chatType, userID)},
-						{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "不采用并调整"}, "type": "default", "value": cardActionValue("/recovery-revise "+a.ID, chatType, userID)},
+						{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "채택하고 계속"}, "type": "default", "value": cardActionValue("/recovery-continue "+a.ID, chatType, userID)},
+						{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "채택하지 않고 조정"}, "type": "default", "value": cardActionValue("/recovery-revise "+a.ID, chatType, userID)},
 					},
 				}},
 			},
 		}
 	}
 	actions := []map[string]any{
-		{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "继续一次"}, "type": "primary", "value": cardActionValue("/recovery-continue "+a.ID, chatType, userID)},
+		{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "한 번 계속"}, "type": "primary", "value": cardActionValue("/recovery-continue "+a.ID, chatType, userID)},
 	}
 	if a.Recovery != nil && a.Recovery.CanGrantTask {
-		actions = append(actions, map[string]any{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "本任务允许同类"}, "type": "default", "value": cardActionValue("/recovery-continue-task "+a.ID, chatType, userID)})
+		actions = append(actions, map[string]any{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "본 작업에서 동일 유형 허용"}, "type": "default", "value": cardActionValue("/recovery-continue-task "+a.ID, chatType, userID)})
 	}
-	actions = append(actions, map[string]any{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "换个办法"}, "type": "default", "value": cardActionValue("/recovery-revise "+a.ID, chatType, userID)})
+	actions = append(actions, map[string]any{"tag": "button", "text": map[string]string{"tag": "plain_text", "content": "다른 방법으로"}, "type": "default", "value": cardActionValue("/recovery-revise "+a.ID, chatType, userID)})
 	return &InteractiveCard{
-		Header: "执行前确认",
+		Header: "실행 전 확인",
 		Elements: []InteractiveCardElement{
 			{Tag: "markdown", Content: renderRecoveryText(a)},
 			{Tag: "action", Extra: map[string]any{
@@ -678,7 +623,7 @@ func cardActionValue(command string, chatType ChatType, userID string) map[strin
 
 func renderAskText(ask event.Ask) string {
 	var qb strings.Builder
-	qb.WriteString("❓ 请回答以下问题:\n")
+	qb.WriteString("❓ 다음 질문에 답해 주세요:\n")
 	for i, q := range ask.Questions {
 		fmt.Fprintf(&qb, "\n**%d. %s**\n", i+1, q.Prompt)
 		for j, opt := range q.Options {
@@ -689,21 +634,21 @@ func renderAskText(ask event.Ask) string {
 			qb.WriteString("\n")
 		}
 		if q.Multi {
-			qb.WriteString("  (可多选)\n")
+			qb.WriteString("  (여러 개 선택 가능)\n")
 		}
 	}
 	fmt.Fprintf(&qb, "\nID: `%s`", ask.ID)
 	if askSupportsNumericShortcut(ask) {
-		fmt.Fprintf(&qb, "\n直接回复选项编号即可回答；也可用 /answer %s <选项编号或文本>。", ask.ID)
+		fmt.Fprintf(&qb, "\n옵션 번호를 직접 회신하여 답변하세요；/answer %s <옵션 번호 또는 텍스트>를 사용할 수도 있습니다。", ask.ID)
 	} else {
-		fmt.Fprintf(&qb, "\n用 /answer %s <选项编号或文本> 回答；多题可用 q1=1;q2=2。", ask.ID)
+		fmt.Fprintf(&qb, "\n/answer %s <옵션 번호 또는 텍스트>로 답변하세요；여러 문제에는 q1=1;q2=2。", ask.ID)
 	}
 	return qb.String()
 }
 
 func askCard(ask event.Ask, fallback string, chatType ChatType, userID string) *InteractiveCard {
 	card := &InteractiveCard{
-		Header: "需要回答问题",
+		Header: "답변 필요",
 		Elements: []InteractiveCardElement{
 			{Tag: "markdown", Content: fallback},
 		},
@@ -716,7 +661,7 @@ func askCard(ask event.Ask, fallback string, chatType ChatType, userID string) *
 	for i, opt := range question.Options {
 		label := strings.TrimSpace(opt.Label)
 		if label == "" {
-			label = fmt.Sprintf("选项 %d", i+1)
+			label = fmt.Sprintf("옵션 %d", i+1)
 		}
 		actions = append(actions, map[string]any{
 			"tag":   "button",

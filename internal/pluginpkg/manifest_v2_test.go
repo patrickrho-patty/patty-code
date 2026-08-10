@@ -10,12 +10,12 @@ import (
 func TestManifestV2RequiresProvides(t *testing.T) {
 	root := t.TempDir()
 	writeV2Plugin(t, root, `{
-  "apiVersion": "reasonix.io/plugin/v2",
+  "apiVersion": "patty.io/plugin/v2",
   "name": "deps",
   "version": "2.0.0",
   "requires": [
     {
-      "namespace": "reasonix",
+      "namespace": "patty",
       "kind": "provider",
       "id": "deepseek/v4",
       "versionRange": ">=1.0.0",
@@ -47,7 +47,7 @@ func TestManifestV2RequiresProvides(t *testing.T) {
 func TestManifestV2ProviderRequiresSchemaHash(t *testing.T) {
 	root := t.TempDir()
 	writeV2Plugin(t, root, `{
-  "apiVersion": "reasonix.io/plugin/v2",
+  "apiVersion": "patty.io/plugin/v2",
   "name": "bad",
   "provides": [
     {"namespace": "plugin/bad", "kind": "provider", "id": "x", "version": "1.0.0"}
@@ -93,7 +93,7 @@ func TestMigrateLegacyManifestToV2(t *testing.T) {
 }
 
 func TestMigrateProvidersRequiresExplicitProvides(t *testing.T) {
-	pkg := Package{ManifestKind: "reasonix", Manifest: Manifest{
+	pkg := Package{ManifestKind: "patty", Manifest: Manifest{
 		Name: "p", Version: "1.0.0",
 		Runtime: &RuntimeSpec{Command: "./x", Capabilities: []string{"providers"}},
 	}}
@@ -105,14 +105,14 @@ func TestMigrateProvidersRequiresExplicitProvides(t *testing.T) {
 func TestMigrateRejectsVersionedManifest(t *testing.T) {
 	root := t.TempDir()
 	writeV2Plugin(t, root, `{
-  "apiVersion": "reasonix.io/plugin/v2",
+  "apiVersion": "patty.io/plugin/v2",
   "name": "already-v2"
 }`)
-	if _, _, err := ParseNativeForMigrate(root); err == nil || !strings.Contains(err.Error(), "already uses reasonix.io/plugin/v2") {
+	if _, _, err := ParseNativeForMigrate(root); err == nil || !strings.Contains(err.Error(), "already uses patty.io/plugin/v2") {
 		t.Fatalf("ParseNativeForMigrate v2 = %v, want already-v2 rejection", err)
 	}
 
-	pkg := Package{ManifestKind: "reasonix", Manifest: Manifest{
+	pkg := Package{ManifestKind: "patty", Manifest: Manifest{
 		APIVersion: ManifestAPIVersionV2,
 		Name:       "already-v2",
 	}}

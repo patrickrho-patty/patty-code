@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/capability"
-	"reasonix/internal/config"
-	"reasonix/internal/plugin"
+	"patty/internal/agent"
+	"patty/internal/capability"
+	"patty/internal/config"
+	"patty/internal/plugin"
 )
 
 func (c *Controller) withCapabilityRoute(ctx context.Context, composed, routeInput string) string {

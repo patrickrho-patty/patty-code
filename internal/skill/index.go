@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"reasonix/internal/textutil"
+	"patty/internal/textutil"
 )
 
 // IndexMaxChars caps the pinned skills-index block so it can't bloat the

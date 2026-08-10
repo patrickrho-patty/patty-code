@@ -14,15 +14,15 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/eventwire"
-	"reasonix/internal/jobs"
-	"reasonix/internal/permission"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/eventwire"
+	"patty/internal/jobs"
+	"patty/internal/permission"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func TestTitlePromptRequiresUserMessageLanguage(t *testing.T) {
@@ -233,7 +233,6 @@ func TestServeSubmitValidatesFormat(t *testing.T) {
 		return resp.StatusCode
 	}
 
-	// Unsupported format is rejected with 400 and the runner never runs.
 	if code := post(`{"input":"hi","format":"xml"}`); code != http.StatusBadRequest {
 		t.Fatalf("unsupported format status = %d, want 400", code)
 	}
@@ -243,7 +242,6 @@ func TestServeSubmitValidatesFormat(t *testing.T) {
 	default:
 	}
 
-	// Whitespace-padded json_object is normalized and accepted.
 	if code := post(`{"input":"hi","format":"  json_object  "}`); code != http.StatusAccepted {
 		t.Fatalf("padded json_object status = %d, want 202", code)
 	}
@@ -312,8 +310,6 @@ func TestSessionsListPreviewSeesEventLogTurns(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The second turn lives only in the event log; a checkpoint-only reader
-	// would still report one turn.
 	if _, turns := agent.SessionPreview(path); turns != 2 {
 		t.Errorf("turns = %d, want 2 (event log turns visible)", turns)
 	}
@@ -344,7 +340,6 @@ func TestServeApproveMissingID(t *testing.T) {
 	srv := httptest.NewServer(New(ctrl, bc, config.ServeConfig{}).Handler())
 	defer srv.Close()
 
-	// Missing id should return 400.
 	resp, err := http.Post(srv.URL+"/approve", "application/json", strings.NewReader(`{"allow":true}`))
 	if err != nil {
 		t.Fatal(err)
@@ -354,7 +349,6 @@ func TestServeApproveMissingID(t *testing.T) {
 		t.Errorf("approve missing id = %d, want 400", resp.StatusCode)
 	}
 
-	// Malformed JSON should return 400.
 	resp2, _ := http.Post(srv.URL+"/approve", "application/json", strings.NewReader(`{bad`))
 	resp2.Body.Close()
 	if resp2.StatusCode != http.StatusBadRequest {
@@ -430,9 +424,9 @@ func TestServeIndexReportsSessionDeleteFailures(t *testing.T) {
 	html := string(indexHTML)
 	for _, want := range []string{
 		"'cannot_delete_active': 'Cannot delete the active session'",
-		"'cannot_delete_active': '无法删除当前会话'",
+		"'cannot_delete_active': '현재 세션을 삭제할 수 없습니다'",
 		"'delete_failed': 'Could not delete the session. Check your connection and try again.'",
-		"'delete_failed': '无法删除会话，请检查连接后重试'",
+		"'delete_failed': '세션을 삭제할 수 없습니다. 연결을 확인하고 다시 시도하세요'",
 		"if(target&&target.current){showNotice(__('cannot_delete_active'),'warn');return;}",
 		"if(!r.ok){showNotice((await r.text()).trim()||('HTTP '+r.status),'warn');}",
 		"}).catch(()=>showNotice(__('delete_failed'),'warn'));",
@@ -449,7 +443,7 @@ func TestServeIndexHandlesRetryingEvents(t *testing.T) {
 		"case 'retrying': setRetrying(e.retryAttempt,e.retryMax); break;",
 		"if(e.kind!=='retrying')clearRetrying();",
 		"'retrying_status': 'Retrying ({attempt}/{max})...'",
-		"'retrying_status': '正在重试 ({attempt}/{max})...'",
+		"'retrying_status': '재시도 중 ({attempt}/{max})...'",
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("serve index missing retrying support %q", want)
@@ -462,8 +456,8 @@ func TestServeIndexPresentsRecoveryPauseAsNotice(t *testing.T) {
 	for _, want := range []string{
 		"e.outcome==='recovery_paused'",
 		"showNotice('⏸ '+__('recovery_paused'))",
-		"'recovery_paused': 'Automatic retries paused. Reasonix stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.'",
-		"'recovery_paused': '已暂停自动重试。Reasonix 已停止重复尝试，并保留已完成的工作。发送“继续”即可开始新一轮，也可以补充要求来调整方向。'",
+		"'recovery_paused': 'Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.'",
+		"'recovery_paused': '자동 재시도가 일시중지되었습니다. Patty Code가 반복 시도를 중단하고 완료된 작업을 보존했습니다. “계속”을 보내 새 시도를 시작하거나 요구사항을 추가해 방향을 조정하세요.'",
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("serve index missing recovery pause support %q", want)
@@ -704,7 +698,7 @@ func TestServeSwitchEffortUsesModelRefForDuplicateModelNames(t *testing.T) {
 func writeServeModelConfig(t *testing.T) {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	cfgPath := config.UserConfigPath()
 	if cfgPath == "" {
 		t.Fatal("user config path is empty")
@@ -992,7 +986,6 @@ func TestServeContextEndpoint(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		t.Fatalf("decode context: %v", err)
 	}
-	// Before any turn, used should be 0.
 	if body["used"] != 0 {
 		t.Errorf("used = %d, want 0", body["used"])
 	}
@@ -1069,8 +1062,6 @@ func TestServeEventsReplaysPendingAskOnAttach(t *testing.T) {
 	default:
 	}
 
-	// Reconnect recovery must be connection-local: the existing subscriber
-	// must not receive the same prompt a second time.
 	select {
 	case data := <-firstSub:
 		t.Fatalf("existing subscriber got duplicate replay: %s", data)

@@ -5,16 +5,16 @@ import type { Bindings } from "./env";
 function bindings(db: D1Database): Bindings {
   return {
     DB: db,
-    APP_ORIGIN: "https://reasonix.io",
-    ALLOWED_ORIGINS: "https://reasonix.io",
-    ID_ORIGIN: "https://id.reasonix.io",
+    APP_ORIGIN: "https://patty-code.io",
+    ALLOWED_ORIGINS: "https://patty-code.io",
+    ID_ORIGIN: "https://id.patty.io",
   };
 }
 
 describe("forum public API", () => {
   it("maps invalid query input to a client error", async () => {
     const db = { prepare: () => { throw new Error("database should not be reached"); } } as unknown as D1Database;
-    const response = await app.request("https://forum.reasonix.io/topics?sort=invalid", {}, bindings(db));
+    const response = await app.request("https://forum.patty.io/topics?sort=invalid", {}, bindings(db));
     expect(response.status).toBe(422);
     await expect(response.json()).resolves.toMatchObject({ error: { code: "invalid_input" } });
   });
@@ -46,7 +46,7 @@ describe("forum public API", () => {
       },
     } as unknown as D1Database;
 
-    const response = await app.request("https://forum.reasonix.io/topics", {}, bindings(db));
+    const response = await app.request("https://forum.patty.io/topics", {}, bindings(db));
     expect(response.status).toBe(200);
     const payload = await response.json();
     expect(payload).toEqual({ topics: rows });

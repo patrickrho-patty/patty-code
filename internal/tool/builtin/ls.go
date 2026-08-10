@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"reasonix/internal/tool"
+	"patty/internal/tool"
 )
 
 func init() { tool.RegisterBuiltin(listDir{}) }

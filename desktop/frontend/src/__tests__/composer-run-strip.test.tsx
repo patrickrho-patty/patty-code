@@ -200,61 +200,6 @@ console.log("\ncomposer run strip");
   dom.window.close();
 }
 
-// Work mode is a first-class, always-visible selector. Its three profiles live
-// in their own menu instead of the task-intent menu, and selecting a profile
-// preserves the existing token-mode callback contract.
-{
-  const dom = installDom();
-  const { root, calls } = await renderComposer();
-
-  const profileTrigger = document.querySelector(".composer-profile-trigger") as HTMLButtonElement | null;
-  if (!profileTrigger) throw new Error("work mode trigger did not render");
-  eq(profileTrigger.textContent?.trim(), "Balanced", "standalone control shows only the current profile");
-  eq(profileTrigger.getAttribute("aria-label"), "Work mode · Balanced", "work mode trigger keeps its full accessible name");
-  ok(profileTrigger.querySelector(".lucide-equal") !== null, "balanced work mode uses a simple equal icon");
-  await act(async () => {
-    profileTrigger.focus();
-    await flushTimers();
-  });
-  eq(document.querySelector('[role="tooltip"]')?.textContent, "Work mode · Balanced: Full tools, model-directed execution", "work mode tooltip combines category, value, and summary");
-  await act(async () => {
-    profileTrigger.blur();
-    await flushTimers();
-  });
-
-  await act(async () => {
-    profileTrigger.click();
-    await flushTimers();
-  });
-  const profileMenu = document.querySelector(".composer-profile-menu");
-  ok(profileMenu !== null, "standalone work mode trigger opens its own menu");
-  eq(profileMenu?.querySelectorAll('[role="menuitemradio"]').length, 3, "work mode menu exposes exactly three profiles");
-
-  const delivery = Array.from(profileMenu?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [])
-    .find((item) => item.textContent?.includes("Delivery"));
-  if (!delivery) throw new Error("delivery work mode option did not render");
-  ok(delivery.querySelector(".lucide-flag") !== null, "delivery work mode uses a simple completion flag");
-  await act(async () => {
-    delivery.click();
-    await flushTimers();
-  });
-  eq(calls.tokenModes.at(-1), "delivery", "selecting delivery keeps the token-mode callback contract");
-
-  const intentTrigger = document.querySelector(".composer-task-mode-trigger") as HTMLButtonElement | null;
-  if (!intentTrigger) throw new Error("task intent trigger did not render");
-  await act(async () => {
-    intentTrigger.click();
-    await flushTimers();
-  });
-  eq(document.querySelector(".composer-intent-menu")?.textContent?.includes("Work mode"), false, "task-intent menu no longer owns work mode");
-  eq(document.querySelectorAll('.composer-intent-menu [role="menuitemradio"]').length, 3, "task method menu exposes direct, plan, and goal");
-
-  await act(async () => {
-    root.unmount();
-  });
-  dom.window.close();
-}
-
 // A short Creation hover must stay a no-op. In particular, leaving before the
 // 120ms open delay must not manufacture a closing-only popover or flash the
 // trigger's open styling 140ms later.
@@ -263,7 +208,7 @@ console.log("\ncomposer run strip");
   const timers = installWindowTimerQueue();
   const { root } = await renderComposer({ showContextWindowRing: true });
 
-  for (const selector of [".composer-task-mode-trigger", ".composer-profile-trigger"]) {
+  for (const selector of [".composer-task-mode-trigger"]) {
     const trigger = document.querySelector(selector) as HTMLButtonElement | null;
     if (!trigger) throw new Error(`missing Creation hover trigger: ${selector}`);
 
@@ -276,7 +221,7 @@ console.log("\ncomposer run strip");
 
     ok(!trigger.classList.contains(`${selector.slice(1)}--open`), `${selector} stays visually closed after a short hover`);
     ok(
-      document.querySelector(selector.includes("task") ? ".composer-intent-menu" : ".composer-profile-menu") === null,
+      document.querySelector(".composer-intent-menu") === null,
       `${selector} does not render a closing-only menu`,
     );
   }
@@ -306,7 +251,7 @@ console.log("\ncomposer run strip");
   const task = document.querySelector<HTMLButtonElement>(".composer-task-mode-trigger");
   const approvals = Array.from(document.querySelectorAll<HTMLButtonElement>(".composer-modebar--approval button"));
   const send = document.querySelector<HTMLButtonElement>(".composer__btn--send");
-  ok(Boolean(profile?.disabled), "runtime transition disables Delivery profile changes");
+  ok(profile === null, "runtime profile trigger is hidden");
   ok(Boolean(task?.disabled), "runtime transition disables Goal mode changes");
   ok(approvals.length === 3 && approvals.every((button) => button.disabled), "runtime transition disables Ask/Auto/Yolo changes");
   ok(Boolean(send?.disabled), "runtime transition disables submit");
@@ -327,7 +272,7 @@ console.log("\ncomposer run strip");
   const ticker = strip?.querySelector(".composer-run-strip__text");
   eq(ticker?.getAttribute("aria-hidden"), "true", "ticking spinner text stays out of the accessibility tree");
   const live = strip?.querySelector(".sr-only[role=\"status\"]");
-  eq(live?.textContent, "Reasonix is working", "live region announces the stable state text only");
+  eq(live?.textContent, "Patty Code is working", "live region announces the stable state text only");
   ok(document.querySelector(".composer-card--running") !== null, "running card keeps its running modifier");
 
   const stop = document.querySelector(".composer__btn--stop") as HTMLButtonElement | null;

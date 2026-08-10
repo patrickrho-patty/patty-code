@@ -63,9 +63,9 @@ func contrastForMode(mode string, tokens map[string]string) []ThemeContrastWarni
 
 func defaultContrastColors(mode string) (fg, bg, faint, chat, accent, accentFG string) {
 	if mode == "light" {
-		return "#111827", "#f7f8fb", "#8a94a6", "#ffffff", "#2f5fa8", "#ffffff"
+		return "#111827", "#f7f8fb", "#8a94a6", "#ffffff", "#c14a4d", "#ffffff"
 	}
-	return "#f1f1ef", "#0c0d10", "#6c6e74", "#0c0d10", "#ff6a3d", "#0c0d10"
+	return "#f1f1ef", "#0c0d10", "#6c6e74", "#0c0d10", "#d64550", "#ffffff"
 }
 
 func firstToken(tokens map[string]string, key, def string) string {

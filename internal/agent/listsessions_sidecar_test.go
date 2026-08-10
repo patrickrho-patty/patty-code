@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func writeSessionFile(t *testing.T, path string, msgs []provider.Message) {

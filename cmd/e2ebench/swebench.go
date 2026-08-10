@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"reasonix/internal/ablation"
+	"patty/internal/ablation"
 )
 
 // SWE-bench mode runs the agent inside the official per-instance evaluation

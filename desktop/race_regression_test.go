@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/config"
-	"reasonix/internal/event"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/config"
+	"patty/internal/event"
 )
 
 // TestSessionLeaseHelpersConcurrentAccess hammers the sessionLeaseMu helpers

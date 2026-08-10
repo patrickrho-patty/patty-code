@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 func TestGenerateToken(t *testing.T) {

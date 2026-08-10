@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/stats"
+	"patty/internal/config"
+	"patty/internal/stats"
 )
 
 // UsageStatsRequest asks for the usage statistics panel aggregate.

@@ -8,7 +8,7 @@ if [ "$#" -ne 1 ] || [[ ! "$1" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 
 candidate="$1"
-repository="${RELEASE_REPOSITORY:-esengine/DeepSeek-Reasonix}"
+repository="${RELEASE_REPOSITORY:-pattycorp/DeepSeek-PattyCode}"
 wait_seconds="${RELEASE_CI_WAIT_SECONDS:-1800}"
 poll_seconds="${RELEASE_CI_POLL_SECONDS:-10}"
 

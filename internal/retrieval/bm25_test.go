@@ -7,8 +7,8 @@ import (
 )
 
 func TestTokensHandlesLatinAndCJK(t *testing.T) {
-	got := Tokens("BM25 检索 cache-first")
-	want := []string{"bm25", "检", "索", "cache", "first"}
+	got := Tokens("BM25 검색 cache-first")
+	want := []string{"bm25", "검", "색", "cache", "first"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("Tokens() = %#v, want %#v", got, want)
 	}
@@ -48,7 +48,7 @@ func TestKeepTopRelativeScoreKeepsTopAndDropsWeakTail(t *testing.T) {
 }
 
 func TestMakeSnippetHandlesMultibyteBoundary(t *testing.T) {
-	text := strings.Repeat("前缀", 80) + "稳定结论 synthesis cache " + strings.Repeat("后缀", 80)
+	text := strings.Repeat("접두사", 80) + "안정적인 결론 synthesis cache " + strings.Repeat("접미사", 80)
 	out := MakeSnippet(text, "synthesis cache", QueryTermsForTest(t, "synthesis cache"), 60)
 	if !strings.Contains(out, "synthesis cache") {
 		t.Fatalf("snippet missing query: %q", out)

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/protocol"
+	"patty/internal/extension"
+	"patty/internal/extension/protocol"
 )
 
 // Host payload DTOs: one struct per intercept point. These are the host-side

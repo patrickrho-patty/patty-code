@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func carryingController(carried []provider.Message, path string) *control.Controller {

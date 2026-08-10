@@ -1,7 +1,3 @@
-// Package taskintent classifies natural-language task text (English and
-// Chinese) into delivery-intent categories. The delivery evidence gates and
-// Goal budget selection consume it as a heuristic; it never gates permissions
-// or whether writes are allowed.
 package taskintent
 
 import (
@@ -9,23 +5,16 @@ import (
 	"unicode/utf8"
 )
 
-// Intent is the delivery expectation a task text implies.
 type Intent uint8
 
 const (
-	// Conversation is chat with no host-observable work expected.
 	Conversation Intent = iota
-	// Advisory asks for explanation or advice rather than observable work.
 	Advisory
-	// ObservableRead expects host-observable read-only work (inspect, review).
 	ObservableRead
-	// Mutation expects workspace changes.
 	Mutation
-	// PersistentAction expects durable state kept across sessions.
 	PersistentAction
 )
 
-// Classify maps a task text to the delivery intent it implies.
 func Classify(input string) Intent {
 	switch {
 	case deliveryTaskHasMutationIntent(input):
@@ -43,12 +32,10 @@ func Classify(input string) Intent {
 	}
 }
 
-// NeedsEvidence reports whether the intent expects host-observable work.
 func (i Intent) NeedsEvidence() bool {
 	return i == ObservableRead || i == Mutation || i == PersistentAction
 }
 
-// NeedsEvidence reports whether a task text expects host-observable work.
 func NeedsEvidence(input string) bool {
 	return Classify(input).NeedsEvidence()
 }
@@ -58,14 +45,14 @@ var deliveryMutationNeedles = []string{
 	"implement", "refactor", "apply", "install", "publish", "commit", "push", "continue work",
 	"modify", "patch", "replace", "move", "configure", "upgrade", "downgrade", "bump", "enable", "disable", "merge",
 	"make changes", "make a change", "make the changes", "make the requested changes", "make the necessary changes", "make these changes", "make those changes", "make code changes",
-	"修复", "解决", "创建", "新建", "添加", "编写", "编辑", "修改", "更新", "删除", "移除", "重命名", "实现", "重构",
-	"实施", "落地", "安装", "发布", "提交", "继续处理", "调整", "替换", "移动", "升级", "降级", "启用", "禁用", "合并", "改动", "打补丁",
+	"복구", "해결", "생성하기", "새로 만들기", "추가", "작성", "편집", "수정", "업데이트", "삭제", "제거", "이름 재정의", "구현", "리팩토링",
+	"시행", "실현", "설치", "배포", "커밋", "계속하기", "조정", "바꾸기", "이동", "업그레이드", "다운그레이드", "활성화", "비활성화", "병합", "변경", "패치",
 }
 
 var deliveryAdvisoryPhrases = []string{
 	"what's wrong", "what is wrong", "why", "what should i do", "what can i do", "how should i", "how do i", "how can i",
 	"can you explain", "could you explain", "give me advice", "any advice", "help me understand",
-	"为什么", "怎么回事", "怎么办", "怎么", "怎样", "如何", "是什么问题", "什么原因", "的原因", "给我建议", "有什么建议",
+	"왜", "어떤 일", "어떻게 할까", "어떻게", "어떻게", "어떻게", "어떤 문제", "어떤 이유", "이유", "제안 해주세요", "어떤 제안",
 }
 
 func NeedsMutation(input string) bool {
@@ -85,11 +72,11 @@ func NeedsPersistentAction(input string) bool {
 	}
 	actionNeedles := []string{
 		"remember", "save", "store", "keep this", "keep that",
-		"记住", "记下来", "保存", "存下来", "记录下来",
+		"기억해요", "기록하세요", "저장", "저장하세요", "기록해두세요",
 	}
 	durableNeedles := []string{
 		"permanently", "durable", "long-term", "long term", "across sessions", "future sessions", "every session", "after restart", "after restarting",
-		"永久", "长期", "持久", "跨会话", "以后每次", "未来会话", "重启后", "下次启动",
+		"영구히", "장기간", "지속적으로", "세션 간", "앞으로 매번", "향후 세션", "재시작 후", "다음 시작 시",
 	}
 	for _, clause := range deliveryTaskClauses(normalized) {
 		action := false
@@ -116,11 +103,11 @@ func deliveryTaskIsConversationOnly(input string) bool {
 	}
 	localCue := containsAnySubstring(normalized, []string{
 		"next turn", "next message", "later in this chat", "this conversation", "when i ask again", "when i ask next",
-		"下一轮", "下轮", "下一条消息", "稍后再问", "待会再问", "这个对话", "本次对话", "本轮会话",
+		"다음 라운드", "다음 라운드", "다음 메시지", "나중에 물어보세요", "곧 다시 물어보세요", "이 대화", "이번 대화", "이번 라운드 세션",
 	})
 	conversationAction := containsAnySubstring(normalized, []string{
 		"remember", "keep in mind", "keep this", "keep that", "answer", "respond", "reply",
-		"记住", "记一下", "回答", "回复", "再告诉我",
+		"기억해요", "기록하세요", "답변", "응답", "다시 알려주세요",
 	})
 	return localCue && conversationAction
 }
@@ -151,15 +138,10 @@ func deliveryTaskMutationIntent(input string) (affirmative, negated bool) {
 func deliveryTaskIsAdvisory(input string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(input))
 
-	// Concrete targets and commands always remain host-observable, including
-	// when the request is phrased as a "why" question.
 	if deliveryTaskHasHostAnchor(normalized) || deliveryTaskHasCommand(normalized) {
 		return false
 	}
 
-	// Question wording is scoped per clause. This keeps remote troubleshooting
-	// such as "analyze why WPS won't open" advisory, while a separate imperative
-	// clause such as "reproduce the crash" still requires observable work.
 	sawAdvisory := false
 	for _, clause := range deliveryTaskClauses(normalized) {
 		if deliveryTaskClauseIsAdvisory(clause) {
@@ -174,9 +156,6 @@ func deliveryTaskIsAdvisory(input string) bool {
 		return true
 	}
 
-	// A standalone refusal, inability, or constraint around a mutation verb is
-	// advisory rather than work Reasonix can perform. Affirmative mixed intent is
-	// handled by NeedsMutation before this function is consulted.
 	_, negatedMutation := deliveryTaskMutationIntent(normalized)
 	return negatedMutation
 }
@@ -185,7 +164,7 @@ func deliveryTaskHasHostAnchor(input string) bool {
 	for _, anchor := range []string{
 		"this repo", "this repository", "current repository", "codebase", "workspace", "pull request", "this pr", "ci job",
 		"/pull/", "actions/runs/",
-		"当前仓库", "这个仓库", "当前项目", "这个项目", "代码库", "工作区", "这个 pr", "这个pr", "此 pr", "此pr",
+		"현재 저장소", "이 저장소", "현재 프로젝트", "이 프로젝트", "코드베이스", "작업 공간", "이 pr", "이 pr", "이 pr", "이 pr",
 	} {
 		if strings.Contains(input, anchor) {
 			return true
@@ -329,7 +308,7 @@ func deliveryCommandHasSubcommand(next string) bool {
 func deliveryTaskClauseHasObservableWork(clause string) bool {
 	for _, needle := range []string{
 		"review", "inspect", "analyze", "check", "reproduce", "audit", "verify",
-		"评审", "审查", "检查", "分析", "复现", "审计", "验证",
+		"검토", "검사", "분석", "재현", "감사", "검증",
 	} {
 		affirmative, _ := deliveryTaskNeedleIntent(clause, needle)
 		if affirmative {
@@ -362,7 +341,7 @@ func deliveryTaskAdvisoryClauseRequestsMutation(clause string) bool {
 		return true
 	}
 
-	for _, cue := range []string{" please ", " then ", " so ", " therefore ", "然后", "所以", "而是", "转而"} {
+	for _, cue := range []string{" please ", " then ", " so ", " therefore ", "그런 다음", "따라서", "그런데", "전환하여"} {
 		for rest := clause[advisoryIndex:]; ; {
 			index := strings.Index(rest, cue)
 			if index < 0 {
@@ -375,21 +354,21 @@ func deliveryTaskAdvisoryClauseRequestsMutation(clause string) bool {
 		}
 	}
 	for rest, offset := clause[advisoryIndex:], advisoryIndex; ; {
-		index := strings.Index(rest, "请")
+		index := strings.Index(rest, "부탁드립니다")
 		if index < 0 {
 			break
 		}
 		absolute := offset + index
-		after := clause[absolute+len("请"):]
-		requestWord := strings.HasSuffix(clause[:absolute], "申") || strings.HasPrefix(after, "求")
+		after := clause[absolute+len("부탁드립니다"):]
+		requestWord := strings.HasSuffix(clause[:absolute], "신청") || strings.HasPrefix(after, "요청")
 		if !requestWord && deliveryTaskStartsWithMutation(after) {
 			return true
 		}
-		offset = absolute + len("请")
+		offset = absolute + len("부탁드립니다")
 		rest = clause[offset:]
 	}
 
-	for _, cue := range []string{" and ", "并且", "并"} {
+	for _, cue := range []string{" and ", "그리고", "그리고"} {
 		if index := strings.LastIndex(clause[advisoryIndex:], cue); index >= 0 {
 			cueStart := advisoryIndex + index
 			tail := clause[cueStart+len(cue):]
@@ -405,7 +384,7 @@ func deliveryTaskStartsWithMutation(input string) bool {
 	input = strings.TrimSpace(input)
 	for {
 		stripped := false
-		for _, prefix := range []string{"please ", "can you ", "could you ", "would you ", "you should ", "帮我", "请你", "直接", "继续", "再"} {
+		for _, prefix := range []string{"please ", "can you ", "could you ", "would you ", "you should ", "도와주세요", "부탁드립니다", "바로", "계속", "다시"} {
 			if after, ok := strings.CutPrefix(input, prefix); ok {
 				input = strings.TrimSpace(after)
 				stripped = true
@@ -443,7 +422,7 @@ func deliveryTaskClauseHasNegation(clause string) bool {
 	clause = strings.ReplaceAll(clause, "’", "'")
 	for _, phrase := range []string{
 		" not ", " never ", " without ", "cannot", "can't", " cant ", "don't", " dont ", "won't", " wont ", "unable",
-		"不要", "别", "勿", "不能", "无法", "不想", "不敢", "无需", "不需要", "不可", "没法", "没有", "禁止", "拒绝",
+		"하지 마세요", "하지 마세요", "하지 마세요", "할 수 없습니다", "불가능합니다", "하고 싶지 않음", "두려움", "불필요", "불필요", "불가능", "방법 없음", "없음", "금지", "거절",
 	} {
 		if strings.Contains(" "+clause+" ", phrase) {
 			return true
@@ -457,9 +436,9 @@ func deliveryTaskClauses(input string) []string {
 		" but ", "\n",
 		" however ", "\n",
 		" nevertheless ", "\n",
-		"但请", "\n请",
-		"但是", "\n",
-		"不过", "\n",
+		"하지만 부탁드립니다", "\n부탁드립니다",
+		"하지만", "\n",
+		"그런데", "\n",
 	).Replace(input)
 	return strings.FieldsFunc(input, func(r rune) bool {
 		switch r {
@@ -474,7 +453,7 @@ func deliveryTaskClauses(input string) []string {
 func deliveryMutationClauseNegated(clause string) bool {
 	for _, phrase := range []string{
 		"without changing", "without modifying", "analysis only", "review only",
-		"不要改动", "只分析", "仅分析", "只检查", "仅检查", "只评审", "仅评审",
+		"변경하지 마세요", "분석만 하세요", "분석만 하세요", "검사만 하세요", "검사만 하세요", "검토만 하세요", "검토만 하세요",
 	} {
 		if strings.Contains(clause, phrase) {
 			return true
@@ -492,7 +471,8 @@ func deliveryTaskNeedleIntent(clause, needle string) (affirmative, negated bool)
 			}
 			index := offset + relative
 			prefix := []rune(clause[:index])
-			if deliveryMutationRunesNegated(prefix) {
+			suffix := []rune(clause[index+len(needle):])
+			if deliveryMutationRunesNegated(prefix) || deliveryMutationRunesSuffixNegated(suffix) {
 				negated = true
 			} else {
 				affirmative = true
@@ -563,7 +543,7 @@ func deliveryMutationRunesNegated(prefix []rune) bool {
 	}
 	window := string(prefix)
 	scopeStart := 0
-	for _, boundary := range []string{"所以", "然后", "而是", "转而", "改为"} {
+	for _, boundary := range []string{"따라서", "그런 다음", "그런데", "전환하여", "변경하여"} {
 		if index := strings.LastIndex(window, boundary); index >= 0 {
 			end := index + len(boundary)
 			if end > scopeStart {
@@ -571,22 +551,46 @@ func deliveryMutationRunesNegated(prefix []rune) bool {
 			}
 		}
 	}
-	if index := strings.LastIndex(window, "请"); index >= 0 {
-		before, after := window[:index], window[index+len("请"):]
-		requestWord := strings.HasSuffix(before, "申") || strings.HasPrefix(after, "求")
+	if index := strings.LastIndex(window, "부탁드립니다"); index >= 0 {
+		before, after := window[:index], window[index+len("부탁드립니다"):]
+		requestWord := strings.HasSuffix(before, "신청") || strings.HasPrefix(after, "요청")
 		negatedRequest := false
-		for _, marker := range []string{"不要", "不能", "无法", "不想", "不敢", "无需", "不需要", "不可", "没法", "禁止", "拒绝"} {
+		for _, marker := range []string{"하지 마세요", "할 수 없습니다", "불가능합니다", "하고 싶지 않음", "두려움", "불필요", "불필요", "불가능", "방법 없음", "금지", "거절"} {
 			if strings.HasSuffix(before, marker) || strings.Contains(after, marker) {
 				negatedRequest = true
 				break
 			}
 		}
-		if !requestWord && !negatedRequest && index+len("请") > scopeStart {
-			scopeStart = index + len("请")
+		if !requestWord && !negatedRequest && index+len("부탁드립니다") > scopeStart {
+			scopeStart = index + len("부탁드립니다")
 		}
 	}
 	window = window[scopeStart:]
-	for _, marker := range []string{"不要", "别", "勿", "不能", "无法", "不想", "不敢", "无需", "不需要", "不可", "没法", "没有", "禁止", "拒绝"} {
+	for _, marker := range []string{"하지 마세요", "할 수 없습니다", "불가능합니다", "하고 싶지 않음", "두려움", "불필요", "불가능", "방법 없음", "없음", "금지", "거절"} {
+		if strings.Contains(window, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// deliveryMutationRunesSuffixNegated reports Korean verb-suffix negation that
+// follows the needle ("복구하지 마세요" negates "복구"). Korean negates with
+// suffixes, so the runes after the needle decide intent when the prefix does
+// not.
+func deliveryMutationRunesSuffixNegated(suffix []rune) bool {
+	if len(suffix) > 12 {
+		suffix = suffix[:12]
+	}
+	window := string(suffix)
+	// Trim at the first clause boundary so a later clause can't bleed in.
+	for _, boundary := range []string{"그리고", "또한", "다만", "그러나"} {
+		if index := strings.Index(window, boundary); index >= 0 {
+			window = window[:index]
+			break
+		}
+	}
+	for _, marker := range []string{"하지 마세요", "하지 말아 주세요", "하지 말아주세요", "하지 마라", "하지 말 것", "하지 않고", "하지 않기", "하지 않도록", "말고", "말아 주세요", "말아주세요", "안 하세요", "안 합니다", "않습니다", "않아요"} {
 		if strings.Contains(window, marker) {
 			return true
 		}

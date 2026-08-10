@@ -2,7 +2,7 @@
 
 <a href="./GUIDE.md">Guide</a>
 &nbsp;·&nbsp;
-<a href="./REASONING_LANGUAGE.zh-CN.md">简体中文</a>
+<a href="./REASONING_LANGUAGE.ko-KR.md">(Korean)</a>
 
 `agent.reasoning_language` controls the preferred language of visible
 reasoning or thinking text when a provider exposes it.
@@ -13,16 +13,16 @@ still wins for the final answer.
 
 ## Why It Exists
 
-Some users read visible reasoning more comfortably in Chinese or English even
+Some users read visible reasoning more comfortably in Korean or English even
 when the task itself mixes languages. This setting makes that preference
 explicit without changing the stable system prompt or tool definitions.
 
 The setting is intentionally small:
 
-- `auto` anchors visible reasoning to Chinese when the raw user prompt is
-  clearly Chinese, ignoring injected reference context such as `@file` contents;
-  English and ambiguous turns add no extra instruction.
-- `zh` asks visible reasoning to prefer Simplified Chinese.
+- `auto` anchors visible reasoning to Korean when the raw user prompt is
+  clearly Han-based, ignoring injected reference context such as `@file`
+  contents; English and ambiguous turns add no extra instruction.
+- `ko-KR` asks visible reasoning to prefer Korean.
 - `en` asks visible reasoning to prefer English.
 
 ## Desktop
@@ -34,40 +34,40 @@ Settings -> Models -> Usage -> Agent runtime -> Thinking language
 ```
 
 The desktop setting writes the user-level default. A project can still override
-it with `./reasonix.toml`.
+it with `./patty.toml`.
 
 ## CLI And TUI
 
 For shell scripts or one-off configuration:
 
 ```bash
-reasonix config reasoning-language auto
-reasonix config reasoning-language zh
-reasonix config reasoning-language en
+patcode config reasoning-language auto
+patcode config reasoning-language ko-KR
+patcode config reasoning-language en
 ```
 
 By default this writes the user config. To write a project-local override:
 
 ```bash
-reasonix config reasoning-language --local zh
+patcode config reasoning-language --local ko-KR
 ```
 
-Inside `reasonix`, use the slash command:
+Inside `patcode`, use the slash command:
 
 ```text
 /reasoning-language auto
-/reasoning-language zh
+/reasoning-language ko-KR
 /reasoning-language en
 ```
 
 The slash command writes the user-level setting and updates the current chat
 controller for subsequent turns. It does not rewrite the current project's
-`reasonix.toml`; use the shell command with `--local` for that.
+`patty.toml`; use the shell command with `--local` for that.
 
 Headless runs also use the same setting:
 
 ```bash
-reasonix run "explain this module"
+patcode run "explain this module"
 ```
 
 ## Config File
@@ -76,13 +76,13 @@ User or project config:
 
 ```toml
 [agent]
-reasoning_language = "auto" # auto|zh|en
+reasoning_language = "auto" # auto|ko-KR|en
 ```
 
 Resolution order for this setting:
 
 ```text
-./reasonix.toml > user config.toml > built-in defaults
+./patty.toml > user config.toml > built-in defaults
 ```
 
 There is currently no command-line flag for this setting. Prefer config because
@@ -91,13 +91,13 @@ argument.
 
 ## Cache Behavior
 
-`auto` is still cache-friendly. When the raw user prompt clearly looks Chinese,
-Reasonix adds the same small transient `<reasoning-language>` block for that
+`auto` is still cache-friendly. When the raw user prompt clearly looks Han-based,
+Patty Code adds the same small transient `<reasoning-language>` block for that
 turn; English and ambiguous turns inject nothing and rely on the existing stable
 language policy. Injected reference context such as `@file` contents is ignored
 for this auto decision.
 
-When set to `zh` or `en`, Reasonix always adds a small transient
+When set to `ko-KR` or `en`, Patty Code always adds a small transient
 `<reasoning-language>` block to the user turn. In all modes, this does not
 change:
 

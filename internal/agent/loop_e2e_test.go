@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent/testutil"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent/testutil"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 type toolCallReasoningRequiredProvider struct {

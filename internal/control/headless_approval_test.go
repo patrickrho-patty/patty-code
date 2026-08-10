@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/memory"
-	"reasonix/internal/permission"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/memory"
+	"patty/internal/permission"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 // runHeadlessWriteOnce drives one write_file tool call through a headless gate in

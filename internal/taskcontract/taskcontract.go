@@ -11,8 +11,8 @@ import (
 	"slices"
 	"strings"
 
-	"reasonix/internal/evidence"
-	"reasonix/internal/taskintent"
+	"patty/internal/evidence"
+	"patty/internal/taskintent"
 )
 
 // Risk is the highest risk any upstream signal assigned to the task.

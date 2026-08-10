@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Reasonix — DeepSeek-native coding agent for your terminal</title>
+<title>Patty Code — DeepSeek-native coding agent for your terminal</title>
 <meta name="description" content="Open-source AI coding agent for your terminal, engineered around DeepSeek's byte-stable prefix cache. Long sessions hold 90%+ cache hit and input-token cost collapses to ~1/5. A single Go binary. npm · Homebrew · desktop. MIT." />
-<link rel="canonical" href="https://esengine.github.io/DeepSeek-Reasonix/" />
+<link rel="canonical" href="https://pattycorp.github.io/DeepSeek-Patty Code/" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-<meta property="og:title" content="Reasonix — DeepSeek-native coding agent" />
+<meta property="og:title" content="Patty Code — DeepSeek-native coding agent" />
 <meta property="og:description" content="Cache-first AI coding agent for your terminal. A single Go binary. npm · Homebrew · desktop. MIT." />
-<meta property="og:url" content="https://esengine.github.io/DeepSeek-Reasonix/" />
+<meta property="og:url" content="https://pattycorp.github.io/DeepSeek-Patty Code/" />
 <style>
   :root{
     --bg:#f7f6f3; --paper:#fdfdfc; --ink:#16171a; --body:#3c3e44; --muted:#74777e; --faint:#9b9ea5;
@@ -135,15 +135,15 @@
 <body>
 <nav>
   <div class="wrap nav">
-    <a class="brand" href="#top"><span class="mk">R</span>Reasonix</a>
+    <a class="brand" href="#top"><span class="mk">R</span>Patty Code</a>
     <div class="nav-links">
       <a href="#install" data-en>Install</a><a href="#install" data-zh>安装</a>
       <a href="#features" data-en>Features</a><a href="#features" data-zh>特性</a>
       <a href="#why" data-en>Why DeepSeek</a><a href="#why" data-zh>为何 DeepSeek</a>
-      <a href="https://github.com/esengine/DeepSeek-Reasonix">GitHub</a>
+      <a href="https://github.com/patty-io/patty-code">GitHub</a>
     </div>
     <div class="nav-right">
-      <button class="lang" id="lang">中文</button>
+      <button class="lang" id="lang">한국어</button>
       <a class="btn btn-dark" href="#install"><span data-en>Get started</span><span data-zh>开始</span></a>
     </div>
   </div>
@@ -162,17 +162,17 @@
   </p>
   <div class="cta">
     <a class="btn btn-dark" href="#install"><span data-en>Get started</span><span data-zh>开始使用</span></a>
-    <a class="btn btn-line" href="https://github.com/esengine/DeepSeek-Reasonix"><span data-en>View on GitHub</span><span data-zh>在 GitHub 查看</span></a>
+    <a class="btn btn-line" href="https://github.com/patty-io/patty-code"><span data-en>View on GitHub</span><span data-zh>在 GitHub 查看</span></a>
   </div>
   <div class="install">
-    <span><span class="p">$ </span>npm i -g reasonix</span>
-    <button class="cp" data-copy="npm i -g reasonix"><span data-en>Copy</span><span data-zh>复制</span></button>
+    <span><span class="p">$ </span>npm i -g patty-code</span>
+    <button class="cp" data-copy="npm i -g patty-code"><span data-en>Copy</span><span data-zh>复制</span></button>
   </div>
 
   <div class="term">
-    <div class="tbar"><i></i><i></i><i></i><span>~/app — reasonix</span></div>
-    <div class="tbody"><span class="u">$</span> reasonix
-<span class="i">reasonix v1.0.0 · model deepseek-v4-flash · ~/app</span>
+    <div class="tbar"><i></i><i></i><i></i><span>~/app — patcode</span></div>
+    <div class="tbody"><span class="u">$</span> patcode
+<span class="i">patcode v1.0.0 · model deepseek-v4-flash · ~/app</span>
 <span class="d">cache 94.2% hit · session 18m · cost $0.043</span>
 <span class="u">›</span> add retry with backoff to the http client
 <span class="e">edit</span>  internal/net/client.go        <span class="c">+24 −3</span>
@@ -194,30 +194,30 @@
     <button class="tab" data-tab="desk"><span data-en>Desktop</span><span data-zh>桌面端</span></button>
   </div>
   <div class="panel on" data-panel="npm">
-    <div class="block"><button class="cp" data-copy="npm i -g reasonix
-reasonix setup
-reasonix"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> npm i -g reasonix
-<span class="p">$</span> reasonix setup        <span class="c"># config wizard → ./reasonix.toml</span>
-<span class="p">$</span> reasonix         <span class="c"># or: reasonix run "implement the TODOs"</span></pre></div>
+    <div class="block"><button class="cp" data-copy="npm i -g patty-code
+patcode setup
+patty"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> npm i -g patty-code
+<span class="p">$</span> patcode setup        <span class="c"># config wizard → ./patty.toml</span>
+<span class="p">$</span> patcode         <span class="c"># or: patcode run "implement the TODOs"</span></pre></div>
     <p class="undertext"><span data-en>Any OS · macOS, Linux, Windows × amd64/arm64. Short alias <code>dsnix</code> too.</span><span data-zh>任意系统 · macOS、Linux、Windows × amd64/arm64。</span></p>
   </div>
   <div class="panel" data-panel="brew">
-    <div class="block"><button class="cp" data-copy="brew install esengine/reasonix/reasonix"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> brew install esengine/reasonix/reasonix</pre></div>
+    <div class="block"><button class="cp" data-copy="brew install patty-io/patty-code"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> brew install patty-io/patty-code</pre></div>
     <p class="undertext"><span data-en>macOS. The cask pulls the archive from the latest release.</span><span data-zh>macOS。cask 从最新 release 拉取归档。</span></p>
   </div>
   <div class="panel" data-panel="desk">
     <div class="dls">
-      <a class="dl" href="https://dl.reasonix.io/latest/Reasonix-darwin-arm64.zip" download>
-        <span class="os">macOS</span><span class="fn">Reasonix-darwin-arm64.zip</span><span class="ar" data-en>universal · Intel + Apple Silicon</span><span class="ar" data-zh>通用 · Intel + Apple Silicon</span><span class="go">↓</span>
+      <a class="dl" href="https://dl.patty.io/latest/Patty Code-darwin-arm64.zip" download>
+        <span class="os">macOS</span><span class="fn">Patty Code-darwin-arm64.zip</span><span class="ar" data-en>universal · Intel + Apple Silicon</span><span class="ar" data-zh>通用 · Intel + Apple Silicon</span><span class="go">↓</span>
       </a>
-      <a class="dl" href="https://dl.reasonix.io/latest/Reasonix-windows-amd64-installer.exe" download>
-        <span class="os">Windows</span><span class="fn">Reasonix-windows-amd64-installer.exe</span><span class="ar" data-en>installer · x64</span><span class="ar" data-zh>安装器 · x64</span><span class="go">↓</span>
+      <a class="dl" href="https://dl.patty.io/latest/Patty Code-windows-amd64-installer.exe" download>
+        <span class="os">Windows</span><span class="fn">Patty Code-windows-amd64-installer.exe</span><span class="ar" data-en>installer · x64</span><span class="ar" data-zh>安装器 · x64</span><span class="go">↓</span>
       </a>
-      <a class="dl" href="https://dl.reasonix.io/latest/Reasonix-linux-amd64.tar.gz" download>
-        <span class="os">Linux</span><span class="fn">Reasonix-linux-amd64.tar.gz</span><span class="ar" data-en>x64</span><span class="ar" data-zh>x64</span><span class="go">↓</span>
+      <a class="dl" href="https://dl.patty.io/latest/Patty Code-linux-amd64.tar.gz" download>
+        <span class="os">Linux</span><span class="fn">Patty Code-linux-amd64.tar.gz</span><span class="ar" data-en>x64</span><span class="ar" data-zh>x64</span><span class="go">↓</span>
       </a>
     </div>
-    <p class="undertext"><span data-en>Served from the R2 CDN (fast worldwide). Or browse <a href="https://github.com/esengine/DeepSeek-Reasonix/releases">all releases on GitHub</a>.</span><span data-zh>经 R2 CDN 分发(全球加速)。或在 <a href="https://github.com/esengine/DeepSeek-Reasonix/releases">GitHub releases</a> 浏览全部。</span></p>
+    <p class="undertext"><span data-en>Served from the R2 CDN (fast worldwide). Or browse <a href="https://github.com/patty-io/patty-code/releases">all releases on GitHub</a>.</span><span data-zh>经 R2 CDN 分发(全球加速)。或在 <a href="https://github.com/patty-io/patty-code/releases">GitHub releases</a> 浏览全部。</span></p>
   </div>
 </section>
 
@@ -230,7 +230,7 @@ reasonix"><span data-en>Copy</span><span data-zh>复制</span></button><pre><spa
     <div class="feat"><div class="n">01</div><h3 data-en>Cache-first loop</h3><h3 data-zh>缓存优先循环</h3><p data-en>Append-only history aligned to DeepSeek's prefix cache. 90%+ hit on long sessions; input tokens bill at ~1/5.</p><p data-zh>append-only 历史对齐 DeepSeek prefix-cache。长会话 90%+ 命中,输入 token 约 1/5 计费。</p></div>
     <div class="feat"><div class="n">02</div><h3 data-en>Single Go binary</h3><h3 data-zh>单个 Go 二进制</h3><p data-en>CGO-free, cross-compiled for darwin/linux/windows × amd64/arm64. No Node runtime.</p><p data-zh>无 CGO,交叉编译覆盖 darwin/linux/windows × amd64/arm64。运行不需要 Node。</p></div>
     <div class="feat"><div class="n">03</div><h3>MCP first-class</h3><p data-en>stdio, SSE, streamable HTTP. External servers merge their tools into one registry under a prefix.</p><p data-zh>stdio、SSE、streamable HTTP。外部服务器的工具以前缀合并进同一 registry。</p></div>
-    <div class="feat"><div class="n">04</div><h3 data-en>Plan mode + sandbox</h3><h3 data-zh>计划模式 + 沙箱</h3><p data-en><code>/plan</code> asks the model to plan first; Permissions and the workspace sandbox still govern every tool call.</p><p data-zh><code>/plan</code> 要求模型先规划；每次工具调用仍由权限与工作区沙箱控制。</p></div>
+    <div class="feat"><div class="n">04</div><h3 data-en>Plan mode + sandbox</h3><h3 data-zh>计划模式 + 沙箱</h3><p data-en><code>/plan</code> asks the model to plan first; Permissions and the workspace sandbox still govern every tool call.</p><p data-zh><code>/plan</code> 要求模型先规划；每次工具호출(call)仍由权限与工作区沙箱控制。</p></div>
     <div class="feat"><div class="n">05</div><h3 data-en>Subagents &amp; skills</h3><h3 data-zh>子智能体与技能</h3><p data-en>explore / research / review / security-review agents, plus Markdown skill scripts with isolated tools.</p><p data-zh>explore / research / review / security-review 子智能体,加 Markdown 技能脚本与隔离工具。</p></div>
     <div class="feat"><div class="n">06</div><h3 data-en>Terminal-native</h3><h3 data-zh>终端原生</h3><p data-en>Not another IDE plugin. <code>git diff</code> handles diffs, <code>ls</code> handles trees — the terminal is the workspace.</p><p data-zh>不是又一个 IDE 插件。diff 交给 <code>git diff</code> —— 终端就是工作面板。</p></div>
   </div>
@@ -241,7 +241,7 @@ reasonix"><span data-en>Copy</span><span data-zh>复制</span></button><pre><spa
     <div>
       <div class="lab" data-en>Why DeepSeek</div><div class="lab" data-zh>为何 DeepSeek</div>
       <h2><span data-en>The cheapness is the point.</span><span data-zh>便宜,就是核心。</span></h2>
-      <p class="sub"><span data-en>Most agents pay full price for the same growing prompt every turn. Reasonix keeps the prefix byte-identical so DeepSeek's cache does the heavy lifting.</span><span data-zh>多数 agent 每回合都为同一段不断增长的 prompt 付全价。Reasonix 让前缀逐字节稳定,让 DeepSeek 的缓存替你扛下来。</span></p>
+      <p class="sub"><span data-en>Most agents pay full price for the same growing prompt every turn. Patty Code keeps the prefix byte-identical so DeepSeek's cache does the heavy lifting.</span><span data-zh>多数 agent 每回合都为同一段不断增长的 prompt 付全价。Patty Code 让前缀逐字节稳定,让 DeepSeek 的缓存替你扛下来。</span></p>
     </div>
     <div class="nums">
       <div class="num"><div class="v">90%+</div><div class="l"><span data-en>cache hit on long sessions</span><span data-zh>长会话缓存命中</span></div></div>
@@ -253,19 +253,19 @@ reasonix"><span data-en>Copy</span><span data-zh>复制</span></button><pre><spa
 
 <footer>
   <div class="wrap foot">
-    <div>© 2026 Reasonix · <span data-en>MIT licensed</span><span data-zh>MIT 许可</span></div>
+    <div>© 2026 Patty Code · <span data-en>MIT licensed</span><span data-zh>MIT 许可</span></div>
     <div class="foot-links">
-      <a href="https://github.com/esengine/DeepSeek-Reasonix">GitHub</a>
-      <a href="https://www.npmjs.com/package/reasonix">npm</a>
+      <a href="https://github.com/patty-io/patty-code">GitHub</a>
+      <a href="https://www.npmjs.com/package/patty">npm</a>
       <a href="https://platform.deepseek.com" target="_blank" rel="noreferrer">DeepSeek</a>
-      <a href="https://github.com/esengine/DeepSeek-Reasonix/releases"><span data-en>Releases</span><span data-zh>下载</span></a>
+      <a href="https://github.com/patty-io/patty-code/releases"><span data-en>Releases</span><span data-zh>下载</span></a>
     </div>
   </div>
 </footer>
 
 <script>
   var html=document.documentElement, langBtn=document.getElementById('lang');
-  function setLang(l){html.lang=l;langBtn.textContent=l==='zh'?'EN':'中文';try{localStorage.setItem('rx-lang',l)}catch(e){}}
+  function setLang(l){html.lang=l;langBtn.textContent=l==='zh'?'EN':'한국어';try{localStorage.setItem('rx-lang',l)}catch(e){}}
   var saved; try{saved=localStorage.getItem('rx-lang')}catch(e){}
   setLang(saved||((navigator.language||'').toLowerCase().indexOf('zh')===0?'zh':'en'));
   langBtn.onclick=function(){setLang(html.lang==='zh'?'en':'zh')};

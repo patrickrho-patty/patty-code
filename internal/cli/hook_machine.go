@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"reasonix/internal/hook"
+	"patty/internal/hook"
 )
 
 type machineHook struct {
@@ -67,11 +67,11 @@ func runHookCommand(args []string, out io.Writer) int {
 		options.projectRoot, _ = os.Getwd()
 	}
 	// hook.Inspect's HomeDir is an OS user home directory: a non-empty value
-	// has .reasonix appended inside the hook package, and passing
-	// config.ReasonixHomeDir() here double-appends it. Leave it empty so the
-	// hook package resolves the platform Reasonix home itself (correct on
-	// every OS, including Windows where the home is %AppData%\Roaming\reasonix
-	// rather than ~/.reasonix) (#7420).
+	// has .patty appended inside the hook package, and passing
+	// config.PattyHomeDir() here double-appends it. Leave it empty so the
+	// hook package resolves the platform patty home itself (correct on
+	// every OS, including Windows where the home is %AppData%\Roaming\patty
+	// rather than ~/.patty) (#7420).
 	inspection := hook.Inspect(hook.LoadOptions{
 		ProjectRoot: options.projectRoot,
 		HomeDir:     options.homeDir,

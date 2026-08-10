@@ -11,14 +11,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
-	_ "reasonix/internal/tool/builtin"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
+	_ "patty/internal/tool/builtin"
 )
 
-// TestTruncateToolOutputUnderCap leaves small payloads alone — the cap should
-// never rewrite content that already fits.
+// TestTruncateToolOutputUnderCap leaves small payloads alone  the cap should
 func TestTruncateToolOutputUnderCap(t *testing.T) {
 	in := strings.Repeat("a", maxToolOutputBytes)
 	got, notice := truncateToolOutput(in)
@@ -30,8 +29,6 @@ func TestTruncateToolOutputUnderCap(t *testing.T) {
 	}
 }
 
-// TestTruncateToolOutputHeadTail keeps head+tail of an oversize payload and
-// inserts a marker; the notice must report the elided byte count truthfully.
 func TestTruncateToolOutputHeadTail(t *testing.T) {
 	head := strings.Repeat("H", maxToolOutputBytes)
 	tail := strings.Repeat("T", maxToolOutputBytes)
@@ -51,18 +48,14 @@ func TestTruncateToolOutputHeadTail(t *testing.T) {
 	}
 }
 
-// TestTruncateToolOutputRuneBoundaries puts multibyte runes exactly across the
-// head and tail cut points; the result must still be valid UTF-8.
 func TestTruncateToolOutputRuneBoundaries(t *testing.T) {
-	in := strings.Repeat("中", maxToolOutputBytes) // 3 bytes each — guarantees a cut inside a rune
+	in := strings.Repeat("한", maxToolOutputBytes) // 3 bytes each — guarantees a cut inside a rune
 	out, _ := truncateToolOutput(in)
 	if !utf8.ValidString(out) {
 		t.Errorf("truncated output is not valid UTF-8")
 	}
 }
 
-// TestFinishReasonMessage only yields a warning for abnormal terminations.
-// Normal stops are silent (ok=false) so the per-turn line stays clean.
 func TestFinishReasonMessage(t *testing.T) {
 	silent := []string{"", "stop", "tool_calls"}
 	for _, r := range silent {
@@ -84,8 +77,6 @@ func TestFinishReasonMessage(t *testing.T) {
 	}
 }
 
-// TestEmptyFinalNotice keeps the user-facing line short while preserving the
-// diagnostics that tell empty-answer causes apart in expandable details.
 func TestEmptyFinalNotice(t *testing.T) {
 	msg := emptyFinalNotice()
 	for _, hidden := range []string{"blocked", "finish=", "reasoning="} {
@@ -104,11 +95,7 @@ func TestEmptyFinalNotice(t *testing.T) {
 	}
 }
 
-// parallel-dispatch tests
 
-// fakeTool is a minimal Tool stand-in for dispatch tests; ReadOnly is
-// configurable and Execute sleeps a fixed duration so we can measure
-// serial vs parallel behaviour by wall-clock.
 type fakeTool struct {
 	name     string
 	readOnly bool
@@ -148,8 +135,6 @@ func TestPartitionToolCallsAllReadOnly(t *testing.T) {
 	}
 }
 
-// TestPartitionToolCallsSegmentsAroundWriters verifies a writer only serializes
-// its own provider-order position; read-only runs on either side stay batchable.
 func TestPartitionToolCallsSegmentsAroundWriters(t *testing.T) {
 	reg := tool.NewRegistry()
 	reg.Add(fakeTool{name: "ro", readOnly: true})
@@ -166,8 +151,6 @@ func TestPartitionToolCallsSegmentsAroundWriters(t *testing.T) {
 	}
 }
 
-// TestPartitionToolCallsUnknownToolSerial keeps unknown-tool errors
-// deterministic by forcing unknown calls into single-call serial batches.
 func TestPartitionToolCallsUnknownToolSerial(t *testing.T) {
 	reg := tool.NewRegistry()
 	reg.Add(fakeTool{name: "ro", readOnly: true})
@@ -183,9 +166,7 @@ func TestPartitionToolCallsUnknownToolSerial(t *testing.T) {
 	}
 }
 
-// TestPartitionToolCallsCompleteStepSerial verifies complete_step never joins a
-// parallel read-only run: it reads the turn's receipts, so the prior reads must
-// finish (and record) in an earlier batch before it runs in its own serial one.
+// parallel read-only run: it reads the turns receipts, so the prior reads must
 func TestPartitionToolCallsCompleteStepSerial(t *testing.T) {
 	reg := tool.NewRegistry()
 	reg.Add(fakeTool{name: "read_file", readOnly: true})
@@ -238,7 +219,6 @@ func TestPartitionToolCallsBackgroundCollectorsSerial(t *testing.T) {
 	}
 }
 
-// TestExecuteBatchParallelReadOnly checks that three 80ms read-only calls
 // complete in well under 3×80ms — the wall-clock proof of true parallelism.
 func TestExecuteBatchParallelReadOnly(t *testing.T) {
 	const delay = 80 * time.Millisecond
@@ -261,7 +241,6 @@ func TestExecuteBatchParallelReadOnly(t *testing.T) {
 	if len(results) != 3 || results[0] != "a done" || results[1] != "b done" || results[2] != "c done" {
 		t.Errorf("results out of order or wrong: %v", results)
 	}
-	// Allow generous slack for CI; even 2x serial would prove we got parallelism.
 	if elapsed >= 2*delay {
 		t.Errorf("read-only batch took %v (>= %v) — not parallel", elapsed, 2*delay)
 	}
@@ -316,13 +295,7 @@ func TestExecuteBatchCancelledCallsCarryNoTimestamps(t *testing.T) {
 	}
 }
 
-// TestExecuteBatchSegmentsAroundWrites ensures a write call only serializes its
-// own position in the provider-ordered batch: read-only runs before and after it
-// may still parallelise within their contiguous segments.
 func TestExecuteBatchSegmentsAroundWrites(t *testing.T) {
-	// A larger per-call delay keeps fixed scheduler jitter on loaded CI a small
-	// fraction of the segment time, so the tight relative bound below stays
-	// reliable instead of being widened toward the serial floor.
 	const delay = 150 * time.Millisecond
 	reg := tool.NewRegistry()
 	reg.Add(fakeTool{name: "ro1", readOnly: true, delay: delay})
@@ -353,8 +326,8 @@ func TestExecuteBatchSegmentsAroundWrites(t *testing.T) {
 			t.Fatalf("results out of order or wrong: got %v want %v", results, want)
 		}
 	}
-	// Desired shape is roughly 3*delay: (ro1|ro2), then rw, then (ro3|ro4).
-	// Old all-serial behaviour is roughly 5*delay and should fail this bound.
+// Desired shape is roughly 3delay: (ro1|ro2), then rw, then (ro3|ro4).
+// Old all-serial behaviour is roughly 5delay and should fail this bound.
 	if elapsed >= 4*delay {
 		t.Errorf("mixed batch took %v (>= %v) — read-only segments did not parallelise", elapsed, 4*delay)
 	}

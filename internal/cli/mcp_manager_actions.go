@@ -12,11 +12,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/mcpdiag"
-	"reasonix/internal/plugin"
-	"reasonix/internal/shellparse"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/mcpdiag"
+	"patty/internal/plugin"
+	"patty/internal/shellparse"
 )
 
 func (m chatTUI) applyMCPAction(v mcpServerView, action mcpAction) (tea.Model, tea.Cmd) {

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func TestSubagentResultToolContractIsStableAndReadOnly(t *testing.T) {
@@ -50,7 +50,7 @@ func TestSubagentResultToolPagesOnUTF8Boundaries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PrepareFresh: %v", err)
 	}
-	answer := "BEGIN\n" + strings.Repeat("中", 10_000) + "\nEND"
+	answer := "BEGIN\n" + strings.Repeat("한", 10_000) + "\nEND"
 	run.Session.Add(provider.Message{Role: provider.RoleUser, Content: "research"})
 	run.Session.Add(provider.Message{Role: provider.RoleAssistant, Content: answer})
 	if err := store.SaveCompleted(run); err != nil {

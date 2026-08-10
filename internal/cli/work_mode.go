@@ -6,8 +6,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"reasonix/internal/boot"
-	"reasonix/internal/i18n"
+	"patty/internal/boot"
+	"patty/internal/i18n"
 )
 
 type workModeOption struct {
@@ -161,7 +161,7 @@ func (m *chatTUI) workModeArgItems(val string) ([]compItem, int, bool) {
 	if cmdEnd < 0 {
 		return nil, 0, false
 	}
-	cmd := val[:cmdEnd]
+	cmd := canonicalBuiltinSlashCommand(val[:cmdEnd])
 	if cmd != "/work-mode" && cmd != "/profile" {
 		return nil, 0, false
 	}

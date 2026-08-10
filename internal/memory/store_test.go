@@ -7,14 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
-// TestRenderEscapesYAMLMetacharacters pins the frontmatter-corruption fix: a
-// title or description with YAML metacharacters must survive a save→load
-// round-trip. The previous hand-concatenated renderer produced unparseable
+// title or description with YAML metacharacters must survive a saveload
 // YAML for "Plan: step one"-style titles; frontmatter.Split then returned an
-// empty map and the reloaded memory silently lost its name, title, and type.
 func TestRenderEscapesYAMLMetacharacters(t *testing.T) {
 	cases := []struct {
 		label, title, desc string
@@ -60,8 +57,6 @@ func TestRenderEscapesYAMLMetacharacters(t *testing.T) {
 	}
 }
 
-// TestRenderPlainValuesUsesPreviousReleaseRoutingType keeps project scope safe
-// when an older binary reads a project-scoped user preference.
 func TestRenderPlainValuesUsesPreviousReleaseRoutingType(t *testing.T) {
 	got := render(Memory{
 		Title:       "Prefers tabs",
@@ -106,8 +101,6 @@ func TestRenderKeepsPreviousReleaseRoutingScopeSafe(t *testing.T) {
 	}
 }
 
-// TestStoreSaveAndIndex covers the round-trip: Save writes a frontmatter file,
-// reindex adds exactly one index line, and List parses it back.
 func TestStoreSaveAndIndex(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{Dir: filepath.Join(dir, "memory")}
@@ -149,11 +142,11 @@ func TestStoreListDecodesGB18030MemoryFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := `---
-title: 中文偏好
-description: 使用中文回答
+title: 중국어 선호
+description: 중국어로 답변
 type: user
 ---
-用户希望默认使用中文。`
+사용자는 기본적으로 중국어로 답변하기를 원합니다.`
 	if err := os.WriteFile(filepath.Join(s.Dir, "cn-pref.md"), fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -163,13 +156,11 @@ type: user
 		t.Fatalf("List() = %+v, want one decoded memory", memories)
 	}
 	m := memories[0]
-	if m.Title != "中文偏好" || m.Description != "使用中文回答" || !strings.Contains(m.Body, "默认使用中文") {
+	if m.Title != "중국어 선호" || m.Description != "중국어로 답변" || !strings.Contains(m.Body, "기본적으로 중국어로 답변") {
 		t.Fatalf("decoded memory = %+v", m)
 	}
 }
 
-// TestStoreOverwriteDoesNotDuplicateIndex verifies re-saving the same name
-// replaces its index line rather than appending a second.
 func TestStoreOverwriteDoesNotDuplicateIndex(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
 	for _, desc := range []string{"first version", "second version"} {
@@ -186,8 +177,7 @@ func TestStoreOverwriteDoesNotDuplicateIndex(t *testing.T) {
 	}
 }
 
-// TestStoreIndexPreservesHandEdits verifies reindex keeps unrelated lines, so a
-// user hand-editing MEMORY.md isn't clobbered when the model saves a new fact.
+// user hand-editing MEMORY.md isnt clobbered when the model saves a new fact.
 func TestStoreIndexPreservesHandEdits(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
 	if _, err := s.Save(Memory{Name: "alpha", Description: "first", Type: TypeProject, Body: "x"}); err != nil {
@@ -222,8 +212,7 @@ func TestStoreIndexPreservesHandEdits(t *testing.T) {
 	}
 }
 
-// TestStoreSaveTitleInIndexAndFrontmatter verifies an explicit title becomes the
-// index link label and round-trips through the file's frontmatter.
+// index link label and round-trips through the files frontmatter.
 func TestStoreSaveTitleInIndexAndFrontmatter(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
 	if _, err := s.Save(Memory{
@@ -243,8 +232,6 @@ func TestStoreSaveTitleInIndexAndFrontmatter(t *testing.T) {
 	}
 }
 
-// TestStoreIndexLabelFallsBackToDeKebabbedName checks a title-less memory still
-// gets a readable label instead of a bare slug.
 func TestStoreIndexLabelFallsBackToDeKebabbedName(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
 	if _, err := s.Save(Memory{Name: "likes-go", Description: "d", Type: TypeUser, Body: "b"}); err != nil {
@@ -255,8 +242,7 @@ func TestStoreIndexLabelFallsBackToDeKebabbedName(t *testing.T) {
 	}
 }
 
-// TestStoreDelete archives a fact's file and removes its index line while
-// leaving others.
+// TestStoreDelete archives a facts file and removes its index line while
 func TestStoreDelete(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
 	for _, n := range []string{"alpha", "beta"} {
@@ -286,8 +272,7 @@ func TestStoreDelete(t *testing.T) {
 	}
 }
 
-// TestStoreDeleteMissingIsNoError treats deleting an absent memory as success —
-// the goal state (gone) already holds.
+// TestStoreDeleteMissingIsNoError treats deleting an absent memory as success
 func TestStoreDeleteMissingIsNoError(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
 	if err := s.Delete("never-saved"); err != nil {
@@ -464,7 +449,6 @@ func archivedFiles(t *testing.T, dir string) []string {
 	return out
 }
 
-// TestNormalizeType maps unknown types to project and keeps known ones.
 func TestNormalizeType(t *testing.T) {
 	if got := NormalizeType("feedback"); got != TypeFeedback {
 		t.Errorf("feedback: got %q", got)
@@ -474,14 +458,11 @@ func TestNormalizeType(t *testing.T) {
 	}
 }
 
-// TestStoreForSlug ensures the project path becomes one filesystem-safe segment.
 func TestStoreForSlug(t *testing.T) {
-	s := StoreFor("/home/me/.reasonix", "/Users/me/proj")
+	s := StoreFor("/home/me/.patty", "/Users/me/proj")
 	if strings.Count(filepath.Base(filepath.Dir(s.Dir)), "/") != 0 {
 		t.Fatalf("slug should have no separators: %s", s.Dir)
 	}
-	// config.WorkspaceSlug folds case on Windows (equivalent spellings of one
-	// folder must share a slug); unix slugs keep the original case.
 	want := "-Users-me-proj"
 	if runtime.GOOS == "windows" {
 		want = "-users-me-proj"
@@ -491,8 +472,6 @@ func TestStoreForSlug(t *testing.T) {
 	}
 }
 
-// TestDisabledStoreIsNoOp ensures a zero Store (no user config dir) never panics
-// and errors cleanly on Save.
 func TestDisabledStoreIsNoOp(t *testing.T) {
 	var s Store
 	if s.Index() != "" || s.List() != nil {
@@ -503,8 +482,6 @@ func TestDisabledStoreIsNoOp(t *testing.T) {
 	}
 }
 
-// TestStoreGlobalAndProject verifies explicit scope routing independently of
-// memory type, merged reads, and deletion from the correct directory.
 func TestStoreGlobalAndProject(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{
@@ -512,7 +489,6 @@ func TestStoreGlobalAndProject(t *testing.T) {
 		GlobalDir: filepath.Join(dir, "global"),
 	}
 
-	// A user preference can be explicitly global.
 	pUser, err := s.Save(Memory{Name: "prefers-tabs", Description: "user pref", Type: TypeUser, Scope: FactScopeGlobal, Body: "use tabs"})
 	if err != nil {
 		t.Fatal(err)
@@ -521,7 +497,6 @@ func TestStoreGlobalAndProject(t *testing.T) {
 		t.Fatalf("global-scoped user memory should go to GlobalDir, got %s", pUser)
 	}
 
-	// Project scope is the default, independently of type.
 	pProj, err := s.Save(Memory{Name: "build-target", Description: "build target", Type: TypeProject, Body: "go build"})
 	if err != nil {
 		t.Fatal(err)
@@ -530,7 +505,6 @@ func TestStoreGlobalAndProject(t *testing.T) {
 		t.Fatalf("project-scoped memory should go to Dir, got %s", pProj)
 	}
 
-	// Feedback can also be explicitly global.
 	pFb, err := s.Save(Memory{Name: "no-emoji", Description: "no emoji", Type: TypeFeedback, Scope: FactScopeGlobal, Body: "skip emoji"})
 	if err != nil {
 		t.Fatal(err)
@@ -539,7 +513,6 @@ func TestStoreGlobalAndProject(t *testing.T) {
 		t.Fatalf("global-scoped feedback should go to GlobalDir, got %s", pFb)
 	}
 
-	// A reference also defaults to project scope.
 	pRef, err := s.Save(Memory{Name: "api-docs", Description: "api docs", Type: TypeReference, Body: "see docs"})
 	if err != nil {
 		t.Fatal(err)
@@ -548,19 +521,16 @@ func TestStoreGlobalAndProject(t *testing.T) {
 		t.Fatalf("project-scoped reference should go to Dir, got %s", pRef)
 	}
 
-	// List merges both directories
 	list := s.List()
 	if len(list) != 4 {
 		t.Fatalf("want 4 memories, got %d", len(list))
 	}
 
-	// Index merges both directories
 	idx := s.Index()
 	if !strings.Contains(idx, "prefers-tabs") || !strings.Contains(idx, "build-target") {
 		t.Fatalf("index should contain both global and project memories:\n%s", idx)
 	}
 
-	// Delete removes from the correct directory
 	if err := s.Delete("prefers-tabs"); err != nil {
 		t.Fatal(err)
 	}
@@ -568,13 +538,12 @@ func TestStoreGlobalAndProject(t *testing.T) {
 		t.Fatal("global memory file should be gone after delete")
 	}
 
-	// List after delete
 	list2 := s.List()
 	if len(list2) != 3 {
 		t.Fatalf("want 3 memories after delete, got %d", len(list2))
 	}
 
-	// Index should not duplicate # Memory headers (Block() adds its own).
+// Index should not duplicate  Memory headers (Block() adds its own).
 	idx2 := s.Index()
 	if strings.Count(idx2, "# Memory") != 0 {
 		t.Fatalf("Index should have 0 # Memory headers (Block() adds one), got %d:\n%s", strings.Count(idx2, "# Memory"), idx2)
@@ -623,9 +592,8 @@ func TestStoreSaveRemovesStaleCopyWhenScopeChanges(t *testing.T) {
 	}
 }
 
-// TestStoreForInitializesGlobalDir ensures StoreFor sets GlobalDir alongside Dir.
 func TestStoreForInitializesGlobalDir(t *testing.T) {
-	s := StoreFor("/home/me/.reasonix", "/Users/me/proj")
+	s := StoreFor("/home/me/.patty", "/Users/me/proj")
 	if s.GlobalDir == "" {
 		t.Fatal("StoreFor should set GlobalDir")
 	}
@@ -637,7 +605,6 @@ func TestStoreForInitializesGlobalDir(t *testing.T) {
 	}
 }
 
-// TestDirForRoutesCorrectly verifies scope, rather than type, owns routing.
 func TestDirForRoutesCorrectly(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{
@@ -655,8 +622,6 @@ func TestDirForRoutesCorrectly(t *testing.T) {
 	}
 }
 
-// TestDirForFallsBackWhenNoGlobalDir ensures DirFor falls back to Dir when
-// GlobalDir is empty.
 func TestDirForFallsBackWhenNoGlobalDir(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{Dir: filepath.Join(dir, "memory")}
@@ -731,9 +696,6 @@ func TestStoreInfersLegacyScopeFromContainingDirectory(t *testing.T) {
 	}
 }
 
-// TestStoreDeleteRemovesFromAllDirs verifies that after a scope migration (same
-// name in both GlobalDir and Dir), Delete removes both copies so the memory
-// truly disappears.
 func TestStoreDeleteRemovesFromAllDirs(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{
@@ -741,7 +703,6 @@ func TestStoreDeleteRemovesFromAllDirs(t *testing.T) {
 		GlobalDir: filepath.Join(dir, "global"),
 	}
 
-	// Simulate migration: write the same memory directly into both dirs.
 	name := "prefers-tabs"
 	for _, d := range []string{s.Dir, s.GlobalDir} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
@@ -756,13 +717,11 @@ func TestStoreDeleteRemovesFromAllDirs(t *testing.T) {
 		}
 	}
 
-	// Both copies should appear, but deduplicated.
 	list := s.List()
 	if len(list) != 1 {
 		t.Fatalf("want 1 deduplicated memory, got %d", len(list))
 	}
 
-	// Delete should remove from BOTH directories.
 	if err := s.Delete(name); err != nil {
 		t.Fatal(err)
 	}
@@ -782,8 +741,6 @@ func TestStoreDeleteRemovesFromAllDirs(t *testing.T) {
 	}
 }
 
-// TestStoreIndexDeduplicatesAcrossDirs verifies Index() does not emit duplicate
-// lines when the same memory name exists in both GlobalDir and Dir.
 func TestStoreIndexDeduplicatesAcrossDirs(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{
@@ -791,7 +748,6 @@ func TestStoreIndexDeduplicatesAcrossDirs(t *testing.T) {
 		GlobalDir: filepath.Join(dir, "global"),
 	}
 
-	// Write the same memory into both dirs (migration scenario).
 	name := "prefers-tabs"
 	for _, d := range []string{s.GlobalDir, s.Dir} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
@@ -816,8 +772,6 @@ func TestStoreIndexDeduplicatesAcrossDirs(t *testing.T) {
 	}
 }
 
-// TestStoreSaveVerifiesIndexDir verifies that Save writes MEMORY.md to the
-// directory selected by explicit scope, independently of type.
 func TestStoreSaveVerifiesIndexDir(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{
@@ -825,7 +779,7 @@ func TestStoreSaveVerifiesIndexDir(t *testing.T) {
 		GlobalDir: filepath.Join(dir, "global"),
 	}
 
-	// Explicit global user preference → GlobalDir.
+// Explicit global user preference  GlobalDir.
 	if _, err := s.Save(Memory{Name: "user-pref", Description: "d", Type: TypeUser, Scope: FactScopeGlobal, Body: "b"}); err != nil {
 		t.Fatal(err)
 	}
@@ -838,7 +792,7 @@ func TestStoreSaveVerifiesIndexDir(t *testing.T) {
 		t.Fatal("Dir MEMORY.md should NOT contain user-pref (it went to GlobalDir)")
 	}
 
-	// TypeProject → Dir
+// TypeProject  Dir
 	if _, err := s.Save(Memory{Name: "build-cmd", Description: "d", Type: TypeProject, Body: "b"}); err != nil {
 		t.Fatal(err)
 	}
@@ -852,8 +806,6 @@ func TestStoreSaveVerifiesIndexDir(t *testing.T) {
 	}
 }
 
-// TestStoreDeleteFlushesIndexPerDir verifies that Delete calls flushIndexIn
-// for each directory where the memory file existed.
 func TestStoreDeleteFlushesIndexPerDir(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{
@@ -861,7 +813,6 @@ func TestStoreDeleteFlushesIndexPerDir(t *testing.T) {
 		GlobalDir: filepath.Join(dir, "global"),
 	}
 
-	// Write to both dirs manually (migration scenario).
 	name := "prefers-tabs"
 	for _, d := range []string{s.GlobalDir, s.Dir} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
@@ -880,7 +831,6 @@ func TestStoreDeleteFlushesIndexPerDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Verify both MEMORY.md files have the entry removed.
 	gb, _ := os.ReadFile(filepath.Join(s.GlobalDir, indexFile))
 	pb, _ := os.ReadFile(filepath.Join(s.Dir, indexFile))
 	if strings.Contains(string(gb), name+".md") {
@@ -890,15 +840,13 @@ func TestStoreDeleteFlushesIndexPerDir(t *testing.T) {
 		t.Fatalf("Dir MEMORY.md should not reference %s after delete:\n%s", name, pb)
 	}
 
-	// Index() should return "" (no entries, no orphaned header).
+// Index() should return  (no entries, no orphaned header).
 	idx := s.Index()
 	if idx != "" {
 		t.Fatalf("Index() should return empty after deleting all entries, got:\n%s", idx)
 	}
 }
 
-// TestStorePathWithGlobalDir verifies Path() checks GlobalDir first and
-// falls back to Dir for new files.
 func TestStorePathWithGlobalDir(t *testing.T) {
 	dir := t.TempDir()
 	s := Store{
@@ -906,13 +854,12 @@ func TestStorePathWithGlobalDir(t *testing.T) {
 		GlobalDir: filepath.Join(dir, "global"),
 	}
 
-	// No files yet → defaults to Dir.
+// No files yet  defaults to Dir.
 	p := s.Path("new-fact")
 	if !strings.HasPrefix(p, s.Dir) {
 		t.Fatalf("Path for new file should default to Dir, got %s", p)
 	}
 
-	// Write a file to GlobalDir.
 	if err := os.MkdirAll(s.GlobalDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -924,7 +871,6 @@ func TestStorePathWithGlobalDir(t *testing.T) {
 		t.Fatalf("Path for file in GlobalDir should return GlobalDir path, got %s", p2)
 	}
 
-	// Write a file to Dir (not GlobalDir).
 	if err := os.MkdirAll(s.Dir, 0o755); err != nil {
 		t.Fatal(err)
 	}

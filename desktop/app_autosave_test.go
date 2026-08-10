@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 type stubProvider struct{}

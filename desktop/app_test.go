@@ -21,26 +21,26 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/billing"
-	"reasonix/internal/boot"
-	"reasonix/internal/bot"
-	"reasonix/internal/command"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/instruction"
-	"reasonix/internal/jobs"
-	"reasonix/internal/mcplaunch"
-	"reasonix/internal/memory"
-	"reasonix/internal/plugin"
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/provider"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/skill"
-	"reasonix/internal/store"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/billing"
+	"patty/internal/boot"
+	"patty/internal/bot"
+	"patty/internal/command"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/instruction"
+	"patty/internal/jobs"
+	"patty/internal/mcplaunch"
+	"patty/internal/memory"
+	"patty/internal/plugin"
+	"patty/internal/pluginpkg"
+	"patty/internal/provider"
+	"patty/internal/sandbox"
+	"patty/internal/skill"
+	"patty/internal/store"
+	"patty/internal/tool"
 )
 
 type todoMetaController struct {
@@ -228,11 +228,11 @@ func isolateDesktopUserDirs(t *testing.T) string {
 		}
 	}
 	t.Setenv("HOME", home)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", xdg)
-	t.Setenv("REASONIX_STATE_HOME", filepath.Join(home, "state"))
-	t.Setenv("REASONIX_CACHE_HOME", filepath.Join(home, "cache"))
+	t.Setenv("PATTY_STATE_HOME", filepath.Join(home, "state"))
+	t.Setenv("PATTY_CACHE_HOME", filepath.Join(home, "cache"))
 	t.Setenv("AppData", appData)
 	return home
 }
@@ -273,7 +273,7 @@ func TestNeedsOnboardingIgnoresInheritedEnv(t *testing.T) {
 
 	app := NewApp()
 	if !app.NeedsOnboarding() {
-		t.Fatal("NeedsOnboarding should require a key saved in Reasonix global .env")
+		t.Fatal("NeedsOnboarding should require a key saved in patty global .env")
 	}
 	setDesktopTestCredential(t, onboardingKeyEnv, "saved-key")
 	if app.NeedsOnboarding() {
@@ -428,7 +428,7 @@ func TestCommandsDocsShowsOnlyRuntimeWinner(t *testing.T) {
 			if len(docs) != 1 || docs[0].Kind != tt.wantKind {
 				t.Fatalf("docs commands = %+v, want one %s entry", docs, tt.wantKind)
 			}
-			if fallback, ok := commandInfoByName(app.Commands(), control.ReasonixDocsSlashName); !ok || fallback.Kind != "builtin" {
+			if fallback, ok := commandInfoByName(app.Commands(), control.PattyCodeDocsSlashName); !ok || fallback.Kind != "builtin" {
 				t.Fatalf("qualified docs fallback = %+v, %v; want built-in", fallback, ok)
 			}
 		})
@@ -476,7 +476,7 @@ func TestCommandsDocsAccountsForHiddenCompatibilityAliases(t *testing.T) {
 			if _, ok := commandInfoByName(commands, "docs"); ok {
 				t.Fatalf("hidden runtime owner left a misleading docs entry: %+v", commands)
 			}
-			for _, want := range []string{control.ReasonixDocsSlashName, tt.wantCanonical} {
+			for _, want := range []string{control.PattyCodeDocsSlashName, tt.wantCanonical} {
 				if _, ok := commandInfoByName(commands, want); !ok {
 					t.Fatalf("commands missing %q: %+v", want, commands)
 				}
@@ -488,8 +488,8 @@ func TestCommandsDocsAccountsForHiddenCompatibilityAliases(t *testing.T) {
 func TestCommandsDocsDoesNotDisplaceQualifiedCustomCommands(t *testing.T) {
 	ctrl := control.New(control.Options{Commands: []command.Command{
 		{Name: "docs", Description: "custom docs"},
-		{Name: "reasonix:docs", Description: "qualified custom docs"},
-		{Name: "reasonix:builtin:docs", Description: "second qualified custom docs"},
+		{Name: "patty:docs", Description: "qualified custom docs"},
+		{Name: "patty:builtin:docs", Description: "second qualified custom docs"},
 	}})
 	defer ctrl.Close()
 	app := NewApp()
@@ -500,9 +500,9 @@ func TestCommandsDocsDoesNotDisplaceQualifiedCustomCommands(t *testing.T) {
 		kind string
 	}{
 		{name: "docs", kind: "custom"},
-		{name: "reasonix:docs", kind: "custom"},
-		{name: "reasonix:builtin:docs", kind: "custom"},
-		{name: "reasonix:builtin:docs:2", kind: "builtin"},
+		{name: "patty:docs", kind: "custom"},
+		{name: "patty:builtin:docs", kind: "custom"},
+		{name: "patty:builtin:docs:2", kind: "builtin"},
 	} {
 		if command, ok := commandInfoByName(commands, want.name); !ok || command.Kind != want.kind {
 			t.Fatalf("command %q = %+v, %v; want kind %q", want.name, command, ok, want.kind)
@@ -1100,9 +1100,9 @@ func TestSettingsUsesUserDesktopPreferencesNotProjectConfig(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	project := robustTempDir(t)
-	if err := os.WriteFile(filepath.Join(project, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(project, "patty.toml"), []byte(`
 [desktop]
-language = "zh"
+language = "ko-KR"
 layout_style = "workbench"
 theme = "light"
 theme_style = "glacier"
@@ -1184,7 +1184,7 @@ func TestDesktopStartupSettingsUsesUserDesktopPreferencesWithoutFullSettingsPayl
 	}
 	userCfg.Bot.Enabled = true
 	userCfg.Bot.Allowlist.Enabled = true
-	userCfg.Bot.Allowlist.QQUsers = []string{"alice"}
+	userCfg.Bot.Allowlist.Users = []string{"alice"}
 	if err := userCfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save user config: %v", err)
 	}
@@ -1196,7 +1196,7 @@ func TestDesktopStartupSettingsUsesUserDesktopPreferencesWithoutFullSettingsPayl
 	if want := []string{"workspace", "git_branch", "model"}; !reflect.DeepEqual(got.StatusBarItems, want) {
 		t.Fatalf("DesktopStartupSettings status bar items = %v, want %v", got.StatusBarItems, want)
 	}
-	if !got.Bot.Enabled || !got.Bot.Allowlist.Enabled || !reflect.DeepEqual(got.Bot.Allowlist.QQUsers, []string{"alice"}) {
+	if !got.Bot.Enabled || !got.Bot.Allowlist.Enabled || !reflect.DeepEqual(got.Bot.Allowlist.Users, []string{"alice"}) {
 		t.Fatalf("DesktopStartupSettings bot settings = %+v, want lightweight bot snapshot", got.Bot)
 	}
 
@@ -1219,11 +1219,11 @@ func BenchmarkDesktopSettingsPayloads(b *testing.B) {
 		}
 	}
 	b.Setenv("HOME", home)
-	b.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	b.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	b.Setenv("USERPROFILE", home)
 	b.Setenv("XDG_CONFIG_HOME", xdg)
-	b.Setenv("REASONIX_STATE_HOME", filepath.Join(home, "state"))
-	b.Setenv("REASONIX_CACHE_HOME", filepath.Join(home, "cache"))
+	b.Setenv("PATTY_STATE_HOME", filepath.Join(home, "state"))
+	b.Setenv("PATTY_CACHE_HOME", filepath.Join(home, "cache"))
 	b.Setenv("AppData", appData)
 	b.Setenv("SHARED_PROVIDER_KEY", "sk-test")
 
@@ -1343,8 +1343,8 @@ func TestSettingsShowsGlobalCredentialWithoutMutatingWorkspaceEnv(t *testing.T) 
 		if p.Name != "settings-provider" {
 			continue
 		}
-		if !p.KeySet || !strings.Contains(p.KeySource, "Reasonix credentials") {
-			t.Fatalf("settings-provider key = set:%v source:%q, want Reasonix credentials: %+v", p.KeySet, p.KeySource, p)
+		if !p.KeySet || !strings.Contains(p.KeySource, "Patty Code credentials") {
+			t.Fatalf("settings-provider key = set:%v source:%q, want Patty Code credentials: %+v", p.KeySet, p.KeySource, p)
 		}
 		if env := os.Getenv("SHARED_SETTINGS_KEY"); env != "from-project" {
 			t.Fatalf("Settings mutated SHARED_SETTINGS_KEY = %q, want existing project env", env)
@@ -1358,11 +1358,11 @@ func TestSettingsSeedsMissingUserConfigFromLegacyProjectConfig(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	project := robustTempDir(t)
-	if err := os.WriteFile(filepath.Join(project, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(project, "patty.toml"), []byte(`
 default_model = "legacy-provider/legacy-model"
 
 [desktop]
-language = "zh"
+language = "ko-KR"
 layout_style = "workbench"
 theme = "light"
 theme_style = "glacier"
@@ -1384,7 +1384,7 @@ status_bar_items = ["model", "cache", "balance"]
 	if got.ConfigPath != config.UserConfigPath() {
 		t.Fatalf("Settings configPath = %q, want user config %q", got.ConfigPath, config.UserConfigPath())
 	}
-	if got.DefaultModel != "legacy-provider/legacy-model" || got.DesktopLanguage != "zh" || got.DesktopLayoutStyle != "workbench" || got.DesktopTheme != "light" || got.DesktopThemeStyle != "glacier" || got.CloseBehavior != "quit" || got.StatusBarStyle != "text" {
+	if got.DefaultModel != "legacy-provider/legacy-model" || got.DesktopLanguage != "ko-KR" || got.DesktopLayoutStyle != "workbench" || got.DesktopTheme != "light" || got.DesktopThemeStyle != "glacier" || got.CloseBehavior != "quit" || got.StatusBarStyle != "text" {
 		t.Fatalf("Settings did not seed from legacy project config: %+v", got)
 	}
 	if want := []string{"model", "cache", "balance"}; !reflect.DeepEqual(got.StatusBarItems, want) {
@@ -2275,7 +2275,7 @@ func TestSetProviderKeyLeaseHeldKeepsCurrentController(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SetProviderKey: %v", err)
 	}
-	if !strings.Contains(warning, "current session could not refresh yet") || !strings.Contains(warning, "another Reasonix window") {
+	if !strings.Contains(warning, "current session could not refresh yet") || !strings.Contains(warning, "another patty window") {
 		t.Fatalf("SetProviderKey warning = %q, want deferred rebuild warning", warning)
 	}
 	if strings.Contains(warning, sessionPath) || strings.Contains(warning, "held by") {
@@ -2419,7 +2419,7 @@ func TestSaveProviderWithKeyLeaseHeldPersistsCustomProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SaveProviderWithKey: %v", err)
 	}
-	if !strings.Contains(warning, "current session could not refresh yet") || !strings.Contains(warning, "another Reasonix window") {
+	if !strings.Contains(warning, "current session could not refresh yet") || !strings.Contains(warning, "another patty window") {
 		t.Fatalf("SaveProviderWithKey warning = %q, want deferred rebuild warning", warning)
 	}
 	if strings.Contains(warning, sessionPath) || strings.Contains(warning, "held by") {
@@ -2977,7 +2977,7 @@ func TestAddOfficialProviderAccessUsesDesktopLanguagePricing(t *testing.T) {
 	}
 	if err := os.WriteFile(config.UserConfigPath(), []byte(`
 [desktop]
-language = "zh"
+language = "ko-KR"
 `), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -3252,7 +3252,7 @@ base_url = "https://api.deepseek.com"
 model = "deepseek-v4-flash"
 api_key_env = "DEEPSEEK_API_KEY"
 `
-	if err := os.WriteFile(filepath.Join(projectRoot, "reasonix.toml"), []byte(projectConfig), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectRoot, "patty.toml"), []byte(projectConfig), 0o644); err != nil {
 		t.Fatalf("write project config: %v", err)
 	}
 
@@ -4182,8 +4182,8 @@ func TestEnsureTabControllerWorkspaceWarnsWhenPinnedSessionSwitchesWorkspace(t *
 }
 
 func TestDescribeSessionBindingWorkspaceKeepsWindowsPathReadable(t *testing.T) {
-	path := `C:\Users\Jane Doe\Reasonix`
-	want := `project workspace "C:\Users\Jane Doe\Reasonix"`
+	path := `C:\Users\Jane Doe\Patty Code`
+	want := `project workspace "C:\Users\Jane Doe\Patty Code"`
 	if got := describeSessionBindingWorkspace("project", path); got != want {
 		t.Fatalf("describeSessionBindingWorkspace = %q, want %q", got, want)
 	}
@@ -4231,7 +4231,7 @@ api_key_env = "OWNER_MODEL_KEY"
 supported_efforts = ["max"]
 default_effort = "max"
 `
-	if err := os.WriteFile(filepath.Join(projectA, "reasonix.toml"), []byte(ownerConfig), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectA, "patty.toml"), []byte(ownerConfig), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	staleConfig := `default_model = "stale/stale-model"
@@ -4243,7 +4243,7 @@ model = "stale-model"
 api_key_env = "STALE_MODEL_KEY"
 reasoning_protocol = "none"
 `
-	if err := os.WriteFile(filepath.Join(projectB, "reasonix.toml"), []byte(staleConfig), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectB, "patty.toml"), []byte(staleConfig), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4517,13 +4517,13 @@ func TestSaveProviderPersistsReasoningProtocol(t *testing.T) {
 
 func TestDeleteProviderMigratesConfigAndOpenTabs(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-a/model-a2"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", Models: []string{"model-a1", "model-a2"}, APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", Models: []string{"model-a1", "model-a2"}, APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	cfg.Agent.PlannerModel = "prov-a"
 	cfg.Desktop.ProviderAccess = []string{"prov-a", "prov-b"}
@@ -4584,13 +4584,13 @@ func assertTabBuildSuperseded(t *testing.T, app *App, tab *WorkspaceTab, generat
 
 func TestDeleteProviderSupersedesInFlightStartupBuild(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-b/model-b1"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	cfg.Desktop.ProviderAccess = []string{"prov-a", "prov-b"}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
@@ -4623,13 +4623,13 @@ func TestDeleteProviderSupersedesInFlightStartupBuild(t *testing.T) {
 
 func TestRemoveBuiltInProviderAccessSupersedesInFlightStartupBuild(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-b/model-b1"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "deepseek", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-chat", APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "deepseek", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-chat", APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	cfg.Desktop.ProviderAccess = []string{"deepseek", "prov-b"}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
@@ -4791,13 +4791,13 @@ func TestClearActiveSessionRuntimeReleasesResourcesWhenTabReplaced(t *testing.T)
 
 func TestDeleteProviderRejectsRunningAffectedTab(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-a/model-a1"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -4825,12 +4825,12 @@ func TestDeleteProviderRejectsRunningAffectedTab(t *testing.T) {
 
 func TestDeleteProviderRechecksWorkAfterWaitingForRuntimeMutation(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-a/model-a1"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -4889,12 +4889,12 @@ func TestDeleteProviderRechecksWorkAfterWaitingForRuntimeMutation(t *testing.T) 
 
 func TestDeleteProviderReleasesAffectedTabSharedHostReference(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-a/model-a1"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -4928,12 +4928,12 @@ func TestDeleteProviderReleasesAffectedTabSharedHostReference(t *testing.T) {
 
 func TestRemoveBuiltInProviderAccessReleasesAffectedTabSharedHostReference(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 	cfg := config.Default()
 	cfg.DefaultModel = "deepseek/deepseek-chat"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "deepseek", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-chat", APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "deepseek", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-chat", APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	cfg.Desktop.ProviderAccess = []string{"deepseek", "prov-b"}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
@@ -4968,13 +4968,13 @@ func TestRemoveBuiltInProviderAccessReleasesAffectedTabSharedHostReference(t *te
 
 func TestDeleteProviderRejectsAffectedBackgroundJobs(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-a/model-a1"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -5006,13 +5006,13 @@ func TestDeleteProviderRejectsAffectedBackgroundJobs(t *testing.T) {
 
 func TestDeleteProviderRejectsUnaffectedBackgroundJobsBeforeSavingConfig(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "REASONIX_TEST_KEY", "sk-test")
+	setDesktopTestCredential(t, "PATTY_TEST_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-b/model-b1"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "REASONIX_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "REASONIX_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "PATTY_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "PATTY_TEST_KEY"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -5225,7 +5225,7 @@ func TestConnectKeyRebuildLeaseHeldKeepsCurrentController(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConnectKey: %v", err)
 	}
-	if !strings.Contains(warning, "another Reasonix window") {
+	if !strings.Contains(warning, "another patty window") {
 		t.Fatalf("ConnectKey warning = %q, want user-facing lease warning", warning)
 	}
 	if tab.Ctrl != oldCtrl {
@@ -5256,7 +5256,7 @@ func TestMigrateDesktopPreferencesDoesNotOverwriteExistingConfig(t *testing.T) {
 		t.Fatalf("save user config: %v", err)
 	}
 
-	if err := NewApp().MigrateDesktopPreferences("zh", "light", "glacier"); err != nil {
+	if err := NewApp().MigrateDesktopPreferences("ko-KR", "light", "glacier"); err != nil {
 		t.Fatalf("migrate desktop preferences: %v", err)
 	}
 
@@ -6952,7 +6952,7 @@ func TestListSessionsMarksAutoBotSessionAsChannel(t *testing.T) {
 	}
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{{
-		ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected",
+		ID: "generic-main", Provider: "generic", Domain: "generic", Label: "Bot", Enabled: true, Status: "connected",
 		SessionMappings: []config.BotConnectionSessionMapping{{
 			RemoteID: "wx-chat-1", SessionID: "path:" + path, SessionSource: "auto",
 		}},
@@ -6970,7 +6970,7 @@ func TestListSessionsMarksAutoBotSessionAsChannel(t *testing.T) {
 		t.Fatalf("ListSessions len = %d, want 1: %+v", len(sessions), sessions)
 	}
 	got := sessions[0]
-	if got.Kind != "channel" || got.Channel != "weixin" || got.ChannelLabel != "微信" || got.RemoteID != "wx-chat-1" || got.SessionSource != "auto" {
+	if got.Kind != "channel" || got.Channel != "generic" || got.ChannelLabel != "Bot" || got.RemoteID != "wx-chat-1" || got.SessionSource != "auto" {
 		t.Fatalf("channel session meta = %+v", got)
 	}
 }
@@ -6989,7 +6989,7 @@ func TestDeleteSessionClearsAutoBotSessionMapping(t *testing.T) {
 	other := filepath.Join(dir, "other-channel.jsonl")
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{{
-		ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected",
+		ID: "generic-main", Provider: "generic", Domain: "generic", Label: "Bot", Enabled: true, Status: "connected",
 		SessionMappings: []config.BotConnectionSessionMapping{
 			{RemoteID: "remove-auto", SessionID: "path:" + path, SessionSource: "auto"},
 			{RemoteID: "keep-explicit", SessionID: "path:" + path},
@@ -7352,9 +7352,9 @@ func TestSubmitToTabHistoryDisplaysRawInputAfterMemoryCompose(t *testing.T) {
 
 	app := NewApp()
 	app.setTestCtrl(ctrl, "deepseek/test")
-	ctrl.QueueMemory(`Saved memory "reasonix-contributions": contribution count updated`)
+	ctrl.QueueMemory(`Saved memory "patty-contributions": contribution count updated`)
 
-	const prompt = "不要，删了"
+	const prompt = "하지 마, 삭제해"
 	app.SubmitToTab("test", prompt)
 	composed := <-runner.started
 	waitNotRunning(t, ctrl)
@@ -7381,7 +7381,7 @@ func TestForkCreatesActiveTabWithoutSwitchingSourceController(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	workspace := robustTempDir(t)
-	if err := os.WriteFile(filepath.Join(workspace, "reasonix.toml"), []byte(""), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspace, "patty.toml"), []byte(""), 0o644); err != nil {
 		t.Fatalf("write workspace config: %v", err)
 	}
 	dir := config.SessionDir()
@@ -7435,7 +7435,7 @@ func TestForkCreatesActiveTabWithoutSwitchingSourceController(t *testing.T) {
 	if got := len(ctrl.History()); got != 5 {
 		t.Fatalf("source history len after fork = %d, want 5", got)
 	}
-	if got, want := meta.TopicTitle, "Source topic · 分叉"; got != want {
+	if got, want := meta.TopicTitle, "Source topic · 분기"; got != want {
 		t.Fatalf("fork topic title = %q, want %q", got, want)
 	}
 
@@ -7461,7 +7461,7 @@ func TestForkCreatesActiveTabWithoutSwitchingSourceController(t *testing.T) {
 			if m.ParentID != agent.BranchID(path) || m.ForkTurn != 1 || m.ForkMessageIndex != 3 {
 				t.Fatalf("fork branch meta = %+v, want parent %q turn 1 index 3", m, agent.BranchID(path))
 			}
-			if m.Scope != "project" || m.WorkspaceRoot != workspace || m.TopicTitle != "Source topic · 分叉" {
+			if m.Scope != "project" || m.WorkspaceRoot != workspace || m.TopicTitle != "Source topic · 분기" {
 				t.Fatalf("fork topic meta = %+v", m)
 			}
 		}
@@ -7475,7 +7475,7 @@ func TestCapabilitiesShowsDefaultMCPAsAutomaticIdleNotDisabled(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "playwright"
 command = "npx"
@@ -7506,8 +7506,8 @@ args = ["-y", "@playwright/mcp"]
 
 func TestCapabilitiesIncludesInstalledPlugins(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	reasonixHome := config.ReasonixHomeDir()
-	root := filepath.Join(reasonixHome, "plugins", "superpowers")
+	pattyHome := config.PattyHomeDir()
+	root := filepath.Join(pattyHome, "plugins", "superpowers")
 	if err := os.MkdirAll(filepath.Join(root, "skills"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -7528,7 +7528,7 @@ func TestCapabilitiesIncludesInstalledPlugins(t *testing.T) {
 }`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := pluginpkg.Upsert(reasonixHome, pluginpkg.InstalledPlugin{
+	if err := pluginpkg.Upsert(pattyHome, pluginpkg.InstalledPlugin{
 		Name:         "superpowers",
 		Root:         "plugins/superpowers",
 		Version:      "6.1.0",
@@ -7560,7 +7560,7 @@ func TestDesktopSharedHostProjectMCPConnectsWithoutLaunchApproval(t *testing.T) 
 
 	srv := desktopMCPHTTPServer(t)
 	defer srv.Close()
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), fmt.Appendf(nil, `
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), fmt.Appendf(nil, `
 [[plugins]]
 name = "h"
 type = "http"
@@ -7629,8 +7629,8 @@ func TestProjectMCPViewIsTrustedAndKeepsProjectSource(t *testing.T) {
 	if blocked.RequiresLaunchApproval {
 		t.Fatalf("project MCP exposed obsolete launch approval action: %+v", blocked)
 	}
-	if blocked.Source != "project" || blocked.ConfigSource != "reasonix.toml" {
-		t.Fatalf("blocked project MCP source = %q/%q, want project/reasonix.toml", blocked.Source, blocked.ConfigSource)
+	if blocked.Source != "project" || blocked.ConfigSource != "patty.toml" {
+		t.Fatalf("blocked project MCP source = %q/%q, want project/patty.toml", blocked.Source, blocked.ConfigSource)
 	}
 
 	user := withPluginConfig(ServerView{Name: "user", Status: "connected"},
@@ -7647,7 +7647,7 @@ func TestMCPServersMatchesCapabilitiesServerProjection(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "playwright"
 command = "npx"
@@ -7669,7 +7669,7 @@ func TestConfiguredMCPWithFormerBuiltInNameIsUserServer(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "time"
 command = "custom-time"
@@ -7715,10 +7715,10 @@ tier = "lazy"
 
 func TestSetMCPServerEnabledRestoresOnDemandWithoutConnecting(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("REASONIX_CACHE_HOME", t.TempDir())
+	t.Setenv("PATTY_CACHE_HOME", t.TempDir())
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "offline"
 type = "http"
@@ -7756,7 +7756,7 @@ func TestSetMCPServerEnabledSharedHostPreservesSiblingTabs(t *testing.T) {
 
 	srv := desktopMCPHTTPServer(t)
 	defer srv.Close()
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), fmt.Appendf(nil, `
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), fmt.Appendf(nil, `
 [[plugins]]
 name = "h"
 type = "http"
@@ -7906,7 +7906,7 @@ func TestReconnectMCPServerUsesEffectiveProjectConfigWhenUserNameIsShadowed(t *t
 	if err := userCfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), fmt.Appendf(nil, `
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), fmt.Appendf(nil, `
 [[plugins]]
 name = "h"
 type = "http"
@@ -8052,7 +8052,7 @@ func newGatedDesktopMCPLaunchFixture(t *testing.T, startGateAddr string) gatedDe
 		gateConfig = fmt.Sprintf("DESKTOP_MCP_START_GATE_ADDR = %q\n", startGateAddr)
 	}
 	helperArgs := []string{"-test.run=TestDesktopMCPHelperProcess", "--"}
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), fmt.Appendf(nil, `
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), fmt.Appendf(nil, `
 [[plugins]]
 name = "h"
 command = %q
@@ -8084,9 +8084,9 @@ network = true
 	}
 	runtimeSpecs := boot.PluginSpecsForRootWithOptions([]config.PluginEntry{entry}, dir, boot.PluginSpecOptions{
 		DefaultCallTimeout: time.Duration(cfg.MCPCallTimeoutSeconds()) * time.Second,
-		LaunchManager:      mcplaunch.ForWorkspace(config.ReasonixHomeDir(), dir),
+		LaunchManager:      mcplaunch.ForWorkspace(config.PattyHomeDir(), dir),
 		ConfigSource:       "workspace_config",
-		StateHome:          config.ReasonixHomeDir(),
+		StateHome:          config.PattyHomeDir(),
 		WriterRoots:        cfg.WriteRootsForRoot(dir),
 		ForbidReadRoots:    cfg.ForbidReadRootsForRoot(dir),
 		Network:            cfg.Sandbox.Network,
@@ -8297,12 +8297,12 @@ func TestRemovePluginSerializesWithMCPAuthorization(t *testing.T) {
 // the real uninstall and MCP disconnect flow. Returns the plugin root.
 func installGatedTestPluginPackage(t *testing.T, mcpServerName string) string {
 	t.Helper()
-	reasonixHome := config.ReasonixHomeDir()
-	root := filepath.Join(reasonixHome, "plugins", "review-helper")
+	pattyHome := config.PattyHomeDir()
+	root := filepath.Join(pattyHome, "plugins", "review-helper")
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, pluginpkg.NativeManifest), fmt.Appendf(nil, `{"apiVersion": "reasonix.io/plugin/v2",
+	if err := os.WriteFile(filepath.Join(root, pluginpkg.NativeManifest), fmt.Appendf(nil, `{"apiVersion": "patty.io/plugin/v2",
   "name": "review-helper",
   "version": "1.0.0",
   "mcpServers": {
@@ -8311,11 +8311,11 @@ func installGatedTestPluginPackage(t *testing.T, mcpServerName string) string {
 }`, mcpServerName), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := pluginpkg.Upsert(reasonixHome, pluginpkg.InstalledPlugin{
+	if err := pluginpkg.Upsert(pattyHome, pluginpkg.InstalledPlugin{
 		Name:         "review-helper",
 		Root:         "plugins/review-helper",
 		Version:      "1.0.0",
-		ManifestKind: "reasonix",
+		ManifestKind: "patty",
 		Enabled:      true,
 	}); err != nil {
 		t.Fatal(err)
@@ -8325,7 +8325,7 @@ func installGatedTestPluginPackage(t *testing.T, mcpServerName string) string {
 
 func installedPluginNamed(t *testing.T, name string) bool {
 	t.Helper()
-	st, err := pluginpkg.LoadState(config.ReasonixHomeDir())
+	st, err := pluginpkg.LoadState(config.PattyHomeDir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -8541,7 +8541,7 @@ func TestBridgeDriveReleasesRuntimeAdmissionWhenTakeoverWasReclaimed(t *testing.
 	}
 
 	err := fixture.app.bridgeDrive("active", "hello", bot.DesktopWatchRoute{})
-	if err == nil || !strings.Contains(err.Error(), "接管已解除") {
+	if err == nil || !strings.Contains(err.Error(), "인수 해제됨") {
 		t.Fatalf("bridgeDrive error = %v, want lost-takeover error", err)
 	}
 	if !fixture.app.runtimeAdmissionMu.TryLock() {
@@ -8888,7 +8888,7 @@ func TestEditAndRemoveConfiguredMCPWithBuiltInName(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "time"
 command = "custom-time"
@@ -8940,7 +8940,7 @@ func TestRemoveProjectMCPRevealsAndRegistersGlobalFallback(t *testing.T) {
 	if err := userCfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatal(err)
 	}
-	projectPath := filepath.Join(dir, "reasonix.toml")
+	projectPath := filepath.Join(dir, "patty.toml")
 	if err := os.WriteFile(projectPath, []byte(`
 [[plugins]]
 name = "docs"
@@ -9000,10 +9000,10 @@ func TestRemoveMCPServerClearsRecordedStartupFailure(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "broken"
-command = "reasonix-missing-mcp-binary"
+command = "patty-missing-mcp-binary"
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -9013,7 +9013,7 @@ command = "reasonix-missing-mcp-binary"
 	defer app.activeCtrl().Close()
 	recordMCPFailure(app.activeCtrl(), config.PluginEntry{
 		Name:    "broken",
-		Command: "reasonix-missing-mcp-binary",
+		Command: "patty-missing-mcp-binary",
 	}, errors.New("connect: missing binary"))
 
 	view := app.Capabilities()
@@ -9074,12 +9074,12 @@ func TestRemoveMCPServerRejectsPluginManagedServerWithoutDisconnecting(t *testin
 
 	srv := desktopMCPHTTPServer(t)
 	defer srv.Close()
-	reasonixHome := config.ReasonixHomeDir()
-	root := filepath.Join(reasonixHome, "plugins", "superpowers")
+	pattyHome := config.PattyHomeDir()
+	root := filepath.Join(pattyHome, "plugins", "superpowers")
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, pluginpkg.NativeManifest), fmt.Appendf(nil, `{"apiVersion": "reasonix.io/plugin/v2",
+	if err := os.WriteFile(filepath.Join(root, pluginpkg.NativeManifest), fmt.Appendf(nil, `{"apiVersion": "patty.io/plugin/v2",
   "name": "superpowers",
   "version": "1.0.0",
   "mcpServers": {
@@ -9088,11 +9088,11 @@ func TestRemoveMCPServerRejectsPluginManagedServerWithoutDisconnecting(t *testin
 }`, srv.URL), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := pluginpkg.Upsert(reasonixHome, pluginpkg.InstalledPlugin{
+	if err := pluginpkg.Upsert(pattyHome, pluginpkg.InstalledPlugin{
 		Name:         "superpowers",
 		Root:         "plugins/superpowers",
 		Version:      "1.0.0",
-		ManifestKind: "reasonix",
+		ManifestKind: "patty",
 		Enabled:      true,
 	}); err != nil {
 		t.Fatal(err)
@@ -9191,7 +9191,7 @@ func TestUpdateMCPServerEditsProjectMCPJSONEntry(t *testing.T) {
 	if err := app.UpdateMCPServer("codegraph", MCPServerInput{
 		Name:      "codegraph",
 		Transport: "stdio",
-		Command:   "reasonix-missing-mcp-binary",
+		Command:   "patty-missing-mcp-binary",
 		Args:      []string{"serve", "--mcp"},
 		Env:       map[string]string{"CODEGRAPH_LOG": "debug"},
 	}); err != nil {
@@ -9213,7 +9213,7 @@ func TestUpdateMCPServerEditsProjectMCPJSONEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := doc.MCPServers["codegraph"]
-	if got.Command != "reasonix-missing-mcp-binary" || !reflect.DeepEqual(got.Args, []string{"serve", "--mcp"}) || got.Env["CODEGRAPH_LOG"] != "debug" {
+	if got.Command != "patty-missing-mcp-binary" || !reflect.DeepEqual(got.Args, []string{"serve", "--mcp"}) || got.Env["CODEGRAPH_LOG"] != "debug" {
 		t.Fatalf(".mcp.json codegraph = %+v, want updated command/args/env", got)
 	}
 	if _, ok := findPluginEntry(config.LoadForEdit(config.UserConfigPath()).Plugins, "codegraph"); ok {
@@ -9230,7 +9230,7 @@ func TestUpdateMCPServerPreservesProjectTOMLSourceAndGlobalShadow(t *testing.T) 
 	if err := userCfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatal(err)
 	}
-	projectPath := filepath.Join(dir, "reasonix.toml")
+	projectPath := filepath.Join(dir, "patty.toml")
 	if err := os.WriteFile(projectPath, []byte(`
 [[plugins]]
 name = "docs"
@@ -9255,7 +9255,7 @@ command = "project-docs"
 	if err := app.UpdateMCPServer("docs", MCPServerInput{
 		Name: "docs", Transport: "stdio", Command: "project-docs-updated",
 	}); err != nil {
-		t.Fatalf("UpdateMCPServer(project reasonix.toml docs): %v", err)
+		t.Fatalf("UpdateMCPServer(project patty.toml docs): %v", err)
 	}
 
 	projectCfg := config.LoadForEdit(projectPath)
@@ -9339,7 +9339,7 @@ func TestInstallMCPServerHandshakeFailureDoesNotPersist(t *testing.T) {
 	defer app.activeCtrl().Close()
 
 	result, err := app.InstallMCPServer(MCPServerInput{
-		Name: "broken", Transport: "stdio", Command: "reasonix-missing-mcp-binary",
+		Name: "broken", Transport: "stdio", Command: "patty-missing-mcp-binary",
 	})
 	if err != nil {
 		t.Fatalf("InstallMCPServer returned transport error instead of structured issue: %v", err)
@@ -9503,7 +9503,7 @@ func TestUpdateMCPServerFailedCandidateRollsBackConfigAndConnection(t *testing.T
 	}
 
 	err := app.UpdateMCPServer("stable", MCPServerInput{
-		Name: "stable", Transport: "stdio", Command: "reasonix-missing-mcp-binary",
+		Name: "stable", Transport: "stdio", Command: "patty-missing-mcp-binary",
 	})
 	if err == nil {
 		t.Fatal("broken update candidate should fail")
@@ -9525,7 +9525,7 @@ func TestCapabilitiesMarksBackgroundRemoteMCPAuthPossible(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "dida"
 type = "http"
@@ -9555,7 +9555,7 @@ func TestCapabilitiesDoesNotMarkRemoteMCPWithAuthHeaderPossible(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "stripe"
 type = "http"
@@ -9586,7 +9586,7 @@ func TestCapabilitiesMarksAuthFailureRequired(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "figma"
 type = "http"
@@ -9618,7 +9618,7 @@ func TestClearMCPServerAuthenticationClearsConfigAndFailure(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "figma"
 type = "http"
@@ -9678,7 +9678,7 @@ func TestUpdateMCPServerMigratesLegacyTierInProjectSource(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "playwright"
 command = "npx"
@@ -9727,7 +9727,7 @@ tier = "lazy"
 	if _, ok := findPluginEntry(userCfg.Plugins, "playwright"); ok {
 		t.Fatalf("project plugin should not be copied to user config: %+v", userCfg.Plugins)
 	}
-	projectCfg := config.LoadForEdit(filepath.Join(dir, "reasonix.toml"))
+	projectCfg := config.LoadForEdit(filepath.Join(dir, "patty.toml"))
 	projectPlugin, ok := findPluginEntry(projectCfg.Plugins, "playwright")
 	if !ok {
 		t.Fatalf("playwright should remain in project config: %+v", projectCfg.Plugins)
@@ -9757,7 +9757,7 @@ func TestUpdateMCPServerSplitsPastedCommandLine(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := t.TempDir()
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "playwright"
 command = "npx"
@@ -9795,10 +9795,10 @@ func TestUpdateMCPServerRejectsReconnectFailureWithoutPersisting(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "broken"
-command = "reasonix-old-missing-mcp-binary"
+command = "patty-old-missing-mcp-binary"
 tier = "background"
 `), 0o644); err != nil {
 		t.Fatal(err)
@@ -9811,7 +9811,7 @@ tier = "background"
 	if err := app.UpdateMCPServer("broken", MCPServerInput{
 		Name:      "broken",
 		Transport: "stdio",
-		Command:   "reasonix-missing-mcp-binary",
+		Command:   "patty-missing-mcp-binary",
 	}); err == nil {
 		t.Fatal("UpdateMCPServer should reject an unusable candidate")
 	}
@@ -9819,7 +9819,7 @@ tier = "background"
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := cfg.Plugins[0].Command; got != "reasonix-old-missing-mcp-binary" {
+	if got := cfg.Plugins[0].Command; got != "patty-old-missing-mcp-binary" {
 		t.Fatalf("failed update command = %q, want original command", got)
 	}
 	if got := cfg.Plugins[0].Tier; got != "" {
@@ -9834,7 +9834,7 @@ tier = "background"
 			if s.Status != "failed" {
 				t.Fatalf("server status = %q, want failed; server = %+v", s.Status, s)
 			}
-			if s.Command != "reasonix-old-missing-mcp-binary" || s.Tier != "background" {
+			if s.Command != "patty-old-missing-mcp-binary" || s.Tier != "background" {
 				t.Fatalf("failed candidate leaked into server config: %+v", s)
 			}
 			return
@@ -9847,7 +9847,7 @@ func TestReconnectMCPServerClearsInitializingPlaceholderAndRecordsFailure(t *tes
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "codegraph"
 `), 0o644); err != nil {
@@ -9903,10 +9903,10 @@ func TestSetMCPServerTierPreservesProjectSourceAndRecordsConnectFailure(t *testi
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "broken"
-command = "reasonix-missing-mcp-binary"
+command = "patty-missing-mcp-binary"
 tier = "lazy"
 `), 0o644); err != nil {
 		t.Fatal(err)
@@ -9934,7 +9934,7 @@ tier = "lazy"
 	if _, ok := findPluginEntry(userCfg.Plugins, "broken"); ok {
 		t.Fatalf("project plugin should not be copied to user config: %+v", userCfg.Plugins)
 	}
-	projectCfg := config.LoadForEdit(filepath.Join(dir, "reasonix.toml"))
+	projectCfg := config.LoadForEdit(filepath.Join(dir, "patty.toml"))
 	projectPlugin, ok := findPluginEntry(projectCfg.Plugins, "broken")
 	if !ok {
 		t.Fatalf("broken should remain in project config: %+v", projectCfg.Plugins)
@@ -9970,7 +9970,7 @@ func TestSetMCPServerTierRejectsBackgroundJobsBeforeSavingConfig(t *testing.T) {
 	if err := os.WriteFile(config.UserConfigPath(), []byte(`
 [[plugins]]
 name = "broken"
-command = "reasonix-missing-mcp-binary"
+command = "patty-missing-mcp-binary"
 tier = "lazy"
 `), 0o644); err != nil {
 		t.Fatal(err)
@@ -9996,10 +9996,10 @@ func TestCapabilitiesMigratesFailedMCPConfiguredTierAfterRestart(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "patty.toml"), []byte(`
 [[plugins]]
 name = "broken"
-command = "reasonix-missing-mcp-binary"
+command = "patty-missing-mcp-binary"
 tier = "eager"
 `), 0o644); err != nil {
 		t.Fatal(err)
@@ -10010,7 +10010,7 @@ tier = "eager"
 	defer app.activeCtrl().Close()
 	recordMCPFailure(app.activeCtrl(), config.PluginEntry{
 		Name:    "broken",
-		Command: "reasonix-missing-mcp-binary",
+		Command: "patty-missing-mcp-binary",
 		Tier:    "eager",
 	}, errors.New("connect: missing binary"))
 

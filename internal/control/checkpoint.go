@@ -3,8 +3,8 @@ package control
 import (
 	"sync"
 
-	"reasonix/internal/checkpoint"
-	"reasonix/internal/diff"
+	"patty/internal/checkpoint"
+	"patty/internal/diff"
 )
 
 // checkpointManager owns the snapshot-based rewind bookkeeping: the per-session

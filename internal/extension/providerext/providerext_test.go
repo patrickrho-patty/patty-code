@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/provider"
+	"patty/internal/extension"
+	"patty/internal/extension/protocol"
+	"patty/internal/provider"
 )
 
 // fakeClient implements ProviderClient with programmable behavior; streams are

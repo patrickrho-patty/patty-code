@@ -13,18 +13,16 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/agent/testutil"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/agent/testutil"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/i18n"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
-// TestRunStatuslineCmd checks the custom status-line runner: it returns the
-// first stdout line and forwards the JSON payload on stdin.
 func TestRunStatuslineCmd(t *testing.T) {
 	firstLineCmd := "printf 'row-one\\nrow-two\\n'"
 	stdinCmd := "cat"
@@ -35,15 +33,12 @@ func TestRunStatuslineCmd(t *testing.T) {
 		failCmd = "exit /b 3"
 	}
 
-	// Multi-line output collapses to the first row.
 	if got := runStatuslineCmd(firstLineCmd, "{}"); got != "row-one" {
 		t.Errorf("multi-line output should collapse to the first row, got %q", got)
 	}
-	// The JSON payload is delivered on stdin.
 	if got := runStatuslineCmd(stdinCmd, `{"model":"deepseek"}`); got != `{"model":"deepseek"}` {
 		t.Errorf("stdin payload not forwarded, got %q", got)
 	}
-	// A failing command yields an empty line, not an error.
 	if got := runStatuslineCmd(failCmd, "{}"); got != "" {
 		t.Errorf("failed command should yield empty, got %q", got)
 	}
@@ -57,9 +52,6 @@ func TestRunStatuslineCmdNormalizesQuotedNodeEval(t *testing.T) {
 	cmd := `node -e "\"` + script + `\""`
 	timeout := statuslineCommandTimeout
 	if runtime.GOOS == "windows" {
-		// Windows CI cold-starts node.exe through Defender scanning while the
-		// rest of the module compiles and tests in parallel; a fresh toolchain
-		// (empty setup-go cache) pushes that past 10s. The production timeout
 		// is not under test here — only the quoted-eval normalization is.
 		timeout = 30 * time.Second
 	}
@@ -69,8 +61,6 @@ func TestRunStatuslineCmdNormalizesQuotedNodeEval(t *testing.T) {
 	}
 }
 
-// TestRunStatuslineDisabled confirms no command means no work (nil cmd), without
-// touching the controller.
 func TestRunStatuslineDisabled(t *testing.T) {
 	m := chatTUI{} // no statuslineCmd, nil ctrl
 	if cmd := m.runStatusline(); cmd != nil {
@@ -123,8 +113,8 @@ func TestIdleStatuslineIsCompact(t *testing.T) {
 
 	content := renderStatuslineView(t, false)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "Auto") || !strings.Contains(plain, "ready") {
-		t.Fatalf("idle status line missing mode status:\n%s", plain)
+	if !strings.Contains(plain, "ready") {
+		t.Fatalf("idle status line missing operational state:\n%s", plain)
 	}
 	if !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
 		t.Fatalf("idle status line missing plan-toggle hint:\n%s", plain)
@@ -134,58 +124,57 @@ func TestIdleStatuslineIsCompact(t *testing.T) {
 			t.Fatalf("idle status line should not contain %q:\n%s", old, plain)
 		}
 	}
-	if strings.Contains(plain, "[auto]") {
-		t.Fatalf("idle status line should use pill label, not bracketed tag:\n%s", plain)
+	for _, reject := range []string{"MODEL", "EFFORT", "deepseek-v4-flash", "[auto]", " Auto "} {
+		if strings.Contains(plain, reject) {
+			t.Fatalf("idle footer repeated masthead fact %q:\n%s", reject, plain)
+		}
 	}
-	if !strings.Contains(content, "\x1b[48;2;245;158;11m") {
-		t.Fatalf("Auto status line should use amber pill background, got:\n%q", content)
+	if raw := lastRenderedLine(content); strings.Contains(raw, "\x1b[48;") {
+		t.Fatalf("operational status line should not use a mode pill background, got:\n%q", raw)
 	}
 }
 
-func TestYoloStatuslineUsesDangerPill(t *testing.T) {
+func TestYoloStatuslineUsesOperationalWarningWithoutModePill(t *testing.T) {
 	defer restoreThemeForTest(activeColorProfile, activeCLITheme)
 	activeColorProfile = colorprofile.TrueColor
 	i18n.DetectLanguage("en")
 
 	content := renderStatuslineView(t, true)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "YOLO") || !strings.Contains(plain, "approvals skipped") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
+	if !strings.Contains(plain, "approvals skipped") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
 		t.Fatalf("YOLO status line missing warning text:\n%s", plain)
 	}
-	if strings.Contains(plain, "[YOLO]") {
-		t.Fatalf("YOLO status line should use a pill label, not bracketed tag:\n%s", plain)
-	}
-	if !strings.Contains(content, "\x1b[48;2;229;72;77m") {
-		t.Fatalf("YOLO status line should use danger pill background, got:\n%q", content)
+	if raw := lastRenderedLine(content); strings.Contains(raw, "\x1b[48;") {
+		t.Fatalf("YOLO operational warning should not use a mode pill background, got:\n%q", raw)
 	}
 }
 
-func TestPlanStatuslineUsesBluePill(t *testing.T) {
+func TestPlanStatuslineKeepsModeInMasthead(t *testing.T) {
 	defer restoreThemeForTest(activeColorProfile, activeCLITheme)
 	activeColorProfile = colorprofile.TrueColor
 	i18n.DetectLanguage("en")
 
 	content := renderPlanStatuslineView(t)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "Plan") || !strings.Contains(plain, "ready") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
-		t.Fatalf("plan status line missing mode status:\n%s", plain)
+	if !strings.Contains(plain, "ready") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
+		t.Fatalf("plan status line missing operational state:\n%s", plain)
 	}
-	if !strings.Contains(content, "\x1b[48;2;37;99;235m") {
-		t.Fatalf("Plan status line should use blue pill background, got:\n%q", content)
+	if strings.Contains(plain, " Plan ") {
+		t.Fatalf("plan mode should remain in the masthead rather than the operational footer:\n%s", plain)
+	}
+	if raw := lastRenderedLine(content); strings.Contains(raw, "\x1b[48;") {
+		t.Fatalf("plan operational status should not use a mode pill background, got:\n%q", raw)
 	}
 }
 
 func TestStatuslineCycleHintFollowsLanguage(t *testing.T) {
-	i18n.DetectLanguage("zh")
+	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	content := renderStatuslineView(t, false)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "Auto") || !strings.Contains(plain, "就绪") || !strings.Contains(plain, "Shift+Tab 询问/自动/计划 · Ctrl+Y YOLO") {
-		t.Fatalf("localized plan-toggle hint missing:\n%s", plain)
-	}
-	if strings.Contains(plain, "ready") || strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
-		t.Fatalf("localized status line should not fall back to English:\n%s", plain)
+	if !strings.Contains(plain, "준비") || !strings.Contains(plain, i18n.M.ChatStatusCycleHintCompact) {
+		t.Fatalf("status line hint missing after ko-KR detection:\n%s", plain)
 	}
 }
 
@@ -194,19 +183,24 @@ func TestDesktopShortcutStatuslineUsesPlanToggleHint(t *testing.T) {
 
 	content := renderStatuslineViewWithShortcutLayout(t, "desktop")
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "Ask") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
+	if !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
 		t.Fatalf("desktop shortcut status line missing unified plan-toggle hint:\n%s", plain)
+	}
+	if strings.Contains(plain, " Ask ") {
+		t.Fatalf("desktop operational footer should not repeat the masthead mode:\n%s", plain)
 	}
 }
 
-func TestStatuslineShowsEffortInPersistentFooter(t *testing.T) {
+func TestStatuslineKeepsModelAndEffortOutOfPersistentFooter(t *testing.T) {
 	i18n.DetectLanguage("en")
 
 	content := renderStatuslineViewWithEffort(t, "auto")
 	lines := strings.Split(ansi.Strip(content), "\n")
 	statusLine := lines[len(lines)-1]
-	if !strings.Contains(statusLine, "MODEL deepseek-v4-flash   EFFORT auto") {
-		t.Fatalf("session row should keep effort beside the model:\n%s", statusLine)
+	for _, reject := range []string{"MODEL", "EFFORT", "deepseek-v4-flash"} {
+		if strings.Contains(statusLine, reject) {
+			t.Fatalf("persistent footer repeated masthead fact %q:\n%s", reject, statusLine)
+		}
 	}
 }
 
@@ -218,15 +212,15 @@ func TestStatuslineShowsCacheRatesInPersistentFooter(t *testing.T) {
 	if len(lines) != 3 {
 		t.Fatalf("status block lines = %d, want 3:\n%s", len(lines), strings.Join(lines, "\n"))
 	}
-	if !strings.Contains(lines[0], "MODEL deepseek-v4-flash") {
-		t.Fatalf("mode row should show model:\n%s", strings.Join(lines, "\n"))
+	if strings.Contains(lines[0], "MODEL") || strings.Contains(lines[0], "deepseek-v4-flash") {
+		t.Fatalf("operational row should not repeat the masthead model:\n%s", strings.Join(lines, "\n"))
 	}
 	if !strings.Contains(lines[2], "CACHE turn hit 90.00% · avg 90.00%") {
 		t.Fatalf("telemetry row should show cache rates:\n%s", strings.Join(lines, "\n"))
 	}
 }
 
-func TestStatuslineShowsGitAndEffortInPersistentFooter(t *testing.T) {
+func TestStatuslineShowsGitWithoutRepeatingSessionFacts(t *testing.T) {
 	i18n.DetectLanguage("en")
 
 	content := renderStatuslineViewWithGitAndEffort(t)
@@ -234,10 +228,10 @@ func TestStatuslineShowsGitAndEffortInPersistentFooter(t *testing.T) {
 	if len(lines) != 3 {
 		t.Fatalf("status block lines = %d, want 3:\n%s", len(lines), strings.Join(lines, "\n"))
 	}
-	if !strings.Contains(lines[0], "MODEL deepseek-v4-flash   EFFORT auto") {
-		t.Fatalf("session row should keep effort beside the model:\n%s", strings.Join(lines, "\n"))
+	if strings.Contains(lines[0], "MODEL") || strings.Contains(lines[0], "EFFORT") || strings.Contains(lines[0], "deepseek-v4-flash") {
+		t.Fatalf("operational row should not repeat masthead session facts:\n%s", strings.Join(lines, "\n"))
 	}
-	if !strings.Contains(lines[2], "Reasonix@codex/demo  +3 -1 ?2") {
+	if !strings.Contains(lines[2], "Patty Code@codex/demo  +3 -1 ?2") {
 		t.Fatalf("telemetry row should start with git identity:\n%s", strings.Join(lines, "\n"))
 	}
 }
@@ -255,8 +249,11 @@ func TestStatuslineShowsWorkModeAndBalanceInPersistentFooter(t *testing.T) {
 	if len(lines) != 3 {
 		t.Fatalf("status block lines = %d, want 3:\n%s", len(lines), strings.Join(lines, "\n"))
 	}
-	if !strings.Contains(lines[0], "MODEL deepseek-v4-flash   WORK delivery") {
-		t.Fatalf("mode row should show model and work mode:\n%s", strings.Join(lines, "\n"))
+	if strings.Contains(lines[0], "MODEL") || strings.Contains(lines[0], "deepseek-v4-flash") {
+		t.Fatalf("operational row should not repeat the masthead model:\n%s", strings.Join(lines, "\n"))
+	}
+	if strings.Contains(lines[0], "WORK") {
+		t.Fatalf("mode row should not surface the WORK badge:\n%s", strings.Join(lines, "\n"))
 	}
 	if !strings.Contains(lines[2], "BAL ¥12.34") {
 		t.Fatalf("telemetry row should show balance:\n%s", strings.Join(lines, "\n"))
@@ -272,7 +269,7 @@ func TestEffortTagExplicitValueUsesThemeInfo(t *testing.T) {
 		mode, infoSGR string
 	}{
 		{mode: "dark", infoSGR: "\033[1;38;5;80m"},
-		{mode: "light", infoSGR: "\033[1;38;5;25m"},
+		{mode: "light", infoSGR: "\033[1;38;5;24m"},
 	} {
 		t.Run(tt.mode, func(t *testing.T) {
 			configureCLITheme(tt.mode)
@@ -343,7 +340,7 @@ func renderStatuslineViewWithGitAndEffort(t *testing.T) string {
 	m.label = "deepseek-v4-flash"
 	m.effortLevel = "auto"
 	m.gitStatus = gitStatus{
-		Repo:      "Reasonix",
+		Repo:      "Patty Code",
 		Branch:    "codex/demo",
 		Added:     3,
 		Removed:   1,
@@ -389,13 +386,29 @@ func renderPlanStatuslineView(t *testing.T) string {
 }
 
 func bottomStatusPlain(content string) string {
-	return strings.Join(bottomStatusPlainLines(content), "\n")
+	return ansi.Strip(lastRenderedLine(content))
+}
+
+func lastRenderedLine(content string) string {
+	lines := nonBlankRenderedLines(content)
+	if len(lines) == 0 {
+		return ""
+	}
+	return lines[len(lines)-1]
 }
 
 func bottomStatusPlainLines(content string) []string {
-	lines := strings.Split(ansi.Strip(content), "\n")
+	lines := nonBlankRenderedLines(ansi.Strip(content))
 	if len(lines) < 3 {
 		return lines
 	}
 	return lines[len(lines)-3:]
+}
+
+func nonBlankRenderedLines(content string) []string {
+	lines := strings.Split(content, "\n")
+	for len(lines) > 0 && strings.TrimSpace(ansi.Strip(lines[len(lines)-1])) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return lines
 }

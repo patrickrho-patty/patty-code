@@ -6,8 +6,8 @@ import (
 	"slices"
 	"testing"
 
-	"reasonix/internal/control"
-	"reasonix/internal/provider"
+	"patty/internal/control"
+	"patty/internal/provider"
 )
 
 // writeRuntimeFixture writes the minimal deterministic config the runtime
@@ -15,7 +15,7 @@ import (
 // environment probe section disabled (it embeds machine-specific data).
 func writeRuntimeFixture(t *testing.T, dir string) {
 	t.Helper()
-	writeFile(t, dir, "reasonix.toml", `
+	writeFile(t, dir, "patty.toml", `
 default_model = "test-model"
 
 [agent]
@@ -29,7 +29,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "REASONIX_TEST_KEY_UNSET"
+api_key_env = "PATTY_TEST_KEY_UNSET"
 `)
 }
 

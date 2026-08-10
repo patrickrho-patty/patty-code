@@ -5,7 +5,7 @@ import "katex/dist/katex.min.css";
 import { CodeViewer } from "./CodeViewer";
 import { RichMarkdownLink } from "./githubLink";
 import { normalizeMath } from "./mathNormalize";
-import { reasonixRehypePlugins, reasonixRemarkPlugins } from "./markdownRemarkPlugins";
+import { pattyRehypePlugins, pattyRemarkPlugins } from "./markdownRemarkPlugins";
 import { markdownImageSource } from "../lib/markdownImage";
 
 const MermaidDiagram = lazy(() => import("./MermaidDiagram"));
@@ -141,8 +141,8 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
   const components = useMemo(() => createComponents(plainStatusBlocks), [plainStatusBlocks]);
   const content = (
     <ReactMarkdown
-      remarkPlugins={reasonixRemarkPlugins}
-      rehypePlugins={reasonixRehypePlugins}
+      remarkPlugins={pattyRemarkPlugins}
+      rehypePlugins={pattyRehypePlugins}
       components={components}
       // file:/// anchors (local path linkification) are safe to keep; the
       // default transform would blank them along with javascript: etc.

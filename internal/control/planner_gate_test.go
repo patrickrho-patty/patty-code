@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"reasonix/internal/agent"
+	"patty/internal/agent"
 )
 
 func TestTaskWarrantsPlanner(t *testing.T) {
@@ -18,13 +18,13 @@ func TestTaskWarrantsPlanner(t *testing.T) {
 		{"1", false},
 		{"2.", false},
 		{"A", false},
-		{"好的", false},
-		{"继续", false},
-		{"选 1", false},
+		{"좋습니다", false},
+		{"계속", false},
+		{"선택 1", false},
 		{"what does this function do?", false}, // low-risk question → executor only
 		{"why did the test fail", false},
-		{"解释一下这段代码", false},
-		{reasoningLanguageBlock("zh") + "\n\nwhat does this function do?", false},
+		{"이 코드 좀 설명해 줘", false},
+		{reasoningLanguageBlock("ko-KR") + "\n\nwhat does this function do?", false},
 		{reasoningLanguageBlock("en") + "\n\n" + PlanModeMarker + "\n\nfix the bug", false},
 		{reasoningLanguageBlock("en") + "\n\nfix the bug", true},
 		{"fix the bug", true},        // terse, but a work request → still planned
@@ -32,9 +32,9 @@ func TestTaskWarrantsPlanner(t *testing.T) {
 		{"run the tests", false},
 		{"review this PR", false},
 		{"inspect internal/foo.go", false},
-		{"执行修复", true},
-		{"开始迁移", true},
-		{"继续重构", true},
+		{"수정 실행", true},
+		{"마이그레이션 시작", true},
+		{"리팩토링 계속", true},
 		{"continue fixing tests", true},
 		{"implement the new caching layer across the backend", true},
 		{"who wrote this file?", false},
@@ -60,13 +60,13 @@ func TestTaskWarrantsPlanner(t *testing.T) {
 		{"summarize the changes", false},
 		{"compare these two approaches", false},
 		{"what's the status?", false},
-		{"介绍一下这个项目", false},
-		{"说一下这个函数的作用", false},
-		{"帮我看一下这个报错", false},
-		{"是什么意思", false},
-		{"有没有现成的方案", false},
-		{"能不能这样做", false},
-		{"请问这个怎么用", false},
+		{"소개해 주세요", false},
+		{"말해 주세요, 이 함수의 역할", false},
+		{"이 오류 좀 봐주세요", false},
+		{"무슨 뜻이야", false},
+		{"기존 방안이 있나요", false},
+		{"이렇게 해도 될까", false},
+		{"이거 어떻게 쓰는 거예요", false},
 		{"how do I implement a new caching layer", true},
 		{"what's the best way to refactor this module", true},
 		{"explain how to migrate from v1 to v2", true},
@@ -122,7 +122,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 		},
 		{
 			name:   "user asks for plan only",
-			input:  "先规划这个认证迁移，不要执行",
+			input:  "먼저 이 인증 마이그레이션을 계획하고, 실행하지 마세요",
 			route:  agent.PlannerRoutePlanOnly,
 			depth:  agent.PlannerDepthFull,
 			reason: plannerReasonUserPlanOnly,
@@ -136,7 +136,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 		},
 		{
 			name:   "bare chinese plan only with embedded target",
-			input:  "只给认证迁移方案",
+			input:  "오직 방안만 주세요",
 			route:  agent.PlannerRoutePlanOnly,
 			depth:  agent.PlannerDepthFull,
 			reason: plannerReasonUserPlanOnly,
@@ -164,14 +164,14 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 		},
 		{
 			name:   "task first chinese plan only boundary",
-			input:  "评审认证迁移，给我方案即可，不要修改代码",
+			input:  "인증 마이그레이션을 검토하고, 방안만 주세요. 코드는 수정하지 마세요",
 			route:  agent.PlannerRoutePlanOnly,
 			depth:  agent.PlannerDepthFull,
 			reason: plannerReasonUserPlanOnly,
 		},
 		{
 			name:   "bare plan first continues to executor",
-			input:  "先规划这个认证迁移",
+			input:  "먼저 계획을 세우고 이 인증 마이그레이션을 진행해 줘",
 			route:  agent.PlannerRoutePlanAndExecute,
 			depth:  agent.PlannerDepthFull,
 			reason: plannerReasonUserPlanAndExecute,
@@ -185,7 +185,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 		},
 		{
 			name:   "user asks to approve plan before execution",
-			input:  "先规划这个认证迁移，等我确认后再执行",
+			input:  "먼저 계획을 세우고, 제가 확인한 후에 실행해 줘",
 			route:  agent.PlannerRoutePlanForApproval,
 			depth:  agent.PlannerDepthFull,
 			reason: plannerReasonUserPlanApproval,
@@ -206,7 +206,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 		},
 		{
 			name:   "task first chinese approval boundary",
-			input:  "实现认证迁移，但先给我方案并等我确认",
+			input:  "인증 마이그레이션을 구현하되, 먼저 방안을 주고 제가 확인할 때까지 기다려 주세요",
 			route:  agent.PlannerRoutePlanForApproval,
 			depth:  agent.PlannerDepthFull,
 			reason: plannerReasonUserPlanApproval,
@@ -220,14 +220,14 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 		},
 		{
 			name:   "user asks to plan then execute",
-			input:  "先规划再执行这个认证迁移",
+			input:  "먼저 계획한 후 이 인증 마이그레이션을 실행해 줘",
 			route:  agent.PlannerRoutePlanAndExecute,
 			depth:  agent.PlannerDepthFull,
 			reason: plannerReasonUserPlanAndExecute,
 		},
 		{
 			name:   "user explicitly skips planner",
-			input:  "直接改 auth.go，别规划",
+			input:  "auth.go를 바로 수정하고, 계획하지 마세요",
 			route:  agent.PlannerRouteExecutorOnly,
 			depth:  agent.PlannerDepthNone,
 			reason: plannerReasonUserDirect,
@@ -248,21 +248,21 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 		},
 		{
 			name:   "task first chinese direct execution boundary",
-			input:  "实现认证迁移，别规划，直接改",
+			input:  "인증 마이그레이션을 구현하고, 계획하지 말고, 바로 수정해 줘",
 			route:  agent.PlannerRouteExecutorOnly,
 			depth:  agent.PlannerDepthNone,
 			reason: plannerReasonUserDirect,
 		},
 		{
 			name:   "quoted directive is not an override",
-			input:  "解释“直接改”是什么意思",
+			input:  "설명해 주세요, '바로 고쳐'가 무슨 뜻인지",
 			route:  agent.PlannerRouteExecutorOnly,
 			depth:  agent.PlannerDepthNone,
 			reason: plannerReasonLowRiskQuestion,
 		},
 		{
 			name:   "quoted no execution phrase is not a boundary",
-			input:  "解释“不要执行”是什么意思",
+			input:  "설명해 주세요, '하지 마'가 무슨 뜻인지",
 			route:  agent.PlannerRouteExecutorOnly,
 			depth:  agent.PlannerDepthNone,
 			reason: plannerReasonLowRiskQuestion,
@@ -297,7 +297,7 @@ func TestDecidePlannerRouteMatrix(t *testing.T) {
 		},
 		{
 			name:   "negated approval does not override plan only",
-			input:  "只给认证迁移方案，不要执行，也不用等我确认",
+			input:  "인증 마이그레이션 방안만 주세요, 실행하지 마세요, 제가 확인할 때까지 기다릴 필요도 없어요",
 			route:  agent.PlannerRoutePlanOnly,
 			depth:  agent.PlannerDepthFull,
 			reason: plannerReasonUserPlanOnly,

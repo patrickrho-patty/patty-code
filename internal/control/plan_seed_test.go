@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/evidence"
 )
 
 func TestParsePlanTodos(t *testing.T) {
@@ -43,7 +43,7 @@ func TestParsePlanTodos(t *testing.T) {
 		},
 		{
 			name: "prose without list items yields nothing (the model's todo_write covers it)",
-			plan: "总结：这是一个简单的三步骤测试——创建文件 → 编辑文件 → 删除文件。",
+			plan: "요약: 간단한 3단계 테스트입니다——파일 생성 → 파일 편집 → 파일 삭제.",
 			want: nil,
 		},
 		{
@@ -82,7 +82,6 @@ func TestParsePlanTodos(t *testing.T) {
 		{
 			// The real model wrote phases as numbered ### headings with indented
 			// bullet sub-steps, and a leading "## Plan" title — the shape a live
-			// run surfaced that flat list-only parsing collapsed to all level 1.
 			name: "numbered headings are phases; title is ignored; bullets are sub-steps",
 			plan: "## Plan: add a flag\n\n### 1. Define the field\n   - add Verbose bool\n   - document it\n\n### 2. Wire it up\n   - read from config",
 			want: []seedTodo{

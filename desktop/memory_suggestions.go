@@ -11,12 +11,12 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/memory"
-	"reasonix/internal/provider"
-	"reasonix/internal/skill"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/memory"
+	"patty/internal/provider"
+	"patty/internal/skill"
 )
 
 const (
@@ -24,9 +24,6 @@ const (
 	memorySuggestionLimit  = 6
 )
 
-// MemorySuggestion is a user-confirmed candidate for an active saved memory.
-// It is generated read-only from recent local history and only persisted through
-// AcceptMemorySuggestion.
 type MemorySuggestion struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
@@ -39,7 +36,6 @@ type MemorySuggestion struct {
 	Evidence    []string `json:"evidence"`
 }
 
-// SkillSuggestion is a user-confirmed candidate for a reusable skill.
 type SkillSuggestion struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
@@ -50,7 +46,6 @@ type SkillSuggestion struct {
 	Evidence    []string `json:"evidence"`
 }
 
-// MemorySuggestionsView is the desktop Memory page's suggestion payload.
 type MemorySuggestionsView struct {
 	Memories    []MemorySuggestion `json:"memories"`
 	Skills      []SkillSuggestion  `json:"skills"`
@@ -75,14 +70,10 @@ type workflowCategory struct {
 	Steps       []string
 }
 
-// MemorySuggestions scans recent local history and returns draft memory/skill
-// candidates. It does not modify memory, skills, sessions, or model context.
 func (a *App) MemorySuggestions() MemorySuggestionsView {
 	return a.MemorySuggestionsForTab("")
 }
 
-// MemorySuggestionsForTab scans recent local history for the selected tab's
-// session directory and workspace, instead of whichever tab is currently active.
 func (a *App) MemorySuggestionsForTab(tabID string) MemorySuggestionsView {
 	view := emptyMemorySuggestionsView()
 
@@ -126,13 +117,10 @@ func emptyMemorySuggestionsView() MemorySuggestionsView {
 	}
 }
 
-// AcceptMemorySuggestion persists a previously previewed memory candidate.
 func (a *App) AcceptMemorySuggestion(in MemorySuggestion) (string, error) {
 	return a.AcceptMemorySuggestionForTab("", in)
 }
 
-// AcceptMemorySuggestionForTab persists a memory candidate into the selected
-// tab's memory store, matching the tab used to generate suggestions.
 func (a *App) AcceptMemorySuggestionForTab(tabID string, in MemorySuggestion) (string, error) {
 	ctrl := a.ctrlByTabID(tabID)
 	if ctrl == nil {
@@ -154,15 +142,10 @@ func (a *App) AcceptMemorySuggestionForTab(tabID string, in MemorySuggestion) (s
 	})
 }
 
-// AcceptSkillSuggestion writes a previewed skill candidate. It uses the regular
-// skill store so name validation, scope handling, and no-overwrite behavior stay
-// centralized.
 func (a *App) AcceptSkillSuggestion(in SkillSuggestion) (string, error) {
 	return a.AcceptSkillSuggestionForTab("", in)
 }
 
-// AcceptSkillSuggestionForTab writes a skill candidate into the selected tab's
-// workspace/global skill store, matching the tab used to generate suggestions.
 func (a *App) AcceptSkillSuggestionForTab(tabID string, in SkillSuggestion) (string, error) {
 	a.mu.RLock()
 	tab := a.tabByIDLocked(tabID)
@@ -183,10 +166,6 @@ func (a *App) AcceptSkillSuggestionForTab(tabID string, in SkillSuggestion) (str
 	if strings.TrimSpace(in.Scope) == "global" || !st.HasProjectScope() {
 		scope = skill.ScopeGlobal
 	}
-	// skill.RenderSkillFile yaml-escapes the free-text description; the old
-	// local string-concatenation helper produced unparseable frontmatter for a
-	// description containing ": ", which loads back as an EMPTY field map (the
-	// skill then surfaces with no description and default run semantics).
 	content := skill.RenderSkillFile(skill.SkillFileOptions{Name: name, Description: desc, Body: body})
 	return st.CreateWithContent(name, scope, content)
 }
@@ -331,16 +310,16 @@ func extractMemoryStatement(content string) (string, string) {
 		reason string
 	}
 	markers := []marker{
-		{"记住", "explicit remember request"},
-		{"以后", "future-facing preference"},
-		{"始终", "persistent working rule"},
-		{"总是", "persistent working rule"},
-		{"每次", "repeated workflow preference"},
-		{"默认", "default behavior preference"},
-		{"不要", "negative working preference"},
-		{"偏好", "user preference"},
-		{"规则", "durable rule"},
-		{"约定", "project convention"},
+		{"기억해요", "explicit remember request"},
+		{"앞으로", "future-facing preference"},
+		{"항상", "persistent working rule"},
+		{"언제든", "persistent working rule"},
+		{"매번", "repeated workflow preference"},
+		{"기본", "default behavior preference"},
+		{"하지마", "negative working preference"},
+		{"선호사항", "user preference"},
+		{"규칙", "durable rule"},
+		{"약속", "project convention"},
 		{"remember", "explicit remember request"},
 		{"always", "persistent working rule"},
 		{"never", "negative working preference"},
@@ -373,10 +352,10 @@ func inferMemoryType(statement string) memory.Type {
 	if strings.Contains(lower, "http://") || strings.Contains(lower, "https://") || strings.Contains(lower, "github.com/") {
 		return memory.TypeReference
 	}
-	if hasAny(lower, "反馈", "回复", "回答", "不要", "always", "never", "始终", "总是") {
+	if hasAny(lower, "피드백", "답변", "대답", "하지마", "always", "never", "항상", "언제든") {
 		return memory.TypeFeedback
 	}
-	if hasAny(lower, "项目", "分支", "pr", "pull request", "仓库", "repo", "约定") {
+	if hasAny(lower, "프로젝트", "분기", "pr", "pull request", "저장소", "repo", "약속") {
 		return memory.TypeProject
 	}
 	return memory.TypeUser
@@ -400,10 +379,10 @@ func memoryCandidateBody(statement, reason string, sess suggestionSession) strin
 func workflowCategories() []workflowCategory {
 	return []workflowCategory{
 		{
-			Name:        "reasonix-pr-followup",
-			Description: "Review or update a Reasonix GitHub PR, address feedback, verify, and publish safely.",
+			Name:        "patty-pr-followup",
+			Description: "Review or update a patty GitHub PR, address feedback, verify, and publish safely.",
 			Reason:      "recent history repeatedly touched PR review, bot feedback, commits, or GitHub publication",
-			Keywords:    []string{"pr", "pull request", "github", "review", "机器人", "评审", "提交到pr", "更新pr", "code rabbit", "coderabbit"},
+			Keywords:    []string{"pr", "pull request", "github", "review", "봇", "검토", "PR에 커밋", "PR 업데이트", "code rabbit", "coderabbit"},
 			Steps: []string{
 				"Fetch the live PR state and confirm branch, base, head SHA, and review status.",
 				"Inspect the real diff and related implementation before changing code.",
@@ -412,10 +391,10 @@ func workflowCategories() []workflowCategory {
 			},
 		},
 		{
-			Name:        "reasonix-memory-ui",
-			Description: "Iterate on the Reasonix desktop Memory page with source-backed UI decisions and browser verification.",
+			Name:        "patty-memory-ui",
+			Description: "Iterate on the patty desktop Memory page with source-backed UI decisions and browser verification.",
 			Reason:      "recent history repeatedly discussed Memory page layout, labels, filters, and interaction details",
-			Keywords:    []string{"memory", "记忆", "设置-记忆", "memory panel", "指令文件", "归档", "全局", "项目", "添加记忆"},
+			Keywords:    []string{"memory", "메모리", "설정-메모리", "memory panel", "명령 파일", "아카이브", "글로벌", "프로젝트", "추가메모리"},
 			Steps: []string{
 				"Identify the active Memory settings component and current browser-rendered state before editing.",
 				"Keep active memories, archived memories, instruction files, and suggestions visually distinct.",
@@ -427,7 +406,7 @@ func workflowCategories() []workflowCategory {
 			Name:        "desktop-ui-iteration",
 			Description: "Apply focused desktop UI layout feedback, preserve existing design tokens, and verify in browser.",
 			Reason:      "recent history repeatedly involved screenshot-driven desktop UI layout and interaction feedback",
-			Keywords:    []string{"ui", "布局", "设计", "交互", "红框", "页面", "按钮", "浏览器", "frontend", "desktop"},
+			Keywords:    []string{"ui", "레이아웃", "디자인", "상호작용", "빨간 상자", "페이지", "버튼", "브라우저", "frontend", "desktop"},
 			Steps: []string{
 				"Map the screenshot target to the exact component, selector, and state in source.",
 				"Patch the smallest component and CSS surface using existing settings/page recipes.",
@@ -466,9 +445,9 @@ func workflowEvidence(cat workflowCategory, sessions []suggestionSession) []stri
 
 func skillCandidateBody(cat workflowCategory, evidence []string) string {
 	var b strings.Builder
-	title := strings.TrimPrefix(strings.ReplaceAll(cat.Name, "-", " "), "reasonix ")
+	title := strings.TrimPrefix(strings.ReplaceAll(cat.Name, "-", " "), "patty ")
 	b.WriteString("# " + cases.Title(language.Und).String(title) + "\n\n")
-	b.WriteString("Use this skill when the user asks for this repeated Reasonix workflow.\n\n")
+	b.WriteString("Use this skill when the user asks for this repeated Patty Code workflow.\n\n")
 	b.WriteString("## Evidence\n\n")
 	for _, ev := range evidence {
 		b.WriteString("- " + ev + "\n")
@@ -518,13 +497,6 @@ func suggestionName(given, source, fallback string) string {
 	return "candidate"
 }
 
-// acceptedSuggestionName preserves the candidate name generated at suggestion
-// time. Re-running asciiSlug here would truncate back to 56 chars and strip
-// the uniqueness hash suffix, re-colliding long common-prefix candidates at
-// save time even though their generated Name/ID differed. A well-formed slug
-// is kept verbatim (memory.Store.Save's own slug pass cleans but never
-// truncates); anything else falls back to deriving from the description as
-// before.
 func acceptedSuggestionName(given, desc string) string {
 	if isWellFormedSlug(given) {
 		return given
@@ -532,9 +504,6 @@ func acceptedSuggestionName(given, desc string) string {
 	return suggestionName("", desc, "memory-candidate")
 }
 
-// isWellFormedSlug reports whether s already matches asciiSlug's output shape
-// (lowercase ASCII letters/digits separated by single dashes), possibly with a
-// hash suffix beyond asciiSlug's 56-char cap.
 func isWellFormedSlug(s string) bool {
 	if s == "" || len(s) > 128 || s[0] == '-' || s[len(s)-1] == '-' {
 		return false
@@ -556,17 +525,7 @@ func isWellFormedSlug(s string) bool {
 	return true
 }
 
-// stableSuggestionName returns a slug that is unique per source text and stable
-// across suggestion refreshes. asciiSlug drops non-ASCII runes and truncates to
-// 56 chars, so two CJK-only statements (or long English statements sharing a
-// prefix) can collide — colliding Names make Store.Save overwrite the earlier
-// memory, and colliding IDs cross-wire the frontend's accepted-state map.
 //
-// When the ASCII slug is short enough that truncation cannot have caused a
-// collision, it is returned as-is for backward compatibility with old-version
-// candidate names. The hash suffix is only appended when the slug fell back to
-// the fallback (non-ASCII source) or when the slug hit the 56-char truncation
-// boundary.
 func stableSuggestionName(source, fallback string) string {
 	slug := asciiSlug(source)
 	if slug != "" && len(slug) < 56 {

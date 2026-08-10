@@ -12,16 +12,16 @@ import (
 
 const (
 	WindowsPayloadManifestSchemaVersion = 1
-	WindowsPayloadManifestName          = "reasonix-payload.json"
+	WindowsPayloadManifestName          = "patty-code-payload.json"
 	WindowsPayloadSignatureName         = WindowsPayloadManifestName + ".minisig"
 )
 
 var windowsPayloadFileNames = [...]string{
-	"reasonix-desktop.exe",
-	"reasonix-guard.exe",
-	"reasonix-launcher.exe",
-	"reasonix-update-helper.exe",
-	"reasonix-cli.exe",
+	"patty-desktop.exe",
+	"patty-code-guard.exe",
+	"patty-code-launcher.exe",
+	"patty-code-update-helper.exe",
+	"patcode-cli.exe",
 }
 
 type WindowsPayloadManifest struct {

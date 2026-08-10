@@ -3,7 +3,7 @@ package agent
 import (
 	"strings"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // rollbackPlannerTurn restores the snapshot unless compaction rewrote it.

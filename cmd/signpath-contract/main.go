@@ -16,9 +16,9 @@ import (
 
 const (
 	contractPath = ".signpath/contracts/release-signing.yml"
-	projectSlug  = "DeepSeek-Reasonix"
+	projectSlug  = "PattyCode"
 	policySlug   = "release-signing"
-	repository   = "https://github.com/esengine/DeepSeek-Reasonix.git"
+	repository   = "https://github.com/pattycorp/PattyCode.git"
 )
 
 var expectedBranches = []string{"main-v2"}
@@ -367,7 +367,7 @@ func contractFingerprint(root string, contract releaseSigningContract) ([sha256.
 	names := append([]string{contractPath}, contract.FingerprintFiles...)
 	sort.Strings(names)
 	hash := sha256.New()
-	_, _ = io.WriteString(hash, "reasonix-signpath-release-contract-v1\x00")
+	_, _ = io.WriteString(hash, "patty-signpath-release-contract-v1\x00")
 	for _, name := range names {
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(name)))
 		if err != nil {

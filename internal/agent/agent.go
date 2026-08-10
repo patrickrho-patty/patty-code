@@ -14,23 +14,23 @@ import (
 
 	"mvdan.cc/sh/v3/syntax"
 
-	"reasonix/internal/ablation"
-	"reasonix/internal/capability"
-	"reasonix/internal/checkpoint"
-	"reasonix/internal/diff"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/extension/dispatch"
-	"reasonix/internal/instruction"
-	"reasonix/internal/jobs"
-	"reasonix/internal/memory"
-	"reasonix/internal/nilutil"
-	"reasonix/internal/planmode"
-	"reasonix/internal/provider"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/shellparse"
-	"reasonix/internal/tool"
-	"reasonix/internal/workspacelease"
+	"patty/internal/ablation"
+	"patty/internal/capability"
+	"patty/internal/checkpoint"
+	"patty/internal/diff"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/extension/dispatch"
+	"patty/internal/instruction"
+	"patty/internal/jobs"
+	"patty/internal/memory"
+	"patty/internal/nilutil"
+	"patty/internal/planmode"
+	"patty/internal/provider"
+	"patty/internal/sandbox"
+	"patty/internal/shellparse"
+	"patty/internal/tool"
+	"patty/internal/workspacelease"
 )
 
 // maxToolOutputBytes caps a single tool result before it goes into the model's
@@ -272,8 +272,8 @@ type Agent struct {
 	pricing              *provider.Pricing
 	usageSource          string
 	modelRef             string
-	responseLanguage     atomic.Value // string: auto|zh|en
-	reasoningLanguage    atomic.Value // string: auto|zh|en
+	responseLanguage     atomic.Value // string: auto|ko-KR|en
+	reasoningLanguage    atomic.Value // string: auto|ko-KR|en
 
 	// sink receives the turn's typed event stream (reasoning/text deltas, tool
 	// dispatch/results, usage, notices). The agent no longer formats output
@@ -380,7 +380,7 @@ type Agent struct {
 	sandboxEscapeApprover sandbox.EscapeApprover
 
 	// configWriteApprover, when non-nil, can ask the user whether a file tool
-	// may write a Reasonix-managed config file outside the workspace roots.
+	// may write a patty-managed config file outside the workspace roots.
 	configWriteApprover tool.ConfigWriteApprover
 
 	// hooks, when non-nil, fires PreToolUse / PostToolUse shell hooks around each
@@ -694,7 +694,7 @@ func (a *Agent) SetSandboxEscapeApprover(g sandbox.EscapeApprover) {
 }
 
 // SetConfigWriteApprover installs the optional per-write approval path used by
-// the file tools when a target is a Reasonix-managed config file outside the
+// the file tools when a target is a patty-managed config file outside the
 // workspace write roots.
 func (a *Agent) SetConfigWriteApprover(g tool.ConfigWriteApprover) {
 	if nilutil.IsNil(g) {
@@ -776,7 +776,7 @@ func (a *Agent) Session() *Session {
 }
 
 // SetSession replaces the agent's conversation wholesale. Used by
-// `reasonix --resume` to load a saved JSONL transcript before the first turn,
+// `patcode --resume` to load a saved JSONL transcript before the first turn,
 // so the model picks up exactly where it left off. Callers serialise it against a
 // running turn (it only fires while idle); sessMu guards the pointer swap itself.
 func (a *Agent) SetSession(s *Session) {
@@ -831,7 +831,7 @@ func midTurnSteerMessage(text string) string {
 // Steer event rendering character-for-character.
 //
 // Steers are persisted through withTurnPreferences, which can prepend
-// transient language blocks (for Chinese text even in auto mode) and append
+// transient language blocks (for Korean text even in auto mode) and append
 // the delivery-runtime marker. Both are transport framing, not steer text:
 // leading blocks are skipped before matching the prefix and a trailing
 // marker is cut from the returned text, so replay recognizes steers
@@ -1027,7 +1027,7 @@ type Options struct {
 	// enforced OS sandbox fails. nil keeps fail-closed behavior.
 	SandboxEscapeApprover sandbox.EscapeApprover
 
-	// ConfigWriteApprover confirms file-tool writes to Reasonix-managed config
+	// ConfigWriteApprover confirms file-tool writes to patty-managed config
 	// files outside the workspace roots. nil keeps fail-closed behavior.
 	ConfigWriteApprover tool.ConfigWriteApprover
 
@@ -2108,7 +2108,7 @@ func looksLikeExecutorHandoffDeferral(answer string) bool {
 		return true
 	}
 	switch strings.Trim(lower, " \t\r\n.!?。！？") {
-	case "ok", "okay", "sounds good", "done", "好的", "可以", "没问题", "收到":
+	case "ok", "okay", "sounds good", "done", "좋습니다", "가능", "문제없음", "확인":
 		return true
 	default:
 		return false
@@ -2153,19 +2153,19 @@ var executorHandoffDeferralPhrases = []string{
 	"plan looks", "looks good", "should be easy", "should be straightforward",
 	"i can implement", "i'll implement", "i will implement", "i'll get started",
 	"let me ", "i will now", "i'll now", "i can do that",
-	"计划看起来", "可以实现", "我会", "我将", "接下来我", "马上开始",
+	"계획이 좋아 보인다", "구현 가능", "제가 할게요", "제가 하겠습니다", "다음으로 제가", "바로 시작하겠습니다",
 }
 
 var executorHandoffWorkRequestTerms = []string{
 	"implement", "fix", "refactor", "migrate", "edit", "write", "create", "delete",
 	"update", "remove", "add ", "test", "build", "repair", "patch",
-	"修改", "修复", "实现", "新增", "重构", "迁移", "补齐", "更新", "删除", "移除",
+	"수정", "복구", "구현", "신규 추가", "리팩토링", "마이그레이션", "보완", "업데이트", "삭제", "제거",
 }
 
 var executorHandoffTextOnlyTaskTerms = []string{
 	"now what", "what next", "tl;dr", "tldr", "summarize", "summary", "explain",
 	"i installed", "i just installed", "i turned on", "i enabled", "it's on", "it is on",
-	"怎么办", "下一步", "然后呢", "总结", "解释", "说明", "装了", "装好了", "安装了", "开了", "开启了", "打开了",
+	"어떡하지", "다음 단계", "그다음은", "요약", "설명", "설치했어요", "설치 완료", "켰어요", "활성화했어요", "열었어요",
 }
 
 var executorHandoffLocalActionTerms = []string{
@@ -2173,7 +2173,7 @@ var executorHandoffLocalActionTerms = []string{
 	"workspace", "repo", "repository", "codebase", "file", "path",
 	"write ", "edit ", "modify ", "create ", "delete ", "remove ", "update ", "add ", "patch ", "refactor ", "implement ",
 	"run ", "command", "test", "build",
-	"文件", "路径", "仓库", "代码", "写入", "编辑", "修改", "创建", "删除", "移除", "更新", "新增", "运行", "命令", "测试", "构建",
+	"파일", "경로", "저장소", "코드", "작성", "편집", "수정", "생성하기(create)", "삭제", "제거", "업데이트", "신규 추가", "실행", "명령", "테스트", "빌드",
 }
 
 var executorHandoffTextOnlyPlanTerms = []string{
@@ -2183,8 +2183,8 @@ var executorHandoffTextOnlyPlanTerms = []string{
 	"user should", "the user should", "user can", "the user can", "manual", "manually",
 	"no tools needed", "no tool calls needed", "does not need tools", "needs no tools",
 	"listen", "play a song", "compare the difference", "checkbox",
-	"告诉用户", "询问用户", "问用户", "让用户", "请用户", "指导用户", "解释", "总结", "回答",
-	"手动", "无需工具", "不需要工具", "试听", "听歌", "对比", "勾选",
+	"사용자에게 알리기", "사용자에게 묻기", "사용자에게 물어보기", "사용자가 하도록", "사용자에게 요청", "사용자 안내", "설명", "요약", "답변",
+	"수동으로", "도구 불필요", "도구 필요 없음", "미리 듣기", "노래 듣기", "비교", "체크 표시",
 }
 
 func executorHandoffRetryMessage() string {
@@ -2396,8 +2396,8 @@ func (a *Agent) streamWithFrozen(ctx context.Context, turn int, sink event.Sink,
 			if chunk.Signature != "" {
 				signature = chunk.Signature
 			}
-			// 元数据 chunk（空 Text）：reasoning item id/status 贯通
-			// SSE → session → 下一轮回传（评审 #7234 第 1 点）。
+			// 메타데이터 chunk (빈 Text): reasoning item id/status 연동
+			// SSE → session → 다음 라운드 전달 (review #7234 point 1)。
 			if chunk.ReasoningID != "" {
 				reasoningID = chunk.ReasoningID
 			}

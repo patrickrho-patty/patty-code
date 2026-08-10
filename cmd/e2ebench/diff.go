@@ -11,8 +11,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"reasonix/internal/ablation"
-	"reasonix/internal/shellparse"
+	"patty/internal/ablation"
+	"patty/internal/shellparse"
 )
 
 type diffOpts struct {
@@ -43,7 +43,7 @@ func runDiff(o diffOpts) string {
 		if profile == "" {
 			profile = benchmarkProfileBaseline
 		}
-		return fmt.Sprintf("## 🤖 Reasonix e2e — diff test-gen (%s)\n\nNo Go source changes in this PR (excluding `_test.go`); nothing to generate tests for.\n", profile)
+		return fmt.Sprintf("## 🤖 Patty Code e2e — diff test-gen (%s)\n\nNo Go source changes in this PR (excluding `_test.go`); nothing to generate tests for.\n", profile)
 	}
 	pkgs := packagesOf(srcFiles)
 	prompt := buildDiffPrompt(srcFiles, pkgs, truncate(gitOut(o.repo, "diff", o.base+"...HEAD", "--")))
@@ -155,7 +155,7 @@ func ratio(n, d int) float64 {
 // attempt's generated tests but keeping the provider config the workflow wrote.
 func resetTree(repo string) {
 	_ = exec.Command("git", "-C", repo, "checkout", "--", ".").Run()
-	_ = exec.Command("git", "-C", repo, "clean", "-fd", "-e", "reasonix.toml").Run()
+	_ = exec.Command("git", "-C", repo, "clean", "-fd", "-e", "patty.toml").Run()
 }
 
 func goBuildAll(repo string) (bool, string) {
@@ -215,7 +215,7 @@ func renderDiff(r diffReport) string {
 	if profile == "" {
 		profile = benchmarkProfileBaseline
 	}
-	fmt.Fprintf(&b, "## 🤖 Reasonix e2e — diff test-gen (%s)\n\n", profile)
+	fmt.Fprintf(&b, "## 🤖 Patty Code e2e — diff test-gen (%s)\n\n", profile)
 	fmt.Fprintf(&b, "**Result:** %s · **%d** changed source file(s) across **%d** package(s)\n\n", result, len(r.srcFiles), len(r.pkgs))
 
 	pinned, byAssert := countPins(r.pins), countAssertionPins(r.pins)
@@ -422,11 +422,11 @@ func parseCoverProfile(repo, path string) map[string][]coverBlock {
 	return out
 }
 
-// repoRelFromModulePath turns "reasonix/internal/agent/foo.go" into
+// repoRelFromModulePath turns "patty/internal/agent/foo.go" into
 // "internal/agent/foo.go" by dropping the first path element (the module root).
 func repoRelFromModulePath(p string) string {
 	// Strip the full module prefix; a generic first-segment cut mis-strips a multi-segment module path.
-	prefix := "reasonix/"
+	prefix := "patty/"
 	if strings.HasPrefix(p, prefix) {
 		return p[len(prefix):]
 	}

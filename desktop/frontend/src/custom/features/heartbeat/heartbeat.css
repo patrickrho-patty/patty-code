@@ -1,8 +1,8 @@
 /* ===================================================================
- * heartbeat 模块 — 定时任务配置面板
+ * heartbeat module — scheduled task configuration panel
  *
- * 所有选择器以 .heartbeat- 为前缀，不与上游样式冲突。
- * 区域注释格式：/* ── <模块名> ── *／ 方便合并时定位。
+ * All selectors use the .heartbeat- prefix and do not clash with upstream styles.
+ * Section comment format: /* ── <module name> ── */ for easy location when merging.
  * ================================================================ */
 
 /* ── backdrop ─────────────────────────────────────────────────── */
@@ -1144,7 +1144,7 @@
   padding: 0;
 }
 
-/* 项目树行与顶部菜单宽度对齐 */
+/* Project tree rows align with the top menu width */
 :root[data-theme-style] .sidebar__project-section .project-tree__folder,
 :root[data-theme-style] .sidebar__project-section .project-tree__topic {
   margin-right: 8px;
@@ -1158,7 +1158,7 @@
   padding-right: 0;
 }
 
-/* 项目文件夹右侧的新建话题按钮悬停显示（上游 styles.css 已内置） */
+/* The new-topic button on the right of a project folder shows on hover (upstream styles.css already handles it) */
 
 :root[data-theme-style] .project-tree__topic-label {
   font-size: 13px;
@@ -1170,7 +1170,7 @@
   font-weight: 400;
 }
 
-/* 项目文件夹右侧 + 图标默认隐藏，悬停显示 */
+/* The + icon on the right of a project folder is hidden by default and shows on hover */
 .sidebar__project-section .project-tree__new-topic {
   opacity: 0;
   pointer-events: none;

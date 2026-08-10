@@ -9,8 +9,6 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { en } from "../locales/en";
-import { zh } from "../locales/zh";
-import { zhTW } from "../locales/zh-TW";
 
 let passed = 0;
 let failed = 0;
@@ -52,7 +50,7 @@ const removedPromptKeys = [
   "recovery.bannerDismiss",
   "recovery.openOriginalFailed",
 ];
-for (const [name, dict] of [["en", en], ["zh", zh], ["zh-TW", zhTW]] as const) {
+for (const [name, dict] of [["en", en]] as const) {
   for (const key of removedPromptKeys) {
     ok(!(key in dict), `${name} locale omits ${key}`);
   }

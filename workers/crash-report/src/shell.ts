@@ -1,5 +1,5 @@
-// Shared page shell + UI kit. Visual language mirrors site/src/styles/global.css
-// — white, blue accent, large radii; crash stacks use the site's dark terminal.
+// [[[[[[Shared page shell + UI kit. Visual language mirrors site/src/styles/global.css]]]]]]
+// [[[[[[— white, blue accent, large radii; crash stacks use the site's dark terminal.]]]]]]
 
 export function esc(s: unknown): string {
   return String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -30,10 +30,6 @@ header .nav{display:flex;align-items:center;gap:14px}
 .site-nav a:hover{background:var(--bg-soft);color:var(--ink)}
 .site-nav a.active,.site-nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
 .chip{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2)}
-.lang-switch{margin-left:auto;display:inline-flex;align-items:center;gap:2px;padding:3px;border:1px solid var(--line);border-radius:12px;background:var(--bg-soft)}
-.lang-switch button{font:inherit;font-size:12.5px;font-weight:700;color:var(--ink-2);background:transparent;border:0;border-radius:9px;padding:5px 10px;cursor:pointer}
-.lang-switch button.active{background:#fff;color:var(--accent);box-shadow:var(--shadow-1)}
-body[data-lang="en"] [data-i18n="zh"],body[data-lang="zh"] [data-i18n="en"]{display:none!important}
 .badge{font-size:11px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
 .badge.pending{background:oklch(0.95 0.04 80);color:oklch(0.5 0.12 80)}
 .badge.viewer{background:var(--accent-soft);color:var(--accent)}
@@ -237,11 +233,9 @@ padding:6px 9px;border:1px solid var(--line);border-radius:11px;background:#fff;
 .copy-btn[data-state="copied"]{background:oklch(0.95 0.05 150);color:oklch(0.48 0.13 150)}
 .copy-btn[data-state="copied"] .copy-label{display:none}
 .copy-btn[data-state="copied"]::after{content:"Copied"}
-body[data-lang="zh"] .copy-btn[data-state="copied"]::after{content:"已复制"}
 .copy-btn[data-state="failed"]{background:oklch(0.96 0.03 25);color:oklch(0.55 0.18 25)}
 .copy-btn[data-state="failed"] .copy-label{display:none}
 .copy-btn[data-state="failed"]::after{content:"Copy failed"}
-body[data-lang="zh"] .copy-btn[data-state="failed"]::after{content:"复制失败"}
 .sample-nested{margin-top:10px}
 .sample-nested summary{cursor:pointer;color:var(--accent);font-size:13px;margin-bottom:8px}
 .sample-nested pre{margin-top:8px}
@@ -282,12 +276,10 @@ td select{width:auto;padding:6px 10px;border-radius:10px}
 @media(max-width:900px){.hero-line{flex-direction:column}.facet-grid{grid-template-columns:1fr}.crash-head{display:none}.crash-item,.crash-list.compact .crash-item{grid-template-columns:1fr;gap:10px}
 .crash-health{justify-content:flex-start}.crash-count{text-align:left}.filter-head,.module-head{align-items:flex-start;flex-direction:column;gap:8px}.module-actions{justify-content:flex-start}
 .group-metrics{grid-template-columns:1fr 1fr}.sample summary{grid-template-columns:1fr}.sample-time{text-align:left}.manage-head{flex-direction:column}.manage-actions{justify-content:flex-start}.manage-grid{grid-template-columns:1fr}.manage-form.wide{grid-column:auto}}
-@media(max-width:760px){header{height:auto;min-height:68px;flex-wrap:wrap;padding:14px 0}.lang-switch{margin-left:0}.nav{width:100%;flex-wrap:wrap;gap:8px}.site-nav{overflow-x:auto;padding-bottom:2px}.site-nav a{white-space:nowrap}.chip{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}.grid{grid-template-columns:1fr}.overview-grid,.module-nav,.health-grid{grid-template-columns:1fr}.metrics,.pref-metrics{grid-template-columns:1fr}.row{grid-template-columns:minmax(0,1fr) minmax(70px,.8fr) 3.2em}.card-title-row{align-items:flex-start;flex-direction:column}.filter-card{position:static}.wrap{padding:0 16px 48px}}
+@media(max-width:760px){header{height:auto;min-height:68px;flex-wrap:wrap;padding:14px 0}.nav{width:100%;flex-wrap:wrap;gap:8px}.site-nav{overflow-x:auto;padding-bottom:2px}.site-nav a{white-space:nowrap}.chip{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}.grid{grid-template-columns:1fr}.overview-grid,.module-nav,.health-grid{grid-template-columns:1fr}.metrics,.pref-metrics{grid-template-columns:1fr}.row{grid-template-columns:minmax(0,1fr) minmax(70px,.8fr) 3.2em}.card-title-row{align-items:flex-start;flex-direction:column}.filter-card{position:static}.wrap{padding:0 16px 48px}}
 `;
 
-const LANG_SWITCH = `<span class="lang-switch" role="group" aria-label="Language"><button type="button" data-lang-option="zh">中文</button><button type="button" data-lang-option="en">EN</button></span>`;
-
-const LANG_SCRIPT = `<script>(()=>{const k="reasonix.stats.lang";const b=[...document.querySelectorAll("[data-lang-option]")];const pick=()=>{try{return localStorage.getItem(k)}catch{return""}};const fallback=()=>((navigator.language||"").toLowerCase().startsWith("zh")?"zh":"en");const set=(v)=>{const lang=v==="en"?"en":"zh";document.body.dataset.lang=lang;b.forEach((x)=>{const on=x.dataset.langOption===lang;x.classList.toggle("active",on);x.setAttribute("aria-pressed",String(on))});try{localStorage.setItem(k,lang)}catch{}};b.forEach((x)=>x.addEventListener("click",()=>set(x.dataset.langOption||"zh")));set(pick()||fallback())})();(()=>{const fallback=(t)=>{const a=document.createElement("textarea");a.value=t;a.setAttribute("readonly","");a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch{}a.remove();return ok};document.addEventListener("click",async(e)=>{const b=e.target.closest("[data-copy]");if(!b)return;const t=b.dataset.copy||"";let ok=false;try{if(navigator.clipboard){await navigator.clipboard.writeText(t);ok=true}}catch{}if(!ok)ok=fallback(t);b.dataset.state=ok?"copied":"failed";setTimeout(()=>{delete b.dataset.state},1400)})})()</script>`;
+const COPY_SCRIPT = `<script>(()=>{const fallback=(t)=>{const a=document.createElement("textarea");a.value=t;a.setAttribute("readonly","");a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch{}a.remove();return ok};document.addEventListener("click",async(e)=>{const b=e.target.closest("[data-copy]");if(!b)return;const t=b.dataset.copy||"";let ok=false;try{if(navigator.clipboard){await navigator.clipboard.writeText(t);ok=true}}catch{}if(!ok)ok=fallback(t);b.dataset.state=ok?"copied":"failed";setTimeout(()=>{delete b.dataset.state},1400)})})()</script>`;
 
 const STATS_ROUTE_SCRIPT = `<script>(()=>{if(location.pathname!=="/stats"||!location.hash)return;const m={diagnostics:"diagnostics",usage:"",preferences:"preferences",health:"health"};const key=location.hash.slice(1);if(m[key]===undefined)return;location.replace("/stats"+(m[key]?"/"+m[key]:"")+location.search)})()</script>`;
 
@@ -295,8 +287,8 @@ export function page(title: string, crumb: string, body: string, nav = ""): stri
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>${esc(title)}</title><style>${CSS}</style></head><body><div class="wrap">
-<header><a class="brand" href="https://reasonix.io">${LOGO}</a><a class="brand" href="https://reasonix.io">Reasonix</a><span class="crumb">/ ${esc(crumb)}</span>${LANG_SWITCH}${nav ? `<span class="nav">${nav}</span>` : ""}</header>
-${body}</div>${LANG_SCRIPT}${STATS_ROUTE_SCRIPT}</body></html>`;
+<header><a class="brand" href="https://patty-code.io">${LOGO}</a><a class="brand" href="https://patty-code.io">Patty Code</a><span class="crumb">/ ${esc(crumb)}</span>${nav ? `<span class="nav">${nav}</span>` : ""}</header>
+${body}</div>${COPY_SCRIPT}${STATS_ROUTE_SCRIPT}</body></html>`;
 }
 
 export function html(body: string): Response {

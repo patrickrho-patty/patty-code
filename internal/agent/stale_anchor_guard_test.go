@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func TestDeleteRangeRequiresReadAfterSameTurnWrite(t *testing.T) {

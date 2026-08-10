@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	CurrentKeyName = "ReasonixReasonix"
-	LegacyKeyName  = "Reasonix"
+	CurrentKeyName = "Patty Code"
+	LegacyKeyName  = "Patty Code"
 )
 
 type Registration struct {
@@ -29,7 +29,7 @@ type ReconcilePlan struct {
 }
 
 // Plan returns the safe per-user uninstall-registration mutation for an
-// installed Reasonix tree. Portable trees have no owned registration and no
+// installed Patty Code tree. Portable trees have no owned registration and no
 // root uninstaller, so they deliberately produce a no-op plan.
 func Plan(current, legacy *Registration, installRoot, version string, uninstallerPresent bool) (ReconcilePlan, error) {
 	root := cleanWindowsPath(installRoot)
@@ -60,11 +60,11 @@ func Plan(current, legacy *Registration, installRoot, version string, uninstalle
 	return ReconcilePlan{
 		Managed: true,
 		Desired: Registration{
-			DisplayName:          "Reasonix",
+			DisplayName:          "Patty Code",
 			DisplayVersion:       strings.TrimPrefix(version, "v"),
-			Publisher:            "Reasonix",
+			Publisher:            "Patty Code",
 			InstallLocation:      root,
-			DisplayIcon:          joinWindowsPath(root, "reasonix-launcher.exe"),
+			DisplayIcon:          joinWindowsPath(root, "patty-code-launcher.exe"),
 			UninstallString:      quoteWindowsPath(uninstaller),
 			QuietUninstallString: quoteWindowsPath(uninstaller) + " /S",
 		},
@@ -73,7 +73,7 @@ func Plan(current, legacy *Registration, installRoot, version string, uninstalle
 }
 
 func registrationOwnsRoot(reg *Registration, root string) bool {
-	if reg == nil || !strings.EqualFold(strings.TrimSpace(reg.DisplayName), "Reasonix") {
+	if reg == nil || !strings.EqualFold(strings.TrimSpace(reg.DisplayName), "Patty Code") {
 		return false
 	}
 	if sameWindowsPath(reg.InstallLocation, root) {

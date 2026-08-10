@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/config"
-	"reasonix/internal/worktree"
+	"patty/internal/config"
+	"patty/internal/worktree"
 )
 
 func TestDeliveryWorktreeAvailabilityDelegatesWithoutRequiringGit(t *testing.T) {
@@ -24,9 +24,9 @@ func TestDeliveryWorktreeAvailabilityDelegatesWithoutRequiringGit(t *testing.T) 
 
 func TestCreateDeliveryWorktreeRegistersAndOpensManagedProject(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
-	t.Setenv("REASONIX_STATE_HOME", home)
-	t.Setenv("REASONIX_CACHE_HOME", filepath.Join(home, "cache"))
+	t.Setenv("PATTY_HOME", home)
+	t.Setenv("PATTY_STATE_HOME", home)
+	t.Setenv("PATTY_CACHE_HOME", filepath.Join(home, "cache"))
 	managed := config.DeliveryWorktreeDir()
 	isolatedRoot := filepath.Join(managed, "repo", "id", "project")
 	if err := os.MkdirAll(isolatedRoot, 0o755); err != nil {
@@ -46,7 +46,7 @@ func TestCreateDeliveryWorktreeRegistersAndOpensManagedProject(t *testing.T) {
 			WorkspaceRoot: isolatedRoot,
 			WorktreeRoot:  filepath.Dir(isolatedRoot),
 			SourceRoot:    "source-project",
-			Branch:        "reasonix/delivery-test",
+			Branch:        "patty/delivery-test",
 			SourceDirty:   true,
 		}, nil
 	}
@@ -57,7 +57,7 @@ func TestCreateDeliveryWorktreeRegistersAndOpensManagedProject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.WorkspaceRoot != isolatedRoot || result.Branch != "reasonix/delivery-test" || !result.SourceDirty {
+	if result.WorkspaceRoot != isolatedRoot || result.Branch != "patty/delivery-test" || !result.SourceDirty {
 		t.Fatalf("result = %+v", result)
 	}
 	if result.Tab.WorkspaceRoot != isolatedRoot || !result.Tab.IsolatedWorktree || !result.Tab.Active || result.Tab.TokenMode != "delivery" {

@@ -10,19 +10,17 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/jobs"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/jobs"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func testTaskContext() context.Context {
 	return WithParentSession(context.Background(), "parent-session")
 }
 
-// TestTaskToolReturnsSubAgentFinalAnswer runs a task against a mock provider
-// that emits a single text turn, and verifies the tool returns that text with a
 // transcript reference — sub-agent intermediate state isn't supposed to leak.
 func TestTaskToolReturnsSubAgentFinalAnswer(t *testing.T) {
 	sub := &mockProvider{name: "sub", chunks: []provider.Chunk{
@@ -44,9 +42,8 @@ func TestTaskToolReturnsSubAgentFinalAnswer(t *testing.T) {
 		t.Errorf("got %q, want continuation guidance", out)
 	}
 
-	// The sub-agent must have received the prompt as its user message and
-	// the configured system prompt at the top — proving the session was
-	// fresh, not the parent's.
+// the configured system prompt at the top  proving the session was
+// fresh, not the parents.
 	if sys := sub.lastReq.Messages[0]; sys.Role != provider.RoleSystem || sys.Content != "test-sys-prompt" {
 		t.Errorf("first message = %+v, want system 'test-sys-prompt'", sys)
 	}
@@ -56,7 +53,7 @@ func TestTaskToolReturnsSubAgentFinalAnswer(t *testing.T) {
 }
 
 func TestSubagentResultWarnsOnHostDecisionLanguage(t *testing.T) {
-	out := GuardSubagentHostDecisionText("等待用户批准后再执行修改")
+	out := GuardSubagentHostDecisionText("사용자 승인(waiting for approval)을 기다린 후 수정을 실행하세요")
 	if !strings.Contains(out, "Subagent boundary") {
 		t.Fatalf("guarded output missing boundary warning:\n%s", out)
 	}
@@ -143,20 +140,17 @@ func TestTaskToolInheritsReasoningLanguageFromContext(t *testing.T) {
 	}}
 	task := newTestTaskTool(t, sub, tool.NewRegistry(), "sys", "", "", nil)
 
-	ctx := WithReasoningLanguagePreference(testTaskContext(), "zh")
+	ctx := WithReasoningLanguagePreference(testTaskContext(), "ko-KR")
 	if _, err := task.Execute(ctx, []byte(`{"prompt":"inspect auth"}`)); err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
 	got := lastUser(sub.lastReq)
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") || !strings.HasSuffix(got, "inspect auth") {
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어") || !strings.HasSuffix(got, "inspect auth") {
 		t.Fatalf("sub-agent user = %q, want reasoning-language-prefixed prompt", got)
 	}
 }
 
-// TestTaskToolFiltersTools verifies the whitelist behaviour: when the caller
-// names a subset of tools, the sub-agent's registry contains exactly that set
-// with recursive delegation tools available while max_subagent_depth leaves one
-// more layer.
+// names a subset of tools, the sub-agents registry contains exactly that set
 func TestTaskToolFiltersTools(t *testing.T) {
 	sub := &mockProvider{name: "sub", chunks: []provider.Chunk{
 		{Type: provider.ChunkText, Text: "ok"},
@@ -176,8 +170,8 @@ func TestTaskToolFiltersTools(t *testing.T) {
 	if _, err := task.Execute(testTaskContext(), args); err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
-	// The sub-agent's tool schemas should reflect the whitelist minus always
-	// unavailable background/install tools. Recursive tools stay visible at depth 1.
+// The sub-agents tool schemas should reflect the whitelist minus always
+// unavailable backgroundinstall tools. Recursive tools stay visible at depth 1.
 	got := map[string]bool{}
 	for _, s := range sub.lastReq.Tools {
 		got[s.Name] = true
@@ -192,9 +186,7 @@ func TestTaskToolFiltersTools(t *testing.T) {
 	}
 }
 
-// TestTaskToolDefaultsToParentToolsWithDepthRemaining covers the no-whitelist
-// path: the first-layer sub-agent inherits parent tools except always-hidden
-// background/install tools because it still has one delegation layer available.
+// backgroundinstall tools because it still has one delegation layer available.
 func TestTaskToolDefaultsToParentToolsWithoutMetaTools(t *testing.T) {
 	sub := &mockProvider{name: "sub", chunks: []provider.Chunk{
 		{Type: provider.ChunkText, Text: "ok"},
@@ -344,9 +336,7 @@ func TestTaskToolRequiresTranscriptStore(t *testing.T) {
 	}
 }
 
-// TestTaskToolRunsEphemerallyWithoutParentSession mirrors headless `reasonix run`:
-// the store is wired but the context carries no parent session, so the sub-agent
-// must run without persistence and return its plain answer (no transcript ref).
+// TestTaskToolRunsEphemerallyWithoutParentSession mirrors headless `patcode run`:
 func TestTaskToolRunsEphemerallyWithoutParentSession(t *testing.T) {
 	sub := &mockProvider{name: "sub", chunks: []provider.Chunk{
 		{Type: provider.ChunkText, Text: "headless answer"},
@@ -822,7 +812,6 @@ func TestTaskToolBackgroundCapRefusesFanOut(t *testing.T) {
 	ctx = jobs.WithSession(ctx, "parent-session")
 	ctx = jobs.WithManager(ctx, jm)
 
-	// Saturate the cap with still-running task jobs owned by this session.
 	release := make(chan struct{})
 	var ids []string
 	for range maxConcurrentBackgroundTasks {
@@ -841,12 +830,10 @@ func TestTaskToolBackgroundCapRefusesFanOut(t *testing.T) {
 		t.Fatalf("Execute over cap = %v, want background task limit refusal", err)
 	}
 
-	// Foreground execution is not capped.
 	if out, err := task.Execute(ctx, []byte(`{"prompt":"foreground task"}`)); err != nil || !strings.Contains(out, "background answer") {
 		t.Fatalf("foreground Execute = %q, %v; want uncapped foreground run", out, err)
 	}
 
-	// Collecting the running jobs frees the cap.
 	close(release)
 	jm.WaitForSession(context.Background(), "parent-session", ids, 5)
 	out, err := task.Execute(ctx, []byte(`{"prompt":"after drain","run_in_background":true}`))
@@ -905,8 +892,7 @@ func TestTaskToolBackgroundSalvagePublishesEvidenceForCollection(t *testing.T) {
 	if len(paths) != 1 || filepath.ToSlash(paths[0]) != "qa/bank.md" {
 		t.Fatalf("background mutation paths = %v, want qa/bank.md", paths)
 	}
-	// Lease does not consume: the evidence stays available until the collecting
-	// turn commits, so a cancelled/errored turn can re-collect it.
+// turn commits, so a cancellederrored turn can re-collect it.
 	if again := jm.LeaseEvidenceForSession("parent-session", jobID); !again.HasMutation() {
 		t.Fatalf("lease consumed background evidence without a commit: %+v", again)
 	}
@@ -916,8 +902,6 @@ func TestTaskToolBackgroundSalvagePublishesEvidenceForCollection(t *testing.T) {
 	}
 }
 
-// startTerminalBackgroundMutation registers a background task job that publishes
-// one mutation and returns after it reaches a terminal state, ready to collect.
 func startTerminalBackgroundMutation(t *testing.T, jm *jobs.Manager, session, path string) string {
 	t.Helper()
 	j := jm.StartForSession(session, "task", "bg writer", func(ctx context.Context, _ io.Writer) (string, error) {
@@ -942,10 +926,7 @@ func waitBuiltin(t *testing.T, reg *tool.Registry) {
 }
 
 func TestBackgroundEvidenceNotCommittedWhenTurnFails(t *testing.T) {
-	// The delivery turn collects a background writer's mutation via wait, then
-	// fails to sign it off, exhausting readiness. Because the turn never
-	// delivered, the lease must not be committed: the mutation stays collectable
-	// so the next turn can review it instead of shipping it unreviewed.
+// The delivery turn collects a background writers mutation via wait, then
 	jm := jobs.NewManager(event.Discard)
 	defer jm.Close()
 	jobID := startTerminalBackgroundMutation(t, jm, "parent-session", "qa/bank.md")
@@ -967,16 +948,14 @@ func TestBackgroundEvidenceNotCommittedWhenTurnFails(t *testing.T) {
 	if !errors.As(err, &readiness) {
 		t.Fatalf("turn = %v, want readiness exhaustion on the uncollected sign-off", err)
 	}
-	// The failed turn must not have consumed the evidence.
 	if leased := jm.LeaseEvidenceForSession("parent-session", jobID); !leased.HasMutation() {
 		t.Fatalf("failed delivery turn consumed the background evidence: %+v", leased)
 	}
 }
 
 func TestBackgroundEvidenceCommittedWhenTurnDelivers(t *testing.T) {
-	// A successful turn that collected a background writer's mutation commits the
-	// lease, permanently draining the job's evidence so a later re-poll does not
-	// re-demand review of work already delivered.
+// A successful turn that collected a background writers mutation commits the
+// lease, permanently draining the jobs evidence so a later re-poll does not
 	jm := jobs.NewManager(event.Discard)
 	defer jm.Close()
 	jobID := startTerminalBackgroundMutation(t, jm, "parent-session", "notes.txt")
@@ -988,8 +967,6 @@ func TestBackgroundEvidenceCommittedWhenTurnDelivers(t *testing.T) {
 		{toolCallChunk("w", "wait", `{"job_ids":["`+jobID+`"]}`), {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "collected the result"}, {Type: provider.ChunkDone}},
 	}}
-	// No delivery profile: the turn succeeds immediately after collecting, so the
-	// commit-on-success hook fires without a full sign-off script.
 	a := New(prov, reg, NewSession(""), Options{Jobs: jm}, event.Discard)
 	ctx := jobs.WithManager(WithParentSession(context.Background(), "parent-session"), jm)
 	ctx = jobs.WithSession(ctx, "parent-session")
@@ -1002,13 +979,8 @@ func TestBackgroundEvidenceCommittedWhenTurnDelivers(t *testing.T) {
 	}
 }
 
-// TestFailedTurnBackgroundMutationForcesReadinessOnNextRunWithoutWait extends
-// TestBackgroundEvidenceNotCommittedWhenTurnFails: after the first turn collects
-// a background mutation via wait but fails to sign it off, Run's Reset wipes the
-// per-turn ledger before the second turn starts. Without re-injecting the still
-// uncommitted mutation, a second turn that never calls wait/bash_output again
-// would sail through final-readiness having never seen it. Run must re-lease it
-// automatically so the gate still blocks.
+// a background mutation via wait but fails to sign it off, Runs Reset wipes the
+// uncommitted mutation, a second turn that never calls waitbash_output again
 func TestFailedTurnBackgroundMutationForcesReadinessOnNextRunWithoutWait(t *testing.T) {
 	jm := jobs.NewManager(event.Discard)
 	defer jm.Close()
@@ -1021,7 +993,7 @@ func TestFailedTurnBackgroundMutationForcesReadinessOnNextRunWithoutWait(t *test
 		{{Type: provider.ChunkText, Text: "all set"}, {Type: provider.ChunkDone}}, // no sign-off
 		{{Type: provider.ChunkText, Text: "all set"}, {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "all set"}, {Type: provider.ChunkDone}},
-		// Second Run: the model never calls wait/bash_output again.
+// Second Run: the model never calls waitbash_output again.
 		{{Type: provider.ChunkText, Text: "sure, here you go"}, {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "sure, here you go"}, {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "sure, here you go"}, {Type: provider.ChunkDone}},
@@ -1047,12 +1019,9 @@ func TestFailedTurnBackgroundMutationForcesReadinessOnNextRunWithoutWait(t *test
 	}
 }
 
-// TestRestartRecoversPendingBackgroundMutationForcesReadinessWithoutWait mirrors
-// the same guarantee across a process restart: a background task mutates and
-// finishes while no turn is collecting it, the process exits before any turn
-// commits (or even leases) that evidence, and a fresh Manager + Agent pair —
-// standing in for the restarted process — must still see it and enforce
-// final-readiness on the very first turn, with no wait/bash_output call at all.
+// commits (or even leases) that evidence, and a fresh Manager + Agent pair
+// standing in for the restarted process  must still see it and enforce
+// final-readiness on the very first turn, with no waitbash_output call at all.
 func TestRestartRecoversPendingBackgroundMutationForcesReadinessWithoutWait(t *testing.T) {
 	sessionPath := filepath.Join(t.TempDir(), "session.jsonl")
 	first := jobs.NewManager(event.Discard)

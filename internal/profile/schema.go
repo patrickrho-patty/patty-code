@@ -314,6 +314,10 @@ func ResolveDerived(base, derived *Profile) (*MergeResult, error) {
 		merged.ModelApprovalURL = derived.ModelApprovalURL
 		applied["modelApprovalURL"] = derived.ModelApprovalURL
 	}
+	if derived.StorageNamespace != "" {
+		merged.StorageNamespace = derived.StorageNamespace
+		applied["storageNamespace"] = derived.StorageNamespace
+	}
 
 	// Inheritance: append modules from derived (they don't replace base's)
 	merged.RequiredModules = append(merged.RequiredModules, derived.RequiredModules...)
@@ -376,12 +380,11 @@ func mergeLocalStrings(base, override LocalizedString) LocalizedString {
 }
 
 // forbiddenOverrides lists derived-profile fields that cannot weaken the
-// security baseline or override critical identifiers set by the base.
+// security baseline. Product-isolation fields (userRoot, storageNamespace,
+// dataRoot) are intentionally overridable so a derived harness owns its own
+// state; only the security baseline is fixed by the base.
 var forbiddenOverrides = []string{
 	"securityBaseline.degradedMode",
-	"storageNamespace",
-	"userRoot",
-	"dataRoot",
 }
 
 func deriveFieldChecks(base, derived *Profile) error {

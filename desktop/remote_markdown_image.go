@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/netclient"
+	"patty/internal/config"
+	"patty/internal/netclient"
 )
 
 const (
-	remoteMarkdownImagePath     = "/__reasonix_remote_markdown_image"
+	remoteMarkdownImagePath     = "/__patty_remote_markdown_image"
 	remoteMarkdownImageMaxBytes = 10 * 1024 * 1024
 	remoteMarkdownImageTimeout  = 20 * time.Second
 )
@@ -178,7 +178,7 @@ func resolveRemoteMarkdownImageAddresses(ctx context.Context, host string, looku
 }
 
 // remoteMarkdownImageMiddleware keeps external images out of the WebView2
-// network stack. The backend fetches them with Reasonix's proxy configuration,
+// network stack. The backend fetches them with patty's proxy configuration,
 // validates the response, sanitizes SVG, and serves only bounded image bytes
 // from the local Wails origin.
 func (a *App) remoteMarkdownImageMiddleware() func(http.Handler) http.Handler {
@@ -224,7 +224,7 @@ func serveRemoteMarkdownImage(
 		return
 	}
 	req.Header.Set("Accept", "image/webp,image/png,image/jpeg,image/gif,image/bmp,image/svg+xml;q=0.9,*/*;q=0.1")
-	req.Header.Set("User-Agent", "Reasonix-Desktop/1.0")
+	req.Header.Set("User-Agent", "Patty Code-Desktop/1.0")
 
 	client, err := clientFactory(spec)
 	if err != nil {

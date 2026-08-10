@@ -1,6 +1,6 @@
-# Reasonix
+# Patty Code
 
-The project's standing instructions live in `REASONIX.md` — one file, read by
-both Reasonix and Claude Code. Add rules there, never here.
+The project's standing instructions live in `PATTY.md` — one file, read by
+both Patty Code and Claude Code. Add rules there, never here.
 
-@REASONIX.md
+@PATTY.md

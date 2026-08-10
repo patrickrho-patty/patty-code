@@ -8,11 +8,10 @@ import (
 )
 
 func testSweepRows(width int) (before, after []string) {
-	// mix wide runes, pre-styled text and plain text
 	for range 4 {
-		before = append(before, strings.Repeat("宽", width/2), strings.Repeat("a", width),
+		before = append(before, strings.Repeat("넓", width/2), strings.Repeat("a", width),
 			themeFg(activeCLITheme.warn, strings.Repeat("s", width)))
-		after = append(after, strings.Repeat("窄", width/2), strings.Repeat("b", width),
+		after = append(after, strings.Repeat("좁", width/2), strings.Repeat("b", width),
 			themeFg(activeCLITheme.info, strings.Repeat("t", width)))
 	}
 	return before, after

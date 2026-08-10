@@ -5,16 +5,13 @@ import (
 	"sync"
 	"testing"
 
-	"reasonix/internal/event"
+	"patty/internal/event"
 )
 
-// All tabEventSink context mutations go through the locked setContext /
-// clearContext accessors (no bare s.ctx = ... writes that data-race the
-// s.context() reads in emitRuntimeEvent). After clearContext the sink stops
+// All tabEventSink context mutations go through the locked setContext
 // emitting — emitRuntimeEvent sees a nil ctx and no-ops — and the queued
 // emitter is drained, so a detached/backgrounded session can't flush stale
-// events onto the now-rebound tab (#5352: stale "AI 不断输出" on the visible
-// session after rapid session switching).
+// events onto the now-rebound tab (#5352: stale "AI가 계속 출력 중" on the visible
 func TestTabEventSinkClearContextStopsEmission(t *testing.T) {
 	var mu sync.Mutex
 	var emitted int
@@ -35,7 +32,6 @@ func TestTabEventSinkClearContextStopsEmission(t *testing.T) {
 		t.Fatal("clearContext did not clear the context")
 	}
 
-	// An emit after clearContext must not reach the runtime bridge.
 	s.emitRuntimeEvent(eventChannel, toWireTab(event.Event{}, s.tabID))
 
 	mu.Lock()

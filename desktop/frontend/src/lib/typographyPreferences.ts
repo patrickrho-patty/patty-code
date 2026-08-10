@@ -5,9 +5,9 @@ export type TypographyRegion = (typeof TYPOGRAPHY_REGIONS)[number];
 export const REGION_FONT_FAMILIES = [
   "inherit",
   "system",
-  "yahei",
-  "pingfang",
-  "noto",
+  "malgun",
+  "applesdgothic",
+  "notokr",
   "cascadia",
   "jetbrains",
   "sfmono",
@@ -25,7 +25,7 @@ export type RegionTypography = {
 
 export type TypographyPreferences = Record<TypographyRegion, RegionTypography>;
 
-export const TYPOGRAPHY_STORAGE_KEY = "reasonix-region-typography-v1";
+export const TYPOGRAPHY_STORAGE_KEY = "patty-region-typography-v1";
 
 export const TYPOGRAPHY_REGION_META: Record<TypographyRegion, { baseSize: number; min: number; max: number }> = {
   interface: { baseSize: 14, min: 11, max: 20 },
@@ -38,9 +38,9 @@ export const TYPOGRAPHY_REGION_META: Record<TypographyRegion, { baseSize: number
 const FONT_STACKS: Record<RegionFontFamily, string> = {
   inherit: "",
   system: 'var(--font-ui)',
-  yahei: '"Microsoft YaHei UI", "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif',
-  pingfang: '"PingFang SC", "苹方-简", "Noto Sans SC", "Microsoft YaHei", sans-serif',
-  noto: '"Noto Sans SC", "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif',
+  malgun: '"Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
+  applesdgothic: '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
+  notokr: '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
   cascadia: '"Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, monospace',
   jetbrains: '"JetBrains Mono", "Cascadia Code", "SF Mono", Consolas, ui-monospace, monospace',
   sfmono: '"SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, monospace',

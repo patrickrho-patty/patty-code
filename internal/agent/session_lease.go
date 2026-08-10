@@ -12,9 +12,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"reasonix/internal/fileutil"
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/store"
+	"patty/internal/fileutil"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/store"
 )
 
 var ErrSessionLeaseHeld = errors.New("session lease held by another runtime")

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/tool"
+	"patty/internal/tool"
 )
 
 // recordingRecorder is a minimal GoalTurnRecorder for tool-level tests.

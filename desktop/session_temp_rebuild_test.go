@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/control"
+	"patty/internal/control"
 )
 
 // TestDesktopHotRebuildPathsKeepSessionTemp covers the three same-session

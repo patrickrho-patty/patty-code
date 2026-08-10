@@ -18,8 +18,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"reasonix/internal/ablation"
-	fileencoding "reasonix/internal/fileutil/encoding"
+	"patty/internal/ablation"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 type task struct {
@@ -176,7 +176,7 @@ const defaultSuiteTokenBudget = 800_000
 
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "e2ebench — Reasonix end-to-end benchmark.\n\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "e2ebench — Patty Code end-to-end benchmark.\n\n")
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", flag.CommandLine.Name())
 		flag.PrintDefaults()
 		fmt.Fprintf(flag.CommandLine.Output(), "\nExamples:\n")
@@ -191,7 +191,7 @@ func main() {
 	mode := flag.String("mode", "suite", "suite | diff | swebench | compare | traj")
 	subset := flag.String("subset", "benchmarks/swebench/subset.json", "swebench mode: instance subset file")
 	namespace := flag.String("namespace", "swebench", "swebench mode: registry namespace holding the evaluation images")
-	runID := flag.String("run-id", "reasonix", "swebench mode: run id passed to the official harness")
+	runID := flag.String("run-id", "patty", "swebench mode: run id passed to the official harness")
 	harnessPy := flag.String("harness-python", "python3", "swebench mode: interpreter with the swebench package installed")
 	dataset := flag.String("dataset", "princeton-nlp/SWE-bench_Verified", "swebench mode: dataset name")
 	permission := flag.String("permission", "auto", "swebench mode: agent permission posture (auto | yolo)")
@@ -204,7 +204,7 @@ func main() {
 	cacheArm := flag.String("cache", "cold", "suite mode: cold (fresh session per task) | warm (prefix-warming one-step run in the same workdir before the graded run)")
 	effort := flag.String("effort", "", "reasoning effort override passed to the agent (model-specific levels, e.g. disabled|low|high|max); empty = model default")
 	checkpoints := flag.Bool("checkpoints", false, "suite mode: snapshot the workdir on every change and grade each snapshot offline after the run, yielding first_correct_ms (TTFCS) and post_solve_waste_ms")
-	bin := flag.String("bin", "reasonix", "path to the reasonix binary")
+	bin := flag.String("bin", "patty", "path to the patty binary")
 	model := flag.String("model", "", "provider/model name (default: config default)")
 	profileFlag := flag.String("profile", benchmarkProfileBaseline, "prompt profile: baseline | delivery")
 	ablateFlag := flag.String("ablate", "", "ablation arm: subsystems to switch off (evidence, planner, subagent, retrieval, compaction; none|all)")

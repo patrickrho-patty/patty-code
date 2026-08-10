@@ -37,8 +37,6 @@ import type {
   UsageStatsRange,
   UsageStatsRequest,
   BotConnectionDiagnostic,
-  BotInstallPollResult,
-  BotInstallStartResult,
   BotRuntimeStatusView,
   BotSettingsView,
   CapabilitiesView,
@@ -465,8 +463,6 @@ export interface AppBindings {
   SetBotConnectionToolApprovalMode(connID: string, mode: string): Promise<void>;
   SetBotSecret(envName: string, value: string): Promise<void>;
   ClearBotSecret(envName: string): Promise<void>;
-  StartBotConnectionInstall(provider: string, domain: string): Promise<BotInstallStartResult>;
-  PollBotConnectionInstall(installID: string): Promise<BotInstallPollResult>;
   BotRuntimeStatus(): Promise<BotRuntimeStatusView>;
   DiagnoseBotConnection(id: string): Promise<BotConnectionDiagnostic>;
   TestBotConnection(id: string, target?: string): Promise<BotConnectionDiagnostic>;
@@ -507,7 +503,7 @@ export interface AppBindings {
   SetColdResumePrune(enabled: boolean): Promise<void>;
   SetCompactRatio(ratio: number): Promise<void>;
   SetReasoningLanguage(lang: string): Promise<void>;
-  SetTrayLocale(locale: "en" | "zh" | "zh-TW"): Promise<void>;
+  SetTrayLocale(locale: "en"): Promise<void>;
   // SetBypass is the legacy Wails name for YOLO/full-access tool auto-approval
   // (ask questions and plan approvals still wait; deny rules still apply).
   // Runtime-only.
@@ -1142,7 +1138,7 @@ const mockProviderPresetTemplates: MockProviderPresetTemplate[] = [
   mockPreset("deepseek-anthropic", "DeepSeek Anthropic", "Official DeepSeek Anthropic-compatible endpoint for Flash and Pro with server-side web search; search may add charges.", "DEEPSEEK_API_KEY", mockProviderTemplate({ name: "deepseek-anthropic", kind: "anthropic", baseUrl: "https://api.deepseek.com/anthropic", models: ["deepseek-v4-flash", "deepseek-v4-pro"], default: "deepseek-v4-flash", apiKeyEnv: "DEEPSEEK_API_KEY", balanceUrl: "https://api.deepseek.com/user/balance", thinking: "enabled", webSearch: true, contextWindow: 1000000, modelOverrides: [{ model: "deepseek-v4-flash", reasoningProtocol: "", supportedEfforts: ["disabled", "low", "high", "max"], defaultEffort: "high" }, { model: "deepseek-v4-pro", reasoningProtocol: "", supportedEfforts: ["disabled", "high", "max"], defaultEffort: "high" }] })),
   mockPreset("longcat-openai", "LongCat OpenAI", "LongCat Platform OpenAI-compatible endpoint for LongCat-2.0.", "LONGCAT_API_KEY", mockProviderTemplate({ name: "longcat-openai", kind: "openai", baseUrl: "https://api.longcat.chat/openai/v1", modelsUrl: "https://api.longcat.chat/openai/v1/models", models: mockLongCatModels, default: "LongCat-2.0", apiKeyEnv: "LONGCAT_API_KEY", contextWindow: 131072, thinking: "enabled", supportedEfforts: ["enabled", "disabled"], defaultEffort: "enabled" })),
   mockPreset("longcat-anthropic", "LongCat Anthropic", "LongCat Platform Anthropic-compatible Messages endpoint for LongCat-2.0.", "LONGCAT_API_KEY", mockProviderTemplate({ name: "longcat-anthropic", kind: "anthropic", baseUrl: "https://api.longcat.chat/anthropic", modelsUrl: "https://api.longcat.chat/anthropic/v1/models", models: mockLongCatModels, default: "LongCat-2.0", apiKeyEnv: "LONGCAT_API_KEY", authHeader: true, contextWindow: 131072, thinking: "enabled", supportedEfforts: ["enabled", "disabled"], defaultEffort: "enabled" })),
-  mockPreset("token-rhythm", "Token Rhythm", "Token Rhythm (基元律动) multi-model OpenAI-compatible gateway.", "TOKEN_RHYTHM_API_KEY", mockProviderTemplate({ name: "token-rhythm", kind: "openai", baseUrl: "https://tokenrhythm.studio/v1", modelsUrl: "https://tokenrhythm.studio/v1/models", models: mockTokenRhythmModels, visionModels: ["kimi-k2.5", "kimi-k2.6", "kimi-k2.7-code"], default: "deepseek-v4-flash", apiKeyEnv: "TOKEN_RHYTHM_API_KEY", contextWindow: 1000000, modelOverrides: mockTokenRhythmModelOverrides })),
+  mockPreset("token-rhythm", "Token Rhythm", "Token Rhythm (rhythmic primitives) multi-model OpenAI-compatible gateway.", "TOKEN_RHYTHM_API_KEY", mockProviderTemplate({ name: "token-rhythm", kind: "openai", baseUrl: "https://tokenrhythm.studio/v1", modelsUrl: "https://tokenrhythm.studio/v1/models", models: mockTokenRhythmModels, visionModels: ["kimi-k2.5", "kimi-k2.6", "kimi-k2.7-code"], default: "deepseek-v4-flash", apiKeyEnv: "TOKEN_RHYTHM_API_KEY", contextWindow: 1000000, modelOverrides: mockTokenRhythmModelOverrides })),
   mockPreset("kimi-cn", "Kimi CN API", "Moonshot Kimi China OpenAI-compatible API.", "KIMI_API_KEY", mockProviderTemplate({ name: "kimi-cn", kind: "openai", baseUrl: "https://api.moonshot.cn/v1", models: mockKimiAPIModels, visionModels: mockKimiAPIModels, default: "kimi-k2.7-code", apiKeyEnv: "KIMI_API_KEY", balanceUrl: "https://api.moonshot.cn/v1/users/me/balance", contextWindow: 262144, reasoningProtocol: "none", modelOverrides: [{ model: "kimi-k3", reasoningProtocol: "openai", supportedEfforts: ["low", "high", "max"], defaultEffort: "max", contextWindow: 1048576 }] })),
   mockPreset("kimi-global", "Kimi Global API", "Moonshot Kimi international OpenAI-compatible API.", "MOONSHOT_API_KEY", mockProviderTemplate({ name: "kimi-global", kind: "openai", baseUrl: "https://api.moonshot.ai/v1", models: mockKimiAPIModels, visionModels: mockKimiAPIModels, default: "kimi-k2.7-code", apiKeyEnv: "MOONSHOT_API_KEY", balanceUrl: "https://api.moonshot.ai/v1/users/me/balance", contextWindow: 262144, reasoningProtocol: "none", modelOverrides: [{ model: "kimi-k3", reasoningProtocol: "openai", supportedEfforts: ["low", "high", "max"], defaultEffort: "max", contextWindow: 1048576 }] })),
   mockPreset("kimi-coding-plan", "Kimi Coding Plan", "Kimi Coding Plan via its dedicated Anthropic-compatible endpoint.", "KIMI_CODING_API_KEY", mockProviderTemplate({ name: "kimi-coding-plan", kind: "anthropic", baseUrl: "https://api.kimi.com/coding/", models: ["kimi-for-coding"], visionModels: ["kimi-for-coding"], default: "kimi-for-coding", apiKeyEnv: "KIMI_CODING_API_KEY", headers: { "User-Agent": "claude-code/0.1.0" }, thinking: "adaptive", contextWindow: 262144 })),
@@ -1176,7 +1172,7 @@ const mockProviderPresetTemplates: MockProviderPresetTemplate[] = [
   mockPreset("stepfun", "StepFun", "StepFun coding-plan OpenAI-compatible endpoint.", "STEPFUN_API_KEY", mockProviderTemplate({ name: "stepfun", kind: "openai", baseUrl: "https://api.stepfun.com/step_plan/v1", models: mockStepFunModels, default: "step-3.7-flash", apiKeyEnv: "STEPFUN_API_KEY", supportedEfforts: ["low", "medium", "high"], defaultEffort: "medium" })),
   mockPreset("stepfun-anthropic", "StepFun Anthropic", "StepFun coding-plan Anthropic-compatible endpoint.", "STEPFUN_API_KEY", mockProviderTemplate({ name: "stepfun-anthropic", kind: "anthropic", baseUrl: "https://api.stepfun.com/step_plan", models: mockStepFunModels, default: "step-3.7-flash", apiKeyEnv: "STEPFUN_API_KEY", thinking: "adaptive", supportedEfforts: ["low", "medium", "high"], defaultEffort: "medium" })),
   mockPreset("novita", "NovitaAI", "NovitaAI OpenAI-compatible multi-model gateway.", "NOVITA_API_KEY", mockProviderTemplate({ name: "novita", kind: "openai", baseUrl: "https://api.novita.ai/openai/v1", models: mockNovitaModels, default: "zai-org/glm-5.2", apiKeyEnv: "NOVITA_API_KEY" })),
-  mockPreset("gmi", "GMI Cloud", "GMI Cloud direct multi-model OpenAI-compatible gateway.", "GMI_API_KEY", mockProviderTemplate({ name: "gmi", kind: "openai", baseUrl: "https://api.gmi-serving.com/v1", models: mockGMIModels, default: "zai-org/GLM-5.2-FP8", apiKeyEnv: "GMI_API_KEY", headers: { "User-Agent": "Reasonix" } })),
+  mockPreset("gmi", "GMI Cloud", "GMI Cloud direct multi-model OpenAI-compatible gateway.", "GMI_API_KEY", mockProviderTemplate({ name: "gmi", kind: "openai", baseUrl: "https://api.gmi-serving.com/v1", models: mockGMIModels, default: "zai-org/GLM-5.2-FP8", apiKeyEnv: "GMI_API_KEY", headers: { "User-Agent": "Patty Code" } })),
   mockPreset("vercel-ai-gateway", "Vercel AI Gateway", "Vercel AI Gateway via Anthropic-compatible Messages API.", "AI_GATEWAY_API_KEY", mockProviderTemplate({ name: "vercel-ai-gateway", kind: "anthropic", baseUrl: "https://ai-gateway.vercel.sh", models: mockVercelModels, visionModels: ["anthropic/claude-sonnet-4.6", "anthropic/claude-opus-4.8", "openai/gpt-5.4", "openai/gpt-5.4-pro", "moonshotai/kimi-k2.7-code"], default: "anthropic/claude-sonnet-4.6", apiKeyEnv: "AI_GATEWAY_API_KEY", authHeader: true, contextWindow: 1000000 })),
   mockPreset("huggingface", "HuggingFace Router", "HuggingFace Inference Router OpenAI-compatible endpoint.", "HF_TOKEN", mockProviderTemplate({ name: "huggingface", kind: "openai", baseUrl: "https://router.huggingface.co/v1", models: ["zai-org/GLM-5.2", "deepseek-ai/DeepSeek-V3.2", "Qwen/Qwen3.5-72B-Instruct"], default: "zai-org/GLM-5.2", apiKeyEnv: "HF_TOKEN" })),
   mockPreset("nvidia", "NVIDIA NIM", "NVIDIA NIM OpenAI-compatible accelerated inference endpoint.", "NVIDIA_API_KEY", mockProviderTemplate({ name: "nvidia", kind: "openai", baseUrl: "https://integrate.api.nvidia.com/v1", models: ["nvidia/nemotron-3-nano-30b-a3b", "nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b", "deepseek-ai/deepseek-v4-pro", "qwen/qwen3.5-397b-a17b"], default: "nvidia/nemotron-3-nano-30b-a3b", apiKeyEnv: "NVIDIA_API_KEY" })),
@@ -1244,9 +1240,9 @@ function makeMockApp(): AppBindings {
   // backend drain contract: only non-fresh tools auto-allow; plan/sandbox
   // escape prompts stay pending and visible.
   let pendingApprovalPreviewPrompt: { id: string; tool: string } | undefined;
-  const globalWorkspaceRoot = "~/Library/Application Support/reasonix/global-workspace";
+  const globalWorkspaceRoot = "~/Library/Application Support/patty/global-workspace";
   let cwd = freshMock ? globalWorkspaceRoot : "~/projects/joyquant-db"; // mutable so PickWorkspace is visible in dev
-  let workspaces = freshMock ? [] : ["~/projects/joyquant-db", "~/projects/joyquant-sys", "~/projects/reasonix", "~/projects/blade"];
+  let workspaces = freshMock ? [] : ["~/projects/joyquant-db", "~/projects/joyquant-sys", "~/projects/patty", "~/projects/blade"];
   let mockEffort = "auto";
   let mockDesktopZoomFactor = 1.0;
   let mockActiveThemeId = "";
@@ -1291,20 +1287,20 @@ function makeMockApp(): AppBindings {
   } as const;
   registerTrustedThemeBackgroundURLs(Object.values(mockOfficialThemeAssets).map((asset) => asset.backgroundUrl));
   let mockThemePacks: import("./themePack").ThemePackView[] = [
-    { id: "graphite", name: "Graphite", author: "Reasonix", baseStyle: "graphite", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
-    { id: "aurora", name: "Aurora", author: "Reasonix", baseStyle: "aurora", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
-    { id: "slate", name: "Slate", author: "Reasonix", baseStyle: "slate", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
-    { id: "carbon", name: "Carbon", author: "Reasonix", baseStyle: "carbon", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
-    { id: "nocturne", name: "Nocturne", author: "Reasonix", baseStyle: "nocturne", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
-    { id: "amber", name: "Amber", author: "Reasonix", baseStyle: "amber", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
-    { ...mockOfficialThemeAssets["official-rose-dawn"], id: "official-rose-dawn", name: "Rose Dawn", author: "Reasonix Contributors", license: "MIT", baseStyle: "graphite", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-rose-dawn.name", descriptionKey: "settings.themes.official.official-rose-dawn.description", tokens: { light: { bg: "#FFF7F8", fg: "#3A252C", accent: "#B43F65" }, dark: { bg: "#1E1419", fg: "#FFF3F6", accent: "#E26D91" } }, recipes: { density: "comfortable", corners: "round" }, background: { focusX: 0.72, focusY: 0.43, safeArea: "left", homeOpacity: 1, taskOpacity: 0.2, overlayStrength: 0.68, paneOpacity: 0.50 } },
-    { ...mockOfficialThemeAssets["official-fortune-forge"], id: "official-fortune-forge", name: "Fortune Forge", author: "Reasonix Contributors", license: "MIT", baseStyle: "amber", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-fortune-forge.name", descriptionKey: "settings.themes.official.official-fortune-forge.description", tokens: { light: { bg: "#FFF8E8", fg: "#382116", accent: "#A92D22" }, dark: { bg: "#1D140D", fg: "#FFF2D1", accent: "#E8AD38" } }, recipes: { density: "comfortable", corners: "soft" }, background: { focusX: 0.74, focusY: 0.44, safeArea: "left", homeOpacity: 1, taskOpacity: 0.2, overlayStrength: 0.7, paneOpacity: 0.50 } },
-    { ...mockOfficialThemeAssets["official-crimson-horizon"], id: "official-crimson-horizon", name: "Crimson Horizon", author: "Reasonix Contributors", license: "MIT", baseStyle: "graphite", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-crimson-horizon.name", descriptionKey: "settings.themes.official.official-crimson-horizon.description", tokens: { light: { bg: "#FFF8F7", fg: "#301D1D", accent: "#B92B38" }, dark: { bg: "#190D11", fg: "#FFF1F2", accent: "#FF6772" } }, recipes: { density: "comfortable", corners: "soft" }, background: { focusX: 0.75, focusY: 0.45, safeArea: "left", homeOpacity: 0.98, taskOpacity: 0.22, overlayStrength: 0.66, paneOpacity: 0.50 } },
-    { ...mockOfficialThemeAssets["official-sage-breeze"], id: "official-sage-breeze", name: "Sage Breeze", author: "Reasonix Contributors", license: "MIT", baseStyle: "slate", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-sage-breeze.name", descriptionKey: "settings.themes.official.official-sage-breeze.description", tokens: { light: { bg: "#F7F7EF", fg: "#26332D", accent: "#47735F" }, dark: { bg: "#101814", fg: "#EEF6F0", accent: "#84CBA7" } }, recipes: { density: "comfortable", corners: "soft" }, background: { focusX: 0.73, focusY: 0.44, safeArea: "left", homeOpacity: 1, taskOpacity: 0.2, overlayStrength: 0.68, paneOpacity: 0.50 } },
-    { ...mockOfficialThemeAssets["official-spark-notebook"], id: "official-spark-notebook", name: "Spark Notebook", author: "Reasonix Contributors", license: "MIT", baseStyle: "aurora", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-spark-notebook.name", descriptionKey: "settings.themes.official.official-spark-notebook.description", tokens: { light: { bg: "#FFF9ED", fg: "#2B2F35", accent: "#007B78" }, dark: { bg: "#14171A", fg: "#F8F5E9", accent: "#42D1C6" } }, recipes: { density: "comfortable", corners: "round" }, background: { focusX: 0.74, focusY: 0.46, safeArea: "left", homeOpacity: 0.98, taskOpacity: 0.2, overlayStrength: 0.68, paneOpacity: 0.50 } },
-    { ...mockOfficialThemeAssets["official-violet-starlight"], id: "official-violet-starlight", name: "Violet Starlight", author: "Reasonix Contributors", license: "MIT", baseStyle: "nocturne", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-violet-starlight.name", descriptionKey: "settings.themes.official.official-violet-starlight.description", tokens: { light: { bg: "#F7F4FF", fg: "#251F3C", accent: "#6242C7" }, dark: { bg: "#0C1022", fg: "#F4F2FF", accent: "#9B86FF" } }, recipes: { density: "comfortable", corners: "round" }, background: { focusX: 0.73, focusY: 0.44, safeArea: "left", homeOpacity: 0.96, taskOpacity: 0.18, overlayStrength: 0.72, paneOpacity: 0.50 } },
-    { ...mockOfficialThemeAssets["official-cyan-stage"], id: "official-cyan-stage", name: "Cyan Stage", author: "Reasonix Contributors", license: "MIT", baseStyle: "carbon", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-cyan-stage.name", descriptionKey: "settings.themes.official.official-cyan-stage.description", tokens: { light: { bg: "#F1FCFD", fg: "#173238", accent: "#007C92" }, dark: { bg: "#07181D", fg: "#E9FCFF", accent: "#37D7E4" } }, recipes: { density: "comfortable", corners: "round" }, background: { focusX: 0.74, focusY: 0.45, safeArea: "left", homeOpacity: 0.96, taskOpacity: 0.18, overlayStrength: 0.72, paneOpacity: 0.50 } },
-    { ...mockOfficialThemeAssets["official-noir-gold"], id: "official-noir-gold", name: "Noir Gold", author: "Reasonix Contributors", license: "MIT", baseStyle: "carbon", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-noir-gold.name", descriptionKey: "settings.themes.official.official-noir-gold.description", tokens: { light: { bg: "#FCF8EE", fg: "#2A241B", accent: "#7A5A16" }, dark: { bg: "#0D0B09", fg: "#F8F1DF", accent: "#D9B45B" } }, recipes: { density: "comfortable", corners: "soft" }, background: { focusX: 0.73, focusY: 0.43, safeArea: "left", homeOpacity: 0.94, taskOpacity: 0.18, overlayStrength: 0.74, paneOpacity: 0.50 } },
+    { id: "graphite", name: "Graphite", author: "Patty Code", baseStyle: "graphite", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
+    { id: "aurora", name: "Aurora", author: "Patty Code", baseStyle: "aurora", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
+    { id: "slate", name: "Slate", author: "Patty Code", baseStyle: "slate", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
+    { id: "carbon", name: "Carbon", author: "Patty Code", baseStyle: "carbon", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
+    { id: "nocturne", name: "Nocturne", author: "Patty Code", baseStyle: "nocturne", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
+    { id: "amber", name: "Amber", author: "Patty Code", baseStyle: "amber", builtin: true, kind: "base", active: false, hasBackground: false, tokens: {}, recipes: { density: "comfortable", corners: "soft" } },
+    { ...mockOfficialThemeAssets["official-rose-dawn"], id: "official-rose-dawn", name: "Rose Dawn", author: "Patty Code Contributors", license: "MIT", baseStyle: "graphite", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-rose-dawn.name", descriptionKey: "settings.themes.official.official-rose-dawn.description", tokens: { light: { bg: "#FFF7F8", fg: "#3A252C", accent: "#B43F65" }, dark: { bg: "#1E1419", fg: "#FFF3F6", accent: "#E26D91" } }, recipes: { density: "comfortable", corners: "round" }, background: { focusX: 0.72, focusY: 0.43, safeArea: "left", homeOpacity: 1, taskOpacity: 0.2, overlayStrength: 0.68, paneOpacity: 0.50 } },
+    { ...mockOfficialThemeAssets["official-fortune-forge"], id: "official-fortune-forge", name: "Fortune Forge", author: "Patty Code Contributors", license: "MIT", baseStyle: "amber", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-fortune-forge.name", descriptionKey: "settings.themes.official.official-fortune-forge.description", tokens: { light: { bg: "#FFF8E8", fg: "#382116", accent: "#A92D22" }, dark: { bg: "#1D140D", fg: "#FFF2D1", accent: "#E8AD38" } }, recipes: { density: "comfortable", corners: "soft" }, background: { focusX: 0.74, focusY: 0.44, safeArea: "left", homeOpacity: 1, taskOpacity: 0.2, overlayStrength: 0.7, paneOpacity: 0.50 } },
+    { ...mockOfficialThemeAssets["official-crimson-horizon"], id: "official-crimson-horizon", name: "Crimson Horizon", author: "Patty Code Contributors", license: "MIT", baseStyle: "graphite", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-crimson-horizon.name", descriptionKey: "settings.themes.official.official-crimson-horizon.description", tokens: { light: { bg: "#FFF8F7", fg: "#301D1D", accent: "#B92B38" }, dark: { bg: "#190D11", fg: "#FFF1F2", accent: "#FF6772" } }, recipes: { density: "comfortable", corners: "soft" }, background: { focusX: 0.75, focusY: 0.45, safeArea: "left", homeOpacity: 0.98, taskOpacity: 0.22, overlayStrength: 0.66, paneOpacity: 0.50 } },
+    { ...mockOfficialThemeAssets["official-sage-breeze"], id: "official-sage-breeze", name: "Sage Breeze", author: "Patty Code Contributors", license: "MIT", baseStyle: "slate", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-sage-breeze.name", descriptionKey: "settings.themes.official.official-sage-breeze.description", tokens: { light: { bg: "#F7F7EF", fg: "#26332D", accent: "#47735F" }, dark: { bg: "#101814", fg: "#EEF6F0", accent: "#84CBA7" } }, recipes: { density: "comfortable", corners: "soft" }, background: { focusX: 0.73, focusY: 0.44, safeArea: "left", homeOpacity: 1, taskOpacity: 0.2, overlayStrength: 0.68, paneOpacity: 0.50 } },
+    { ...mockOfficialThemeAssets["official-spark-notebook"], id: "official-spark-notebook", name: "Spark Notebook", author: "Patty Code Contributors", license: "MIT", baseStyle: "aurora", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-spark-notebook.name", descriptionKey: "settings.themes.official.official-spark-notebook.description", tokens: { light: { bg: "#FFF9ED", fg: "#2B2F35", accent: "#007B78" }, dark: { bg: "#14171A", fg: "#F8F5E9", accent: "#42D1C6" } }, recipes: { density: "comfortable", corners: "round" }, background: { focusX: 0.74, focusY: 0.46, safeArea: "left", homeOpacity: 0.98, taskOpacity: 0.2, overlayStrength: 0.68, paneOpacity: 0.50 } },
+    { ...mockOfficialThemeAssets["official-violet-starlight"], id: "official-violet-starlight", name: "Violet Starlight", author: "Patty Code Contributors", license: "MIT", baseStyle: "nocturne", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-violet-starlight.name", descriptionKey: "settings.themes.official.official-violet-starlight.description", tokens: { light: { bg: "#F7F4FF", fg: "#251F3C", accent: "#6242C7" }, dark: { bg: "#0C1022", fg: "#F4F2FF", accent: "#9B86FF" } }, recipes: { density: "comfortable", corners: "round" }, background: { focusX: 0.73, focusY: 0.44, safeArea: "left", homeOpacity: 0.96, taskOpacity: 0.18, overlayStrength: 0.72, paneOpacity: 0.50 } },
+    { ...mockOfficialThemeAssets["official-cyan-stage"], id: "official-cyan-stage", name: "Cyan Stage", author: "Patty Code Contributors", license: "MIT", baseStyle: "carbon", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-cyan-stage.name", descriptionKey: "settings.themes.official.official-cyan-stage.description", tokens: { light: { bg: "#F1FCFD", fg: "#173238", accent: "#007C92" }, dark: { bg: "#07181D", fg: "#E9FCFF", accent: "#37D7E4" } }, recipes: { density: "comfortable", corners: "round" }, background: { focusX: 0.74, focusY: 0.45, safeArea: "left", homeOpacity: 0.96, taskOpacity: 0.18, overlayStrength: 0.72, paneOpacity: 0.50 } },
+    { ...mockOfficialThemeAssets["official-noir-gold"], id: "official-noir-gold", name: "Noir Gold", author: "Patty Code Contributors", license: "MIT", baseStyle: "carbon", builtin: true, kind: "official", active: false, hasBackground: true, nameKey: "settings.themes.official.official-noir-gold.name", descriptionKey: "settings.themes.official.official-noir-gold.description", tokens: { light: { bg: "#FCF8EE", fg: "#2A241B", accent: "#7A5A16" }, dark: { bg: "#0D0B09", fg: "#F8F1DF", accent: "#D9B45B" } }, recipes: { density: "comfortable", corners: "soft" }, background: { focusX: 0.73, focusY: 0.43, safeArea: "left", homeOpacity: 0.94, taskOpacity: 0.18, overlayStrength: 0.74, paneOpacity: 0.50 } },
   ];
   const day = 86_400_000;
   const t0 = Date.now();
@@ -1318,7 +1314,7 @@ function makeMockApp(): AppBindings {
       autoStart: true,
       tier: "background",
       source: "project",
-      configSource: "reasonix.toml",
+      configSource: "patty.toml",
       url: "https://mcp.example.test/project",
       tools: 3,
       prompts: 0,
@@ -1382,7 +1378,7 @@ function makeMockApp(): AppBindings {
     },
     { name: "research", description: "Combine web_fetch + code reading in an isolated subagent", scope: "builtin", runAs: "subagent", enabled: true, allowedTools: ["read_file", "ls", "glob", "grep", "code_index", "web_fetch"], invocation: "/research", invocationMode: "auto" },
     { name: "review", description: "Review the staged diff", scope: "project", runAs: "inline", enabled: false, invocation: "/review" },
-    { name: "init", description: "Scaffold a REASONIX.md for this repo", scope: "builtin", runAs: "inline", enabled: true, invocation: "/init" },
+    { name: "init", description: "Scaffold a PATTY.md for this repo", scope: "builtin", runAs: "inline", enabled: true, invocation: "/init" },
     {
       name: "my-formatter", description: "Formats code the way I like it", scope: "global", runAs: "subagent", enabled: true,
       model: "deepseek-pro", effort: "high", allowedTools: ["read_file", "edit_file"], color: "amber", invocation: "/my-formatter", invocationMode: "manual",
@@ -1390,7 +1386,7 @@ function makeMockApp(): AppBindings {
     },
   ];
   let capSkillRoots: SkillRootView[] = [
-    { dir: "~/projects/reasonix/.reasonix/skills", scope: "project", priority: 1, status: "missing", configured: false, removable: true, skills: 0 },
+    { dir: "~/projects/patty/.patty/skills", scope: "project", priority: 1, status: "missing", configured: false, removable: true, skills: 0 },
     {
       dir: "~/my-skills",
       scope: "custom",
@@ -1402,7 +1398,7 @@ function makeMockApp(): AppBindings {
       skillItems: [{ name: "review", description: "Review the staged diff", scope: "custom", runAs: "inline" }],
     },
     {
-      dir: "~/.reasonix/skills",
+      dir: "~/.patty/skills",
       scope: "global",
       priority: 6,
       status: "ok",
@@ -1411,7 +1407,7 @@ function makeMockApp(): AppBindings {
       skills: 2,
       skillItems: [
         { name: "explore", description: "Investigate the codebase in an isolated subagent", scope: "global", runAs: "subagent" },
-        { name: "init", description: "Scaffold a REASONIX.md for this repo", scope: "global", runAs: "inline" },
+        { name: "init", description: "Scaffold a PATTY.md for this repo", scope: "global", runAs: "inline" },
       ],
     },
   ];
@@ -1514,7 +1510,7 @@ function makeMockApp(): AppBindings {
       noProxy: "",
       proxy: { type: "socks5", server: "127.0.0.1", port: 7890, username: "", password: "" },
     },
-    agent: { temperature: 0.2, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "You are Reasonix, a coding agent.", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: 0.8 },
+    agent: { temperature: 0.2, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "You are Patty Code, a coding agent.", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: 0.8 },
     bot: {
       enabled: !freshMock,
       model: "",
@@ -1526,14 +1522,12 @@ function makeMockApp(): AppBindings {
       queueDrop: "summarize",
       ignoreSelfMessages: true,
       selfUserIds: {
-        qq: [],
-        feishu: [],
-        weixin: [],
+        desktop: [],
       },
       control: {
         enabled: false,
         addr: "127.0.0.1:37913",
-        tokenEnv: "REASONIX_BOT_CONTROL_TOKEN",
+        tokenEnv: "PATTY_BOT_CONTROL_TOKEN",
       },
       pairing: {
         enabled: true,
@@ -1544,37 +1538,10 @@ function makeMockApp(): AppBindings {
       allowlist: {
         enabled: true,
         allowAll: false,
-        qqUsers: [],
-        feishuUsers: freshMock ? [] : ["ou_mock_user_001"],
-        weixinUsers: freshMock ? [] : ["wxid_mock_user_001"],
-        qqApprovers: [],
-        feishuApprovers: [],
-        weixinApprovers: [],
-        qqAdmins: [],
-        feishuAdmins: [],
-        weixinAdmins: [],
-        qqGroups: [],
-        feishuGroups: [],
-        weixinGroups: [],
-      },
-      qq: { enabled: false, appId: "", appSecretEnv: "QQ_BOT_APP_SECRET", secretSet: false, sandbox: false, model: "", toolApprovalMode: "ask", workspaceRoot: "", access: { enabled: true, allowAll: false, pairingEnabled: true, users: [], groups: [], approvers: [], admins: [] } },
-      feishu: {
-        enabled: false,
-        domain: "feishu",
-        appId: "",
-        appSecretEnv: "FEISHU_BOT_APP_SECRET",
-        secretSet: false,
-        verificationToken: "",
-        mode: "webhook",
-        webhookPort: 8080,
-        requireMention: true,
-      },
-      weixin: {
-        enabled: false,
-        accountId: "default",
-        tokenEnv: "WEIXIN_BOT_TOKEN",
-        tokenSet: false,
-        apiBase: "https://ilinkai.weixin.qq.com",
+        users: freshMock ? [] : ["ou_mock_user_001"],
+        approvers: [],
+        admins: [],
+        groups: [],
       },
       connections: freshMock ? [] : [
         {
@@ -1665,8 +1632,8 @@ function makeMockApp(): AppBindings {
     updateChannel: "stable",
     telemetry: true,
     metrics: true,
-    configPath: "~/.reasonix/config.toml",
-    shadowedByPath: "~/projects/reasonix/reasonix.toml",
+    configPath: "~/.patty/config.toml",
+    shadowedByPath: "~/projects/patty/patty.toml",
     providerKinds: ["openai", "anthropic"],
     autoApproveTools: false,
     bypass: false,
@@ -1675,7 +1642,7 @@ function makeMockApp(): AppBindings {
   const hookSettings: Record<string, HooksSettingsView> = {
     global: {
       scope: "global",
-      path: "~/.reasonix/settings.json",
+      path: "~/.patty/settings.json",
       projectRoot: "",
       trusted: true,
       events: hookEvents,
@@ -1685,7 +1652,7 @@ function makeMockApp(): AppBindings {
     },
     project: {
       scope: "project",
-      path: "./.reasonix/settings.json",
+      path: "./.patty/settings.json",
       projectRoot: "/mock/project",
       trusted: false,
       events: hookEvents,
@@ -1696,7 +1663,7 @@ function makeMockApp(): AppBindings {
     provider.apiKeyEnv === "DEEPSEEK_API_KEY" ? { ...provider, keySet: !freshMock } : provider,
   );
   if (freshMock) {
-    settings.configPath = "~/.reasonix/config.toml";
+    settings.configPath = "~/.patty/config.toml";
     settings.shadowedByPath = "";
   }
   const mockNow = Date.now();
@@ -1813,18 +1780,18 @@ function makeMockApp(): AppBindings {
     for (let i = 1; i <= 18; i++) {
       out.push({
         role: "user",
-        content: `第 ${i} 轮：检查聊天滚动定位，切换会话后应该自动停在最新消息底部。`,
+        content: `Round ${i}: check chat scroll anchoring; after switching sessions the view should land at the newest message.`,
         createdAt: t0 - (19 - i) * 15 * 60_000,
       });
       if (i === 4) {
-        out.push({ role: "phase", content: "复现切换会话后的滚动位置" });
+        out.push({ role: "phase", content: "Reproduce scroll position after switching sessions" });
       }
       if (i === 8) {
         const toolID = "mock-scroll-layout-check";
         out.push({
           role: "assistant",
-          content: "我会先读取滚动容器尺寸，再确认是否存在动态高度变化导致的底部偏移。",
-          reasoning: "旧实现只重置 stick 标志，没有主动等待布局稳定；AskCard、Approval、Todo 这类卡片可能在下一帧改变高度。",
+          content: "I will read the scroll container size first, then check whether dynamic height changes shift the bottom offset.",
+          reasoning: "The old implementation only reset the stick flag without waiting for layout to settle; cards like AskCard, Approval, and Todo can change height on the next frame.",
           toolCalls: [{ id: toolID, name: "bash", arguments: JSON.stringify({ command: "npm run check:css && pnpm typecheck" }) }],
         });
         out.push({
@@ -1836,14 +1803,14 @@ function makeMockApp(): AppBindings {
         continue;
       }
       if (i === 13) {
-        out.push({ role: "notice", level: "info", content: "模拟提示：用户向上查看历史后，右下角应出现跳到底部按钮。" });
+        out.push({ role: "notice", level: "info", content: "Mock notice: after the user scrolls up, a jump-to-bottom button should appear at the bottom right." });
       }
       out.push({
         role: "assistant",
         content: [
-          `第 ${i} 轮结果：当前滚动契约会在切换会话或 reveal 信号到达后执行强制贴底。`,
-          "它会先立即设置 scrollTop 到 scrollHeight，再连续几个 animation frame 复查，避免动态内容把底部再次推走。",
-          "如果用户主动向上滚动，普通 streaming 不会强行拉回；只有点击跳到底部按钮或显式切换会话才会重新贴底。",
+          `Round ${i} result: the current scroll contract force-anchors to the bottom after a session switch or reveal signal.`,
+          "It first sets scrollTop to scrollHeight immediately, then re-checks over several animation frames so dynamic content cannot push the bottom away again.",
+          "If the user scrolls up on purpose, normal streaming does not yank the view back; only clicking jump-to-bottom or explicitly switching sessions re-anchors.",
         ].join("\n\n"),
       });
     }
@@ -1852,12 +1819,12 @@ function makeMockApp(): AppBindings {
       content: "",
       trigger: "manual",
       messages: 36,
-      summary: "Mock 长会话用于验证桌面端 Transcript 自动贴底、多帧布局修正和跳到底部按钮。",
+      summary: "Long mock session used to verify desktop Transcript auto-anchoring, multi-frame layout correction, and the jump-to-bottom button.",
       archive: "mock-scroll-preview",
     });
     out.push({
       role: "assistant",
-      content: "最终状态：这条消息应该位于真实底部。向上滚动后，右下角会显示跳到底部按钮；点击按钮后应回到这里。",
+      content: "Final state: this message should sit at the true bottom. After scrolling up, the jump-to-bottom button appears; clicking it returns here.",
     });
     return out;
   };
@@ -1868,18 +1835,18 @@ function makeMockApp(): AppBindings {
           {
             role: "user",
             content: [
-              "[[reasonix-im]]",
+              "[[patty-im]]",
               "provider=lark",
               "label=Feishu / Lark",
               "sender=ou_mock_user_001",
-              "chat=p2p 会话",
-              "[[/reasonix-im]]",
-              "你可以做什么",
+              "chat=p2p session",
+              "[[/patty-im]]",
+              "What can you do",
             ].join("\n"),
           },
           {
             role: "assistant",
-            content: "这是 Global 范围下的 IM 会话。我可以先处理不依赖项目文件的问答、计划和信息整理；需要进入项目时，再由桌面端显式绑定或迁移到项目话题。",
+            content: "This is an IM session in the Global scope. I can handle questions, planning, and note organization that do not depend on project files; when project access is needed, the desktop app binds or migrates to a project topic explicitly.",
           },
         ];
       case "topic_ai":
@@ -1887,52 +1854,52 @@ function makeMockApp(): AppBindings {
           {
             role: "user",
             content: [
-              "[[reasonix-im]]",
+              "[[patty-im]]",
               "provider=weixin",
-              "label=微信",
+              "label=WeChat",
               "sender=wxid_mock_user_001",
-              "chat=单聊",
-              "[[/reasonix-im]]",
-              "帮我整理一下今天要做的事",
+              "chat=direct",
+              "[[/patty-im]]",
+              "Help me organize today's tasks",
             ].join("\n"),
           },
           {
             role: "assistant",
-            content: "可以。我会先在 Global 范围里整理任务清单；如果某条任务需要读取项目文件，再切到你授权的项目话题处理。",
+            content: "Sure. I will organize the task list in the Global scope first; if a task needs project files, I will switch to the project topic you authorized.",
           },
         ];
       case "topic_dev_standard":
         return mockLongTranscriptHistory();
       case "topic_p3b_pd":
         return [
-          { role: "user", content: "把 p3b P&D 的范围和风险重新整理成可执行计划。" },
-          { role: "phase", content: "分析需求范围" },
+          { role: "user", content: "Restructure the p3b P&D scope and risks into an executable plan." },
+          { role: "phase", content: "Analyze the requirement scope" },
         ];
       case "topic_p3a_pd":
         return [
-          { role: "user", content: "复盘 p3a 的技术方案，先不要写文件，先说明你的判断。" },
+          { role: "user", content: "Review the p3a technical approach; do not write files yet, explain your judgment first." },
         ];
       case "topic_hotfix":
         return [
-          { role: "user", content: "检查 post-p3-hotfix 的回归风险，重点看最近的 shell 输出和 git 改动。" },
-          { role: "assistant", content: "", reasoning: "我先定位最近一次 hotfix 的上下文，然后用只读命令检查状态；左侧保持“思考中”，工具细节在这里展开。" },
+          { role: "user", content: "Check the regression risk of post-p3-hotfix, focusing on recent shell output and git changes." },
+          { role: "assistant", content: "", reasoning: "I will locate the latest hotfix context first, then inspect state with read-only commands; the left side stays in the thinking state while tool details expand here." },
         ];
       case "topic_sys_coord":
         return [
-          { role: "user", content: "准备执行 joyquant-sys 的同步脚本，但需要我确认后再运行。" },
-          { role: "assistant", content: "", reasoning: "这个动作会运行脚本并可能刷新本地缓存，所以需要先等用户确认。" },
+          { role: "user", content: "Prepare to run the joyquant-sys sync script, but wait for my confirmation." },
+          { role: "assistant", content: "", reasoning: "This action runs a script and may refresh local caches, so it needs user confirmation first." },
         ];
       case "topic_sys_standard":
         return [
-          { role: "user", content: "继续制定 SYS 项目开发规范，先停在当前检查点。" },
-          { role: "assistant", content: "已暂停在规范整理阶段。当前保留了目录约定、分支策略和待确认的发布检查项；继续时可以从这里恢复。" },
-          { role: "notice", level: "info", content: "会话已暂停：未继续执行命令，等待用户恢复或切换任务。" },
+          { role: "user", content: "Continue drafting the SYS project development guidelines, pausing at the current checkpoint." },
+          { role: "assistant", content: "Paused at the guideline-drafting stage. Directory conventions, branch strategy, and pending release checks are kept; resuming picks up here." },
+          { role: "notice", level: "info", content: "Session paused: no commands were run; waiting for the user to resume or switch tasks." },
         ];
       case "topic_sys_exception":
         return [
-          { role: "user", content: "演练异常处理流程，看看失败时界面怎么提示。" },
-          { role: "assistant", content: "我尝试校验恢复脚本时遇到异常，已停止继续执行。" },
-          { role: "notice", level: "warn", content: "运行异常：恢复脚本缺少必要环境变量 JOYQUANT_SYS_TOKEN。请补齐配置后重试。" },
+          { role: "user", content: "Walk through the error-handling flow and see how the UI reports failures." },
+          { role: "assistant", content: "I hit an exception while validating the recovery script and stopped executing." },
+          { role: "notice", level: "warn", content: "Run error: the recovery script is missing the required environment variable JOYQUANT_SYS_TOKEN. Configure it and retry." },
         ];
       default:
         return [];
@@ -1964,7 +1931,7 @@ function makeMockApp(): AppBindings {
         emitMockTurnStarted();
         await delay(120);
         if (tab.topicId === "topic_p3b_pd") {
-          const text = "我会先把范围拆成三层：目标、依赖、风险。当前已经确认 p3b 的交付边界，接下来补充每个模块的验收口径...";
+          const text = "I will split the scope into three layers: goals, dependencies, risks. The p3b delivery boundary is confirmed; next I will add acceptance criteria per module...";
           for (const ch of text) {
             emit({ kind: "text", text: ch });
             await delay(5);
@@ -1972,9 +1939,9 @@ function makeMockApp(): AppBindings {
           return;
         }
         if (tab.topicId === "topic_p3a_pd") {
-          emit({ kind: "reasoning", text: "我正在对比 p3a 和 p3b 的差异：先看约束，再看变更风险，最后判断是否需要拆成独立任务。\n\n" });
+          emit({ kind: "reasoning", text: "I am comparing p3a and p3b: constraints first, then change risk, and finally whether to split into separate tasks.\n\n" });
           await delay(220);
-          emit({ kind: "reasoning", text: "当前倾向：先保留 p3a 的兼容路径，不急于删除旧逻辑。" });
+          emit({ kind: "reasoning", text: "Current lean: keep p3a's compatibility path and do not rush to delete the old logic." });
           return;
         }
         if (tab.topicId === "topic_hotfix") {
@@ -1987,14 +1954,14 @@ function makeMockApp(): AppBindings {
         if (tab.topicId === "topic_sys_coord") {
           pendingApprovalPreview = true;
           pendingApprovalPreviewPrompt = { id: "mock-sys-confirm", tool: "bash" };
-          emit({ kind: "reasoning", text: "我已经准备好执行同步脚本，但这个操作会影响本地 workspace，需要用户确认。" });
+          emit({ kind: "reasoning", text: "I am ready to run the sync script, but it affects the local workspace and needs user confirmation." });
           await delay(160);
           emit({
             kind: "approval_request",
             approval: {
               id: "mock-sys-confirm",
               tool: "bash",
-              subject: "npm run sync:joyquant-sys\n\n该命令会同步 SYS 项目配置并刷新本地缓存。",
+              subject: "npm run sync:joyquant-sys\n\nThis command syncs SYS project configuration and refreshes local caches.",
             },
           });
         }
@@ -2036,9 +2003,9 @@ function makeMockApp(): AppBindings {
     {
       id: "tab_notice_preview",
       scope: "project",
-      workspaceRoot: "~/projects/reasonix",
-      workspaceName: "reasonix",
-      workspacePath: "~/projects/reasonix",
+      workspaceRoot: "~/projects/patty",
+      workspaceName: "patty",
+      workspacePath: "~/projects/patty",
       gitBranch: "codex/compact-chat-notices-i18n",
       topicId: "topic_notice_preview",
       topicTitle: "Compact notice preview",
@@ -2051,7 +2018,7 @@ function makeMockApp(): AppBindings {
       toolApprovalMode: "ask",
       tokenMode: "full",
       active: true,
-      cwd: "~/projects/reasonix",
+      cwd: "~/projects/patty",
     },
   ] : freshMock ? [
     {
@@ -2255,7 +2222,7 @@ function makeMockApp(): AppBindings {
         });
         return;
       }
-      if (trimmedInput === "/recovery-preview" || trimmedInput === "recovery preview" || trimmedInput === "恢复预览") {
+      if (trimmedInput === "/recovery-preview" || trimmedInput === "recovery preview" || trimmedInput === "recovery-preview") {
         pendingApprovalPreview = true;
         pendingApprovalPreviewPrompt = { id: "mock-recovery-preview", tool: "write_file" };
         await delay(250);
@@ -2298,7 +2265,7 @@ function makeMockApp(): AppBindings {
         trimmedInput === "/sandbox-escape-preview" ||
         trimmedInput === "sandbox escape preview" ||
         trimmedInput === "sandbox_escape preview" ||
-        trimmedInput === "sandbox escape预览"
+        trimmedInput === "sandbox escape-preview"
       ) {
         pendingApprovalPreview = true;
         pendingApprovalPreviewPrompt = { id: "mock-sandbox-escape-preview", tool: "sandbox_escape" };
@@ -2437,7 +2404,7 @@ function makeMockApp(): AppBindings {
         });
         return;
       }
-      if (trimmedInput === "/todo-preview" || trimmedInput === "todo preview" || trimmedInput === "todo预览") {
+      if (trimmedInput === "/todo-preview" || trimmedInput === "todo preview" || trimmedInput === "todo-preview") {
         await delay(250);
         if (cancelled) return;
         emit({
@@ -2476,7 +2443,7 @@ function makeMockApp(): AppBindings {
         emitMockTurnDone();
         return;
       }
-      if (trimmedInput === "/process-preview" || trimmedInput === "process preview" || trimmedInput === "过程预览") {
+      if (trimmedInput === "/process-preview" || trimmedInput === "process preview" || trimmedInput === "process-preview") {
         await delay(200);
         if (cancelled) return;
         emit({ kind: "phase", text: "Preparing context" });
@@ -2499,27 +2466,27 @@ function makeMockApp(): AppBindings {
         emitMockTurnDone();
         return;
       }
-      if (trimmedInput === "/nested-preview" || trimmedInput === "nested preview" || trimmedInput === "嵌套预览") {
+      if (trimmedInput === "/nested-preview" || trimmedInput === "nested preview" || trimmedInput === "nested-preview") {
         const parentId = "mock-nested-explore";
         await delay(180);
         if (cancelled) return;
         emit({
           kind: "reasoning",
-          text: "我先快速探索相关文件，再整理这个工具行的视觉层级。",
+          text: "I will quickly explore the relevant files first, then organize the visual hierarchy of this tool row.",
         });
         emit({
           kind: "message",
           text: "",
-          reasoning: "我先快速探索相关文件，再整理这个工具行的视觉层级。",
+          reasoning: "I will quickly explore the relevant files first, then organize the visual hierarchy of this tool row.",
         });
         emit({
           kind: "tool_dispatch",
           tool: {
             id: parentId,
             name: "explore",
-            args: JSON.stringify({ task: "在 Reasonix 前端中检查工具调用图标和嵌套调用展示" }),
+            args: JSON.stringify({ task: "Inspect tool-call icons and nested invocation rendering in the Patty Code frontend" }),
             readOnly: true,
-            profile: { model: "mock-reasonix", effort: "high" },
+            profile: { model: "mock-patty", effort: "high" },
           },
         });
         for (let i = 1; i <= 30; i += 1) {
@@ -2549,7 +2516,7 @@ function makeMockApp(): AppBindings {
             id: parentId,
             name: "explore",
             readOnly: true,
-            output: "已读 20 个文件 · 搜索 10 个文件",
+            output: "Read 20 files · searched 10 files",
             durationMs: 61510,
           },
         });
@@ -2566,9 +2533,9 @@ function makeMockApp(): AppBindings {
       await delay(700);
       if (cancelled) return;
       const reasoningChunks = [
-        "我先判断这是浏览器预览环境，所以不会调用真实 kernel。\n",
-        "接着模拟 provider 的 reasoning delta：先展示思考过程，再切到正式回复。\n",
-        "完成后前端应该把过程区折叠成“已工作 N 秒”。\n",
+        "I will treat this as a browser preview environment, so no real kernel is invoked.\n",
+        "Then mock the provider reasoning delta: show the thinking process first, then switch to the final reply.\n",
+        "Afterwards the frontend should fold the process area into \"worked N seconds\".\n",
       ];
       for (const chunk of reasoningChunks) {
         if (cancelled) return;
@@ -2884,7 +2851,7 @@ function makeMockApp(): AppBindings {
         async ClearSessionForTab() {},
     async Checkpoints() {
       return [
-        { turn: 0, prompt: "你好呀", files: ["src/App.tsx"], fileCount: 1, turnFileCount: 1, time: Date.now() - 30_000, canCode: true, canConversation: true },
+        { turn: 0, prompt: "Hello there", files: ["src/App.tsx"], fileCount: 1, turnFileCount: 1, time: Date.now() - 30_000, canCode: true, canConversation: true },
       ];
     },
     async CheckpointsForTab() {
@@ -3061,7 +3028,7 @@ function makeMockApp(): AppBindings {
     async PickWorkspace() {
       // Browser dev has no native dialog; simulate picking a folder and re-root so
       // the topbar folder chip visibly changes.
-      return mockSwitchWorkspace(cwd.endsWith("another-project") ? "~/projects/reasonix" : "~/projects/another-project");
+      return mockSwitchWorkspace(cwd.endsWith("another-project") ? "~/projects/patty" : "~/projects/another-project");
     },
     async SwitchWorkspace(path: string) {
       return mockSwitchWorkspace(path);
@@ -3197,7 +3164,7 @@ function makeMockApp(): AppBindings {
             findingCount: 1,
             openCriteria: [],
             blocker: "",
-            taskPath: "/tmp/mock/.reasonix/autoresearch/mock-autoresearch",
+            taskPath: "/tmp/mock/.patty/autoresearch/mock-autoresearch",
             nextRequiredAction: "continue with the next evidence-producing step",
           };
         },
@@ -3215,7 +3182,7 @@ function makeMockApp(): AppBindings {
             findingCount: 1,
             openCriteria: [],
             blocker: "",
-            taskPath: "/tmp/mock/.reasonix/autoresearch/mock-autoresearch",
+            taskPath: "/tmp/mock/.patty/autoresearch/mock-autoresearch",
             nextRequiredAction: "continue with the next evidence-producing step",
           };
         },
@@ -3233,7 +3200,7 @@ function makeMockApp(): AppBindings {
             findingCount: 1,
             openCriteria: [],
             blocker: "",
-            taskPath: "/tmp/mock/.reasonix/autoresearch/mock-autoresearch",
+            taskPath: "/tmp/mock/.patty/autoresearch/mock-autoresearch",
             nextRequiredAction: "continue with the next evidence-producing step",
           }];
         },
@@ -3367,7 +3334,7 @@ function makeMockApp(): AppBindings {
         },
         instructions: { docs: [{ path: "<workspace>/AGENTS.md", scope: "project", directory: "<workspace>", depth: 0, order: 1 }] },
         skills: {
-          roots: [{ path: "<workspace>/.reasonix/skills", scope: "project", status: "ok" }],
+          roots: [{ path: "<workspace>/.patty/skills", scope: "project", status: "ok" }],
           entries: capSkills.map((s) => ({
             name: s.name,
             description: s.description,
@@ -3448,8 +3415,8 @@ function makeMockApp(): AppBindings {
         version: "dev",
         description: "Mock plugin",
         source,
-        root: `~/.reasonix/plugins/${name}`,
-        manifestKind: "reasonix",
+        root: `~/.patty/plugins/${name}`,
+        manifestKind: "patty",
         enabled: true,
         skills: 1,
         hooks: 0,
@@ -3634,7 +3601,7 @@ function makeMockApp(): AppBindings {
         runAs: "subagent", enabled: true, model: input.model, effort: input.effort,
         allowedTools: input.allowedTools, color: input.color, invocation: `/${name}`, invocationMode: "manual",
       });
-      return `~/.reasonix/skills/${name}/SKILL.md`;
+      return `~/.patty/skills/${name}/SKILL.md`;
     },
     async UpdateSubagentProfile(name: string, scope: string, input: SubagentProfileInput) {
       const skill = capSkills.find((s) => s.name === name && s.scope === scope);
@@ -3752,8 +3719,8 @@ function makeMockApp(): AppBindings {
     },
     async ReadFile(rel: string) {
       const samples: Record<string, string> = {
-        "README.md": "# Reasonix\n\nBrowser-dev workspace preview.\n\n- Chat in the center\n- Browse files on the right\n- Keep sessions on the left\n",
-        "go.mod": "module reasonix\n\ngo 1.23\n",
+        "README.md": "# Patty Code\n\nBrowser-dev workspace preview.\n\n- Chat in the center\n- Browse files on the right\n- Keep sessions on the left\n",
+        "go.mod": "module patty\n\ngo 1.23\n",
         "desktop/file.go": "package desktop\n\nfunc main() {\n\tprintln(\"workspace preview\")\n}\n",
         "internal/event.go": "package internal\n\n// mock file used by the browser dev seam\n",
       };
@@ -3846,17 +3813,17 @@ function makeMockApp(): AppBindings {
       console.info("mock RevealPath", path);
     },
     async SavePastedImage(dataUrl: string) {
-      const path = `.reasonix/attachments/mock-${mockAttachmentDataURLs.size + 1}.png`;
+      const path = `.patty/attachments/mock-${mockAttachmentDataURLs.size + 1}.png`;
       mockAttachmentDataURLs.set(path, dataUrl);
       return path;
     },
     async SaveClipboardImage() {
-      const path = `.reasonix/attachments/mock-clipboard-${mockAttachmentDataURLs.size + 1}.png`;
+      const path = `.patty/attachments/mock-clipboard-${mockAttachmentDataURLs.size + 1}.png`;
       mockAttachmentDataURLs.set(path, mockPreviewImageDataURL);
       return path;
     },
     async SavePastedFile(name: string, dataUrl: string) {
-      const path = `.reasonix/attachments/mock-${name}`;
+      const path = `.patty/attachments/mock-${name}`;
       mockAttachmentDataURLs.set(path, dataUrl);
       return path;
     },
@@ -3897,9 +3864,9 @@ function makeMockApp(): AppBindings {
       const hasExt = /\.\w{1,6}$/i.test(name);
       if (!hasExt) {
         const tokenName = name.replace(/[^\w.-]+/g, "-") || "folder";
-        return { kind: "workspace" as const, path: `__reasonix_external_folder/mock/${tokenName}`, isDir: true, displayPath: path };
+        return { kind: "workspace" as const, path: `__patty_external_folder/mock/${tokenName}`, isDir: true, displayPath: path };
       }
-      const attachmentPath = `.reasonix/attachments/mock-${name}`;
+      const attachmentPath = `.patty/attachments/mock-${name}`;
       mockAttachmentDataURLs.set(attachmentPath, mockPreviewImageDataURL);
       return { kind: "attachment" as const, path: attachmentPath };
     },
@@ -3946,21 +3913,21 @@ function makeMockApp(): AppBindings {
     async Memory() {
       return {
         available: true,
-        storeDir: "~/.reasonix/projects/-mock/memory",
-        storeGlobalDir: "~/.reasonix/memory/global",
+        storeDir: "~/.patty/projects/-mock/memory",
+        storeGlobalDir: "~/.patty/memory/global",
         docs: [
           {
-            path: "REASONIX.md",
+            path: "PATTY.md",
             scope: "project",
             directory: ".",
-            body: "# Reasonix project memory\n\nMock doc shown in the browser dev seam.\n\n## Notes\n\n- prefers concise replies",
+            body: "# Patty Code project memory\n\nMock doc shown in the browser dev seam.\n\n## Notes\n\n- prefers concise replies",
             imports: [],
             depth: 0,
             order: 0,
             precedence: 0,
           },
           {
-            path: "~/.reasonix/REASONIX.md",
+            path: "~/.patty/PATTY.md",
             scope: "user",
             body: t("mock.memoryBody"),
             imports: [],
@@ -3987,15 +3954,15 @@ function makeMockApp(): AppBindings {
             type: "project",
             scope: "project",
             body: "This plan was archived after the implementation changed.",
-            path: "~/.reasonix/projects/-mock/memory/.archive/20260612-021500.000-old-plan.md",
+            path: "~/.patty/projects/-mock/memory/.archive/20260612-021500.000-old-plan.md",
             archivedAt: "2026-06-12T02:15:00Z",
             freshness: "current",
           },
         ],
         scopes: [
-          { scope: "user", path: "~/.reasonix/REASONIX.md" },
-          { scope: "project", path: "REASONIX.md" },
-          { scope: "local", path: "REASONIX.local.md" },
+          { scope: "user", path: "~/.patty/PATTY.md" },
+          { scope: "project", path: "PATTY.md" },
+          { scope: "local", path: "PATTY.local.md" },
         ],
         conflicts: [],
         lastRecall: {
@@ -4025,13 +3992,13 @@ function makeMockApp(): AppBindings {
         ],
         skills: [
           {
-            id: "skill-reasonix-pr-followup",
-            name: "reasonix-pr-followup",
-            description: "Review or update a Reasonix GitHub PR, address feedback, verify, and publish safely.",
+            id: "skill-patty-pr-followup",
+            name: "patty-pr-followup",
+            description: "Review or update a Patty Code GitHub PR, address feedback, verify, and publish safely.",
             scope: "project",
-            body: "# Reasonix PR Followup\n\nUse this skill for repeated Reasonix PR work.\n\n## Workflow\n\n1. Confirm branch and PR state.\n2. Inspect the diff.\n3. Fix actionable feedback.\n4. Verify and update the PR.\n",
+            body: "# Patty Code PR Followup\n\nUse this skill for repeated Patty Code PR work.\n\n## Workflow\n\n1. Confirm branch and PR state.\n2. Inspect the diff.\n3. Fix actionable feedback.\n4. Verify and update the PR.\n",
             reason: "recent history repeatedly touched PR workflows",
-            evidence: ["mock-pr-session: 提交到pr，并更新内容", "mock-review-session: 解决该pr下机器人提出来的问题"],
+            evidence: ["mock-pr-session: commit to the PR and update its content", "mock-review-session: address the issues the bot raised on that PR"],
           },
         ],
         generatedAt: new Date().toISOString(),
@@ -4045,7 +4012,7 @@ function makeMockApp(): AppBindings {
     },
     async AcceptSkillSuggestion(suggestion: SkillSuggestion) {
       emit({ kind: "notice", level: "info", text: `created suggested skill → ${suggestion.name}` });
-      return `.reasonix/skills/${suggestion.name}/SKILL.md`;
+      return `.patty/skills/${suggestion.name}/SKILL.md`;
     },
     async MemorySuggestionsForTab(_tabID: string) {
       return this.MemorySuggestions();
@@ -4083,7 +4050,7 @@ function makeMockApp(): AppBindings {
     },
     async Remember(_scope: string, _note: string) {
       emit({ kind: "notice", level: "info", text: `remembered → ${_scope}` });
-      return `${_scope} REASONIX.md (mock): ${_note}`;
+      return `${_scope} PATTY.md (mock): ${_note}`;
     },
     async RememberForTab(_tabID: string, scope: string, note: string) {
       return this.Remember(scope, note);
@@ -4134,7 +4101,7 @@ function makeMockApp(): AppBindings {
       })) as DesktopStartupSettingsView;
     },
     async Settings() { return JSON.parse(JSON.stringify(settings)) as SettingsView; },
-    async StorageSettings() { return { defaultWorkspace: cwd, statePath: `${cwd}/.reasonix`, cachePath: `${cwd}/.reasonix/cache`, extensionsPath: `${cwd}/.reasonix/plugins` }; },
+    async StorageSettings() { return { defaultWorkspace: cwd, statePath: `${cwd}/.patty`, cachePath: `${cwd}/.patty/cache`, extensionsPath: `${cwd}/.patty/plugins` }; },
     async HooksSettings(scope: string) {
       const key = scope === "project" ? "project" : "global";
       return JSON.parse(JSON.stringify(hookSettings[key])) as HooksSettingsView;
@@ -4338,9 +4305,6 @@ function makeMockApp(): AppBindings {
         },
         async SetBotSecret(envName: string, _value: string) {
           const name = envName.trim();
-          if (settings.bot.qq.appSecretEnv === name) settings.bot.qq.secretSet = true;
-          if (settings.bot.feishu.appSecretEnv === name) settings.bot.feishu.secretSet = true;
-          if (settings.bot.weixin.tokenEnv === name) settings.bot.weixin.tokenSet = true;
           settings.bot.connections = settings.bot.connections.map((connection) => ({
             ...connection,
             credential: connection.credential.appSecretEnv === name || connection.credential.tokenEnv === name
@@ -4350,9 +4314,6 @@ function makeMockApp(): AppBindings {
         },
         async ClearBotSecret(envName: string) {
           const name = envName.trim();
-          if (settings.bot.qq.appSecretEnv === name) settings.bot.qq.secretSet = false;
-          if (settings.bot.feishu.appSecretEnv === name) settings.bot.feishu.secretSet = false;
-          if (settings.bot.weixin.tokenEnv === name) settings.bot.weixin.tokenSet = false;
           settings.bot.connections = settings.bot.connections.map((connection) => ({
             ...connection,
             credential: connection.credential.appSecretEnv === name || connection.credential.tokenEnv === name
@@ -4361,8 +4322,7 @@ function makeMockApp(): AppBindings {
           }));
         },
         async BotRuntimeStatus() {
-          const qqRunning = settings.bot.qq.enabled && settings.bot.qq.appId.trim() && settings.bot.qq.secretSet;
-          const runningConnections = (qqRunning ? 1 : 0) + settings.bot.connections.filter((connection) => connection.enabled && connection.status === "connected").length;
+          const runningConnections = settings.bot.connections.filter((connection) => connection.enabled && connection.status === "connected").length;
           return {
             running: settings.bot.enabled && runningConnections > 0,
             status: settings.bot.enabled && runningConnections > 0 ? "running" : "stopped",
@@ -4371,58 +4331,12 @@ function makeMockApp(): AppBindings {
             startedAt: settings.bot.enabled && runningConnections > 0 ? new Date(t0).toISOString() : "",
           };
         },
-        async StartBotConnectionInstall(provider: string, domain: string) {
-          const normalizedProvider = provider === "weixin" ? "weixin" : "feishu";
-          const normalizedDomain = normalizedProvider === "weixin" ? "weixin" : domain === "lark" ? "lark" : "feishu";
-          return {
-            ok: true,
-            provider: normalizedProvider,
-            domain: normalizedDomain,
-            installId: `mock-${normalizedProvider}-${normalizedDomain}`,
-            url: "https://example.com/reasonix-bot-qr",
-            deviceCode: "MOCKDEVICE",
-            userCode: normalizedProvider === "weixin" ? "" : "MOCK-CODE",
-            interval: 3,
-            expireIn: 300,
-            message: "",
-          };
-        },
-        async PollBotConnectionInstall(installID: string) {
-          const isWeixin = installID.includes("weixin");
-          const domain = installID.includes("lark") ? "lark" : isWeixin ? "weixin" : "feishu";
-          const provider = isWeixin ? "weixin" : "feishu";
-          const connection = {
-            id: `${provider}-${domain}`,
-            provider,
-            domain,
-            label: domain === "lark" ? "Lark" : domain === "weixin" ? "微信" : "飞书",
-            enabled: true,
-            status: "connected",
-	            model: "",
-	            toolApprovalMode: "",
-	            workspaceRoot: "",
-	            access: { enabled: true, allowAll: false, pairingEnabled: true, users: [provider === "weixin" ? "wxid_mock_user_001" : "ou_mock_user_001"], groups: [], approvers: [], admins: [] },
-	            credential: {
-              appId: provider === "feishu" ? "cli_mock" : "",
-              appSecretEnv: provider === "feishu" ? (domain === "lark" ? "LARK_BOT_APP_SECRET" : "FEISHU_BOT_APP_SECRET") : "",
-              accountId: provider === "weixin" ? "mock-account" : "",
-              tokenEnv: provider === "weixin" ? "WEIXIN_BOT_TOKEN" : "",
-              secretSet: true,
-            },
-            sessionMappings: [],
-            lastError: "",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          settings.bot.connections = [...settings.bot.connections.filter((c) => c.id !== connection.id), connection];
-          return { done: true, connection, status: "connected", message: "connected", error: "" };
-        },
         async DiagnoseBotConnection(id: string) {
           const connection = settings.bot.connections.find((c) => c.id === id);
           const occurredAt = new Date().toISOString();
           return connection
-            ? { id, label: connection.label, status: connection.enabled ? "ok" : "disabled", message: connection.enabled ? "连接配置已保存。" : "连接已保存但未启用。", messageId: "", phase: "config", code: connection.enabled ? "config_ok" : "connection_disabled", reportKind: "", reportDetail: "", occurredAt }
-            : { id, label: "", status: "missing", message: "未找到连接。", messageId: "", phase: "config", code: "connection_missing", reportKind: "bot", reportDetail: JSON.stringify({ schemaVersion: 2, kind: "bot", source: "bot.runtime", label: "bot.mock.config", message: "mock missing bot connection", errorType: "BotConnectionDiagnostic", errorMessage: "bot connection record was not found", topFrame: "bot.config", occurredAt }), occurredAt };
+            ? { id, label: connection.label, status: connection.enabled ? "ok" : "disabled", message: connection.enabled ? "Connection configuration saved." : "Connection saved but not enabled.", messageId: "", phase: "config", code: connection.enabled ? "config_ok" : "connection_disabled", reportKind: "", reportDetail: "", occurredAt }
+            : { id, label: "", status: "missing", message: "Connection not found.", messageId: "", phase: "config", code: "connection_missing", reportKind: "bot", reportDetail: JSON.stringify({ schemaVersion: 2, kind: "bot", source: "bot.runtime", label: "bot.mock.config", message: "mock missing bot connection", errorType: "BotConnectionDiagnostic", errorMessage: "bot connection record was not found", topFrame: "bot.config", occurredAt }), occurredAt };
         },
         async TestBotConnection(id: string, target?: string) {
           const diag = await this.DiagnoseBotConnection(id);
@@ -4442,7 +4356,7 @@ function makeMockApp(): AppBindings {
           settings.statusBarItems = normalizeStatusBarItems(items);
         },
         async SetDesktopLanguage(lang: string) {
-          settings.desktopLanguage = lang === "en" || lang === "zh" ? lang : "";
+          settings.desktopLanguage = lang === "en" ? lang : "";
         },
         async SetDesktopCurrency(currency: string) {
           settings.desktopCurrency = currency === "CNY" || currency === "USD" ? currency : "";
@@ -4603,7 +4517,7 @@ function makeMockApp(): AppBindings {
         },
         async SetExpandThinking(_on: boolean) {},
         async MigrateDesktopPreferences(language: string, theme: string, style: string) {
-          if (!settings.desktopLanguage) settings.desktopLanguage = language === "en" || language === "zh" || language === "zh-TW" ? language : "";
+          if (!settings.desktopLanguage) settings.desktopLanguage = language === "en" ? language : "";
           if (!settings.desktopTheme && !settings.desktopThemeStyle) {
             settings.desktopTheme = theme === "auto" || theme === "light" ? theme : "dark";
             settings.desktopThemeStyle = style;
@@ -4644,7 +4558,7 @@ function makeMockApp(): AppBindings {
     async CancelTaskForTab() { return { schema_version: 1, command: "cancel", task_id: "", accepted: false, idempotent: false, error: { code: "mock", message: "not available in browser mock" } }; },
     async RequeueTaskForTab() { return { schema_version: 1, command: "requeue", task_id: "", accepted: false, idempotent: false, error: { code: "mock", message: "not available in browser mock" } }; },
     async OpenTaskSessionForTab() { return { schema_version: 1, command: "open_session", task_id: "", accepted: false, idempotent: false, error: { code: "mock", message: "not available in browser mock" } }; },
-    async SetTrayLocale(_locale: "en" | "zh" | "zh-TW") {},
+    async SetTrayLocale(_locale: "en") {},
     async SetAutoApproveTools(on: boolean) {
       await this.SetToolApprovalMode(on ? "yolo" : "ask");
     },
@@ -4690,7 +4604,7 @@ function makeMockApp(): AppBindings {
     async AbandonPendingUpdate() {},
     async OpenDownloadPage() {
       if (typeof window !== "undefined") {
-        window.open("https://reasonix.io/?download=desktop#start", "_blank", "noopener");
+        window.open("https://patty.io/?download=desktop#start", "_blank", "noopener");
       }
     },
     async OpenUserConfigPath() {},
@@ -4759,11 +4673,11 @@ function makeMockApp(): AppBindings {
     async CreateDeliveryWorktree(workspaceRoot: string) {
       if (!workspaceRoot) throw new Error("project folder is required");
       const suffix = Date.now().toString(36);
-      const isolatedRoot = `/mock/reasonix-worktrees/${suffix}/${workspaceRoot.split("/").filter(Boolean).pop() ?? "project"}`;
+      const isolatedRoot = `/mock/patty-worktrees/${suffix}/${workspaceRoot.split("/").filter(Boolean).pop() ?? "project"}`;
       const topicID = `topic_worktree_${suffix}`;
       const tab = await this.OpenProjectTab(isolatedRoot, topicID);
       tab.isolatedWorktree = true;
-      tab.gitBranch = `reasonix/delivery-${suffix}`;
+      tab.gitBranch = `patty/delivery-${suffix}`;
       mockTabs = mockTabs.map((candidate) => candidate.id === tab.id ? { ...tab } : candidate);
       return {
         workspaceRoot: isolatedRoot,
@@ -4899,9 +4813,9 @@ function makeMockApp(): AppBindings {
         running: true,
       };
       mockTerminalSessions = [...mockTerminalSessions, session];
-      mockTerminalOutput.set(id, "Reasonix terminal ready\r\n");
+      mockTerminalOutput.set(id, "Patty Code terminal ready\r\n");
       mockTerminalTabIDs.set(id, tabID);
-      window.setTimeout(() => __emitMockTerminalOutput({ id, data: mockTerminalBytes("Reasonix terminal ready\r\n") }), 0);
+      window.setTimeout(() => __emitMockTerminalOutput({ id, data: mockTerminalBytes("Patty Code terminal ready\r\n") }), 0);
       return { ...session };
     },
     async WriteTerminalForTab(_tabID: string, sessionID: string, data: string) {

@@ -8,17 +8,17 @@
 # Debian version ordering: stable X.Y.Z, prereleases as X.Y.Z~rc.N / X.Y.Z~canary.N
 # so they sort below the matching stable package. DEB_ARCH is the Go arch name,
 # which already matches Debian's (amd64, arm64).
-name: "reasonix-desktop"
+name: "patty-desktop"
 arch: "${DEB_ARCH}"
 platform: "linux"
 version: "${DEB_VERSION}"
 section: "utils"
 priority: "optional"
-maintainer: "esengine <esengine@users.noreply.github.com>"
+maintainer: "pattycorp <pattycorp@users.noreply.github.com>"
 description: |
-  Reasonix desktop — a Wails shell around the Go kernel.
-vendor: "Reasonix Contributors"
-homepage: "https://github.com/esengine/DeepSeek-Reasonix"
+  Patty Code desktop — a Wails shell around the Go kernel.
+vendor: "Patty Code Contributors"
+homepage: "https://github.com/patty-io/patty-code"
 license: "MIT"
 scripts:
   postinstall: ./build/linux/postinstall.sh
@@ -30,69 +30,69 @@ depends:
   - libwebkit2gtk-4.1-0
   - pkexec
 contents:
-  - src: ./build/bin/reasonix-desktop
-    dst: /usr/bin/reasonix-desktop
+  - src: ./build/bin/patty-desktop
+    dst: /usr/bin/patty-desktop
     file_info:
       mode: 0755
-  - src: ./build/bin/reasonix-launcher
-    dst: /usr/bin/reasonix-launcher
+  - src: ./build/bin/patty-code-launcher
+    dst: /usr/bin/patty-code-launcher
     file_info:
       mode: 0755
-  - src: ./build/bin/reasonix
-    dst: /usr/bin/reasonix
+  - src: ./build/bin/patcode
+    dst: /usr/bin/patcode
     file_info:
       mode: 0755
-  - src: ./build/bin/reasonix-update-helper
-    dst: /usr/lib/reasonix/reasonix-update-helper
+  - src: ./build/bin/patty-code-update-helper
+    dst: /usr/lib/patty/patty-code-update-helper
     file_info:
       mode: 0755
-  - src: ./build/linux/io.reasonix.desktop.update.policy
-    dst: /usr/share/polkit-1/actions/io.reasonix.desktop.update.policy
+  - src: ./build/linux/io.patty-code.desktop.update.policy
+    dst: /usr/share/polkit-1/actions/io.patty-code.desktop.update.policy
     file_info:
       mode: 0644
-  - src: ./build/linux/reasonix.desktop
-    dst: /usr/share/applications/reasonix.desktop
+  - src: ./build/linux/patty-code.desktop
+    dst: /usr/share/applications/patty-code.desktop
     file_info:
       mode: 0644
   # appicon.png is 1024x1024 — not a standard hicolor size dir, so install it under
-  # the size-agnostic pixmaps path that the .desktop's `Icon=reasonix-desktop` finds.
+  # the size-agnostic pixmaps path that the .desktop's `Icon=patty-desktop` finds.
   - src: ./build/appicon.png
-    dst: /usr/share/pixmaps/reasonix-desktop.png
+    dst: /usr/share/pixmaps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/16x16/apps/reasonix-desktop.png
-    dst: /usr/share/icons/hicolor/16x16/apps/reasonix-desktop.png
+  - src: ./build/linux/icons/hicolor/16x16/apps/patty-desktop.png
+    dst: /usr/share/icons/hicolor/16x16/apps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/24x24/apps/reasonix-desktop.png
-    dst: /usr/share/icons/hicolor/24x24/apps/reasonix-desktop.png
+  - src: ./build/linux/icons/hicolor/24x24/apps/patty-desktop.png
+    dst: /usr/share/icons/hicolor/24x24/apps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/32x32/apps/reasonix-desktop.png
-    dst: /usr/share/icons/hicolor/32x32/apps/reasonix-desktop.png
+  - src: ./build/linux/icons/hicolor/32x32/apps/patty-desktop.png
+    dst: /usr/share/icons/hicolor/32x32/apps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/48x48/apps/reasonix-desktop.png
-    dst: /usr/share/icons/hicolor/48x48/apps/reasonix-desktop.png
+  - src: ./build/linux/icons/hicolor/48x48/apps/patty-desktop.png
+    dst: /usr/share/icons/hicolor/48x48/apps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/64x64/apps/reasonix-desktop.png
-    dst: /usr/share/icons/hicolor/64x64/apps/reasonix-desktop.png
+  - src: ./build/linux/icons/hicolor/64x64/apps/patty-desktop.png
+    dst: /usr/share/icons/hicolor/64x64/apps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/128x128/apps/reasonix-desktop.png
-    dst: /usr/share/icons/hicolor/128x128/apps/reasonix-desktop.png
+  - src: ./build/linux/icons/hicolor/128x128/apps/patty-desktop.png
+    dst: /usr/share/icons/hicolor/128x128/apps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/256x256/apps/reasonix-desktop.png
-    dst: /usr/share/icons/hicolor/256x256/apps/reasonix-desktop.png
+  - src: ./build/linux/icons/hicolor/256x256/apps/patty-desktop.png
+    dst: /usr/share/icons/hicolor/256x256/apps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/512x512/apps/reasonix-desktop.png
-    dst: /usr/share/icons/hicolor/512x512/apps/reasonix-desktop.png
+  - src: ./build/linux/icons/hicolor/512x512/apps/patty-desktop.png
+    dst: /usr/share/icons/hicolor/512x512/apps/patty-desktop.png
     file_info:
       mode: 0644
-  - src: ./build/linux/icons/hicolor/scalable/apps/reasonix-desktop.svg
-    dst: /usr/share/icons/hicolor/scalable/apps/reasonix-desktop.svg
+  - src: ./build/linux/icons/hicolor/scalable/apps/patty-desktop.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/patty-desktop.svg
     file_info:
       mode: 0644

@@ -12,16 +12,14 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
-// TestReadFileStreamsLargeGB18030 proves GB18030 content far past the 256KB
-// detection sample still decodes correctly via the streaming read path.
 func TestReadFileStreamsLargeGB18030(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "big.gbk")
 	var sb strings.Builder
 	for range 20000 {
-		sb.WriteString("第一行中文 line one 你好世界\n")
+		sb.WriteString("첫째 줄 한글 line one 안녕 세상\n")
 	}
-	sb.WriteString("终点标记 THE-END\n")
+	sb.WriteString("종료 마커 THE-END\n")
 	enc, err := simplifiedchinese.GB18030.NewEncoder().String(sb.String())
 	if err != nil {
 		t.Fatal(err)
@@ -34,13 +32,11 @@ func TestReadFileStreamsLargeGB18030(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out, "终点标记 THE-END") || !strings.Contains(out, "你好世界") {
+	if !strings.Contains(out, "종료 마커 THE-END") || !strings.Contains(out, "안녕 세상") {
 		t.Fatalf("deep GB18030 content not decoded correctly:\n%s", out)
 	}
 }
 
-// TestReadFileLargeBoundedMemory guards against re-slurping the whole file: a
-// small read of a large file must allocate far less than the file size.
 func TestReadFileLargeBoundedMemory(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "big.txt")

@@ -8,8 +8,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/capability"
+	"patty/internal/agent"
+	"patty/internal/capability"
 )
 
 const (
@@ -45,7 +45,7 @@ const (
 
 var (
 	directOptionReplyRE   = regexp.MustCompile(`(?i)^\s*(?:\d+|[a-z])\s*[.)、。]?\s*$`)
-	prefixedOptionReplyRE = regexp.MustCompile(`(?i)^\s*(?:选|选择|就|用|按|走|执行|choose|pick|use|option|choice|方案)\s*(?:第\s*)?(?:方案|选项|option|choice)?\s*(?:\d+|[一二三四五六七八九十]|[a-z])\s*(?:个|号|项|种|条|方案|option|choice)?\s*[.)、。!！?？]?\s*$`)
+	prefixedOptionReplyRE = regexp.MustCompile(`(?i)^\s*(?:)\s*(?:\d+|[일이삼사오육칠팔구십]|[a-z])\s*(?:번째|번|개|방안|옵션|option|choice)?\s*[.)、。!！?？]?\s*$`)
 	plannerListRE         = regexp.MustCompile(`(?m)^\s*(?:[-*]|\d+[.)、])\s+\S`)
 	plannerFileRefRE      = regexp.MustCompile(`(?i)(?:^|[\s@` + "`" + `"'(])(?:[\w.-]+[/\\])*[\w.-]+\.(?:go|ts|tsx|js|jsx|py|rs|java|kt|md|json|ya?ml|toml|sql|sh|css|html)(?:$|[\s,;:!?，；：！？)` + "`" + `"'])`)
 )
@@ -84,9 +84,6 @@ func (c *Controller) withPlannerTurnMetadata(ctx context.Context, userText strin
 	})
 }
 
-// DecidePlannerRoute applies deterministic precedence rules to a pristine user
-// turn plus trusted host metadata. It never calls a model and never parses
-// controller-injected XML to infer host state.
 func DecidePlannerRoute(ctx context.Context, input string) agent.PlannerDecision {
 	meta, hasMeta := plannerTurnMetadataFromContext(ctx)
 	composedText := strings.TrimSpace(agent.StripTransientUserBlocks(input))
@@ -247,7 +244,7 @@ func normalizePlannerText(text string) string {
 
 func hasLeadingDirective(lower string, directives []string) bool {
 	lower = strings.TrimSpace(lower)
-	for _, polite := range []string{"please ", "please, ", "请", "请先", "麻烦", "麻烦先"} {
+	for _, polite := range []string{"please ", "please, ", "부탁드립니다 ", "부탁드립니다 먼저 ", "죄송하지만 ", "죄송하지만 먼저 "} {
 		if after, ok := strings.CutPrefix(lower, polite); ok {
 			lower = strings.TrimSpace(after)
 			break
@@ -262,43 +259,43 @@ func hasLeadingDirective(lower string, directives []string) bool {
 }
 
 var planAndExecuteDirectives = []string{
-	"先规划再执行", "先规划再实现", "先出方案再执行", "先出方案再实现",
+	"먼저 계획한 후 실행", "먼저 계획 다시 구현", "먼저 방안을 제시한 후 실행", "먼저 방안 제시 다시 구현",
 	"plan first, then", "plan first then", "plan then implement", "plan and implement",
 }
 
 var planFirstDirectives = []string{
-	"先规划", "先给方案", "先出方案",
+	"먼저 계획", "먼저 솔루션 제공", "먼저 방안 제시",
 	"plan first", "draft a plan", "give me a plan", "make a plan",
 }
 
 var planOnlyDirectives = []string{
-	"只规划", "只做规划", "只给方案", "只出方案", "给我方案即可",
+	"계획만", "오직 계획만", "솔루션만 제공", "오직 방안만", "솔루션만 주세요",
 	"plan only", "only plan", "just plan", "give me only a plan", "give me a plan only",
 }
 
 var planOnlyBoundaryTerms = []string{
 	"give me only a plan", "give me a plan only", "only give me the plan",
-	"给我方案即可", "只要方案",
+	"솔루션만 주세요", "방안만 원함",
 }
 
 var plannerNoExecutionTerms = []string{
-	"不要执行", "先别执行", "暂不执行", "不要实现", "先别实现", "暂不实现",
-	"不要修改", "先别修改", "不要改代码", "先别改代码", "不要动代码",
+	"실행하지 마세요", "먼저 실행하지 마세요", "일단 실행하지 않음", "구현하지 마세요", "일단 구현하지 마세요", "당분간 구현하지 마세요",
+	"수정하지 마세요", "일단 수정하지 마세요", "코드를 고치지 마세요", "일단 코드를 고치지 마세요", "코드를 건드리지 마세요",
 	"do not execute", "don't execute", "do not implement", "don't implement",
 	"do not make changes", "don't make changes", "without executing",
 	"without implementation", "no execution", "no implementation",
 }
 
 var plannerApprovalTerms = []string{
-	"等我确认", "等待我确认", "我确认后", "确认后再",
-	"等我批准", "等待我批准", "我批准后", "批准后再",
+	"제가 확인할 때까지 기다려 주세요", "제가 확인할 때까지 기다려 주세요", "제가 확인한 후", "확인한 후에",
+	"제가 승인할 때까지 기다려 주세요", "제가 승인할 때까지 기다려 주세요", "제가 승인한 후", "승인한 후에",
 	"wait for my approval", "wait for approval", "after i approve", "after my approval",
 	"until i approve", "until my approval", "let me approve", "let me confirm",
 	"after i confirm", "after my confirmation",
 }
 
 var directExecutionDirectives = []string{
-	"直接改", "直接修改", "直接做", "直接执行", "别规划", "不要规划", "无需规划",
+	"바로 수정", "바로 수정", "바로 실행", "바로 실행", "계획하지 마세요", "계획하지 마세요", "계획 불필요",
 	"just do it", "skip the plan",
 }
 
@@ -310,7 +307,7 @@ func requestsPlanOnly(lower string) bool {
 	if containsAnyLexical(directiveText, planOnlyBoundaryTerms) {
 		return true
 	}
-	if (strings.Contains(directiveText, "只给") || strings.Contains(directiveText, "只要")) &&
+	if (strings.Contains(directiveText, "단지 제공만") || strings.Contains(directiveText, "오직 ~만")) &&
 		containsAnyLexical(directiveText, plannerIntentTerms) {
 		return true
 	}
@@ -350,7 +347,7 @@ func requestsDirectExecution(lower string) bool {
 }
 
 var plannerIntentTerms = []string{
-	"plan", "planning", "方案", "规划", "计划",
+	"plan", "planning", "방안", "계획", "계획",
 }
 
 func containsUnnegatedPlannerApproval(text string) bool {
@@ -374,7 +371,7 @@ func containsUnnegatedPlannerApproval(text string) bool {
 func plannerApprovalNegated(prefix string) bool {
 	prefix = strings.TrimSpace(prefix)
 	for _, negation := range []string{
-		"不要", "不需要", "无需", "无须", "不用", "不必", "别",
+		"하지 마세요", "필요 없어요", "필요 없음", "필요 없음", "안 해도 돼요", "안 그래도 돼요", "하지 마세요",
 		"do not", "don't", "not", "no need to", "do not need to", "don't need to",
 		"not necessary to", "without",
 	} {
@@ -385,10 +382,6 @@ func plannerApprovalNegated(prefix string) bool {
 	return false
 }
 
-// plannerDirectiveText removes quoted examples before applying execution
-// boundaries. A user explaining "do not execute" or “别规划” is not issuing
-// that directive. ASCII apostrophes inside words remain literal, so
-// contractions such as don't keep matching the directive tables.
 func plannerDirectiveText(text string) string {
 	var b strings.Builder
 	var closing rune
@@ -420,7 +413,6 @@ func plannerDirectiveText(text string) string {
 			closing = '”'
 			b.WriteRune(' ')
 		case '‘':
-			// normalizePlannerText converts the closing ’ to ASCII '.
 			closing = '\''
 			b.WriteRune(' ')
 		case '\'':
@@ -464,7 +456,7 @@ func isContextDependentAction(text string) bool {
 	lower := normalizePlannerText(text)
 	for _, prefix := range []string{
 		"fix it", "fix this", "do it", "apply it", "make that change", "go ahead with it",
-		"修一下", "改一下", "按这个改", "照这个做", "执行这个", "就这么改", "修复这个问题",
+		"수정해 주세요", "변경해 주세요", "이렇게 수정해 주세요", "이렇게 진행해 주세요", "이것 실행", "이렇게 수정하세요", "이 문제 수정",
 	} {
 		if strings.HasPrefix(lower, prefix) {
 			return true
@@ -480,7 +472,7 @@ func isConversationalTurn(text string) bool {
 
 var conversationalTurns = map[string]bool{
 	"hello": true, "hi": true, "hey": true, "thanks": true, "thank you": true,
-	"你好": true, "您好": true, "谢谢": true, "辛苦了": true, "收到": true, "明白": true,
+	"안녕": true, "안녕하세요": true, "감사": true, "수고하셨습니다": true, "확인": true, "이해": true,
 }
 
 func isContextDependentShortReply(text string) bool {
@@ -512,14 +504,14 @@ func isContextDependentShortReply(text string) bool {
 var shortContextReplies = map[string]bool{
 	"ok": true, "okay": true, "yes": true, "y": true, "no": true, "n": true,
 	"sure": true, "go ahead": true, "proceed": true, "continue": true, "next": true,
-	"sounds good": true, "好": true, "好的": true, "可以": true, "行": true,
-	"嗯": true, "对": true, "是": true, "确认": true, "同意": true, "继续": true,
-	"继续吧": true, "下一步": true, "开始": true, "开始吧": true, "执行": true,
-	"就这样": true, "没问题": true,
+	"sounds good": true, "좋음": true, "좋습니다": true, "가능": true,
+	"응": true, "맞음": true, "예": true, "확인": true, "동의": true, "계속": true,
+	"계속하세요": true, "다음 단계": true, "시작": true, "시작하세요": true,
+	"이렇게": true, "문제없음": true,
 }
 
 var shortContextReplyPrefixes = []string{
-	"继续", "执行", "开始", "下一步", "go ahead", "proceed", "continue",
+	"계속", "실행", "시작", "다음 단계", "go ahead", "proceed", "continue",
 }
 
 func isLowRiskQuestion(lower string) bool {
@@ -541,14 +533,14 @@ func isLowRiskQuestion(lower string) bool {
 		strings.HasPrefix(lower, "should ") || strings.HasPrefix(lower, "would ") ||
 		strings.HasPrefix(lower, "will ") ||
 		strings.HasPrefix(lower, "what's") || strings.HasPrefix(normalized, "whats") ||
-		strings.HasPrefix(lower, "解释") || strings.HasPrefix(lower, "说明") ||
-		strings.HasPrefix(lower, "怎么看") || strings.HasPrefix(lower, "查一下") ||
-		strings.HasPrefix(lower, "介绍一下") ||
-		strings.HasPrefix(lower, "说一下") || strings.HasPrefix(lower, "帮我看") ||
-		strings.HasPrefix(lower, "帮我查") || strings.HasPrefix(lower, "是什么") ||
-		strings.HasPrefix(lower, "有没有") || strings.HasPrefix(lower, "能不能") ||
-		strings.HasPrefix(lower, "可以吗") || strings.HasPrefix(lower, "对吗") ||
-		strings.HasPrefix(lower, "是不是") || strings.HasPrefix(lower, "请问") {
+		strings.HasPrefix(lower, "설명") || strings.HasPrefix(lower, "설명") ||
+		strings.HasPrefix(lower, "어떻게 보세요") || strings.HasPrefix(lower, "확인해 주세요") ||
+		strings.HasPrefix(lower, "소개해 주세요") ||
+		strings.HasPrefix(lower, "말해 주세요") || strings.HasPrefix(lower, "보여주세요") ||
+		strings.HasPrefix(lower, "확인해 주세요") || strings.HasPrefix(lower, "예 무엇") ||
+		strings.HasPrefix(lower, "있나요") || strings.HasPrefix(lower, "할 수 없습니다") ||
+		strings.HasPrefix(lower, "가능한가요") || strings.HasPrefix(lower, "맞나요") ||
+		strings.HasPrefix(lower, "예 아니요") || strings.HasPrefix(lower, "질문드립니다") {
 		return !containsAnyLexical(lower, plannerQuestionWorkTerms)
 	}
 	return false
@@ -557,7 +549,7 @@ func isLowRiskQuestion(lower string) bool {
 func isComplexGuidanceQuestion(lower string) bool {
 	for _, prefix := range []string{
 		"how do i ", "how should i ", "how would you ", "what's the best way ",
-		"what is the best way ", "explain how to ", "怎么实现", "如何实现", "怎么迁移", "如何迁移",
+		"what is the best way ", "explain how to ", "어떻게 구현", "어떻게 구현", "어떻게 마이그레이션", "어떻게 마이그레이션",
 	} {
 		if strings.HasPrefix(lower, prefix) {
 			return true
@@ -599,8 +591,8 @@ func containsNonASCII(s string) bool {
 
 var complexIntentTerms = []string{
 	"refactor", "migrate", "migration", "redesign", "end-to-end", "e2e", "wire up",
-	"integration", "architecture", "release", "package", "重构", "迁移", "改造",
-	"端到端", "联调", "接入", "架构", "发布", "打包",
+	"integration", "architecture", "release", "package", "리팩토링", "마이그레이션", "개조",
+	"엔드투엔드", "연동 조정", "연결", "아키텍처", "배포", "패키징",
 }
 
 var plannerWorkTerms = []string{
@@ -608,51 +600,51 @@ var plannerWorkTerms = []string{
 	"edit", "editing", "write", "writing", "create", "creating", "add", "adding", "repair",
 	"patch", "run", "running", "build", "building", "implement", "implementing", "refactor",
 	"refactoring", "migrate", "migrating", "redesign", "review", "reviewing", "audit",
-	"inspect", "debug", "test", "tests", "testing", "修改", "修复", "更新", "删除", "移除",
-	"编辑", "写入", "创建", "新增", "添加", "运行", "构建", "实现", "重构", "迁移",
-	"改造", "评审", "审查", "排查", "调试", "测试", "加个", "加一", "补一个", "补个",
+	"inspect", "debug", "test", "tests", "testing", "수정", "복구", "업데이트", "삭제", "제거",
+	"편집", "작성", "생성하기", "신규 추가", "추가", "실행", "빌드", "구현", "리팩토링", "마이그레이션",
+	"개조", "검토", "검토", "추적", "디버깅", "테스트", "하나 추가", "하나라고", "보완해주세요", "보완",
 }
 
 var plannerMutationWorkTerms = []string{
 	"fix", "fixing", "update", "updating", "remove", "removing", "delete", "deleting",
 	"edit", "editing", "write", "writing", "create", "creating", "add", "adding", "repair",
 	"patch", "build", "building", "implement", "implementing", "refactor", "refactoring",
-	"migrate", "migrating", "redesign", "修改", "修复", "更新", "删除", "移除", "编辑",
-	"写入", "创建", "新增", "添加", "构建", "实现", "重构", "迁移", "改造", "加个",
-	"加一", "补一个", "补个",
+	"migrate", "migrating", "redesign", "수정", "복구", "업데이트", "삭제", "제거", "편집",
+	"작성", "생성하기", "신규 추가", "추가", "빌드", "구현", "리팩토링", "마이그레이션", "개조", "하나 추가",
+	"하나라고", "보완해주세요", "보완",
 }
 
 var plannerReadOnlyWorkTerms = []string{
 	"run", "running", "review", "reviewing", "audit", "inspect", "debug",
-	"test", "tests", "testing", "运行", "评审", "审查", "排查", "调试", "测试",
+	"test", "tests", "testing", "실행", "검토", "검토", "추적", "디버깅", "테스트",
 }
 
 var plannerQuestionWorkTerms = []string{
 	"fix", "fixing", "update", "updating", "remove", "removing", "delete", "deleting",
 	"edit", "editing", "write", "writing", "create", "creating", "add", "adding", "repair",
 	"patch", "implement", "implementing", "refactor", "refactoring", "migrate", "migrating",
-	"redesign", "修改", "修复", "更新", "删除", "移除", "编辑", "写入", "创建", "新增",
-	"添加", "实现", "重构", "迁移", "改造", "加个", "加一", "补一个", "补个",
+	"redesign", "수정", "복구", "업데이트", "삭제", "제거", "편집", "작성", "생성하기", "신규 추가",
+	"추가", "구현", "리팩토링", "마이그레이션", "개조", "하나 추가", "하나라고", "보완해주세요", "보완",
 }
 
 var plannerHighRiskTerms = []string{
 	"auth", "authentication", "authorization", "permission", "token", "secret",
 	"credential", "payment", "billing", "race", "concurrency", "deadlock", "transaction",
-	"encryption", "signature", "sandbox", "privilege", "权限", "鉴权", "认证", "令牌",
-	"密钥", "支付", "账单", "并发", "竞态", "竟态", "死锁", "事务", "加密", "签名",
-	"沙箱", "提权",
+	"encryption", "signature", "sandbox", "privilege", "권한", "인증", "인증", "토큰",
+	"비밀 키", "결제", "청구", "동시성", "경합", "경합", "데드락", "트랜잭션", "암호화", "서명",
+	"샌드박스", "권한 상승",
 }
 
 var plannerCrossSurfaceTerms = []string{
 	"multiple files", "several files", "across", "frontend and backend", "backend and frontend",
-	"api and ui", "ui and api", "database and api", "多个文件", "多处", "前后端",
-	"整个模块", "整个项目", "全链路", "跨模块",
+	"api and ui", "ui and api", "database and api", "여러 파일", "여러 곳", "프론트엔드와 백엔드",
+	"전체 모듈", "전체 프로젝트", "전체 링크", "모듈 간",
 }
 
 var plannerAtomicTerms = []string{
 	"typo", "wording", "copy", "readme", "changelog", "nil check", "null check",
-	"log line", "one line", "rename", "文案", "错别字", "拼写", "空指针检查",
-	"nil 检查", "一行日志", "改名", "重命名",
+	"log line", "one line", "rename", "카피라이팅", "오타", "철자", "널 포인터 검사",
+	"nil 검사", "로그 한 줄", "이름 바꾸기", "이름 재정의",
 }
 
 var plannerNamedTargets = []string{
@@ -661,22 +653,17 @@ var plannerNamedTargets = []string{
 
 var plannerAmbiguousScopeTerms = []string{
 	"the bug", "the issue", "the problem", "performance", "everything", "whole module",
-	"这个 bug", "这个bug", "这个问题", "性能", "整个模块", "全部问题",
+	"이 버그", "이 버그", "이 문제", "성능", "전체 모듈", "모든 문제",
 }
 
-// TaskWarrantsPlanner is retained as a small compatibility predicate for
-// callers and tests that do not need depth or approval semantics.
 func TaskWarrantsPlanner(input string) bool {
 	return DecidePlannerRoute(context.Background(), input).Route != agent.PlannerRouteExecutorOnly
 }
 
-// NewPlannerPolicy returns the structured deterministic policy used by the
-// two-model product path.
 func NewPlannerPolicy() agent.PlannerPolicy {
 	return DecidePlannerRoute
 }
 
-// NewPlannerGate retains the historical bool shape for direct callers.
 func NewPlannerGate() func(context.Context, string) bool {
 	return func(ctx context.Context, input string) bool {
 		return DecidePlannerRoute(ctx, input).Route != agent.PlannerRouteExecutorOnly

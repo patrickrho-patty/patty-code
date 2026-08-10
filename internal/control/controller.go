@@ -27,38 +27,38 @@ import (
 	"sync/atomic"
 	"time"
 
-	"reasonix/internal/ablation"
-	"reasonix/internal/agent"
-	"reasonix/internal/autoresearch"
-	"reasonix/internal/billing"
-	"reasonix/internal/capability"
-	"reasonix/internal/checkpoint"
-	"reasonix/internal/command"
-	"reasonix/internal/config"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/dispatch"
-	"reasonix/internal/extension/uihub"
-	"reasonix/internal/goaleval"
-	"reasonix/internal/guardian"
-	"reasonix/internal/hook"
-	"reasonix/internal/i18n"
-	"reasonix/internal/jobs"
-	"reasonix/internal/memory"
-	"reasonix/internal/nilutil"
-	"reasonix/internal/permission"
-	"reasonix/internal/plugin"
-	"reasonix/internal/provider"
-	"reasonix/internal/recovery"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/sessiontemp"
-	"reasonix/internal/shellrun"
-	"reasonix/internal/skill"
-	"reasonix/internal/store"
-	"reasonix/internal/taskmonitor"
-	"reasonix/internal/tool"
-	"reasonix/internal/workspacelease"
+	"patty/internal/ablation"
+	"patty/internal/agent"
+	"patty/internal/autoresearch"
+	"patty/internal/billing"
+	"patty/internal/capability"
+	"patty/internal/checkpoint"
+	"patty/internal/command"
+	"patty/internal/config"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/extension"
+	"patty/internal/extension/dispatch"
+	"patty/internal/extension/uihub"
+	"patty/internal/goaleval"
+	"patty/internal/guardian"
+	"patty/internal/hook"
+	"patty/internal/i18n"
+	"patty/internal/jobs"
+	"patty/internal/memory"
+	"patty/internal/nilutil"
+	"patty/internal/permission"
+	"patty/internal/plugin"
+	"patty/internal/provider"
+	"patty/internal/recovery"
+	"patty/internal/sandbox"
+	"patty/internal/sessiontemp"
+	"patty/internal/shellrun"
+	"patty/internal/skill"
+	"patty/internal/store"
+	"patty/internal/taskmonitor"
+	"patty/internal/tool"
+	"patty/internal/workspacelease"
 )
 
 // ErrTurnRunning reports that a caller tried to start a second foreground turn
@@ -657,7 +657,7 @@ func New(opts Options) *Controller {
 	// because the session path is only fixed once the first turn begins.
 	if c.jobs != nil && c.workspaceRoot != "" {
 		c.jobs.SetTaskRecorder(taskmonitor.NewTaskRecorder(
-			taskmonitor.NewFileStore(filepath.Join(".reasonix", "tasks")),
+			taskmonitor.NewFileStore(filepath.Join(".patty", "tasks")),
 			c.workspaceRoot,
 			func() string { return c.parentSessionID() },
 		))
@@ -744,7 +744,7 @@ func (c *Controller) ApplyExtensionSystemPrompt(prompt string) {
 // SetOnSessionRecovered installs the ownership handoff invoked before the
 // controller commits to an automatically created recovery branch. Frontends
 // that acquire their session owner after controller construction (for example
-// reasonix serve) use this before publishing the controller.
+// patcode serve) use this before publishing the controller.
 func (c *Controller) SetOnSessionRecovered(fn func(SessionRecoveryInfo) error) {
 	if c == nil {
 		return
@@ -1008,7 +1008,7 @@ const (
 const SandboxEscapeApprovalTool = "sandbox_escape"
 
 // ManagedConfigWriteApprovalTool is the internal Tool name used for per-write
-// approval when a file tool targets a Reasonix-managed config file outside the
+// approval when a file tool targets a patty-managed config file outside the
 // workspace write roots. It is a fresh human decision: config files control
 // providers, sandbox rules, permissions, and MCP servers for future sessions,
 // so YOLO/auto approval must never answer it.
@@ -1160,16 +1160,16 @@ func (c *Controller) SubmitHTTP(input string) {
 // or other non-turn input is discarded; @reference turns preserve it because
 // the format is bound to every submitted turn rather than a global slot.
 func (c *Controller) SubmitHTTPFormat(input, format string) {
-	// format 绑定到本次提交的 turn（随请求参数传递），不再写入 Controller
-	// 全局一次性槽——评审 #7234 第 2 点：全局槽存在跨请求串用的逻辑竞态
-	// （后提交的 JSON 请求先写槽，更早的普通请求先启动消费掉）。
+	// format은 이번 제출의 turn에 바인딩됨(요청 파라미터와 함께 전달). 더 이상 Controller에 작성하지 않음
+	// 전역 일회용 슬롯——검토 #7234 2번째 항목: 전역 슬롯은 요청 간 공유로 인한 논리 경합이 있음
+	// (나중에 커밋된 JSON 요청이 먼저 슬롯에 쓰고, 더 이른 일반 요청이 먼저 시작해 소비함).
 	f := strings.TrimSpace(format)
 	if f != "" && isNonTurnHTTPInput(input) {
-		f = "" // 非 turn 输入（slash 命令/! 前缀）不携带 format
+		f = "" // turn 외 입력 (slash 명령/! 접두사) 에는 format 을 포함하지 않음
 	}
-	// @ 引用 turn（FileRefLine/SlashPathLineRef 等）同样绑定 format——
-	// runRefTurnWithFormat 族 wrapper 注入 ctx（review fix7234and7168：
-	// format 是每个被接纳 turn 的属性，统一架构）。
+	// @ 참조 turn (FileRefLine/SlashPathLineRef 등) 도 동일하게 format 에 바인딩—
+	// runRefTurnWithFormat 계열 wrapper 가 ctx 에 주입 (review fix7234and7168:
+	// format은 수락된 모든 turn의 속성임(통일된 아키텍처).
 	c.submitHTTPWithFormat(input, "", f)
 }
 
@@ -1499,7 +1499,7 @@ func (c *Controller) submitCommandOrTurn(trimmed, input, display string, scopedR
 			return
 		}
 		// A custom command wins over a skill of the same name; both resolve to a
-		// turn. Built-ins and their explicit Reasonix namespace are handled above.
+		// turn. Built-ins and their explicit Patty Code namespace are handled above.
 		if sent, ok := c.CustomCommand(trimmed); ok {
 			c.runGuarded(func(ctx context.Context) error {
 				return runGoalLoop(ctx, sent, sent, display)
@@ -1905,7 +1905,7 @@ func (c *Controller) noticeDetail(text, detail string) {
 }
 
 // Run executes a turn synchronously, returning the agent's error. Used by the
-// headless `reasonix run` path, where the Sink renders to stdout and the caller
+// headless `patcode run` path, where the Sink renders to stdout and the caller
 // just needs the exit status — no TurnDone event, no cancel bookkeeping.
 func (c *Controller) Run(ctx context.Context, input string) (err error) {
 	ctx = extension.ContextWithRuntimeOwner(ctx, c.RuntimeOwner())
@@ -1959,7 +1959,7 @@ func (c *Controller) Run(ctx context.Context, input string) (err error) {
 // returns only its final answer. It is the headless CLI counterpart to explicit
 // slash invocation: the child keeps an isolated session, while the caller owns
 // stdout rendering and exit status. readOnly selects the preview-safe runner
-// used by `reasonix subagent try`.
+// used by `patcode subagent try`.
 func (c *Controller) RunSubagentProfile(ctx context.Context, name, task string, readOnly bool) (string, error) {
 	name = strings.TrimSpace(name)
 	task = strings.TrimSpace(task)
@@ -2371,7 +2371,7 @@ func rulesWithoutFreshHumanApproval(rules []permission.Rule) []permission.Rule {
 }
 
 // ApplyHeadlessApprovalMode configures the executor gate for a non-interactive
-// (`reasonix run`) session from an explicit --permission-mode. Unlike
+// (`patcode run`) session from an explicit --permission-mode. Unlike
 // EnableInteractiveApproval it installs no blocking approver, asker, or
 // fresh-approval prompt: there is no key loop to answer them, and the default
 // infinite approval timeout would wedge the run forever on an Ask rule, the
@@ -3571,9 +3571,9 @@ func (c *Controller) cacheColdAfter() time.Duration {
 		}
 		return c.testCacheColdAfter
 	}
-	// 查询路径只读：LoadForRootReadOnly 不触发配置迁移写盘（评审 #7168
-	// 第 4 点）；失败时保守回退 24h（DeepSeek/未知 vendor 默认），避免
-	// 提前触发 PruneStaleToolResults 改写仍可命中的缓存历史。
+	// 조회 경로는 읽기 전용: LoadForRootReadOnly는 설정 마이그레이션 디스크 쓰기를 트리거하지 않음(검토 #7168
+	// 4번째 항목); 실패 시 보수적으로 24h로 폴백(DeepSeek/알 수 없는 vendor 기본값),
+	// PruneStaleToolResults가 아직 적중 가능한 캐시 기록을 일찍 재작성하는 것을 방지.
 	cfg, err := config.LoadForRootReadOnly(c.workspaceRoot)
 	if err != nil {
 		return 24 * time.Hour
@@ -4976,7 +4976,7 @@ func (c *Controller) AddMCPServer(e config.PluginEntry) (int, error) {
 
 // ConnectMCPServer connects an MCP server entry for this session without writing
 // it to config. Desktop owns config placement so it can keep user-level settings
-// out of project reasonix.toml while preserving the CLI AddMCPServer semantics.
+// out of project patty.toml while preserving the CLI AddMCPServer semantics.
 func (c *Controller) ConnectMCPServer(e config.PluginEntry) (int, error) {
 	return c.connectMCPServer(e)
 }
@@ -5575,7 +5575,7 @@ func (c *Controller) Bypass() bool {
 // the SessionAPI surface; each is a thin delegation. See memory.go.
 
 // QuickAdd appends a one-line note to the doc-memory file for scope (project
-// REASONIX.md by default) — the write side of "#<note>". Returns the file written.
+// PATTY_CODE.md by default) — the write side of "#<note>". Returns the file written.
 func (c *Controller) QuickAdd(scope memory.Scope, note string) (string, error) {
 	return c.memory.quickAdd(scope, note)
 }
@@ -5750,7 +5750,7 @@ func sandboxEscapeApprovalReason(reason string) string {
 	return reason
 }
 
-// managedConfigWriteApprover routes a file tool's Reasonix-managed config write
+// managedConfigWriteApprover routes a file tool's Patty Code-managed config write
 // through the fresh-human approval prompt (see ManagedConfigWriteApprovalTool).
 // A session grant is tool-wide (mirroring sandbox_escape): one "allow for this
 // session" covers the rest of the repair flow across the handful of managed
@@ -6041,11 +6041,11 @@ func (c *Controller) requestApprovalDecisionWithOptions(ctx context.Context, too
 	// Claude's PermissionRequest contract answers the dialog on the plugin's
 	// behalf (auto-allow/auto-deny) instead of merely observing it, so a
 	// decision here must preempt the prompt rather than just notify — this
-	// runs synchronously and before the dialog is shown. Native Reasonix
+	// runs synchronously and before the dialog is shown. Native Patty Code
 	// PermissionRequest hooks stay advisory-only (see claudePermissionBlocking).
 	//
 	// A hook's auto-allow must never stand in for a human-required decision:
-	// sandbox escapes, Reasonix config writes, memory remember/forget, and
+	// sandbox escapes, Patty Code config writes, memory remember/forget, and
 	// plan approval (RequiresFreshHumanApprovalTool) are deliberately excluded
 	// from YOLO/auto-approval and Guardian too, so a broadly-matched plugin
 	// hook returning "allow" can't silently rubber-stamp them. A deny still

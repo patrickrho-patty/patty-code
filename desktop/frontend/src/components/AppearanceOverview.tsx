@@ -54,12 +54,12 @@ function fontFamilyLabel(font: FontFamily, t: ReturnType<typeof useT>): string {
   switch (font) {
     case "system":
       return t("settings.fontFamilySystem");
-    case "yahei":
-      return t("settings.fontFamilyYaHei");
-    case "pingfang":
-      return t("settings.fontFamilyPingFang");
-    case "noto":
-      return t("settings.fontFamilyNoto");
+    case "malgun":
+      return t("settings.fontFamilyMalgun");
+    case "applesdgothic":
+      return t("settings.fontFamilyAppleSDGothic");
+    case "notokr":
+      return t("settings.fontFamilyNotoKR");
     case "custom":
       return t("settings.fontFamilyCustom");
   }

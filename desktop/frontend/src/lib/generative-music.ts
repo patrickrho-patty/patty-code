@@ -6,13 +6,13 @@ type NonEmptyPreset = "classic" | "ethereal" | "digital" | "retro";
 
 interface PresetConfig {
   oscillatorType: OscillatorType;
-  attack: number;          // 秒
-  decay: number;           // 秒
-  sustain: number;         // 0-1 电平
-  release: number;         // 秒
+  attack: number;          // seconds
+  decay: number;           // seconds
+  sustain: number;         // 0-1 level
+  release: number;         // seconds
   filterFreq: number;      // Hz
-  reverbDecay: number;     // 秒（脉冲响应长度）
-  reverbWet: number;       // 0-1 混合比
+  reverbDecay: number;     // seconds (impulse response length)
+  reverbWet: number;       // 0-1 mix ratio
   masterVolume: number;    // 0-1
 }
 
@@ -63,7 +63,7 @@ const PRESETS: Record<NonEmptyPreset, PresetConfig> = {
   },
 };
 
-// C 大调五声音阶，无半音 → 任意顺序都和谐
+// C major pentatonic, no semitones → any order sounds consonant
 const SCALE_FREQS = [261.63, 293.66, 349.23, 392.0, 440.0, 523.25, 587.33]; // C4–D5
 const OCTAVE_FREQS = [130.81, 146.83, 174.61, 196.0, 220.0, 261.63, 293.66]; // C3–D3
 
@@ -159,7 +159,7 @@ class GenerativeMusicEngine {
     return this.running;
   }
 
-  /** 双重节流：每 4 个 token + 最小 100ms 间隔，适配 DeepSeek 高频输出。 */
+  /** Dual throttle: every 4 tokens + minimum 100ms interval, tuned for DeepSeek high-frequency output. */
   playTokenNote(): void {
     if (!this.running || !this.ctx) return;
 

@@ -8,33 +8,25 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/nilutil"
-	"reasonix/internal/provider"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/nilutil"
+	"patty/internal/provider"
+	"patty/internal/sandbox"
+	"patty/internal/tool"
 )
 
-// Runner carries out one task turn. Both Agent (single model) and Coordinator
-// (two-model) satisfy it, so the CLI stays agnostic to which is in use.
 type Runner interface {
 	Run(ctx context.Context, input string) error
 }
 
-// PlannerPlanApprover lets hosts bind a planner-authored approval request to
-// their native approval UI without making the agent package depend on control.
 type PlannerPlanApprover interface {
 	RunWithPlannerApproval(ctx context.Context, plan string, run func(context.Context) error) error
 }
 
-// PlannerUserDecisionAsker lets hosts turn planner-authored user questions into
-// a real AskRequest. The returned answer is host-authenticated user input that
-// Coordinator can safely pass to the executor as context.
 type PlannerUserDecisionAsker interface {
 	RunWithPlannerUserDecision(ctx context.Context, plan string, question event.AskQuestion, run func(context.Context, string) error) error
 }
 
-// DefaultPlannerPrompt steers the planner toward concise plans, not execution.
 const DefaultPlannerPrompt = `You are the planner in a two-model coding agent.
 Given a task, produce a concise, ordered plan for the executor model to carry out.
 Use the read-only tools available to you when the task needs context from the
@@ -85,32 +77,21 @@ The host then delivers your reply directly instead of starting the executor.
 Never emit that marker when any workspace change, command, verification, or
 follow-up action remains.`
 
-const executorHandoffMarker = "Reasonix executor handoff"
+const executorHandoffMarker = "Patty Code executor handoff"
 
-// plannerFallbackNotice is shown when the planner fails and the turn degrades
-// to executor-only instead of failing outright.
 const plannerFallbackNotice = "Planner failed; continuing this turn with the executor only."
 
-// A host-owned research budget must cap planner cost without stranding an
-// ordinary task. If the planner ignores its finalization nudge, the executor
-// still owns the task and can inspect the workspace directly. Explicit
-// no-execution and approval boundaries remain fail-closed.
 const (
 	plannerResearchFallbackNotice = "Planner reached its research limit without a final plan; continuing this turn with the executor."
 	plannerResearchBoundaryError  = "planner could not finalize within its research budget; no execution was started"
 )
 
-// noChangesMarker is the explicit no-op conclusion the planner is asked to emit
-// on its final line (see DefaultPlannerPrompt). isNoOpPlan trusts it over the
-// legacy phrase heuristics.
 const noChangesMarker = "[no_changes]"
 
 const plannerRequiresApprovalMarker = "[planner_requires_approval]"
 const plannerAskStartMarker = "<planner-ask>"
 const plannerAskEndMarker = "</planner-ask>"
 
-// PlannerPromptWithContext appends cache-stable standing context, such as loaded
-// REASONIX.md / AGENTS.md memory, to the planner's smaller system prompt.
 func PlannerPromptWithContext(context string) string {
 	context = strings.TrimSpace(context)
 	if context == "" {
@@ -119,10 +100,6 @@ func PlannerPromptWithContext(context string) string {
 	return DefaultPlannerPrompt + "\n\n# Planning context\n\n" + context
 }
 
-// Coordinator runs two models in separate sessions to keep each one's prompt
-// prefix cache-stable: a low-frequency planner proposes an approach, then the
-// executor (a full tool-using Agent) carries it out. The sessions never mix, so
-// neither model's prefix is disturbed by the other's turns.
 type Coordinator struct {
 	planner         provider.Provider
 	plannerSess     *Session
@@ -133,18 +110,11 @@ type Coordinator struct {
 	executor        *Agent
 	temperature     float64
 	sink            event.Sink
-	// plannerPolicy chooses executor-only, plan-and-execute, or plan-for-approval
-	// per turn. nil preserves the historical "plan every turn" constructor
-	// behavior used by direct Coordinator callers.
 	plannerPolicy            PlannerPolicy
 	plannerPlanApprover      PlannerPlanApprover
 	plannerUserDecisionAsker PlannerUserDecisionAsker
 }
 
-// NewCoordinator wires a planner provider (with its own session) to an executor.
-// sink receives the planner's phase/text/usage events; the executor emits its
-// own events to its own sink (the CLI wires the same sink into both). A nil
-// sink is replaced with event.Discard.
 func NewCoordinator(planner provider.Provider, plannerSession *Session, plannerPricing *provider.Pricing, plannerTools *tool.Registry, plannerOptions Options, executor *Agent, temperature float64, sink event.Sink, shouldPlan func(context.Context, string) bool) *Coordinator {
 	var policy PlannerPolicy
 	if shouldPlan != nil {
@@ -158,9 +128,6 @@ func NewCoordinator(planner provider.Provider, plannerSession *Session, plannerP
 	return newCoordinator(planner, plannerSession, plannerPricing, plannerTools, plannerOptions, executor, temperature, sink, policy)
 }
 
-// NewCoordinatorWithPlannerPolicy wires the structured deterministic planner
-// router used by the product boot path. NewCoordinator remains as a compatibility
-// adapter for direct callers and older tests that still provide a bool gate.
 func NewCoordinatorWithPlannerPolicy(planner provider.Provider, plannerSession *Session, plannerPricing *provider.Pricing, plannerTools *tool.Registry, plannerOptions Options, executor *Agent, temperature float64, sink event.Sink, policy PlannerPolicy) *Coordinator {
 	return newCoordinator(planner, plannerSession, plannerPricing, plannerTools, plannerOptions, executor, temperature, sink, policy)
 }
@@ -209,10 +176,6 @@ func sessionSystemPrompt(s *Session) string {
 	return ""
 }
 
-// ResetPlannerSession discards turn-local planner history when the owning
-// controller moves to a different executor session. Saved transcripts only
-// persist executor-visible conversation; carrying the old planner transcript
-// into a new/resumed session can make the next plan reuse unrelated tasks.
 func (c *Coordinator) ResetPlannerSession() {
 	if c == nil {
 		return
@@ -228,9 +191,6 @@ func (c *Coordinator) ResetPlannerSession() {
 	}
 }
 
-// PlannerAgent returns the tool-enabled planner agent, if any. Controllers use
-// it to seed turn-scoped capability routes without coupling to Coordinator
-// internals beyond this accessor.
 func (c *Coordinator) PlannerAgent() *Agent {
 	if c == nil {
 		return nil
@@ -238,9 +198,6 @@ func (c *Coordinator) PlannerAgent() *Agent {
 	return c.plannerAgent
 }
 
-// SetReasoningLanguage updates both agents in two-model mode. The raw planner
-// path receives controller-composed input directly, but a tool-enabled planner
-// owns its own Agent and must clear stale zh/en preferences on live changes.
 func (c *Coordinator) SetReasoningLanguage(lang string) {
 	if c == nil {
 		return
@@ -253,7 +210,6 @@ func (c *Coordinator) SetReasoningLanguage(lang string) {
 	}
 }
 
-// SetResponseLanguage updates both agents in two-model mode.
 func (c *Coordinator) SetResponseLanguage(lang string) {
 	if c == nil {
 		return
@@ -266,10 +222,6 @@ func (c *Coordinator) SetResponseLanguage(lang string) {
 	}
 }
 
-// SetPlanMode propagates the plan-first workflow flag to both planner and executor agents
-// in two-model mode. Callers that only set the controller's executor would miss
-// the planner agent inside the Coordinator, causing stale plan-mode state after
-// approvals or manual mode switches.
 func (c *Coordinator) SetPlanMode(v bool) {
 	if c == nil {
 		return
@@ -282,8 +234,6 @@ func (c *Coordinator) SetPlanMode(v bool) {
 	}
 }
 
-// SetPlanModeReadOnlyTrustGate propagates plan-mode bash read-only command
-// approvals to both tool-using agents in two-model mode.
 func (c *Coordinator) SetPlanModeReadOnlyTrustGate(g PlanModeReadOnlyTrustGate) {
 	if c == nil {
 		return
@@ -296,8 +246,6 @@ func (c *Coordinator) SetPlanModeReadOnlyTrustGate(g PlanModeReadOnlyTrustGate) 
 	}
 }
 
-// SetSandboxEscapeApprover propagates one-shot shell sandbox escape approvals to
-// both tool-using agents in two-model mode.
 func (c *Coordinator) SetSandboxEscapeApprover(g sandbox.EscapeApprover) {
 	if c == nil {
 		return
@@ -310,8 +258,6 @@ func (c *Coordinator) SetSandboxEscapeApprover(g sandbox.EscapeApprover) {
 	}
 }
 
-// SetConfigWriteApprover propagates Reasonix-managed config write approvals to
-// both tool-using agents in two-model mode.
 func (c *Coordinator) SetConfigWriteApprover(g tool.ConfigWriteApprover) {
 	if c == nil {
 		return
@@ -324,9 +270,6 @@ func (c *Coordinator) SetConfigWriteApprover(g tool.ConfigWriteApprover) {
 	}
 }
 
-// SetPlannerPlanApprover connects planner-authored "wait for approval" outputs
-// to the host's approval surface. Without one, Coordinator keeps the legacy
-// direct handoff behavior so non-interactive runs cannot block forever.
 func (c *Coordinator) SetPlannerPlanApprover(g PlannerPlanApprover) {
 	if c == nil {
 		return
@@ -334,9 +277,6 @@ func (c *Coordinator) SetPlannerPlanApprover(g PlannerPlanApprover) {
 	c.plannerPlanApprover = g
 }
 
-// SetPlannerUserDecisionAsker connects planner-authored prose questions to the
-// host's structured AskRequest surface. Without one, legacy handoff behavior is
-// preserved so headless/non-interactive runs keep moving.
 func (c *Coordinator) SetPlannerUserDecisionAsker(g PlannerUserDecisionAsker) {
 	if c == nil {
 		return
@@ -344,7 +284,6 @@ func (c *Coordinator) SetPlannerUserDecisionAsker(g PlannerUserDecisionAsker) {
 	c.plannerUserDecisionAsker = g
 }
 
-// Run plans with the planner model, then hands the plan to the executor.
 func (c *Coordinator) Run(ctx context.Context, input string) error {
 	c.sink.Emit(event.Event{Kind: event.TurnStarted})
 	decision := PlannerDecision{
@@ -372,11 +311,6 @@ func (c *Coordinator) Run(ctx context.Context, input string) error {
 			return fmt.Errorf("planner: %w", err)
 		}
 		if isToolLoopPause(err) {
-			// Per-turn research depth is host policy, not a user-facing
-			// configuration or a reason to strand the conversation. Ordinary
-			// plan-and-execute work degrades to the executor with the pristine
-			// task. Explicit execution boundaries fail closed because no
-			// complete plan exists to approve or return.
 			if decision.Route != PlannerRoutePlanAndExecute {
 				return fmt.Errorf("%s", plannerResearchBoundaryError)
 			}
@@ -390,25 +324,15 @@ func (c *Coordinator) Run(ctx context.Context, input string) error {
 			c.sink.Emit(event.Event{Kind: event.Phase, Text: c.executor.prov.Name() + " · executing", Source: event.UsageSourceExecutor})
 			return c.executor.Run(ctx, input)
 		}
-		// Plan-only explicitly excludes execution, while plan-for-approval
-		// excludes it until the host records approval. Falling back directly
-		// to the executor would turn a planner outage into an unauthorized
-		// state change, so preserve either boundary and surface the failure.
 		if decision.Route == PlannerRoutePlanOnly || decision.Route == PlannerRoutePlanForApproval {
 			return fmt.Errorf("planner: %w", err)
 		}
-		// A planner failure must not take down the turn: the executor is
-		// healthy and owns the full tool set, so degrade to single-model for
-		// this turn.
 		c.sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: plannerFallbackNotice, Detail: "planner failed; running the executor without a plan: " + err.Error(), Source: event.UsageSourcePlanner})
 		c.sink.Emit(event.Event{Kind: event.Phase, Text: c.executor.prov.Name() + " · executing", Source: event.UsageSourceExecutor})
 		return c.executor.Run(ctx, input)
 	}
 	if isNoOpPlan(plan) {
 		c.persistExecutorNoOp(ctx, input, plan)
-		// The relayed conclusion is planner text; keep its source so sinks
-		// attribute it like every other planner emission. Display goes through
-		// the standard filter so the [no_changes] contract line stays internal.
 		c.sink.Emit(event.Event{Kind: event.Text, Text: DisplayAssistantText(plan), Source: event.UsageSourcePlanner})
 		return nil
 	}
@@ -428,9 +352,6 @@ func (c *Coordinator) Run(ctx context.Context, input string) error {
 			return runExecutorWithPlan(ctx, plan)
 		})
 		if err == nil && !executed && ctx.Err() == nil {
-			// The user declined the plan. Persist the exchange like the no-op
-			// path does — a denied turn must survive session save/reload, and
-			// the note tells the next executor turn that nothing ran.
 			c.persistExecutorNoOp(ctx, input, plan+"\n\n"+plannerPlanNotApprovedNote)
 			c.sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: plannerPlanNotApprovedNotice, Source: event.UsageSourcePlanner})
 		}
@@ -467,9 +388,6 @@ func (c *Coordinator) Run(ctx context.Context, input string) error {
 	return runExecutorWithPlan(ctx, plan)
 }
 
-// Persisted-session notes and user-facing notices for planner turns that ended
-// without an executor run. The notes become the turn's assistant message in the
-// executor session, so the next turn's executor knows nothing was executed.
 const (
 	plannerPlanNotApprovedNote        = "(The user did not approve this plan; execution was not started.)"
 	plannerPlanNotApprovedNotice      = "Plan not approved; nothing was executed. Reply to continue."
@@ -481,26 +399,22 @@ const (
 	plannerDecisionUnansweredNotice   = "Waiting for your decision; nothing was executed. Reply to continue."
 )
 
-// plannerApprovalPhrases is the fallback for planners that ignore the
-// structured marker. Claims of past approval ("用户已批准", "already approved")
-// are deliberately included: the planner cannot know host approval state, so a
-// claimed approval is re-gated instead of trusted.
 var plannerApprovalPhrases = []string{
-	"是否批准",
-	"等待用户批准",
-	"等待您的批准",
-	"待用户批准",
-	"批准这个方案",
-	"批准该方案",
-	"批准此方案",
-	"批准这个计划",
-	"批准该计划",
-	"批准此计划",
-	"批准方案后",
-	"批准计划后",
-	"用户已批准",
-	"用户已经批准",
-	"已经获得批准",
+	"승인 여부",
+	"사용자 승인 대기 중",
+	"귀하의 승인을 기다립니다",
+	"사용자 승인 대기",
+	"이 방안을 승인",
+	"해당 방안을 승인",
+	"이 방안 승인",
+	"이 계획을 승인",
+	"해당 계획을 승인",
+	"이 계획 승인",
+	"방안을 승인한 후",
+	"계획을 승인한 후",
+	"사용자가 승인함",
+	"사용자가 이미 승인함",
+	"이미 승인을 받음",
 	"approve this plan",
 	"approve the plan",
 	"approval before",
@@ -520,8 +434,6 @@ func plannerPlanRequestsApproval(plan string) bool {
 	if strings.ToLower(lastNonEmptyLine(lower)) == plannerRequiresApprovalMarker {
 		return true
 	}
-	// Match per line so a nearby negation ("无需等待用户批准", "no need to wait
-	// for approval") exempts only its own phrase, not the whole plan.
 	for rawLine := range strings.SplitSeq(lower, "\n") {
 		line := strings.TrimSpace(rawLine)
 		if line == "" {
@@ -541,18 +453,12 @@ func plannerPlanRequestsApproval(plan string) bool {
 	return false
 }
 
-// approvalMentionNegated reports whether the text immediately before a matched
-// approval phrase negates it, so plans that explicitly rule out an approval
-// round ("无需等待用户批准，直接执行") do not trigger a needless one. Only the
-// nearby prefix counts; a negation earlier in the line about something else
-// must not disarm the gate. Erring toward gating is fine — the failure mode is
-// one extra approval prompt, never a silent execution.
 func approvalMentionNegated(prefix string) bool {
 	const window = 30
 	if len(prefix) > window {
 		prefix = prefix[len(prefix)-window:]
 	}
-	for _, neg := range []string{"无需", "无须", "不需要", "不需", "不必", "不用", "no need", "not require", "not required", "without"} {
+	for _, neg := range []string{"필요 없음", "필요 없이", "필요하지 않음", "필요치 않음", "할 필요 없음", "안 해도 됨", "no need", "not require", "not required", "without"} {
 		if strings.Contains(prefix, neg) {
 			return true
 		}
@@ -569,28 +475,24 @@ func plannerPlanRequestsUserDecision(plan string) (event.AskQuestion, bool) {
 		return q, true
 	}
 	lower := strings.ToLower(trimmed)
-	// Directive asks and claimed user choices only. Bare mentions ("用户选择",
-	// "确认目标", "user confirmation") are deliberately absent: ordinary plan
-	// wording such as "运行测试确认目标行为不变" or "update the user selection
-	// component" must not conjure an ask dialog.
 	decisionPhrases := []string{
-		"需要用户选择",
-		"让用户选择",
-		"请用户选择",
-		"等待用户选择",
-		"用户已选择",
-		"用户已经选择",
-		"请选择",
-		"选哪个",
-		"哪种方案",
-		"哪个方案",
-		"哪一个方案",
-		"需要用户确认",
-		"请用户确认",
-		"等待用户确认",
-		"需要用户提供",
-		"请用户提供",
-		"等待用户提供",
+		"사용자 선택 필요",
+		"사용자 선택 요청",
+		"사용자에게 선택 요청",
+		"사용자 선택 대기",
+		"사용자 선택 완료",
+		"사용자가 선택",
+		"선택해 주세요",
+		"어느 쪽을 선택",
+		"어떤 방안",
+		"어느 방안",
+		"어느 방안을",
+		"사용자 확인 필요",
+		"사용자에게 확인 요청",
+		"사용자 확인 대기",
+		"사용자 제공 필요",
+		"사용자에게 제공 요청",
+		"사용자 제공 대기",
 		"need user to choose",
 		"ask the user to choose",
 		"user should choose",
@@ -648,9 +550,9 @@ func parsePlannerAskBlock(plan string) (event.AskQuestion, bool) {
 		}
 		value = strings.TrimSpace(value)
 		switch strings.ToLower(strings.TrimSpace(key)) {
-		case "question", "问题":
+		case "question", "질문":
 			question = value
-		case "option", "选项":
+		case "option", "옵션":
 			if value != "" && len(options) < 4 {
 				options = append(options, event.AskOption{Label: truncateRunes(value, 72)})
 			}
@@ -679,11 +581,13 @@ func plannerQuestionPrompt(plan string) string {
 		}
 		lower := strings.ToLower(line)
 		if strings.ContainsAny(line, "？?") ||
-			strings.Contains(lower, "请选择") ||
+			strings.Contains(lower, "선택해 주세요") ||
 			strings.Contains(lower, "please choose") ||
 			strings.Contains(lower, "please confirm") ||
-			strings.Contains(lower, "请用户") ||
-			strings.Contains(lower, "需要用户") {
+			strings.Contains(lower, "사용자에게") ||
+			strings.Contains(lower, "사용자 선택") ||
+			strings.Contains(lower, "사용자 확인") ||
+			strings.Contains(lower, "사용자 제공") {
 			return truncateRunes(line, 280)
 		}
 	}
@@ -719,8 +623,8 @@ func extractPlannerDecisionOptions(plan string) []string {
 		candidate := ""
 		lower := strings.ToLower(line)
 		switch {
-		case strings.HasPrefix(line, "方案") || strings.HasPrefix(line, "选项"):
-			candidate = strings.TrimSpace(strings.TrimLeft(strings.TrimPrefix(strings.TrimPrefix(line, "方案"), "选项"), "一二三四五六七八九十1234567890.、:：)） \t"))
+		case strings.HasPrefix(line, "방안") || strings.HasPrefix(line, "옵션"):
+			candidate = strings.TrimSpace(strings.TrimLeft(strings.TrimPrefix(strings.TrimPrefix(line, "방안"), "옵션"), "일이삼사오육칠팔구십1234567890.、:：)） \t"))
 		case strings.HasPrefix(lower, "option ") || strings.HasPrefix(lower, "approach "):
 			if idx := strings.IndexAny(line, ":：-—"); idx >= 0 && idx+1 < len(line) {
 				candidate = strings.TrimSpace(line[idx+1:])
@@ -748,7 +652,7 @@ func extractPlannerDecisionOptions(plan string) []string {
 
 func looksLikePlanStep(s string) bool {
 	lower := strings.ToLower(strings.TrimSpace(s))
-	for _, prefix := range []string{"read ", "edit ", "update ", "run ", "test ", "检查", "读取", "修改", "更新", "运行", "测试"} {
+	for _, prefix := range []string{"read ", "edit ", "update ", "run ", "test ", "확인", "읽기", "수정", "업데이트", "실행", "테스트"} {
 		if strings.HasPrefix(lower, prefix) {
 			return true
 		}
@@ -768,13 +672,6 @@ func truncateRunes(s string, max int) string {
 	return string(rs[:max]) + "..."
 }
 
-// isNoOpPlan reports whether the plan explicitly concludes that nothing needs
-// to change: the final non-empty line is exactly the [no_changes] marker that
-// DefaultPlannerPrompt requests. The marker is trusted as-is, so research notes
-// above it (which may mention tests, runs, or edits that already exist) cannot
-// veto the conclusion. There is deliberately no phrase heuristic behind it: a
-// wrong skip silently drops the task, while a planner that ignores the marker
-// contract just costs one executor round.
 func isNoOpPlan(plan string) bool {
 	return strings.ToLower(lastNonEmptyLine(plan)) == noChangesMarker
 }
@@ -806,16 +703,10 @@ func (c *Coordinator) persistExecutorNoOp(ctx context.Context, input, plan strin
 	c.executor.session.Add(provider.Message{Role: provider.RoleAssistant, Content: plan})
 }
 
-// plan streams a plan from the planner and appends it to the planner session, so
-// that session grows prepend-only and stays cache-friendly.
 func (c *Coordinator) plan(ctx context.Context, input string) (string, error) {
 	if c.plannerAgent != nil {
 		return c.planWithTools(ctx, input)
 	}
-	// On failure, roll the just-added user message back: a dangling user turn
-	// would produce consecutive user roles on the next plan (which some
-	// providers reject), and Run's executor fallback keeps the turn alive
-	// after this error, so the planner session must stay coherent.
 	before := c.plannerSess.Snapshot()
 	rawInput := RawUserInput(ctx, input)
 	rawContent := ""
@@ -864,31 +755,13 @@ func (c *Coordinator) plan(ctx context.Context, input string) (string, error) {
 	return plan, nil
 }
 
-// planWithTools runs the planner through the normal Agent loop over a filtered
-// read-only registry. That gives the planner the same tool-call contract as the
-// executor while preserving its separate session and cache prefix.
 func (c *Coordinator) planWithTools(ctx context.Context, input string) (string, error) {
 	before := c.plannerSess.Snapshot()
 	rewriteBefore := c.plannerSess.RewriteVersion()
 	if err := c.plannerAgent.Run(ctx, input); err != nil {
-		// Mirror plan()'s rollback: Run already appended the user message
-		// (and possibly partial assistant/tool rounds) to the planner
-		// session, and Coordinator.Run degrades to the executor on planner
-		// failure. Research-budget pauses are also rolled back: ordinary work
-		// falls back to the executor immediately, while explicit execution
-		// boundaries surface a safe error. Retaining an unfinished planner
-		// turn would leave a tool-call tail that the next provider request
-		// cannot safely resume.
 		c.rollbackPlannerTurn(before, rewriteBefore)
 		return "", err
 	}
-	// The plan is this turn's final answer: the last non-empty assistant
-	// message appended after the pre-turn boundary. When a session rewrite
-	// landed during the turn (auto-compaction fires right after the final
-	// answer), the pre-turn length no longer maps to a boundary in the
-	// rewritten log — it can even exceed it, hiding a successfully produced
-	// plan. Rewrites keep the recent tail verbatim, so scanning the whole
-	// rewritten session from the end still finds the final answer first.
 	floor := len(before)
 	if c.plannerSess.RewriteVersion() != rewriteBefore {
 		floor = 0
@@ -899,8 +772,6 @@ func (c *Coordinator) planWithTools(ctx context.Context, input string) (string, 
 			return m.Content, nil
 		}
 	}
-	// No usable plan came back: roll back too, so the executor-fallback turn
-	// does not leave the planner session ending in a user message.
 	c.rollbackPlannerTurn(before, rewriteBefore)
 	return "", fmt.Errorf("planner finished without producing a plan")
 }
@@ -994,11 +865,6 @@ Executor instructions:
 Carry out the task, adapting the plan as needed.`, executorHandoffMarker, task, plan, toolBlock, decision.Depth)
 }
 
-// executorToolHandoffContext counters planner "tool unavailable" hallucinations
-// in the handoff. MCP tools are the surface planners actually mis-report (the
-// planner registry filters them away), so the block is only emitted when the
-// executor carries MCP tools; the built-in tool list would just restate the
-// schema already attached to the request and pay its tokens every planned turn.
 func executorToolHandoffContext(a *Agent) string {
 	if a == nil || a.tools == nil {
 		return ""
@@ -1042,10 +908,6 @@ func boundedToolNames(names []string, max int) string {
 	return fmt.Sprintf("%s, ... +%d more", strings.Join(names[:max], ", "), len(names)-max)
 }
 
-// HandoffTask returns the original user task embedded in an executor handoff
-// message, or s unchanged when it is not one. Session previews and auto-titles
-// use it so dual-model sessions surface the user's words, not the handoff
-// boilerplate (#3860).
 func HandoffTask(s string) string {
 	trimmed := strings.TrimSpace(s)
 	if !strings.HasPrefix(trimmed, "# "+executorHandoffMarker) {

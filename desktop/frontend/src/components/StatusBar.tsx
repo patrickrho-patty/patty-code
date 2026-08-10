@@ -40,7 +40,7 @@ function avgRate(u?: WireUsage): string | null {
 // contextAvgRate computes the session-aggregate cache-hit % from ContextInfo
 // cache tokens — the tab telemetry that accumulates ALL request sources
 // (executor, subagents, planner, auxiliary calls), refreshed at turn
-// boundaries. Preferred over avgRate: it matches the 会话费用 tooltip's
+// boundaries. Preferred over avgRate: it matches the session-cost tooltip's
 // "includes main model, subagents and auxiliary calls" scope.
 function contextAvgRate(ctx: ContextInfo): string | null {
   const hit = ctx.cacheHitTokens ?? 0;

@@ -95,39 +95,18 @@ function baseSettings(displayMode: "standard" | "compact" = "standard"): Setting
 	      queueCap: 20,
 	      queueDrop: "summarize",
 	      ignoreSelfMessages: true,
-	      selfUserIds: { qq: [], feishu: [], weixin: [] },
-	      control: { enabled: false, addr: "127.0.0.1:37913", tokenEnv: "REASONIX_BOT_CONTROL_TOKEN" },
+	      selfUserIds: { desktop: [] },
+	      control: { enabled: false, addr: "127.0.0.1:37913", tokenEnv: "PATTY_BOT_CONTROL_TOKEN" },
 	      pairing: { enabled: true, requestTtlMinutes: 60, maxPendingPerPlatform: 3 },
 	      routes: [],
 	      allowlist: {
 	        enabled: false,
 	        allowAll: false,
-	        qqUsers: [],
-	        feishuUsers: [],
-	        weixinUsers: [],
-	        qqApprovers: [],
-	        feishuApprovers: [],
-	        weixinApprovers: [],
-	        qqAdmins: [],
-	        feishuAdmins: [],
-	        weixinAdmins: [],
-	        qqGroups: [],
-	        feishuGroups: [],
-	        weixinGroups: [],
+	        users: [],
+	        approvers: [],
+	        admins: [],
+	        groups: [],
 	      },
-      qq: {
-        enabled: false,
-        appId: "",
-        appSecretEnv: "",
-        secretSet: false,
-        sandbox: false,
-        model: "",
-        toolApprovalMode: "ask",
-        workspaceRoot: "",
-        access: { enabled: true, allowAll: false, pairingEnabled: true, users: [], groups: [], approvers: [], admins: [] },
-      },
-      feishu: { enabled: false, domain: "feishu", appId: "", appSecretEnv: "", secretSet: false, verificationToken: "", mode: "webhook", webhookPort: 0, requireMention: false },
-      weixin: { enabled: false, accountId: "", tokenEnv: "", tokenSet: false, apiBase: "" },
       connections: [],
     },
     desktopLanguage: "en",
@@ -144,7 +123,7 @@ function baseSettings(displayMode: "standard" | "compact" = "standard"): Setting
     updateChannel: "stable",
     telemetry: true,
     metrics: true,
-    configPath: "/tmp/reasonix/config.toml",
+    configPath: "/tmp/patty/config.toml",
     providerKinds: [],
     autoApproveTools: false,
     bypass: false,
@@ -459,7 +438,7 @@ window.go = {
     App: {
       Settings: async () => {
         failingSettingsCalls += 1;
-        if (failingSettingsCalls === 1) throw new Error("/Users/example/.reasonix/settings.toml: permission denied");
+        if (failingSettingsCalls === 1) throw new Error("/Users/example/.patty/settings.toml: permission denied");
         return baseSettings("standard");
       },
     } as Partial<AppBindings> as AppBindings,
@@ -563,7 +542,7 @@ window.go = {
   },
 };
 
-localStorage.setItem("reasonix-zoom-restart", "1");
+localStorage.setItem("patty-zoom-restart", "1");
 await act(async () => {
   zoomRoot.render(
     <LocaleProvider>
@@ -605,7 +584,7 @@ await act(async () => {
 await waitFor("display zoom reset", () => document.querySelector(".zoom-slider__value")?.textContent?.trim() === "100%");
 
 eq(savedZoomFactors.at(-1), 1, "display zoom reset writes the default zoom factor");
-eq(localStorage.getItem("reasonix-zoom-restart"), "1", "display zoom reset updates the local restart zoom cache");
+eq(localStorage.getItem("patty-zoom-restart"), "1", "display zoom reset updates the local restart zoom cache");
 
 await act(async () => {
   zoomRoot.unmount();
@@ -660,17 +639,15 @@ ok(!document.getElementById("bot-step-access"), "bots tab omits the old global a
 ok(!document.getElementById("bot-step-behavior"), "bots tab omits global default behavior card");
 eq(document.querySelectorAll(".bot-step-chip").length, 0, "hero no longer shows the old two-step chips");
 
-eq(document.querySelectorAll(".bot-channel-tabs [role=\"tab\"]").length, 4, "bot manager uses four fixed channel tabs on the left");
-ok(document.querySelector(".bot-channel-setup-card")?.textContent?.includes("Configure QQ") === true, "unconfigured QQ tab shows key setup on the right");
-ok(document.body.textContent?.includes("Back to entry") === false, "bot manager does not show a return-to-entry action");
+eq(document.querySelectorAll(".bot-channel-tabs [role=\"tab\"]").length, 1, "bot manager lists one connection tab on the left");
 
-const feishuTab = Array.from(document.querySelectorAll(".bot-channel-tabs [role=\"tab\"]")).find((button) => button.textContent?.includes("Feishu")) as HTMLButtonElement | undefined;
-if (!feishuTab) throw new Error("Feishu channel tab did not render");
+const connTab = Array.from(document.querySelectorAll(".bot-channel-tabs [role=\"tab\"]")).find((button) => button.textContent?.includes("kun")) as HTMLButtonElement | undefined;
+if (!connTab) throw new Error("connection tab did not render");
 await act(async () => {
-  feishuTab.click();
+  connTab.click();
   await flushPromises();
 });
-await waitFor("selected Feishu detail", () => Boolean(document.querySelector(".bot-channel-manager__detail .bot-detail-card")));
+await waitFor("selected connection detail", () => Boolean(document.querySelector(".bot-channel-manager__detail .bot-detail-card")));
 
 ok(Boolean(document.querySelector(".bot-channel-manager__detail .bot-detail-card")), "configured channel renders selected bot detail on the right");
 ok(Boolean(document.querySelector(".bot-channel-manager__detail .bot-detail-section--access")), "selected bot detail owns its access control");

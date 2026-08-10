@@ -23,47 +23,47 @@ import (
 	"sync/atomic"
 	"time"
 
-	"reasonix/internal/ablation"
-	"reasonix/internal/agent"
-	"reasonix/internal/capability"
-	"reasonix/internal/command"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/environment"
-	"reasonix/internal/event"
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/dispatch"
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/extension/providerext"
-	"reasonix/internal/extension/sidecar"
-	"reasonix/internal/extension/uihub"
-	"reasonix/internal/goaleval"
-	"reasonix/internal/guardian"
-	"reasonix/internal/history"
-	"reasonix/internal/hook"
-	"reasonix/internal/installsource"
-	"reasonix/internal/instruction"
-	"reasonix/internal/jobs"
-	"reasonix/internal/lsp"
-	"reasonix/internal/mcplaunch"
-	"reasonix/internal/memory"
-	"reasonix/internal/migration"
-	"reasonix/internal/netclient"
-	"reasonix/internal/outputstyle"
-	"reasonix/internal/permission"
-	"reasonix/internal/plugin"
-	"reasonix/internal/productdocs"
-	"reasonix/internal/provider"
-	"reasonix/internal/recovery"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/secrets"
-	"reasonix/internal/sessiontemp"
-	"reasonix/internal/skill"
-	"reasonix/internal/stats"
-	"reasonix/internal/tool"
-	"reasonix/internal/tool/builtin"
-	"reasonix/internal/tool/sessiontool"
-	"reasonix/internal/workspacelease"
+	"patty/internal/ablation"
+	"patty/internal/agent"
+	"patty/internal/capability"
+	"patty/internal/command"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/environment"
+	"patty/internal/event"
+	"patty/internal/extension"
+	"patty/internal/extension/dispatch"
+	"patty/internal/extension/protocol"
+	"patty/internal/extension/providerext"
+	"patty/internal/extension/sidecar"
+	"patty/internal/extension/uihub"
+	"patty/internal/goaleval"
+	"patty/internal/guardian"
+	"patty/internal/history"
+	"patty/internal/hook"
+	"patty/internal/installsource"
+	"patty/internal/instruction"
+	"patty/internal/jobs"
+	"patty/internal/lsp"
+	"patty/internal/mcplaunch"
+	"patty/internal/memory"
+	"patty/internal/migration"
+	"patty/internal/netclient"
+	"patty/internal/outputstyle"
+	"patty/internal/permission"
+	"patty/internal/plugin"
+	"patty/internal/productdocs"
+	"patty/internal/provider"
+	"patty/internal/recovery"
+	"patty/internal/sandbox"
+	"patty/internal/secrets"
+	"patty/internal/sessiontemp"
+	"patty/internal/skill"
+	"patty/internal/stats"
+	"patty/internal/tool"
+	"patty/internal/tool/builtin"
+	"patty/internal/tool/sessiontool"
+	"patty/internal/workspacelease"
 )
 
 // ErrUnknownModel is returned by Build when the configured model can't be
@@ -130,7 +130,7 @@ type Options struct {
 	StatsSource string
 	// ExtraPlugins are session-scoped MCP servers supplied by a host transport
 	// (for example ACP session/new). They are connected eagerly for this
-	// controller but are not persisted to reasonix.toml.
+	// controller but are not persisted to patty.toml.
 	ExtraPlugins []plugin.Spec
 	// TokenMode selects the session's runtime profile. Empty/full/balanced preserves
 	// the normal capability surface. "economy" keeps the core coding tools visible
@@ -187,7 +187,7 @@ type Options struct {
 	// everything.
 	Ablation ablation.Set
 	// SandboxNetworkOverride and WorkspaceOnly are process-local hard bounds for
-	// supervised ACP workers. Nil/false preserve normal Reasonix config.
+	// supervised ACP workers. Nil/false preserve normal Patty Code config.
 	SandboxNetworkOverride *bool
 	SandboxBashOverride    string
 	WorkspaceOnly          bool
@@ -234,7 +234,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	// Arm the credential-protection layers from the user-global [secrets]
 	// section before any tool, hook, or plugin subprocess can spawn. Package
 	// globals are correct here because [secrets] is user-global (project
-	// reasonix.toml cannot override it), so concurrent workspaces agree.
+	// patty.toml cannot override it), so concurrent workspaces agree.
 	secrets.SetFilterSubprocessEnv(cfg.Secrets.FilterSubprocessEnv)
 	secrets.SetProtectSensitiveFiles(cfg.Secrets.ProtectSensitiveFiles)
 	secrets.RegisterCredentialEnvKeys(cfg.CredentialEnvNames())
@@ -318,7 +318,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 			slog.Warn("boot: extension UI hub: "+msg, "root", root)
 		},
 	})
-	extensionMgr, err := preflightExtensionRuntimes(ctx, config.ReasonixHomeDir(), extensionBoot{
+	extensionMgr, err := preflightExtensionRuntimes(ctx, config.PattyHomeDir(), extensionBoot{
 		session:   protocol.SessionContext{SessionID: sessionID, WorkspaceRoot: root, Generation: generation},
 		ui:        extUIHub,
 		onWarning: extWarn,
@@ -423,14 +423,14 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	}
 
 	if migErr != nil {
-		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: "Config migration did not complete.", Detail: "config migration from ~/.reasonix failed: " + migErr.Error()})
+		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: "Config migration did not complete.", Detail: "config migration from ~/.patty failed: " + migErr.Error()})
 	} else if migrated != nil {
 		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: migrated.Notice()})
 	}
 	if stepLimitsMigrated || cfg.IgnoredLegacyAgentStepLimits() {
 		level := event.LevelInfo
 		text := "Deprecated agent step limits were removed."
-		detail := "[agent].max_steps and planner_max_steps are no longer used; Reasonix now manages interactive progress automatically. " +
+		detail := "[agent].max_steps and planner_max_steps are no longer used; Patty Code now manages interactive progress automatically. " +
 			"Use the CLI --max-steps flag for a one-off run or [bot].max_steps for unattended bot sessions."
 		if stepLimitMigErr != nil {
 			level = event.LevelWarn
@@ -449,7 +449,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	if redactToolOutputMigrated || redactToolOutputMigErr != nil {
 		level := event.LevelInfo
 		text := "Deprecated redact_tool_output setting was removed."
-		detail := "[secrets].redact_tool_output no longer has any effect: ordinary model/tool content and local session/job artifacts now preserve their original text. Explicit diagnostics and reasonix doctor redact-sessions still redact credential values."
+		detail := "[secrets].redact_tool_output no longer has any effect: ordinary model/tool content and local session/job artifacts now preserve their original text. Explicit diagnostics and patcode doctor redact-sessions still redact credential values."
 		if redactToolOutputMigErr != nil {
 			level = event.LevelWarn
 			text = "Deprecated redact_tool_output setting was ignored."
@@ -460,7 +460,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	if memoryCompilerMigrated || memoryCompilerMigErr != nil {
 		level := event.LevelInfo
 		text := "Deprecated memory_compiler setting was removed."
-		detail := "The Memory v5 execution compiler has been removed from Reasonix: [agent].memory_compiler no longer has any effect, user turns are never replaced by compiled execution contracts, and no compiler state is written. Old transcripts containing compiled turns still display normally."
+		detail := "The Memory v5 execution compiler has been removed from patty: [agent].memory_compiler no longer has any effect, user turns are never replaced by compiled execution contracts, and no compiler state is written. Old transcripts containing compiled turns still display normally."
 		if memoryCompilerMigErr != nil {
 			level = event.LevelWarn
 			text = "Deprecated memory_compiler setting was ignored."
@@ -471,7 +471,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	migration.MigrateLegacyMemorySources(sink)
 	migration.MigrateLegacySessionSources(sink)
 	if ignored := cfg.IgnoredProjectDefaultModel(); ignored != "" {
-		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: "Ignored the project config's default_model.", Detail: fmt.Sprintf("./reasonix.toml sets default_model = %q but no configured provider serves it; using %q from your user config instead. Edit or remove that default_model line to silence this notice.", ignored, cfg.DefaultModel)})
+		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: "Ignored the project config's default_model.", Detail: fmt.Sprintf("./patty.toml sets default_model = %q but no configured provider serves it; using %q from your user config instead. Edit or remove that default_model line to silence this notice.", ignored, cfg.DefaultModel)})
 	}
 
 	// A resolvable model whose API key env is unset would otherwise build fine
@@ -536,7 +536,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		}
 		// A stale missing prompt file must not block startup: warn and fall back
 		// to the inline (or built-in default) system prompt. Other read failures
-		// stay fatal so Reasonix never runs without explicitly configured policy.
+		// stay fatal so Patty Code never runs without explicitly configured policy.
 		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: err.Error() + "; falling back to inline/default system prompt"})
 		sysPrompt = cfg.InlineSystemPrompt()
 	}
@@ -580,7 +580,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	}
 	sysPrompt = appendOfflineEnvironmentNote(sysPrompt, cfg.Environment.Offline)
 
-	// Persistent memory (REASONIX.md / AGENTS.md hierarchy + auto-memory index)
+	// Persistent memory (PATTY_CODE.md / AGENTS.md hierarchy + auto-memory index)
 	// folds into the system prompt exactly here, once: it becomes part of the
 	// durable, cache-stable prefix every turn reuses, so memory costs nothing per
 	// turn. Mid-session changes never touch this prefix — they ride the
@@ -636,15 +636,15 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		bashMode = override
 	}
 	forbidReadRoots := RuntimeForbidReadRoots(cfg, root)
-	// managedConfig names the Reasonix-owned config FILES (config.toml,
+	// managedConfig names the patty-owned config FILES (config.toml,
 	// compatibility TOMLs, legacy v0.x config.json) the file-writers may repair
 	// outside the workspace after a fresh per-write human approval. The bash
 	// OS-sandbox write roots deliberately stay unwidened: config repair goes
 	// through the approval-gated file tools, not raw shell writes.
-	managedConfig := builtin.NewManagedConfigPaths(config.ReasonixManagedConfigPaths())
+	managedConfig := builtin.NewManagedConfigPaths(config.PattyCodeManagedConfigPaths())
 	bashSpec := sandbox.Spec{Mode: bashMode, WriteRoots: writeRoots, ForbidReadRoots: forbidReadRoots, Network: networkEnabled}
 	bashSpec.Shell = shell
-	// The session-data guard blocks agent writes into Reasonix's own session
+	// The session-data guard blocks agent writes into patty's own session
 	// stores (they race the app's saves and surface as conflict-copy loops);
 	// explicit allow_write entries stay a sanctioned escape hatch.
 	allowWriteRoots := cfg.AllowWriteRoots()
@@ -693,9 +693,9 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	pluginSpecOptions := PluginSpecOptions{
 		DefaultStartupTimeout: time.Duration(cfg.MCPStartupTimeoutSeconds()) * time.Second,
 		DefaultCallTimeout:    time.Duration(cfg.MCPCallTimeoutSeconds()) * time.Second,
-		LaunchManager:         mcplaunch.ForWorkspace(config.ReasonixHomeDir(), root),
+		LaunchManager:         mcplaunch.ForWorkspace(config.PattyHomeDir(), root),
 		ConfigSource:          "workspace_config",
-		StateHome:             config.ReasonixHomeDir(),
+		StateHome:             config.PattyHomeDir(),
 		WriterRoots:           writeRoots,
 		ForbidReadRoots:       forbidReadRoots,
 		Network:               networkEnabled,
@@ -915,7 +915,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	// Permission policy gates every tool call. With no HeadlessApprovalMode
 	// (interactive bootstrap), the temporary gate preserves the legacy behavior
 	// until chat/desktop installs an interactive gate. A real headless caller
-	// such as `reasonix run` always supplies a mode: Ask fails closed, Auto
+	// such as `patcode run` always supplies a mode: Ask fails closed, Auto
 	// allows ordinary writer fallbacks, and DontAsk denies them (#6927).
 	// The selected contract is also applied to sub-agents, so they cannot be a
 	// weaker path around the parent gate.
@@ -1327,7 +1327,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		parentSession := agent.ParentSession(sctx)
 		var run *agent.SubagentRun
 		if subagentStore == nil || parentSession == "" {
-			// Headless runs (e.g. `reasonix run`) have no persistent session to
+			// Headless runs (e.g. `patcode run`) have no persistent session to
 			// own a transcript. Run the skill sub-agent ephemerally, as before
 			// persisted transcripts existed, instead of failing. Continuation needs
 			// a persisted owner, so it errors here.
@@ -1988,7 +1988,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 			}
 		}
 		// HeadlessApprovalMode is an explicit declaration that this frontend has
-		// no decision channel (`reasonix run`). ApprovalTimeout is not a proxy for
+		// no decision channel (`patcode run`). ApprovalTimeout is not a proxy for
 		// that capability: bots have a bounded timeout and can still answer cards.
 		ctrlOpts.RecoveryHeadless = recoveryHeadlessMode(opts)
 	}
@@ -2203,11 +2203,11 @@ func rememberPermissionRule(workspaceRoot, rule string) control.RememberResult {
 func rememberPermissionConfigPath(workspaceRoot string) string {
 	workspaceRoot = strings.TrimSpace(workspaceRoot)
 	if workspaceRoot != "" {
-		return filepath.Join(workspaceRoot, "reasonix.toml")
+		return filepath.Join(workspaceRoot, "patty.toml")
 	}
 	path := config.SourcePath()
 	if path == "" {
-		path = "reasonix.toml" // match Config.Save() fallback
+		path = "patty.toml" // match Config.Save() fallback
 	}
 	return path
 }
@@ -2444,7 +2444,7 @@ func appendUniquePaths(base []string, extra ...string) []string {
 	return out
 }
 
-// RuntimeForbidReadRoots returns the configured deny roots plus Reasonix's
+// RuntimeForbidReadRoots returns the configured deny roots plus Patty Code's
 // global credential FILE when it exists. It also registers the corresponding
 // credential environment names for subprocess filtering. Runtime tool
 // assemblers outside Build must use this helper instead of reading the config
@@ -2625,9 +2625,9 @@ func NewProviderWithProxy(e *config.ProviderEntry, proxy netclient.ProxySpec) (p
 // the listed directories.
 // When workDir is non-empty, tools resolve relative paths against it instead of
 // the process cwd, enabling concurrent multi-project sessions.
-// sessionGuard blocks writer-tool targets inside Reasonix's own session stores
+// sessionGuard blocks writer-tool targets inside Patty Code's own session stores
 // and makes bash warn when a command references them. managedConfig names the
-// Reasonix-owned config files writable outside writeRoots after a fresh
+// Patty Code-owned config files writable outside writeRoots after a fresh
 // per-write human approval.
 func addBuiltins(reg *tool.Registry, enabled, writeRoots []string, bashSpec sandbox.Spec, bashTimeout time.Duration, searchSpec builtin.SearchSpec, stderr io.Writer, workDir string, proxySpec netclient.ProxySpec, forbidReadRoots []string, readPathResolver *builtin.PathResolver, sessionGuard builtin.SessionDataGuard, managedConfig builtin.ManagedConfigPaths, overlay builtin.FileOverlay, terminal builtin.TerminalRunner, sessionTemp *sessiontemp.Manager, fileWriteReceipt func(path string, hadPrior bool, prior []byte)) {
 	// If a workspace directory is set, use workspace-bound tools that resolve
@@ -2807,7 +2807,7 @@ func skillMCPBindings(sk skill.Skill, reg *tool.Registry, specs []plugin.Spec, c
 	}
 	// A valid cached schema also supplies stable bindings for an on-demand
 	// package server before it is connected. The skill can then route through
-	// use_capability without inventing Reasonix's canonical name.
+	// use_capability without inventing Patty Code's canonical name.
 	for _, spec := range specs {
 		if spec.Package != sk.Plugin || liveServers[spec.Name] || !cacheKeyOK[spec.Name] {
 			continue

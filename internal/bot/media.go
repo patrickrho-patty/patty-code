@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/control"
+	"patty/internal/control"
 )
 
 const maxBotMediaBytes = 25 * 1024 * 1024
@@ -112,7 +112,7 @@ func saveOneInboundMediaItem(ctx context.Context, workspaceRoot string, item Inb
 		if ref, err := control.SaveImageBytesInRoot(workspaceRoot, contentType, item.Data); err == nil {
 			return ref, nil
 		}
-		// 图片超过 10MB 上限或签名不被识别时，降级存为普通附件而不是丢弃。
+// [10MB ，。]
 	}
 	name := strings.TrimSpace(item.Name)
 	if name == "" {

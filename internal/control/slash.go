@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"reasonix/internal/config"
-	"reasonix/internal/i18n"
-	"reasonix/internal/migration"
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/skill"
+	"patty/internal/config"
+	"patty/internal/i18n"
+	"patty/internal/migration"
+	"patty/internal/pluginpkg"
+	"patty/internal/skill"
 )
 
 // SlashItem is one slash-completion suggestion. Insert is the token text placed
@@ -146,7 +146,7 @@ func reasoningLanguageArgItems(prior []string) []SlashItem {
 	}
 	return []SlashItem{
 		{Label: "auto", Insert: "auto", Hint: "follow conversation language"},
-		{Label: "zh", Insert: "zh", Hint: "prefer Chinese visible reasoning"},
+		{Label: "ko-KR", Insert: "ko-KR", Hint: "prefer Korean visible reasoning"},
 		{Label: "en", Insert: "en", Hint: "prefer English visible reasoning"},
 	}
 }
@@ -158,7 +158,7 @@ func languageArgItems(prior []string) []SlashItem {
 	return []SlashItem{
 		{Label: "auto", Insert: "auto", Hint: i18n.M.ArgLanguageAuto},
 		{Label: "en", Insert: "en", Hint: i18n.M.ArgLanguageEn},
-		{Label: "zh", Insert: "zh", Hint: i18n.M.ArgLanguageZh},
+		{Label: "ko-KR", Insert: "ko-KR", Hint: i18n.M.ArgLanguageKo},
 	}
 }
 
@@ -168,7 +168,7 @@ func currencyArgItems(prior []string) []SlashItem {
 	}
 	return []SlashItem{
 		{Label: "auto", Insert: "auto", Hint: "follow the resolved CLI locale"},
-		{Label: "CNY", Insert: "CNY", Hint: "Chinese yuan pricing"},
+		{Label: "CNY", Insert: "CNY", Hint: "Korean won pricing"},
 		{Label: "USD", Insert: "USD", Hint: "US dollar pricing"},
 	}
 }
@@ -182,21 +182,8 @@ func themeArgItems(prior []string) []SlashItem {
 		{Label: "light", Insert: "light", Hint: "mode · force light shell"},
 		{Label: "dark", Insert: "dark", Hint: "mode · force dark shell"},
 	}
-	for _, st := range []struct {
-		name string
-		mode string
-		desc string
-	}{
-		{"graphite", "dark", "warm clay accent"},
-		{"ember", "dark", "hot orange accent"},
-		{"aurora", "dark", "cool teal accent"},
-		{"midnight", "dark", "quiet violet accent"},
-		{"sandstone", "light", "default warm light accent"},
-		{"porcelain", "light", "soft violet light accent"},
-		{"linen", "light", "muted coral light accent"},
-		{"glacier", "light", "cool blue accent"},
-	} {
-		items = append(items, SlashItem{Label: st.name, Insert: st.name, Hint: st.mode + " · " + st.desc})
+	for _, style := range config.CLIThemeStyles() {
+		items = append(items, SlashItem{Label: style.Name, Insert: style.Name, Hint: style.Mode + " · " + style.Description})
 	}
 	return items
 }
@@ -467,7 +454,7 @@ func (c *Controller) managementNotice(trimmed string) bool {
 		}
 		switch sub {
 		case "", "list", "ls":
-			text, err := pluginpkg.InstalledListText(config.ReasonixHomeDir())
+			text, err := pluginpkg.InstalledListText(config.PattyHomeDir())
 			if err != nil {
 				c.notice("plugins: " + err.Error())
 			} else {
@@ -478,7 +465,7 @@ func (c *Controller) managementNotice(trimmed string) bool {
 				c.notice("usage: /plugins show <name>")
 				return true
 			}
-			text, err := pluginpkg.InstalledShowText(config.ReasonixHomeDir(), fields[2])
+			text, err := pluginpkg.InstalledShowText(config.PattyHomeDir(), fields[2])
 			if err != nil {
 				c.notice("plugins: " + err.Error())
 			} else {

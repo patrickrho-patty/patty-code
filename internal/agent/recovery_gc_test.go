@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/provider"
-	"reasonix/internal/store"
+	"patty/internal/provider"
+	"patty/internal/store"
 )
 
 // forkRecoveryBranch builds a real conflict-recovery branch: a diverged disk

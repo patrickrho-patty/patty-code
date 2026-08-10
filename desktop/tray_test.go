@@ -3,8 +3,8 @@ package main
 import "testing"
 
 func TestTrayMenuLabelsFollowLocale(t *testing.T) {
-	zh := trayMenuLabels("zh")
-	if zh.openTitle != "打开" || zh.quitTitle != "退出" {
+	zh := trayMenuLabels("ko-KR")
+	if zh.openTitle != "열기" || zh.quitTitle != "종료" {
 		t.Fatalf("zh labels = %#v", zh)
 	}
 

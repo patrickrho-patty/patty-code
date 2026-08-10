@@ -22,27 +22,27 @@ console.log("\nfont availability");
 
 eq(
   getAvailableFontFamilies("system", "darwin", noneInstalled),
-  ["system", "pingfang", "custom"],
+  ["system", "applesdgothic", "custom"],
   "macOS shows native UI font plus stable choices",
 );
 eq(
   getAvailableFontFamilies("system", "windows", noneInstalled),
-  ["system", "yahei", "custom"],
+  ["system", "malgun", "custom"],
   "Windows shows native UI font plus stable choices",
 );
 eq(
   getAvailableFontFamilies("system", "linux", noneInstalled),
-  ["system", "noto", "custom"],
+  ["system", "notokr", "custom"],
   "Linux shows Noto-style UI font plus stable choices",
 );
 eq(
-  getAvailableFontFamilies("system", "darwin", hasFont("Microsoft YaHei")),
-  ["system", "yahei", "pingfang", "custom"],
+  getAvailableFontFamilies("system", "darwin", hasFont("Malgun Gothic")),
+  ["system", "malgun", "applesdgothic", "custom"],
   "detected cross-platform UI fonts are included",
 );
 eq(
-  getAvailableFontFamilies("yahei", "darwin", noneInstalled),
-  ["system", "yahei", "pingfang", "custom"],
+  getAvailableFontFamilies("malgun", "darwin", noneInstalled),
+  ["system", "malgun", "applesdgothic", "custom"],
   "current UI font remains visible even when it is not native",
 );
 

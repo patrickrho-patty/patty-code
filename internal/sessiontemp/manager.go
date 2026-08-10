@@ -21,11 +21,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"reasonix/internal/filelock"
+	"patty/internal/filelock"
 )
 
 const (
-	dirPrefix     = "reasonix-session-tmp-"
+	dirPrefix     = "patty-session-tmp-"
 	ownerLockName = ".owner.lock"
 	staleAge      = 24 * time.Hour
 )
@@ -374,7 +374,7 @@ func resetProcessCleanupForTest() {
 	processCleanup.Unlock()
 }
 
-// cleanupStale removes reasonix-session-tmp-* direct children of root that are
+// cleanupStale removes patty-session-tmp-* direct children of root that are
 // older than 24h and whose owner lock is free. Failures are logged only.
 func cleanupStale(root string, now func() time.Time) {
 	if root == "" {

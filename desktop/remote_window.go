@@ -26,7 +26,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 const (
@@ -37,10 +37,10 @@ const (
 	remoteWindowTicketPrefix    = ".remote-window-"
 	remoteWindowTicketTTL       = 2 * time.Minute
 	remoteWindowTicketMaxBytes  = 16 * 1024
-	remoteWindowInstancePrefix  = "com.reasonix.desktop.remote."
+	remoteWindowInstancePrefix  = "com.patty.desktop.remote."
 )
 
-// remoteWindowLaunch is a one-shot handoff from the primary Reasonix process to
+// remoteWindowLaunch is a one-shot handoff from the primary Patty Code process to
 // a lightweight web-window child process. The URL carries the local tunnel token,
 // so the descriptor lives in a mode-0600 ticket file instead of the process
 // arguments. HostKey is the non-secret per-host digest used both to derive the
@@ -99,7 +99,7 @@ func (a *App) beginRemoteWindowHostOperation(hostID string) remoteWindowHostOper
 }
 
 // remoteWindowTicketPath validates the ticket name and resolves it inside the
-// Reasonix private state directory. Only the bare generated name is accepted —
+// Patty Code private state directory. Only the bare generated name is accepted —
 // never a path, a traversal, or a foreign filename.
 func remoteWindowTicketPath(ticket string) (string, error) {
 	if ticket == "" || filepath.Base(ticket) != ticket || !strings.HasPrefix(ticket, remoteWindowTicketPrefix) {
@@ -242,18 +242,18 @@ func remoteWindowTitle(hostID string) string {
 	if hostID == "" {
 		hostID = "Remote"
 	}
-	return "Reasonix [SSH: " + hostID + "]"
+	return "Patty Code [SSH: " + hostID + "]"
 }
 
 // remoteWindowHostKey derives the non-secret per-host identity used for the
-// child window's Wails single-instance lock. It is scoped to the Reasonix home
+// child window's Wails single-instance lock. It is scoped to the patty home
 // (so two isolated data homes can each open a window for the same host label)
 // and contains no URL, token, or user data — only a digest. The child receives
 // this digest in argv and validates it against the ticket before consuming.
 func remoteWindowHostKey(hostID string) string {
 	h := sha256.New()
 	_, _ = io.WriteString(h, singleInstanceIDPrefix+"|")
-	_, _ = io.WriteString(h, strings.TrimSpace(config.ReasonixHomeDir())+"|")
+	_, _ = io.WriteString(h, strings.TrimSpace(config.PattyHomeDir())+"|")
 	_, _ = io.WriteString(h, hostID)
 	return hex.EncodeToString(h.Sum(nil)[:16])
 }
@@ -399,7 +399,7 @@ func (r *remoteWindowRegistry) closeAll() {
 
 // ── Spawn / open (main process) ──
 
-// spawnRemoteWindow launches a fresh Reasonix child process for hostKey. Argv
+// spawnRemoteWindow launches a fresh Patty Code child process for hostKey. Argv
 // contains only the ticket name, non-secret host/owner identities, and owner
 // PID; the URL and Serve token travel exclusively in the 0600 ticket. When a
 // window already exists for this owner and host, the Wails single-instance lock
@@ -413,7 +413,7 @@ func (a *App) spawnRemoteWindow(hostKey string, launch remoteWindowLaunch) error
 	executable, err := os.Executable()
 	if err != nil {
 		_ = os.Remove(path)
-		return fmt.Errorf("locate Reasonix executable: %w", err)
+		return fmt.Errorf("locate Patty Code executable: %w", err)
 	}
 	if !isRemoteWindowOwnerID(a.remoteWindowOwnerID) {
 		_ = os.Remove(path)
@@ -428,7 +428,7 @@ func (a *App) spawnRemoteWindow(hostKey string, launch remoteWindowLaunch) error
 	)
 	if err := cmd.Start(); err != nil {
 		_ = os.Remove(path)
-		return fmt.Errorf("start remote Reasonix window: %w", err)
+		return fmt.Errorf("start remote Patty Code window: %w", err)
 	}
 	gen := a.remoteWindows.record(hostKey, cmd.Process)
 	// The child (or the existing window it hands off to) normally consumes the

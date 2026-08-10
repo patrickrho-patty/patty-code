@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 func TestHangAgeBucket(t *testing.T) {
@@ -41,7 +41,7 @@ func TestMainThreadHangReportIsStructuredPerformanceReport(t *testing.T) {
 	if r.SchemaVersion != 2 || r.ErrorType != wantErrorType || r.TopFrame == "" || r.OccurredAt == "" {
 		t.Fatalf("structured fields missing: %+v", r)
 	}
-	for _, want := range []string{"Reasonix detected", "last heartbeat:", "bucket: s_15_30", "goroutines:"} {
+	for _, want := range []string{"Patty Code detected", "last heartbeat:", "bucket: s_15_30", "goroutines:"} {
 		if !strings.Contains(r.Message, want) {
 			t.Fatalf("hang report message missing %q:\n%s", want, r.Message)
 		}

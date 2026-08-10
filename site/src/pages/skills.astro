@@ -3,13 +3,12 @@ import Base from '../layouts/Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const repo = 'https://github.com/esengine/DeepSeek-Reasonix';
-const desc = "Browse, publish, and install community skills, plugins, and MCP servers for Reasonix. One command to add any capability to your agent — install_source does the rest, SSRF-guarded and risk-rated.";
+const repo = 'https://github.com/patty-io/patty-code';
+const desc = "Browse, publish, and install community skills, plugins, and MCP servers for Patty Code. One command to add any capability to your agent — install_source does the rest, SSRF-guarded and risk-rated.";
 ---
 <Base
-  title="Reasonix — Skills, Plugins & MCP registry"
-  titleEn="Reasonix — Skills, Plugins & MCP registry"
-  titleZh="Reasonix — 技能、插件与 MCP 市场"
+  title="Patty Code — Skills, Plugins & MCP registry"
+  titleEn="Patty Code — Skills, Plugins & MCP registry"
   description={desc}>
 
   <SiteHeader active="skills" accountSlot />
@@ -18,9 +17,9 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
   <section class="reg-head">
     <div class="wrap">
       <div class="sec-head split">
-        <span class="kicker"><span class="l-en">Registry</span><span class="l-zh">技能市场</span></span>
-        <h2><span class="l-en">Every skill, one <span class="em">install</span> away.</span><span class="l-zh">每个能力,一条 <span class="em">install</span> 就到手。</span></h2>
-        <p><span class="l-en">Community skills, plugins, and MCP servers for your agent. The registry only stores metadata and a source pointer — installs run client-side through <code>install_source</code>, SSRF-guarded and risk-rated. Nothing executes here.</span><span class="l-zh">社区贡献的技能、插件与 MCP 服务器。市场只存元数据与来源指针——安装在你本机经 <code>install_source</code> 执行(带 SSRF 防护与风险分级),这里不运行任何代码。</span></p>
+        <span class="kicker">Registry</span>
+        <h2>Every skill, one <span class="em">install</span> away.</h2>
+        <p>Community skills, plugins, and MCP servers for your agent. The registry only stores metadata and a source pointer — installs run client-side through <code>install_source</code>, SSRF-guarded and risk-rated. Nothing executes here.</p>
       </div>
 
       <div class="reg-toolbar">
@@ -29,18 +28,18 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
           <input id="reg-q" type="search" autocomplete="off" placeholder="Search skills, plugins, MCP servers, tags…" aria-label="Search the registry" />
         </div>
         <div class="reg-tabs" data-group="kind" role="tablist">
-          <button class="active" data-kind="all" role="tab"><span class="l-en">All</span><span class="l-zh">全部</span></button>
+          <button class="active" data-kind="all" role="tab">All</button>
           <button data-kind="skill" role="tab">Skills</button>
           <button data-kind="plugin" role="tab">Plugins</button>
           <button data-kind="mcp" role="tab">MCP</button>
         </div>
         <div class="reg-tabs" data-group="sort" role="tablist">
-          <button class="active" data-sort="new" role="tab"><span class="l-en">New</span><span class="l-zh">最新</span></button>
-          <button data-sort="trending" role="tab"><span class="l-en">Trending</span><span class="l-zh">趋势</span></button>
-          <button data-sort="installs" role="tab"><span class="l-en">Top</span><span class="l-zh">最热</span></button>
+          <button class="active" data-sort="new" role="tab">New</button>
+          <button data-sort="trending" role="tab">Trending</button>
+          <button data-sort="installs" role="tab">Top</button>
         </div>
         <a class="btn btn-dark reg-publish-cta" id="publish-open" href="#publish">
-          <span class="l-en">Publish</span><span class="l-zh">发布</span>
+          Publish
         </a>
       </div>
     </div>
@@ -53,22 +52,22 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
           <div class="pkg-skel"></div><div class="pkg-skel"></div><div class="pkg-skel"></div><div class="pkg-skel"></div>
         </div>
         <div id="reg-empty" class="reg-state" hidden>
-          <h3><span class="l-en">Be the first to publish.</span><span class="l-zh">来当第一个发布者。</span></h3>
-          <p><span class="l-en">No packages match yet. Ship a capability you built and it lands here for everyone.</span><span class="l-zh">还没有匹配的包。把你构建的能力发上来,所有人都能一键装。</span></p>
-          <a class="btn btn-dark" href="#publish" data-publish-jump><span class="l-en">Publish a package</span><span class="l-zh">发布一个包</span></a>
+          <h3>Be the first to publish.</h3>
+          <p>No packages match yet. Ship a capability you built and it lands here for everyone.</p>
+          <a class="btn btn-dark" href="#publish" data-publish-jump>Publish a package</a>
         </div>
         <div id="reg-offline" class="reg-state" hidden>
-          <h3><span class="l-en">Registry is launching soon.</span><span class="l-zh">市场即将上线。</span></h3>
-          <p><span class="l-en">The registry service isn't reachable yet. Sign in to get a handle ready — your packages will be namespaced to it.</span><span class="l-zh">市场服务暂时还连不上。先登录占好你的 handle——你的包会以它作命名空间。</span></p>
-          <a class="btn btn-dark" href="https://id.reasonix.io"><span class="l-en">Sign in at id.reasonix.io</span><span class="l-zh">前往 id.reasonix.io 登录</span></a>
+          <h3>Registry is launching soon.</h3>
+          <p>The registry service isn't reachable yet. Sign in to get a handle ready — your packages will be namespaced to it.</p>
+          <a class="btn btn-dark" href="https://id.patty.io">Sign in at id.patty.io</a>
         </div>
       </div>
 
       <aside class="reg-aside">
         <div class="feed-card">
-          <div class="feed-head"><span class="pulse"></span><span class="l-en">Live activity</span><span class="l-zh">实时动态</span></div>
+          <div class="feed-head"><span class="pulse"></span>Live activity</div>
           <ul id="feed" class="feed-list"><li class="feed-skel"></li><li class="feed-skel"></li><li class="feed-skel"></li></ul>
-          <div id="feed-empty" class="feed-empty" hidden><span class="l-en">Quiet for now — the first publish shows up here.</span><span class="l-zh">暂时安静——第一个发布会出现在这里。</span></div>
+          <div id="feed-empty" class="feed-empty" hidden>Quiet for now — the first publish shows up here.</div>
         </div>
       </aside>
     </div>
@@ -77,11 +76,11 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
   <section class="reg-review" id="review" hidden>
     <div class="wrap">
       <div class="review-head">
-        <span class="kicker"><span class="l-en">Review queue</span><span class="l-zh">审核队列</span></span>
+        <span class="kicker">Review queue</span>
         <span class="review-count" id="review-count"></span>
       </div>
       <div id="review-list" class="review-list"></div>
-      <div id="review-empty" class="review-empty" hidden><span class="l-en">Nothing pending — all caught up.</span><span class="l-zh">没有待审——都处理完了。</span></div>
+      <div id="review-empty" class="review-empty" hidden>Nothing pending — all caught up.</div>
     </div>
   </section>
 
@@ -90,40 +89,40 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
       <div class="pub-card">
         <div class="pub-head">
           <div>
-            <h3><span class="l-en">Publish a package</span><span class="l-zh">发布一个包</span></h3>
-            <p><span class="l-en">Verified accounts only. Submissions are reviewed before they go live; your package is namespaced to your handle (<code>@you/name</code>).</span><span class="l-zh">仅已验证邮箱的账号可提交。提交后经管理员审核才会公开;包以你的 handle 命名(<code>@you/name</code>)。</span></p>
+            <h3>Publish a package</h3>
+            <p>Verified accounts only. Submissions are reviewed before they go live; your package is namespaced to your handle (<code>@you/name</code>).</p>
           </div>
           <button type="button" class="pub-close" id="publish-close" aria-label="Close">✕</button>
         </div>
         <form id="pub-form" class="pub-form" autocomplete="off">
           <div class="pub-row">
-            <label><span class="l-en">Kind</span><span class="l-zh">类型</span>
+            <label>Kind
               <select name="kind"><option value="skill">skill</option><option value="plugin">plugin</option><option value="mcp">mcp</option></select>
             </label>
-            <label><span class="l-en">Name</span><span class="l-zh">名称</span>
+            <label>Name
               <input name="name" required placeholder="my-package" pattern="[a-z0-9][a-z0-9._-]*" />
             </label>
-            <label><span class="l-en">Version</span><span class="l-zh">版本</span>
+            <label>Version
               <input name="version" placeholder="0.1.0" />
             </label>
           </div>
-          <label><span class="l-en">One-line summary</span><span class="l-zh">一句话简介</span>
+          <label>One-line summary
             <input name="summary" maxlength="200" placeholder="What does it do?" />
           </label>
-          <label><span class="l-en">Source</span><span class="l-zh">来源</span>
-            <input name="source" required pattern="(https?://[^ ]+|git:github[.]com/[^ ]+|@?[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)?)" title="A URL (SKILL.md, a Reasonix/Codex/Claude plugin repository, .mcp.json, repository path), a git:github.com/… shorthand, or an MCP package name — not free text or a local path." placeholder="https://… SKILL.md · plugin repo · .mcp.json · MCP package" />
-            <small class="pub-hint"><span class="l-en">Plugins must point to a GitHub repository or path containing <code>reasonix-plugin.json</code>, <code>.codex-plugin/plugin.json</code>, <code>.claude-plugin/plugin.json</code>, or a supported <code>.claude-plugin/marketplace.json</code>.</span><span class="l-zh">插件必须指向包含 <code>reasonix-plugin.json</code>、<code>.codex-plugin/plugin.json</code>、<code>.claude-plugin/plugin.json</code>，或受支持的 <code>.claude-plugin/marketplace.json</code> 的 GitHub 仓库或路径。</span></small>
+          <label>Source
+            <input name="source" required pattern="(https?://[^ ]+|git:github[.]com/[^ ]+|@?[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)?)" title="A URL (SKILL.md, a Patty Code/Codex/Claude plugin repository, .mcp.json, repository path), a git:github.com/… shorthand, or an MCP package name — not free text or a local path." placeholder="https://… SKILL.md · plugin repo · .mcp.json · MCP package" />
+            <small class="pub-hint">Plugins must point to a GitHub repository or path containing <code>patty-code-plugin.json</code>, <code>.codex-plugin/plugin.json</code>, <code>.claude-plugin/plugin.json</code>, or a supported <code>.claude-plugin/marketplace.json</code>.</small>
           </label>
           <div class="pub-row">
-            <label><span class="l-en">Repo (optional)</span><span class="l-zh">仓库(可选)</span>
+            <label>Repo (optional)
               <input name="repoUrl" placeholder="https://github.com/…" />
             </label>
-            <label><span class="l-en">Tags (comma-separated)</span><span class="l-zh">标签(逗号分隔)</span>
+            <label>Tags (comma-separated)
               <input name="tags" placeholder="testing, go, review" />
             </label>
           </div>
           <div class="pub-actions">
-            <button type="submit" class="btn btn-dark"><span class="l-en">Publish</span><span class="l-zh">发布</span></button>
+            <button type="submit" class="btn btn-dark">Publish</button>
             <span id="pub-msg" class="pub-msg" role="status"></span>
           </div>
         </form>
@@ -134,13 +133,13 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
 
   <footer>
     <div class="foot-inner">
-      <a class="brand" href={`${base}/`}><img src={`${base}/logo.svg`} alt="Reasonix logo" /><span>Reasonix</span></a>
-      <span><span class="l-en">© 2026 Reasonix · MIT licensed · built to be left running.</span><span class="l-zh">© 2026 Reasonix · MIT 许可 · 为常驻运行而生。</span></span>
+      <a class="brand" href={`${base}/`}><img src={`${base}/logo.svg`} alt="Patty Code logo" /><span>Patty Code</span></a>
+      <span>© 2026 Patty Code · MIT licensed · built to be left running.</span>
       <nav class="foot-links">
         <a href={repo}>GitHub</a>
-        <a href={`${base}/`}><span class="l-en">Home</span><span class="l-zh">首页</span></a>
-        <a href={`${base}/docs/`}><span class="l-en">Docs</span><span class="l-zh">文档</span></a>
-        <a href="https://id.reasonix.io"><span class="l-en">Sign in</span><span class="l-zh">登录</span></a>
+        <a href={`${base}/`}>Home</a>
+        <a href={`${base}/docs/`}>Docs</a>
+        <a href="https://id.patty.io">Sign in</a>
       </nav>
     </div>
   </footer>
@@ -301,7 +300,7 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
 
   <script>
     import { currentAccount, accountLogout } from '../scripts/auth.js';
-    const REGISTRY = import.meta.env.PUBLIC_REGISTRY_ORIGIN || 'https://crash.reasonix.io';
+    const REGISTRY = import.meta.env.PUBLIC_REGISTRY_ORIGIN || 'https://crash.patty.io';
     const state = { kind: 'all', sort: 'new', q: '' };
     let currentUser = null;
 
@@ -316,7 +315,7 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
     ));
     const kindClass = (kind) => `pkg-kind${kind === 'plugin' ? ' plugin' : kind === 'mcp' ? ' mcp' : ''}`;
     const installRequest = (p) =>
-      `Install this Reasonix ${p.kind} package from ${p.source}. Use install_source with kind="${p.kind}".`;
+      `Install this Patty Code ${p.kind} package from ${p.source}. Use install_source with kind="${p.kind}".`;
 
     function show(el, on) { if (el) el.hidden = !on; }
 
@@ -333,7 +332,7 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
         <div class="pkg-sum">${esc(p.summary) || '<span style="color:var(--ink-3)">No summary.</span>'}</div>
         ${tags ? `<div class="pkg-tags">${tags}</div>` : ''}
         <div class="pkg-foot">
-          <span class="pkg-install" title="Install source — give it to Reasonix"><code>${esc(p.source)}</code><button data-copy="${esc(installRequest(p))}" data-slug="${esc(p.handle)}/${esc(p.name)}">Copy</button></span>
+          <span class="pkg-install" title="Install source — give it to Patty Code"><code>${esc(p.source)}</code><button data-copy="${esc(installRequest(p))}" data-slug="${esc(p.handle)}/${esc(p.name)}">Copy</button></span>
         </div>
         <div class="pkg-meta">↓ ${p.installCount || 0} installs · v${esc(p.latestVersion) || '—'}${repo}</div>
       </article>`;
@@ -538,11 +537,11 @@ const desc = "Browse, publish, and install community skills, plugins, and MCP se
       const slot = document.querySelector('[data-account-slot]');
       const user = await currentAccount();
       if (!user) {
-        slot.innerHTML = `<a class="btn btn-ghost" href="/login/?next=${encodeURIComponent('/skills/')}"><span class="l-en">Sign in</span><span class="l-zh">登录</span></a>`;
+        slot.innerHTML = `<a class="btn btn-ghost" href="/login/?next=${encodeURIComponent('/skills/')}">Sign in</a>`;
         return null;
       }
-      const warn = user.emailVerified ? '' : `<a class="acct-warn" href="/account/"><span class="l-en">unverified</span><span class="l-zh">未验证</span></a>`;
-      slot.innerHTML = `<span class="acct">${warn}<a class="acct-name" href="/account/">@${esc(user.handle)}</a><button type="button" class="acct-logout"><span class="l-en">Log out</span><span class="l-zh">退出</span></button></span>`;
+      const warn = user.emailVerified ? '' : `<a class="acct-warn" href="/account/">unverified</a>`;
+      slot.innerHTML = `<span class="acct">${warn}<a class="acct-name" href="/account/">@${esc(user.handle)}</a><button type="button" class="acct-logout">Log out</button></span>`;
       slot.querySelector('.acct-logout').addEventListener('click', async () => { await accountLogout(); location.reload(); });
       return user;
     }

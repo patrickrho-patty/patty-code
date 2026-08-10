@@ -46,18 +46,18 @@ func TestParseDesktopLaunchArgsRemoteWindow(t *testing.T) {
 
 // TestMain isolates user config/state/cache dirs for the whole package. Without
 // this, tests that persist desktop state, sessions, cache, or CLI-style config
-// can leak into the developer's real Reasonix directories.
+// can leak into the developer's real Patty Code directories.
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "reasonix-desktop-test")
+	dir, err := os.MkdirTemp("", "patty-desktop-test")
 	if err != nil {
 		os.Exit(1)
 	}
 	os.Setenv("HOME", dir)
-	os.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	os.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	os.Setenv("USERPROFILE", dir)
 	os.Setenv("XDG_CONFIG_HOME", dir+"/config")
-	os.Setenv("REASONIX_STATE_HOME", dir+"/state")
-	os.Setenv("REASONIX_CACHE_HOME", dir+"/cache")
+	os.Setenv("PATTY_STATE_HOME", dir+"/state")
+	os.Setenv("PATTY_CACHE_HOME", dir+"/cache")
 	os.Setenv("AppData", dir)
 	// Neutralize the Wails runtime-event bridge for the whole test binary:
 	// outside a running Wails app, runtime.EventsEmit log.Fatals on the plain

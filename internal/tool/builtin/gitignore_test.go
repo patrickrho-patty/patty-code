@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 func writeFileT(t *testing.T, path, body string) {
@@ -82,15 +82,13 @@ func TestGrepSkipsHidden(t *testing.T) {
 func TestGrepExplicitHiddenRootSearched(t *testing.T) {
 	dir := mkRepo(t)
 	writeFileT(t, filepath.Join(dir, ".github", "ci.yml"), "NEEDLE\n")
-	// Pointing grep straight at a hidden dir searches it in full.
 	out := runTool(t, grepTool{}, map[string]any{"pattern": "NEEDLE", "path": filepath.Join(dir, ".github")})
 	if !strings.Contains(out, "ci.yml") {
 		t.Fatalf("an explicitly targeted hidden dir should be searched: %q", out)
 	}
 }
 
-// repo scaffolds a fake git repo: a .git marker, a .gitignore, and files both
-// kept and ignored — enough for the native grep walk to exercise .gitignore.
+// kept and ignored  enough for the native grep walk to exercise .gitignore.
 func gitignoreRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -122,17 +120,17 @@ func TestGrepSkipsGitignored(t *testing.T) {
 
 func TestGrepDecodesGB18030Gitignore(t *testing.T) {
 	dir := mkRepo(t)
-	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), fileencoding.Encode("秘密.txt\n", fileencoding.GB18030), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), fileencoding.Encode("비밀.txt\n", fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	writeFileT(t, filepath.Join(dir, "秘密.txt"), "NEEDLE ignored\n")
-	writeFileT(t, filepath.Join(dir, "公开.txt"), "NEEDLE kept\n")
+	writeFileT(t, filepath.Join(dir, "비밀.txt"), "NEEDLE ignored\n")
+	writeFileT(t, filepath.Join(dir, "공개.txt"), "NEEDLE kept\n")
 
 	out := runTool(t, grepTool{}, map[string]any{"pattern": "NEEDLE", "path": dir})
-	if !strings.Contains(out, "公开.txt") {
-		t.Fatalf("kept Chinese file must be searched: %q", out)
+	if !strings.Contains(out, "공개.txt") {
+		t.Fatalf("kept Korean file must be searched: %q", out)
 	}
-	if strings.Contains(out, "秘密.txt") {
+	if strings.Contains(out, "비밀.txt") {
 		t.Fatalf("GB18030 .gitignore pattern should skip Chinese file: %q", out)
 	}
 }
@@ -140,7 +138,7 @@ func TestGrepDecodesGB18030Gitignore(t *testing.T) {
 func TestScanGitConfigExcludesDecodesGB18030Path(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".gitconfig")
-	want := filepath.Join(dir, "中文忽略规则.txt")
+	want := filepath.Join(dir, "한글 무시 규칙.txt")
 	body := "[core]\n\texcludesFile = " + want + "\n"
 	if err := os.WriteFile(path, fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
@@ -153,8 +151,7 @@ func TestScanGitConfigExcludesDecodesGB18030Path(t *testing.T) {
 
 func TestGrepExplicitIgnoredRootStillSearched(t *testing.T) {
 	dir := gitignoreRepo(t)
-	// Pointing grep straight at a gitignored directory still searches it — the
-	// walk root is never pruned.
+// Pointing grep straight at a gitignored directory still searches it  the
 	out := runTool(t, grepTool{}, map[string]any{"pattern": "NEEDLE", "path": filepath.Join(dir, "build")})
 	if !strings.Contains(out, "out.txt") {
 		t.Fatalf("an explicitly targeted ignored dir should still be searched: %q", out)
@@ -162,8 +159,6 @@ func TestGrepExplicitIgnoredRootStillSearched(t *testing.T) {
 }
 
 func TestGrepNoRepoIgnoresNothing(t *testing.T) {
-	// Same layout but without a .git marker: there is no repository, so
-	// .gitignore is not consulted and every file is searched.
 	dir := t.TempDir()
 	writeFileT(t, filepath.Join(dir, ".gitignore"), "ignored.txt\n")
 	writeFileT(t, filepath.Join(dir, "ignored.txt"), "NEEDLE here\n")

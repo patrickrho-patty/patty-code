@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/remote/sftpfs"
+	"patty/internal/remote/sftpfs"
 )
 
 const (

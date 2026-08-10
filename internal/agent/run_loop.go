@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/jobs"
-	"reasonix/internal/provider"
-	"reasonix/internal/taskintent"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/jobs"
+	"patty/internal/provider"
+	"patty/internal/taskintent"
+	"patty/internal/tool"
 )
 
 // runLoopState holds per-Run loop counters and flags. It is package-private and
@@ -888,7 +888,7 @@ func (a *Agent) handleFinalResponse(ctx context.Context, state *runLoopState, te
 			_, _ = ctrl.ConsumeFinalization(a.recoveryTaskID)
 		}
 		return false, &RecoveryPauseError{
-			Message:    "Automatic retries paused. Reasonix stopped repeated attempts and kept completed work. Send \"continue\" to start a fresh attempt, or add instructions to change direction.",
+			Message:    "Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send \"continue\" to start a fresh attempt, or add instructions to change direction.",
 			StopReason: reason,
 		}
 	}
@@ -982,7 +982,7 @@ func (a *Agent) handleToolRound(ctx context.Context, state *runLoopState, step i
 		}
 		a.maybeCompact(ctx, usage)
 		return false, &RecoveryPauseError{
-			Message:    "Automatic retries paused. Reasonix stopped repeated attempts and kept completed work. Send \"continue\" to start a fresh attempt, or add instructions to change direction.",
+			Message:    "Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send \"continue\" to start a fresh attempt, or add instructions to change direction.",
 			StopReason: reason,
 		}
 	}

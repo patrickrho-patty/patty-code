@@ -39,7 +39,7 @@ while IFS= read -r file; do
 			;;
 	esac
 	case "$file" in
-		cmd/reasonix/*|\
+		cmd/patcode/*|\
 		desktop/*|\
 		internal/agent/*|\
 		internal/boot/*|\

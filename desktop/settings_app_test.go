@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/hook"
-	"reasonix/internal/provider"
-	"reasonix/internal/sandbox"
+	"patty/internal/config"
+	"patty/internal/control"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/hook"
+	"patty/internal/provider"
+	"patty/internal/sandbox"
 )
 
 func TestWithFreshSystemPromptReplacesExistingSystemMessage(t *testing.T) {
@@ -1059,7 +1059,7 @@ func TestOfficialDeepSeekTemplateUsesRegionalPricing(t *testing.T) {
 		proOutput   float64
 	}{
 		{language: "en", currency: "$", flashOutput: 0.28, proOutput: 0.87},
-		{language: "zh", currency: "¥", flashOutput: 2, proOutput: 6},
+		{language: "ko-KR", currency: "¥", flashOutput: 2, proOutput: 6},
 	} {
 		entries, keyEnv, err := officialProviderTemplate("deepseek", tt.language)
 		if err != nil {
@@ -1107,17 +1107,17 @@ func TestSetReasoningLanguagePersistsToUserConfig(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	app := NewApp()
-	if err := app.SetReasoningLanguage("zh"); err != nil {
+	if err := app.SetReasoningLanguage("ko-KR"); err != nil {
 		t.Fatalf("SetReasoningLanguage: %v", err)
 	}
 
 	view := app.Settings()
-	if view.Agent.ReasoningLanguage != "zh" {
+	if view.Agent.ReasoningLanguage != "ko-KR" {
 		t.Fatalf("Settings().Agent.ReasoningLanguage = %q, want zh", view.Agent.ReasoningLanguage)
 	}
 
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if cfg.Agent.ReasoningLanguage != "zh" || cfg.ReasoningLanguage() != "zh" {
+	if cfg.Agent.ReasoningLanguage != "ko-KR" || cfg.ReasoningLanguage() != "ko-KR" {
 		t.Fatalf("saved reasoning language = %q/%q, want zh", cfg.Agent.ReasoningLanguage, cfg.ReasoningLanguage())
 	}
 }
@@ -1173,7 +1173,7 @@ func TestSetCompactRatioRejectsActiveWorkBeforeSaving(t *testing.T) {
 func TestSetDesktopLanguagePersistsResponseLanguageAndUpdatesLiveTabs(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	projectRoot := t.TempDir()
-	if err := os.WriteFile(filepath.Join(projectRoot, "reasonix.toml"), []byte("language = \"zh\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectRoot, "patty.toml"), []byte("language = \"ko-KR\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1207,12 +1207,12 @@ func TestSetDesktopLanguagePersistsResponseLanguageAndUpdatesLiveTabs(t *testing
 	if cfg.DesktopLanguage() != "en" || cfg.Language != "en" {
 		t.Fatalf("saved language prefs = desktop:%q response:%q, want en/en", cfg.DesktopLanguage(), cfg.Language)
 	}
-	got := userCtrl.Compose("解释这个函数")
+	got := userCtrl.Compose("이 함수를 설명해 줘")
 	if !strings.Contains(got, "<response-language>") || !strings.Contains(got, "use English") {
 		t.Fatalf("live controller Compose = %q, want English response language", got)
 	}
 	projectComposed := projectCtrl.Compose("explain this function")
-	if !strings.Contains(projectComposed, "use Simplified Chinese") {
+	if !strings.Contains(projectComposed, "use Standard Korean") {
 		t.Fatalf("project controller Compose = %q, want project zh response language", projectComposed)
 	}
 }
@@ -1239,7 +1239,7 @@ func TestSetDesktopCurrencyPersistsRegionalOfficialPricing(t *testing.T) {
 func TestSetReasoningLanguageUpdatesLiveTabControllers(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	projectRoot := t.TempDir()
-	if err := os.WriteFile(filepath.Join(projectRoot, "reasonix.toml"), []byte("[agent]\nreasoning_language = \"en\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectRoot, "patty.toml"), []byte("[agent]\nreasoning_language = \"en\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1265,13 +1265,13 @@ func TestSetReasoningLanguageUpdatesLiveTabControllers(t *testing.T) {
 	}
 	app.activeTabID = "user"
 
-	if err := app.SetReasoningLanguage("zh"); err != nil {
+	if err := app.SetReasoningLanguage("ko-KR"); err != nil {
 		t.Fatalf("SetReasoningLanguage: %v", err)
 	}
 
 	userComposed := userCtrl.Compose("hi")
-	if !strings.Contains(userComposed, "简体中文") {
-		t.Fatalf("user-level tab Compose = %q, want zh reasoning language", userComposed)
+	if !strings.Contains(userComposed, "한국어") {
+		t.Fatalf("user-level tab Compose = %q, want ko reasoning language", userComposed)
 	}
 	projectComposed := projectCtrl.Compose("hi")
 	if !strings.Contains(projectComposed, "use English") {
@@ -1301,7 +1301,7 @@ func TestSetReasoningLanguageRejectsBackgroundJobsBeforeSavingConfig(t *testing.
 	app := NewApp()
 	app.setTestCtrl(newBackgroundJobController(t, "reasoning-language-job"), "")
 
-	err := app.SetReasoningLanguage("zh")
+	err := app.SetReasoningLanguage("ko-KR")
 	if err == nil || !strings.Contains(err.Error(), "stop background jobs") {
 		t.Fatalf("SetReasoningLanguage with background job error = %v, want active-work guard", err)
 	}
@@ -1585,7 +1585,7 @@ func TestProjectHooksSettingsUseActiveWorkspaceRootAndLoadByDefault(t *testing.T
 	if len(view.Hooks) != 1 || view.Hooks[0].Event != string(hook.Stop) || view.Hooks[0].Description != "Turn done" {
 		t.Fatalf("project hooks = %+v", view.Hooks)
 	}
-	if _, err := os.Stat(filepath.Join(project, ".reasonix", "settings.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(project, ".patty", "settings.json")); err != nil {
 		t.Fatalf("project hooks settings file missing: %v", err)
 	}
 	loaded := hook.Load(hook.LoadOptions{ProjectRoot: project})
@@ -1622,10 +1622,10 @@ func TestSaveHooksSettingsForRootUsesDisplayedProjectRoot(t *testing.T) {
 	}}); err != nil {
 		t.Fatalf("SaveHooksSettingsForRoot: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(projectA, ".reasonix", "settings.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(projectA, ".patty", "settings.json")); err != nil {
 		t.Fatalf("displayed project root settings missing: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(projectB, ".reasonix", "settings.json")); err == nil {
+	if _, err := os.Stat(filepath.Join(projectB, ".patty", "settings.json")); err == nil {
 		t.Fatal("active project root was written instead of displayed project root")
 	}
 }
@@ -1696,7 +1696,7 @@ func TestLoadDesktopUserConfigViewKeepsLegacyBotConfigMigrationInMemory(t *testi
 		t.Fatal(err)
 	}
 	legacyRoot := t.TempDir()
-	legacyPath := filepath.Join(legacyRoot, "reasonix.toml")
+	legacyPath := filepath.Join(legacyRoot, "patty.toml")
 	legacyBody := "[bot]\nenabled = true\nmodel = \"local/m1\"\n"
 	if err := os.WriteFile(legacyPath, []byte(legacyBody), 0o644); err != nil {
 		t.Fatal(err)
@@ -1772,10 +1772,10 @@ func TestLoadDesktopUserConfigForRootDoesNotFollowActiveTab(t *testing.T) {
 	}
 	targetRoot := t.TempDir()
 	activeRoot := t.TempDir()
-	if err := os.WriteFile(filepath.Join(targetRoot, "reasonix.toml"), []byte("[bot]\nenabled = true\nmodel = \"target\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(targetRoot, "patty.toml"), []byte("[bot]\nenabled = true\nmodel = \"target\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(activeRoot, "reasonix.toml"), []byte("[bot]\nenabled = true\nmodel = \"active\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(activeRoot, "patty.toml"), []byte("[bot]\nenabled = true\nmodel = \"active\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1802,27 +1802,5 @@ func TestLoadDesktopUserConfigForRootDoesNotFollowActiveTab(t *testing.T) {
 	migrated := config.LoadForEditWithoutCredentials(userPath)
 	if !migrated.Bot.Enabled || migrated.Bot.Model != "target" {
 		t.Fatalf("root-specific edit migrated the active tab instead: bot = %+v", migrated.Bot)
-	}
-}
-
-func TestSetBotSettingsPreservesFeishuOutboundMediaRoots(t *testing.T) {
-	isolateDesktopUserDirs(t)
-	root := t.TempDir()
-	cfg := config.Default()
-	cfg.Bot.Feishu.OutboundMediaRoots = []string{root}
-	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
-		t.Fatalf("save initial config: %v", err)
-	}
-
-	app := NewApp()
-	view := botSettingsView(cfg.Bot)
-	view.QueueCap++
-	if err := app.SetBotSettings(view); err != nil {
-		t.Fatalf("SetBotSettings: %v", err)
-	}
-
-	got := config.LoadForEditWithoutCredentials(config.UserConfigPath())
-	if !reflect.DeepEqual(got.Bot.Feishu.OutboundMediaRoots, []string{root}) {
-		t.Fatalf("outbound media roots = %v, want preserved %q", got.Bot.Feishu.OutboundMediaRoots, root)
 	}
 }

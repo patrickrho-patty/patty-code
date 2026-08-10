@@ -2,12 +2,12 @@ package appidentity
 
 const (
 	// AppUserModelID is shared by every current-generation Windows process,
-	// shortcut, and toast that users perceive as Reasonix. Keep it
+	// shortcut, and toast that users perceive as patty. Keep it
 	// version-independent across upgrades.
-	AppUserModelID = "Reasonix"
+	AppUserModelID = "patty.code"
 
-	// legacyTauriAppUserModelID was written to Windows shortcuts by Reasonix
+	// legacyTauriAppUserModelID was written to Windows shortcuts by patty
 	// Desktop 0.53. Keep the current identity distinct so separately installed
 	// Tauri and Wails generations do not merge into one taskbar group.
-	legacyTauriAppUserModelID = "dev.reasonix.desktop"
+	legacyTauriAppUserModelID = "dev.patty.desktop"
 )

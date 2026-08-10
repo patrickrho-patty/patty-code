@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 type RenderScope string
@@ -18,7 +18,7 @@ const (
 	RenderScopeProject RenderScope = "project"
 )
 
-// RenderTOML renders the config as annotated TOML in the `reasonix setup` house style:
+// RenderTOML renders the config as annotated TOML in the `patcode setup` house style:
 // comments preserved, system_prompt as a multi-line string, helpful hints. The
 // output round-trips back through Load (see render_test.go).
 func RenderTOML(c *Config) string {
@@ -27,7 +27,7 @@ func RenderTOML(c *Config) string {
 
 // RenderTOMLForScope renders an annotated TOML file for a specific persistence
 // target. User configs can carry desktop and account-level preferences; project
-// reasonix.toml stays focused on project behavior and intentionally excludes
+// patty.toml stays focused on project behavior and intentionally excludes
 // desktop-only preferences.
 func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	if c == nil {
@@ -44,30 +44,30 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	defaults := Default()
 	var b strings.Builder
 
-	b.WriteString("# Reasonix configuration.\n")
-	fmt.Fprintf(&b, "# Resolution order: flag > ./reasonix.toml > %s > built-in defaults.\n", userConfigDisplayPath())
-	b.WriteString("# Fields marked user/global only are not overridden by ./reasonix.toml.\n")
-	b.WriteString("# Secrets are named via api_key_env and stored in Reasonix's global .env; never put keys here.\n\n")
+	b.WriteString("# Patty Code configuration.\n")
+	fmt.Fprintf(&b, "# Resolution order: flag > ./patty.toml > %s > built-in defaults.\n", userConfigDisplayPath())
+	b.WriteString("# Fields marked user/global only are not overridden by ./patty.toml.\n")
+	b.WriteString("# Secrets are named via api_key_env and stored in patty's global .env; never put keys here.\n\n")
 
 	fmt.Fprintf(&b, "config_version = %d   # schema marker for diagnostics; old versions may ignore it\n", configVersion(c))
 	fmt.Fprintf(&b, "default_model = %q\n", c.DefaultModel)
 	if c.Language != "" {
-		fmt.Fprintf(&b, "language      = %q   # ui/model language; empty = auto-detect from $LANG / $REASONIX_LANG\n", c.Language)
+		fmt.Fprintf(&b, "language      = %q   # ui/model language; empty = Korean default; PATTY_LANG can override\n", c.Language)
 	} else {
-		b.WriteString("# language      = \"zh\"   # ui/model language; empty = auto-detect from $LANG / $REASONIX_LANG\n")
+		b.WriteString("# language      = \"ko-KR\"   # ui/model language; empty = Korean default; set en for English\n")
 	}
 	if scope != RenderScopeProject {
-		fmt.Fprintf(&b, "credentials_store = %q   # legacy compatibility; provider keys are saved in Reasonix's global .env\n", normalizeCredentialsStore(c.CredentialsStore))
+		fmt.Fprintf(&b, "credentials_store = %q   # legacy compatibility; provider keys are saved in patty's global .env\n", normalizeCredentialsStore(c.CredentialsStore))
 	}
 	b.WriteString("\n")
 
 	if shouldRenderUI(c, defaults, scope) {
 		b.WriteString("[ui]\n")
-		fmt.Fprintf(&b, "theme = %q   # auto|dark|light; CLI colors only; REASONIX_THEME can override per run\n", c.UITheme())
-		if style := c.UIThemeStyle(); style != "" {
-			fmt.Fprintf(&b, "theme_style = %q   # CLI accent palette; REASONIX_THEME_STYLE can override per run\n", style)
+		fmt.Fprintf(&b, "theme = %q   # auto|dark|light; CLI colors only; PATTY_THEME can override per run\n", c.UITheme())
+		if style := c.uiThemeStyleSetting(); style != "" {
+			fmt.Fprintf(&b, "theme_style = %q   # CLI accent palette; PATTY_THEME_STYLE can override per run\n", style)
 		} else {
-			b.WriteString("# theme_style = \"graphite\"   # graphite|aurora|slate|carbon|nocturne|amber and legacy aliases\n")
+			b.WriteString("# theme_style = \"seoul-night\"   # seoul-night|ink-night|hanji-light|jade-night; legacy aliases accepted\n")
 		}
 		if layout := c.UIShortcutLayout(); layout != "classic" {
 			fmt.Fprintf(&b, "shortcut_layout = %q   # classic|desktop; compatibility setting; Shift+Tab toggles Plan, Ctrl+Y toggles YOLO\n", layout)
@@ -96,7 +96,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		if lang := c.DesktopLanguage(); lang != "" {
 			fmt.Fprintf(&b, "language = %q   # desktop UI language; empty/auto = browser/OS auto-detect\n", lang)
 		} else {
-			b.WriteString("# language = \"zh\"   # desktop UI language; empty/auto = browser/OS auto-detect\n")
+			b.WriteString("# language = \"ko-KR\"   # desktop UI language; empty/auto = browser/OS auto-detect\n")
 		}
 		if currency := c.DesktopCurrency(); currency != "" {
 			fmt.Fprintf(&b, "currency = %q   # official pricing currency: CNY|USD; empty/auto follows language\n", currency)
@@ -137,7 +137,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		b.WriteString("\n")
 	} else if c.Desktop.ProviderAccess != nil {
 		// provider_access is intentionally mergeable across user and project
-		// configs. It is the only desktop field written to reasonix.toml: local
+		// configs. It is the only desktop field written to patty.toml: local
 		// providers then appear in that workspace's desktop model switcher without
 		// copying user-global appearance or security preferences into the project.
 		b.WriteString("[desktop]\n")
@@ -195,7 +195,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		if c.Network.Proxy.Password != "" {
 			fmt.Fprintf(&b, "password = %q   # supports ${VAR} expansion\n", c.Network.Proxy.Password)
 		} else {
-			b.WriteString("# password = \"${REASONIX_PROXY_PASSWORD}\"   # optional; supports ${VAR} expansion\n")
+			b.WriteString("# password = \"${PATTY_PROXY_PASSWORD}\"   # optional; supports ${VAR} expansion\n")
 		}
 		b.WriteString("\n")
 	}
@@ -214,7 +214,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	if c.Agent.SystemPromptFile != "" {
 		fmt.Fprintf(&b, "system_prompt_file = %q\n", c.Agent.SystemPromptFile)
 	} else {
-		b.WriteString("# system_prompt_file = \"prompts/system.md\"   # project paths stay in <workspace>; user paths may fall back to <reasonix home>\n")
+		b.WriteString("# system_prompt_file = \"prompts/system.md\"   # project paths stay in <workspace>; user paths may fall back to <patty home>\n")
 	}
 	fmt.Fprintf(&b, "temperature       = %s\n", formatFloat(c.Agent.Temperature))
 	if strings.TrimSpace(c.Agent.RecoveryModel) != "" {
@@ -223,9 +223,9 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		b.WriteString("# recovery_model = \"deepseek-pro\"   # optional; falls back to guardian then main model\n")
 	}
 	if lang := c.ReasoningLanguage(); lang != "auto" {
-		fmt.Fprintf(&b, "reasoning_language = %q   # visible reasoning language: auto|zh|en\n", lang)
+		fmt.Fprintf(&b, "reasoning_language = %q   # visible reasoning language: auto|ko-KR|en\n", lang)
 	} else {
-		b.WriteString("# reasoning_language = \"zh\"   # visible reasoning language: auto|zh|en\n")
+		b.WriteString("# reasoning_language = \"ko-KR\"   # visible reasoning language: auto|ko-KR|en\n")
 	}
 	fmt.Fprintf(&b, "soft_compact_ratio  = %s   # notice only; keeps cache-first prefix intact\n", formatFloat(c.Agent.SoftCompactRatio))
 	fmt.Fprintf(&b, "tool_result_snip_ratio = %s   # snip stale tool results at this fraction before summary compaction\n", formatFloat(c.Agent.ToolResultSnipRatio))
@@ -532,9 +532,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		}
 		fmt.Fprintf(&b, "ignore_self_messages = %v   # ignore bot echo by returned message_id and configured self user ids\n", c.Bot.IgnoreSelfMessages)
 		b.WriteString("\n[bot.self_user_ids]\n")
-		fmt.Fprintf(&b, "qq = %s\n", renderStringArray(c.Bot.SelfUserIDs.QQ))
-		fmt.Fprintf(&b, "feishu = %s\n", renderStringArray(c.Bot.SelfUserIDs.Feishu))
-		fmt.Fprintf(&b, "weixin = %s\n", renderStringArray(c.Bot.SelfUserIDs.Weixin))
+		fmt.Fprintf(&b, "desktop = %s\n", renderStringArray(c.Bot.SelfUserIDs.Desktop))
 		b.WriteString("\n[bot.control]\n")
 		fmt.Fprintf(&b, "enabled = %v   # local loopback HTTP API for status/send; requires Bearer token\n", c.Bot.Control.Enabled)
 		if strings.TrimSpace(c.Bot.Control.Addr) != "" {
@@ -545,7 +543,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		if strings.TrimSpace(c.Bot.Control.TokenEnv) != "" {
 			fmt.Fprintf(&b, "token_env = %q\n", c.Bot.Control.TokenEnv)
 		} else {
-			b.WriteString("# token_env = \"REASONIX_BOT_CONTROL_TOKEN\"\n")
+			b.WriteString("# token_env = \"PATTY_BOT_CONTROL_TOKEN\"\n")
 		}
 		if len(c.Bot.Routes) > 0 {
 			for _, route := range c.Bot.Routes {
@@ -574,52 +572,10 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		b.WriteString("\n[bot.allowlist]\n")
 		fmt.Fprintf(&b, "enabled = %v\n", c.Bot.Allowlist.Enabled)
 		fmt.Fprintf(&b, "allow_all = %v\n", c.Bot.Allowlist.AllowAll)
-		fmt.Fprintf(&b, "qq_users = %s\n", renderStringArray(c.Bot.Allowlist.QQUsers))
-		fmt.Fprintf(&b, "feishu_users = %s\n", renderStringArray(c.Bot.Allowlist.FeishuUsers))
-		fmt.Fprintf(&b, "weixin_users = %s\n", renderStringArray(c.Bot.Allowlist.WeixinUsers))
-		fmt.Fprintf(&b, "qq_approvers = %s\n", renderStringArray(c.Bot.Allowlist.QQApprovers))
-		fmt.Fprintf(&b, "feishu_approvers = %s\n", renderStringArray(c.Bot.Allowlist.FeishuApprovers))
-		fmt.Fprintf(&b, "weixin_approvers = %s\n", renderStringArray(c.Bot.Allowlist.WeixinApprovers))
-		fmt.Fprintf(&b, "qq_admins = %s\n", renderStringArray(c.Bot.Allowlist.QQAdmins))
-		fmt.Fprintf(&b, "feishu_admins = %s\n", renderStringArray(c.Bot.Allowlist.FeishuAdmins))
-		fmt.Fprintf(&b, "weixin_admins = %s\n", renderStringArray(c.Bot.Allowlist.WeixinAdmins))
-		fmt.Fprintf(&b, "qq_groups = %s\n", renderStringArray(c.Bot.Allowlist.QQGroups))
-		fmt.Fprintf(&b, "feishu_groups = %s\n", renderStringArray(c.Bot.Allowlist.FeishuGroups))
-		fmt.Fprintf(&b, "weixin_groups = %s\n", renderStringArray(c.Bot.Allowlist.WeixinGroups))
-		b.WriteString("\n[bot.qq]\n")
-		fmt.Fprintf(&b, "enabled = %v\n", c.Bot.QQ.Enabled)
-		fmt.Fprintf(&b, "app_id = %q\n", c.Bot.QQ.AppID)
-		fmt.Fprintf(&b, "app_secret_env = %q\n", c.Bot.QQ.AppSecretEnv)
-		fmt.Fprintf(&b, "sandbox = %v\n", c.Bot.QQ.Sandbox)
-		if strings.TrimSpace(c.Bot.QQ.Model) != "" {
-			fmt.Fprintf(&b, "model = %q\n", strings.TrimSpace(c.Bot.QQ.Model))
-		}
-		if strings.TrimSpace(c.Bot.QQ.ToolApprovalMode) != "" {
-			fmt.Fprintf(&b, "tool_approval_mode = %q\n", strings.TrimSpace(c.Bot.QQ.ToolApprovalMode))
-		}
-		if strings.TrimSpace(c.Bot.QQ.WorkspaceRoot) != "" {
-			fmt.Fprintf(&b, "workspace_root = %q\n", strings.TrimSpace(c.Bot.QQ.WorkspaceRoot))
-		}
-		if parts := renderBotAccess(c.Bot.QQ.Access); parts != "" {
-			fmt.Fprintf(&b, "access = %s\n", parts)
-		}
-		b.WriteString("\n[bot.feishu]\n")
-		fmt.Fprintf(&b, "enabled = %v\n", c.Bot.Feishu.Enabled)
-		fmt.Fprintf(&b, "app_id = %q\n", c.Bot.Feishu.AppID)
-		fmt.Fprintf(&b, "domain = %q\n", c.Bot.Feishu.Domain)
-		fmt.Fprintf(&b, "app_secret_env = %q\n", c.Bot.Feishu.AppSecretEnv)
-		fmt.Fprintf(&b, "verification_token = %q\n", c.Bot.Feishu.VerificationToken)
-		fmt.Fprintf(&b, "mode = %q\n", c.Bot.Feishu.Mode)
-		fmt.Fprintf(&b, "webhook_port = %d\n", c.Bot.Feishu.WebhookPort)
-		fmt.Fprintf(&b, "require_mention = %v\n", c.Bot.Feishu.RequireMention)
-		if len(c.Bot.Feishu.OutboundMediaRoots) > 0 {
-			fmt.Fprintf(&b, "outbound_media_roots = %s\n", renderStringArray(c.Bot.Feishu.OutboundMediaRoots))
-		}
-		b.WriteString("\n[bot.weixin]\n")
-		fmt.Fprintf(&b, "enabled = %v\n", c.Bot.Weixin.Enabled)
-		fmt.Fprintf(&b, "account_id = %q\n", c.Bot.Weixin.AccountID)
-		fmt.Fprintf(&b, "token_env = %q\n", c.Bot.Weixin.TokenEnv)
-		fmt.Fprintf(&b, "api_base = %q\n", c.Bot.Weixin.APIBase)
+		fmt.Fprintf(&b, "users = %s\n", renderStringArray(c.Bot.Allowlist.Users))
+		fmt.Fprintf(&b, "approvers = %s\n", renderStringArray(c.Bot.Allowlist.Approvers))
+		fmt.Fprintf(&b, "admins = %s\n", renderStringArray(c.Bot.Allowlist.Admins))
+		fmt.Fprintf(&b, "groups = %s\n", renderStringArray(c.Bot.Allowlist.Groups))
 		for _, conn := range c.Bot.Connections {
 			b.WriteString("\n[[bot.connections]]\n")
 			fmt.Fprintf(&b, "id = %q\n", conn.ID)
@@ -664,7 +620,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	// user's saved toggles survive config rewrites (WriteFile re-renders the
 	// whole file from the struct).
 	if scope != RenderScopeProject {
-		b.WriteString("[secrets]   # credential protection; user/global only, ./reasonix.toml cannot override\n")
+		b.WriteString("[secrets]   # credential protection; user/global only, ./patty.toml cannot override\n")
 		if c.Secrets.FilterSubprocessEnv {
 			b.WriteString("filter_subprocess_env = true   # strip credential-named env vars from tool/hook/LSP/MCP subprocesses\n")
 		} else {
@@ -682,9 +638,9 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	// values so a cloned repo can never inject SSH hosts. Rendered here so
 	// saved hosts survive full-file config rewrites.
 	if scope != RenderScopeProject && (c.Remote.ImportSSHConfig || len(c.Remote.Hosts) > 0) {
-		b.WriteString("[remote]   # SSH remote hosts; user/global only, ./reasonix.toml cannot override\n")
+		b.WriteString("[remote]   # SSH remote hosts; user/global only, ./patty.toml cannot override\n")
 		if c.Remote.ImportSSHConfig {
-			b.WriteString("import_ssh_config = true   # surface ~/.ssh/config aliases in `reasonix remote import`\n")
+			b.WriteString("import_ssh_config = true   # surface ~/.ssh/config aliases in `patcode remote import`\n")
 		}
 		for _, h := range c.Remote.Hosts {
 			b.WriteString("\n[[remote.hosts]]\n")
@@ -697,13 +653,13 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 				fmt.Fprintf(&b, "user = %q\n", h.User)
 			}
 			if h.IdentityFile != "" {
-				fmt.Fprintf(&b, "identity_file = %q   # key file path; Reasonix never stores key material\n", h.IdentityFile)
+				fmt.Fprintf(&b, "identity_file = %q   # key file path; Patty Code never stores key material\n", h.IdentityFile)
 			}
 			if h.PassphraseEnv != "" {
-				fmt.Fprintf(&b, "passphrase_env = %q   # env var name; value lives in Reasonix's global .env\n", h.PassphraseEnv)
+				fmt.Fprintf(&b, "passphrase_env = %q   # env var name; value lives in patty's global .env\n", h.PassphraseEnv)
 			}
 			if h.PasswordEnv != "" {
-				fmt.Fprintf(&b, "password_env = %q   # env var name; value lives in Reasonix's global .env\n", h.PasswordEnv)
+				fmt.Fprintf(&b, "password_env = %q   # env var name; value lives in patty's global .env\n", h.PasswordEnv)
 			}
 			if h.ProxyJump != "" {
 				fmt.Fprintf(&b, "proxy_jump = %q   # OpenSSH ProxyJump chain\n", h.ProxyJump)
@@ -733,7 +689,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	if len(plugins) == 0 {
 		b.WriteString("# [[plugins]]\n")
 		b.WriteString("# name    = \"example\"\n")
-		b.WriteString("# command = \"reasonix-plugin-example\"\n")
+		b.WriteString("# command = \"patty-plugin-example\"\n")
 		b.WriteString("# startup_timeout_seconds = 60    # optional initialize + tools/list cap\n")
 		b.WriteString("# call_timeout_seconds = 600       # optional per-server MCP call timeout\n")
 		b.WriteString("# tool_timeout_seconds = { \"generate_video\" = 1800 }   # raw MCP tool names\n")
@@ -838,7 +794,7 @@ func RenderTOMLProjectDelta(c *Config) string {
 		if c.UI.Theme != d.UI.Theme {
 			fmt.Fprintf(&b, "theme = %q\n", c.UITheme())
 		}
-		if s := c.UIThemeStyle(); s != "" && s != d.UIThemeStyle() {
+		if s := c.uiThemeStyleSetting(); s != "" && s != d.uiThemeStyleSetting() {
 			fmt.Fprintf(&b, "theme_style = %q\n", s)
 		}
 		if l := c.UIShortcutLayout(); l != "classic" {
@@ -1767,7 +1723,7 @@ func renderBotDesktopWatcher(b *strings.Builder, watcher BotDesktopWatcherConfig
 }
 
 // renderRuleList emits a permission rule list. A populated list renders as an
-// active TOML array; an empty one renders as a commented example so `reasonix setup`
+// active TOML array; an empty one renders as a commented example so `patcode setup`
 // scaffolds discoverable guidance without imposing surprising rules.
 func renderRuleList(key string, rules []string, example string) string {
 	if len(rules) == 0 {

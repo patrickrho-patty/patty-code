@@ -14,12 +14,12 @@ param(
 $ErrorActionPreference = "Stop"
 
 $expectedPayload = @(
-    "reasonix-desktop.exe",
-    "reasonix-guard.exe",
-    "reasonix-launcher.exe",
-    "reasonix-update-helper.exe",
-    "reasonix-cli.exe",
-    "reasonix-uninstall.exe"
+    "patty-desktop.exe",
+    "patty-code-guard.exe",
+    "patty-code-launcher.exe",
+    "patty-code-update-helper.exe",
+    "patty-code-cli.exe",
+    "patty-code-uninstall.exe"
 )
 
 function Assert-AuthenticodeSignature {
@@ -50,7 +50,7 @@ foreach ($name in $expectedPayload) {
 }
 Assert-AuthenticodeSignature -Path $InstallerPath
 
-$extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("reasonix-authenticode-" + [guid]::NewGuid().ToString("N"))
+$extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("patty-code-authenticode-" + [guid]::NewGuid().ToString("N"))
 try {
     Expand-Archive -LiteralPath $PortableArchivePath -DestinationPath $extractRoot
 
@@ -81,22 +81,22 @@ try {
         }
 
         $portableSources = @(
-            [pscustomobject]@{ Portable = "reasonix-launcher.exe"; Payload = "reasonix-launcher.exe" },
-            [pscustomobject]@{ Portable = "Reasonix.exe"; Payload = "reasonix-launcher.exe" },
-            [pscustomobject]@{ Portable = "reasonix-cli.exe"; Payload = "reasonix-cli.exe" },
-            [pscustomobject]@{ Portable = (Join-Path $activeDir "reasonix-desktop.exe"); Payload = "reasonix-desktop.exe" },
-            [pscustomobject]@{ Portable = (Join-Path $activeDir "reasonix-update-helper.exe"); Payload = "reasonix-update-helper.exe" },
-            [pscustomobject]@{ Portable = (Join-Path $activeDir "reasonix-cli.exe"); Payload = "reasonix-cli.exe" }
+            [pscustomobject]@{ Portable = "patty-code-launcher.exe"; Payload = "patty-code-launcher.exe" },
+            [pscustomobject]@{ Portable = "Patty Code.exe"; Payload = "patty-code-launcher.exe" },
+            [pscustomobject]@{ Portable = "patty-code-cli.exe"; Payload = "patty-code-cli.exe" },
+            [pscustomobject]@{ Portable = (Join-Path $activeDir "patty-desktop.exe"); Payload = "patty-desktop.exe" },
+            [pscustomobject]@{ Portable = (Join-Path $activeDir "patty-code-update-helper.exe"); Payload = "patty-code-update-helper.exe" },
+            [pscustomobject]@{ Portable = (Join-Path $activeDir "patty-code-cli.exe"); Payload = "patty-code-cli.exe" }
         )
     }
     else {
         $portableSources = @(
-            [pscustomobject]@{ Portable = "reasonix-desktop.exe"; Payload = "reasonix-desktop.exe" },
-            [pscustomobject]@{ Portable = "reasonix-guard.exe"; Payload = "reasonix-guard.exe" },
-            [pscustomobject]@{ Portable = "reasonix-launcher.exe"; Payload = "reasonix-launcher.exe" },
-            [pscustomobject]@{ Portable = "Reasonix.exe"; Payload = "reasonix-launcher.exe" },
-            [pscustomobject]@{ Portable = "reasonix-update-helper.exe"; Payload = "reasonix-update-helper.exe" },
-            [pscustomobject]@{ Portable = "reasonix-cli.exe"; Payload = "reasonix-cli.exe" }
+            [pscustomobject]@{ Portable = "patty-desktop.exe"; Payload = "patty-desktop.exe" },
+            [pscustomobject]@{ Portable = "patty-code-guard.exe"; Payload = "patty-code-guard.exe" },
+            [pscustomobject]@{ Portable = "patty-code-launcher.exe"; Payload = "patty-code-launcher.exe" },
+            [pscustomobject]@{ Portable = "Patty Code.exe"; Payload = "patty-code-launcher.exe" },
+            [pscustomobject]@{ Portable = "patty-code-update-helper.exe"; Payload = "patty-code-update-helper.exe" },
+            [pscustomobject]@{ Portable = "patty-code-cli.exe"; Payload = "patty-code-cli.exe" }
         )
     }
 

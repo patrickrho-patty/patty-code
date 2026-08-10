@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/control"
+	"patty/internal/control"
 )
 
 // Deterministic coverage for gateExtensionUIRequest: a sidecar's startup

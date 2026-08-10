@@ -3,8 +3,8 @@
 /dist/
 /stage/
 /npm/.stage/
-/reasonix
-/reasonix.exe
+/patty
+/patty.exe
 
 # Website (Astro) build output
 /site/dist/
@@ -30,28 +30,28 @@ mem.prof
 /desktop/frontend/wailsjs/
 /desktop/frontend/package.json.md5
 
-# Environment / local config (reasonix.example.toml is the shared template)
+# Environment / local config (patty.example.toml is the shared template)
 .env
 .env.local
 *.local
-/reasonix.toml
+/patty.toml
 /desktop/.env
-/desktop/reasonix.toml
+/desktop/patty.toml
 
 # Node / frontend dependencies and caches
 node_modules/
 .pnpm-store/
 .npm/
 
-# Project-local Reasonix state; keep the checked-in review command.
-/.reasonix/*
-!/.reasonix/commands/
-!/.reasonix/commands/review.md
+# Project-local Patty Code state; keep the checked-in review command.
+/.patty/*
+!/.patty/commands/
+!/.patty/commands/review.md
 
-# Stray Reasonix state written under a package dir by a test whose RealPath
+# Stray Patty Code state written under a package dir by a test whose RealPath
 # resolves to CWD (e.g. remote bootstrap EnsureServe). Never commit these.
-internal/**/.reasonix/
-desktop/**/.reasonix/
+internal/**/.patty/
+desktop/**/.patty/
 
 # CodeGraph per-project index (rebuilt locally; never committed)
 .codegraph/
@@ -73,5 +73,5 @@ scripts/official-theme-art/out/
 scripts/official-theme-art/__pycache__/
 site/.generated/
 
-# Committed pointer at REASONIX.md; overrides a global CLAUDE.md ignore rule.
+# Committed pointer at PATTY_CODE.md; overrides a global CLAUDE.md ignore rule.
 !/CLAUDE.md

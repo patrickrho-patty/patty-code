@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func TestRunRetriesReasoningOnlyFinalAnswer(t *testing.T) {
@@ -48,7 +48,7 @@ func TestRunPrefixesReasoningLanguageOnSyntheticRetry(t *testing.T) {
 			{Type: provider.ChunkDone},
 		},
 	}}
-	a := New(prov, tool.NewRegistry(), NewSession(""), Options{ReasoningLanguage: "zh"}, event.Discard)
+	a := New(prov, tool.NewRegistry(), NewSession(""), Options{ReasoningLanguage: "ko-KR"}, event.Discard)
 
 	if err := a.Run(context.Background(), "answer me"); err != nil {
 		t.Fatalf("Run: %v", err)
@@ -58,7 +58,7 @@ func TestRunPrefixesReasoningLanguageOnSyntheticRetry(t *testing.T) {
 	}
 	for i, req := range prov.requests {
 		got := lastUser(req)
-		if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") {
+		if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어") {
 			t.Fatalf("request %d last user = %q, want reasoning-language prefix", i, got)
 		}
 	}
@@ -97,19 +97,14 @@ func lastAssistantContent(s *Session) string {
 	return out
 }
 
-// deepseekThinkingProvider marks a scripted provider as DeepSeek thinking mode
-// (provider.ToolCallReasoningPolicy) — the scope within which a reasoning-only
+// (provider.ToolCallReasoningPolicy)  the scope within which a reasoning-only
 // finish_reason="stop" turn is accepted as a final answer.
 type deepseekThinkingProvider struct{ *scriptedProvider }
 
 func (deepseekThinkingProvider) RequiresToolCallReasoning() bool { return true }
 
 func TestRunAcceptsReasoningOnlyFinalWhenModelStopped(t *testing.T) {
-	// DeepSeek thinking mode streams a long reasoning_content and then
-	// finishes with finish_reason="stop" but an empty content block. The
-	// model has explicitly signalled completion and its reasoning was
-	// streamed to the user, so the host must accept the turn instead of
-	// retrying and forcing another expensive thinking round.
+// finishes with finish_reason="stop" but an empty content block. The
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
 		{
 			{Type: provider.ChunkReasoning, Text: "The user asked a simple question; I have reasoned through it and the answer is ready."},
@@ -134,12 +129,7 @@ func TestRunAcceptsReasoningOnlyFinalWhenModelStopped(t *testing.T) {
 }
 
 func TestRunRetriesReasoningOnlyStopWithoutDeepSeekPolicy(t *testing.T) {
-	// Same chunk sequence as the accept test, but the provider does not
-	// declare DeepSeek thinking mode (ToolCallReasoningPolicy). The accept
-	// path must stay scoped to DeepSeek: local <think>-tag models keep the
-	// retry safety net that often recovers a visible answer on the second
-	// attempt, and a gateway that mislabels truncation as "stop" must not
-	// have a degenerate turn committed as the final answer.
+// attempt, and a gateway that mislabels truncation as "stop" must not
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
 		{
 			{Type: provider.ChunkReasoning, Text: "thinking only, nothing visible"},

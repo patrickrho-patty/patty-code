@@ -3,7 +3,7 @@ package boot
 import (
 	"testing"
 
-	"reasonix/internal/extension"
+	"patty/internal/extension"
 )
 
 func TestShouldReuseDiscoveryKinds(t *testing.T) {

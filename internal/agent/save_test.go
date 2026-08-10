@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/provider"
-	"reasonix/internal/store"
+	"patty/internal/provider"
+	"patty/internal/store"
 )
 
 // touch sets a file's mtime to t. Used by the listing-order test so it
@@ -64,7 +64,7 @@ func TestSaveLoadPreservesLegacyContentAndRawUserContent(t *testing.T) {
 func TestLoadSessionMigratesLegacyInjectedUserContentWithoutChangingProviderBytes(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "session.jsonl")
 	const raw = "fix the bug"
-	const legacy = "<reasoning-language>\nVisible reasoning/thinking text preference: use Simplified Chinese.\n</reasoning-language>\n\nfix the bug"
+	const legacy = "<reasoning-language>\nVisible reasoning/thinking text preference: use Standard Korean.\n</reasoning-language>\n\nfix the bug"
 	s := NewSession("system")
 	s.Add(provider.Message{Role: provider.RoleUser, Content: legacy})
 	s.Add(provider.Message{Role: provider.RoleAssistant, Content: "done"})
@@ -395,12 +395,12 @@ func TestRepairedSessionArmsFastPath(t *testing.T) {
 	}
 }
 
-// TestSaveLoadRoundTrip is the contract `reasonix --resume` depends on: a
+// TestSaveLoadRoundTrip is the contract `patcode --resume` depends on: a
 // session written to disk reloads byte-for-byte, including tool calls and
 // reasoning content (which the model wants to keep across resumes for cache
 // hits on thinking-mode providers).
 func TestSaveLoadRoundTrip(t *testing.T) {
-	s := NewSession("you are reasonix")
+	s := NewSession("you are patty")
 	s.Add(provider.Message{Role: provider.RoleUser, Content: "find the bug"})
 	s.Add(provider.Message{
 		Role:             provider.RoleAssistant,
@@ -2241,7 +2241,7 @@ func TestReconcileSessionSidecarsRenamesOverlongSessionFiles(t *testing.T) {
 	if err := os.WriteFile(oldLong+".lock", []byte("{}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := SaveBranchMeta(oldLong, BranchMeta{Name: "长会话", ParentID: "root-branch"}); err != nil {
+	if err := SaveBranchMeta(oldLong, BranchMeta{Name: "긴 세션", ParentID: "root-branch"}); err != nil {
 		t.Fatalf("SaveBranchMeta: %v", err)
 	}
 	childPath := filepath.Join(dir, "child.jsonl")
@@ -2283,7 +2283,7 @@ func TestReconcileSessionSidecarsRenamesOverlongSessionFiles(t *testing.T) {
 	if meta.ID != newLongID {
 		t.Fatalf("migrated meta ID = %q, want %q", meta.ID, newLongID)
 	}
-	if meta.Name != "长会话" || meta.ParentID != "root-branch" {
+	if meta.Name != "긴 세션" || meta.ParentID != "root-branch" {
 		t.Fatalf("migrated meta lost fields: %+v", meta)
 	}
 	childMeta, ok, err := LoadBranchMeta(childPath)
@@ -2364,7 +2364,7 @@ func TestReconcileOverlongRenameStillReparentsWhenSidecarMigrationFails(t *testi
 
 // TestListSessionsOrdersByMTime makes sure the picker shows the most
 // recently used conversation first — that's what users reach for when they
-// hit `reasonix --continue`.
+// hit `patcode --continue`.
 func TestListSessionsOrdersByMTime(t *testing.T) {
 	dir := t.TempDir()
 	// Write two sessions with explicit mtimes so the order is deterministic.

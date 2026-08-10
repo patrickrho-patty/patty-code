@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 func TestDefaultSystemPromptStaysLean(t *testing.T) {
@@ -19,7 +19,7 @@ func TestDefaultSystemPromptStaysLean(t *testing.T) {
 			t.Fatalf("default system prompt duplicates %q workflow guidance: %q", duplicate, DefaultSystemPrompt)
 		}
 	}
-	for _, want := range []string{"Reasonix", "available tools", "focused", "concise"} {
+	for _, want := range []string{"Patty Code", "available tools", "focused", "concise"} {
 		if !strings.Contains(DefaultSystemPrompt, want) {
 			t.Fatalf("default system prompt missing %q: %q", want, DefaultSystemPrompt)
 		}
@@ -28,7 +28,7 @@ func TestDefaultSystemPromptStaysLean(t *testing.T) {
 
 func TestResolveSystemPromptForRootRelativePath(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", t.TempDir())
+	t.Setenv("PATTY_HOME", t.TempDir())
 	if err := os.MkdirAll(filepath.Join(root, "prompts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestResolveSystemPromptForRootAbsolutePath(t *testing.T) {
 func TestResolveSystemPromptForRootMissingFile(t *testing.T) {
 	home := t.TempDir()
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 
 	cfg := Default()
 	cfg.Agent.SystemPromptFile = "prompts/does-not-exist.md"
@@ -84,7 +84,6 @@ func TestResolveSystemPromptForRootMissingFile(t *testing.T) {
 	if !strings.Contains(err.Error(), "not found at any configured location") {
 		t.Fatalf("error %q missing friendly not-found message", err)
 	}
-	// All probed locations must be listed so users can see where it looked.
 	for _, tried := range []string{filepath.Join(root, "prompts", "does-not-exist.md"), filepath.Join(home, "prompts", "does-not-exist.md")} {
 		if !strings.Contains(err.Error(), tried) {
 			t.Fatalf("error %q does not list tried path %q", err, tried)
@@ -95,15 +94,15 @@ func TestResolveSystemPromptForRootMissingFile(t *testing.T) {
 	}
 }
 
-func TestResolveSystemPromptProjectCannotReadReasonixHome(t *testing.T) {
+func TestResolveSystemPromptProjectCannotReadPattyCodeHome(t *testing.T) {
 	home := t.TempDir()
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	secret := "OTHER_PROVIDER_SECRET=must-not-enter-prompt"
 	if err := os.WriteFile(filepath.Join(home, ".env"), []byte(secret), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, "reasonix.toml"), []byte("[agent]\nsystem_prompt_file = \".env\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "patty.toml"), []byte("[agent]\nsystem_prompt_file = \".env\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -119,19 +118,19 @@ func TestResolveSystemPromptProjectCannotReadReasonixHome(t *testing.T) {
 		t.Fatalf("error = %v, want missing prompt classification", err)
 	}
 	if strings.Contains(err.Error(), filepath.Join(home, ".env")) || strings.Contains(got, secret) {
-		t.Fatalf("project prompt resolution probed Reasonix credentials: got=%q err=%v", got, err)
+		t.Fatalf("project prompt resolution probed Patty Code credentials: got=%q err=%v", got, err)
 	}
 }
 
 func TestMergeFileSnapshotKeepsProjectPromptSourceAtomic(t *testing.T) {
 	home := t.TempDir()
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	const secret = "PROVIDER_SECRET=must-not-enter-system-prompt"
 	if err := os.WriteFile(filepath.Join(home, ".env"), []byte(secret), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	projectConfig := filepath.Join(root, "reasonix.toml")
+	projectConfig := filepath.Join(root, "patty.toml")
 	if err := os.WriteFile(projectConfig, []byte("[agent]\nsystem_prompt_file = \".env\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -144,8 +143,6 @@ func TestMergeFileSnapshotKeepsProjectPromptSourceAtomic(t *testing.T) {
 		if err != nil {
 			return nil, err
 		}
-		// Simulate an atomic config replacement after the read. The merged value
-		// and its provenance must still come from data, not from a second read.
 		if err := os.WriteFile(path, []byte("[agent]\nsystem_prompt = \"replacement\"\n"), 0o600); err != nil {
 			return nil, err
 		}
@@ -167,14 +164,14 @@ func TestMergeFileSnapshotKeepsProjectPromptSourceAtomic(t *testing.T) {
 		t.Fatalf("ResolveSystemPromptForRoot = %q, %v; want project-scoped missing error", got, err)
 	}
 	if strings.Contains(got, secret) || strings.Contains(err.Error(), filepath.Join(home, ".env")) {
-		t.Fatalf("project prompt resolution probed Reasonix credentials: got=%q err=%v", got, err)
+		t.Fatalf("project prompt resolution probed Patty Code credentials: got=%q err=%v", got, err)
 	}
 }
 
-func TestResolveSystemPromptUserConfigCanFallBackToReasonixHome(t *testing.T) {
+func TestResolveSystemPromptUserConfigCanFallBackToPattyCodeHome(t *testing.T) {
 	home := t.TempDir()
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	if err := os.MkdirAll(filepath.Join(home, "prompts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +198,7 @@ func TestResolveSystemPromptUserConfigCanFallBackToReasonixHome(t *testing.T) {
 func TestResolveSystemPromptProjectPathStaysInWorkspace(t *testing.T) {
 	home := t.TempDir()
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	for _, dir := range []string{filepath.Join(home, "prompts"), filepath.Join(root, "prompts")} {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
@@ -213,7 +210,7 @@ func TestResolveSystemPromptProjectPathStaysInWorkspace(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(home, "prompts", "system.md"), []byte("home prompt"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, "reasonix.toml"), []byte("[agent]\nsystem_prompt_file = \"prompts/system.md\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "patty.toml"), []byte("[agent]\nsystem_prompt_file = \"prompts/system.md\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(root, "prompts", "system.md"), []byte("workspace prompt"), 0o600); err != nil {
@@ -235,7 +232,7 @@ func TestResolveSystemPromptProjectPathStaysInWorkspace(t *testing.T) {
 
 func TestResolveSystemPromptRejectsProjectPathEscapes(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	for _, test := range []struct {
 		name string
 		path func(root string) string
@@ -246,7 +243,7 @@ func TestResolveSystemPromptRejectsProjectPathEscapes(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			outside := test.path(root)
-			if err := os.WriteFile(filepath.Join(root, "reasonix.toml"), fmt.Appendf(nil, "[agent]\nsystem_prompt_file = %q\n", outside), 0o600); err != nil {
+			if err := os.WriteFile(filepath.Join(root, "patty.toml"), fmt.Appendf(nil, "[agent]\nsystem_prompt_file = %q\n", outside), 0o600); err != nil {
 				t.Fatal(err)
 			}
 			cfg, err := LoadForRootReadOnly(root)
@@ -264,7 +261,7 @@ func TestResolveSystemPromptRejectsProjectSymlinkEscape(t *testing.T) {
 	home := t.TempDir()
 	root := t.TempDir()
 	outside := filepath.Join(t.TempDir(), "outside.md")
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	if err := os.WriteFile(outside, []byte("outside secret"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +271,7 @@ func TestResolveSystemPromptRejectsProjectSymlinkEscape(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(root, "prompts", "system.md")); err != nil {
 		t.Skipf("symlink unavailable: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(root, "reasonix.toml"), []byte("[agent]\nsystem_prompt_file = \"prompts/system.md\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "patty.toml"), []byte("[agent]\nsystem_prompt_file = \"prompts/system.md\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := LoadForRootReadOnly(root)
@@ -289,7 +286,7 @@ func TestResolveSystemPromptRejectsProjectSymlinkEscape(t *testing.T) {
 func TestResolveSystemPromptMixedReadErrorsAreNotMissing(t *testing.T) {
 	home := t.TempDir()
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	if err := os.MkdirAll(filepath.Join(home, "prompts", "system.md"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -300,9 +297,9 @@ func TestResolveSystemPromptMixedReadErrorsAreNotMissing(t *testing.T) {
 	}
 }
 
-func TestResolveSystemPromptForRootFallsBackToReasonixHome(t *testing.T) {
+func TestResolveSystemPromptForRootFallsBackToPattyCodeHome(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	if err := os.MkdirAll(filepath.Join(home, "prompts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -313,7 +310,6 @@ func TestResolveSystemPromptForRootFallsBackToReasonixHome(t *testing.T) {
 	cfg := Default()
 	cfg.Agent.SystemPromptFile = filepath.Join("prompts", "system.md")
 
-	// Workspace root has no such file; the Reasonix-home copy must win the probe.
 	got, err := cfg.ResolveSystemPromptForRoot(t.TempDir())
 	if err != nil {
 		t.Fatalf("ResolveSystemPromptForRoot: %v", err)
@@ -326,7 +322,7 @@ func TestResolveSystemPromptForRootFallsBackToReasonixHome(t *testing.T) {
 func TestResolveSystemPromptForRootWorkspaceWins(t *testing.T) {
 	home := t.TempDir()
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	for dir, content := range map[string]string{home: "home prompt", root: "workspace prompt"} {
 		if err := os.MkdirAll(filepath.Join(dir, "prompts"), 0o755); err != nil {
 			t.Fatal(err)
@@ -350,12 +346,12 @@ func TestResolveSystemPromptForRootWorkspaceWins(t *testing.T) {
 
 func TestResolveSystemPromptForRootDecodesGB18030(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv("REASONIX_HOME", t.TempDir())
+	t.Setenv("PATTY_HOME", t.TempDir())
 	if err := os.MkdirAll(filepath.Join(root, "prompts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "prompts", "session.md")
-	if err := os.WriteFile(path, fileencoding.Encode(" 请始终使用中文回答。 \n", fileencoding.GB18030), 0o644); err != nil {
+	if err := os.WriteFile(path, fileencoding.Encode(" 항상 중국어로 답변하세요. \n", fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -366,7 +362,7 @@ func TestResolveSystemPromptForRootDecodesGB18030(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveSystemPromptForRoot: %v", err)
 	}
-	if got != "请始终使用中文回答。" {
-		t.Fatalf("system prompt = %q, want decoded Chinese prompt", got)
+	if got != "항상 중국어로 답변하세요." {
+		t.Fatalf("system prompt = %q, want decoded Korean prompt", got)
 	}
 }

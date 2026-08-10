@@ -12,12 +12,12 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/jobs"
-	"reasonix/internal/provider"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/jobs"
+	"patty/internal/provider"
 )
 
 func chatTUIWithRunningBackgroundJob(t *testing.T) chatTUI {

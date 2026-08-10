@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/agent"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
 // divergedACPSession writes a transcript to path whose on-disk content has

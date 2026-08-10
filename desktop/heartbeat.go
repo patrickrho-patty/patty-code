@@ -1,7 +1,7 @@
 // Heartbeat task engine — scheduled AI prompts that create or update topics.
 //
 // Each task is a prompt submitted to a dedicated topic on a schedule.
-// The config file under the Reasonix user state directory is human- and
+// The config file under the patty user state directory is human- and
 // AI-editable; the engine runs the schedule in a background goroutine and
 // exposes Wails bindings on App for the frontend panel.
 //
@@ -20,10 +20,10 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/secrets"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/secrets"
 )
 
 // ── Data model ──────────────────────────────────────────────────────────────

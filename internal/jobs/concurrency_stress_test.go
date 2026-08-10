@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"reasonix/internal/event"
+	"patty/internal/event"
 )
 
 // TestManagerConcurrentAccess hammers every public Manager method from many

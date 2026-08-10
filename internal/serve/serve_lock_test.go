@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/jobs"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/jobs"
 )
 
 // lockProbeController wraps a real controller but intercepts the two blocking

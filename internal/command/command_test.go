@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 func TestRender(t *testing.T) {
@@ -70,7 +70,7 @@ func TestLoad(t *testing.T) {
 
 func TestLoadDecodesGB18030CommandFile(t *testing.T) {
 	dir := t.TempDir()
-	body := "---\ndescription: 中文命令\nargument-hint: [主题]\n---\n请总结 $ARGUMENTS。"
+	body := "---\ndescription: 중국어 명령\nargument-hint: [주제]\n---\n$ARGUMENTS를 요약해 주세요."
 	path := filepath.Join(dir, "summary.md")
 	if err := os.WriteFile(path, fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
@@ -80,7 +80,7 @@ func TestLoadDecodesGB18030CommandFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if len(cmds) != 1 || cmds[0].Description != "中文命令" || cmds[0].ArgHint != "[主题]" || cmds[0].Body != "请总结 $ARGUMENTS。" {
+	if len(cmds) != 1 || cmds[0].Description != "중국어 명령" || cmds[0].ArgHint != "[주제]" || cmds[0].Body != "$ARGUMENTS를 요약해 주세요." {
 		t.Fatalf("decoded command = %+v", cmds)
 	}
 }
@@ -91,7 +91,6 @@ func TestLoadOverrideAndMissingDir(t *testing.T) {
 	write(t, user, "review.md", "USER version")
 	write(t, project, "review.md", "PROJECT version")
 
-	// Later dir (project) wins on a name clash; a non-existent dir is skipped.
 	cmds, err := Load("/no/such/dir", user, project)
 	if err != nil {
 		t.Fatalf("Load: %v", err)

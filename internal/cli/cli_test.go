@@ -15,15 +15,15 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
-	"reasonix/internal/notify"
-	"reasonix/internal/provider"
-	"reasonix/internal/telemetry"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/i18n"
+	"patty/internal/notify"
+	"patty/internal/provider"
+	"patty/internal/telemetry"
 )
 
 func TestChdirTo(t *testing.T) {
@@ -41,7 +41,6 @@ func TestChdirTo(t *testing.T) {
 
 	tmp := t.TempDir()
 	// Restore CWD before TempDir's RemoveAll runs (LIFO ordering): Windows can't
-	// delete a directory that is still the process working directory.
 	t.Cleanup(func() { _ = os.Chdir(orig) })
 	if rc := chdirTo(tmp); rc != 0 {
 		t.Fatalf("chdirTo(tmp) = %d, want 0", rc)
@@ -202,13 +201,12 @@ func isolateCLIConfigHome(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	// Keep tests on the default-path code path while preventing a caller's
-	// higher-priority REASONIX_HOME from escaping this temporary home.
-	t.Setenv("REASONIX_HOME", "")
-	if err := os.Unsetenv("REASONIX_HOME"); err != nil {
-		t.Fatalf("unset REASONIX_HOME: %v", err)
+	// Keep tests on the default-path code path while preventing a callers
+	t.Setenv("PATTY_HOME", "")
+	if err := os.Unsetenv("PATTY_HOME"); err != nil {
+		t.Fatalf("unset PATTY_HOME: %v", err)
 	}
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
@@ -216,9 +214,9 @@ func isolateCLIConfigHome(t *testing.T) string {
 	return home
 }
 
-func TestIsolateCLIConfigHomeOverridesExistingReasonixHome(t *testing.T) {
+func TestIsolateCLIConfigHomeOverridesExistingPattyCodeHome(t *testing.T) {
 	externalHome := t.TempDir()
-	t.Setenv("REASONIX_HOME", externalHome)
+	t.Setenv("PATTY_HOME", externalHome)
 
 	home := isolateCLIConfigHome(t)
 
@@ -232,7 +230,7 @@ func TestIsolateCLIConfigHomeOverridesExistingReasonixHome(t *testing.T) {
 func TestMCPMigrationWaitsForCLIWorkspace(t *testing.T) {
 	isolateCLIConfigHome(t)
 	cwd := mustGetwd(t)
-	if err := os.WriteFile(filepath.Join(cwd, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(cwd, "patty.toml"), []byte(`
 [[plugins]]
 name = "cwd-project"
 command = "cwd-project-bin"
@@ -275,7 +273,7 @@ func TestMetadataCommandsDoNotProbeTerminalTheme(t *testing.T) {
 			t.Fatalf("version rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "reasonix test-version") {
+	if !strings.Contains(out, "patcode test-version") {
 		t.Fatalf("version output = %q", out)
 	}
 
@@ -284,10 +282,10 @@ func TestMetadataCommandsDoNotProbeTerminalTheme(t *testing.T) {
 			t.Fatalf("help rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "Usage:") && !strings.Contains(out, "用法：") {
+	if !strings.Contains(out, "Usage:") && !strings.Contains(out, "사용법:") {
 		t.Fatalf("help output missing usage:\n%s", out)
 	}
-	if !strings.Contains(out, "reasonix run [--model NAME] [--max-steps N] [-c|--continue] [--resume PATH] [--copy] [--output-format FORMAT] <task>") {
+	if !strings.Contains(out, "patcode run [--model NAME] [--max-steps N] [-c|--continue] [--resume PATH] [--copy] [--output-format FORMAT] <task>") {
 		t.Fatalf("help output missing run resume flags:\n%s", out)
 	}
 }
@@ -380,7 +378,7 @@ func TestRunNoArgsNonInteractivePrintsUsage(t *testing.T) {
 			t.Fatalf("Run(nil) rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "reasonix —") || !strings.Contains(out, "reasonix run") {
+	if !strings.Contains(out, "patcode —") || !strings.Contains(out, "patcode run") {
 		t.Fatalf("non-interactive no-arg Run should print usage, got:\n%s", out)
 	}
 }
@@ -459,7 +457,7 @@ func TestSubcommandHelpReturnsSuccess(t *testing.T) {
 		want string
 	}{
 		{name: "run", args: []string{"run", "--help"}, want: "Usage of run:"},
-		{name: "chat", args: []string{"chat", "--help"}, want: "Usage of reasonix:"},
+		{name: "chat", args: []string{"chat", "--help"}, want: "Usage of patty:"},
 		{name: "serve", args: []string{"serve", "--help"}, want: "Usage of serve:"},
 		{name: "upgrade", args: []string{"upgrade", "--help"}, want: "Usage of upgrade:"},
 		{name: "remote connect", args: []string{"remote", "connect", "--help"}, want: "Usage of remote connect:"},
@@ -508,9 +506,8 @@ func TestRunPrintAliasDispatchesRunFlags(t *testing.T) {
 	}
 }
 
-// TestRunPrintFlagAfterLeadingFlagsDispatchesRun covers `reasonix --model X -p`:
+// TestRunPrintFlagAfterLeadingFlagsDispatchesRun covers `patcode --model X -p`:
 // a print flag trailing other top-level flags must still route to `run --print`,
-// not into the interactive session parser (which has no -p and returns 2).
 func TestRunPrintFlagAfterLeadingFlagsDispatchesRun(t *testing.T) {
 	isolateCLIConfigHome(t)
 	prev := runInteractiveSession
@@ -588,7 +585,7 @@ func TestRunKeepsChatAndCodeCompatibilityAliases(t *testing.T) {
 
 func TestRunMigratesLegacyConfigBeforeConfigOnlyCommands(t *testing.T) {
 	isolateCLIConfigHome(t)
-	legacyPath := filepath.Join(filepath.Dir(config.UserConfigPath()), "reasonix.toml")
+	legacyPath := filepath.Join(filepath.Dir(config.UserConfigPath()), "patty.toml")
 	if err := os.MkdirAll(filepath.Dir(legacyPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -649,7 +646,7 @@ func TestRunAppliesUserConfigUpgradesOnStartup(t *testing.T) {
 
 func TestRunMetadataCommandsDoNotMigrateLegacyConfig(t *testing.T) {
 	isolateCLIConfigHome(t)
-	legacyPath := filepath.Join(filepath.Dir(config.UserConfigPath()), "reasonix.toml")
+	legacyPath := filepath.Join(filepath.Dir(config.UserConfigPath()), "patty.toml")
 	if err := os.MkdirAll(filepath.Dir(legacyPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -662,7 +659,7 @@ func TestRunMetadataCommandsDoNotMigrateLegacyConfig(t *testing.T) {
 			t.Fatalf("version rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "reasonix test-version") {
+	if !strings.Contains(out, "patcode test-version") {
 		t.Fatalf("version output = %q", out)
 	}
 	if _, err := os.Stat(config.UserConfigPath()); !os.IsNotExist(err) {
@@ -672,7 +669,7 @@ func TestRunMetadataCommandsDoNotMigrateLegacyConfig(t *testing.T) {
 
 func TestConfigLoadIgnoresRetiredAutoPlan(t *testing.T) {
 	isolateCLIConfigHome(t)
-	if err := os.WriteFile("reasonix.toml", []byte("[agent]\nauto_plan = \"on\"\nauto_plan_classifier = \"deepseek-flash\"\n"), 0o644); err != nil {
+	if err := os.WriteFile("patty.toml", []byte("[agent]\nauto_plan = \"on\"\nauto_plan_classifier = \"deepseek-flash\"\n"), 0o644); err != nil {
 		t.Fatalf("write project config: %v", err)
 	}
 
@@ -741,15 +738,15 @@ func TestConfigReasoningLanguageCommandWritesUserConfig(t *testing.T) {
 	isolateCLIConfigHome(t)
 
 	out := captureStdout(t, func() {
-		if rc := Run([]string{"config", "reasoning-language", "zh"}, "test-version"); rc != 0 {
+		if rc := Run([]string{"config", "reasoning-language", "ko-KR"}, "test-version"); rc != 0 {
 			t.Fatalf("config reasoning-language rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, `reasoning_language = "zh"`) {
+	if !strings.Contains(out, `reasoning_language = "ko-KR"`) {
 		t.Fatalf("config reasoning-language output = %q", out)
 	}
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if cfg.Agent.ReasoningLanguage != "zh" || cfg.ReasoningLanguage() != "zh" {
+	if cfg.Agent.ReasoningLanguage != "ko-KR" || cfg.ReasoningLanguage() != "ko-KR" {
 		t.Fatalf("saved reasoning_language = %q/%q, want zh", cfg.Agent.ReasoningLanguage, cfg.ReasoningLanguage())
 	}
 }
@@ -772,7 +769,7 @@ func TestConfigReasoningLanguageLocalCreatesMinimalProjectOverride(t *testing.T)
 		t.Fatalf("config reasoning-language --local output = %q", out)
 	}
 
-	body, err := os.ReadFile("reasonix.toml")
+	body, err := os.ReadFile("patty.toml")
 	if err != nil {
 		t.Fatalf("read project config: %v", err)
 	}
@@ -799,11 +796,11 @@ func TestConfigReasoningLanguageRejectsAliases(t *testing.T) {
 	isolateCLIConfigHome(t)
 
 	errOut := captureStderr(t, func() {
-		if rc := Run([]string{"config", "reasoning-language", "中文"}, "test-version"); rc != 2 {
+		if rc := Run([]string{"config", "reasoning-language", "zh"}, "test-version"); rc != 2 {
 			t.Fatalf("config reasoning-language alias rc = %d, want 2", rc)
 		}
 	})
-	if !strings.Contains(errOut, "must be auto|zh|en") {
+	if !strings.Contains(errOut, "must be auto|ko-KR|en") {
 		t.Fatalf("config reasoning-language alias stderr = %q", errOut)
 	}
 }
@@ -873,7 +870,7 @@ func TestConfigCompactRatioLocalCreatesMinimalProjectOverride(t *testing.T) {
 		t.Fatalf("config compact-ratio --local output = %q", out)
 	}
 
-	body, err := os.ReadFile("reasonix.toml")
+	body, err := os.ReadFile("patty.toml")
 	if err != nil {
 		t.Fatalf("read project config: %v", err)
 	}
@@ -944,7 +941,7 @@ func TestConfigCurrencyCommandWritesUserConfig(t *testing.T) {
 
 func TestConfigCurrencyAutoUsesResolvedCLILocale(t *testing.T) {
 	isolateCLIConfigHome(t)
-	i18n.DetectLanguage("zh-TW")
+	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	out := captureStdout(t, func() {
@@ -971,7 +968,7 @@ func TestConfigCurrencyRejectsProjectScope(t *testing.T) {
 	if !strings.Contains(errOut, "user-level only") {
 		t.Fatalf("config currency --local stderr = %q", errOut)
 	}
-	if _, err := os.Stat("reasonix.toml"); !os.IsNotExist(err) {
+	if _, err := os.Stat("patty.toml"); !os.IsNotExist(err) {
 		t.Fatalf("config currency --local wrote project config, stat err=%v", err)
 	}
 }
@@ -1040,6 +1037,18 @@ func (s *cliRecordSender) Send(m notify.Message) error {
 	return nil
 }
 
+func TestLanguageChoicesPutKoreanFirstForNormalizedDefault(t *testing.T) {
+	items, tags := languageChoices("ko")
+	if len(items) != 2 || len(tags) != 2 || items[0].name != "한국어" || tags[0] != "ko-KR" {
+		t.Fatalf("Korean choices = %#v / %#v, want Korean first", items, tags)
+	}
+
+	items, tags = languageChoices("en")
+	if items[0].name != "English" || tags[0] != "en" {
+		t.Fatalf("English choices = %#v / %#v, want explicit English first", items, tags)
+	}
+}
+
 func TestWithNotificationsWrapsCLISinkWithConfiguredSender(t *testing.T) {
 	inner := &cliRecordSink{}
 	sender := &cliRecordSender{}
@@ -1088,7 +1097,7 @@ func TestConfigTelemetryCommandRoundTripAndOptOutCleanup(t *testing.T) {
 	if err != nil || cfg.CLITelemetryMode() != "on" {
 		t.Fatalf("saved telemetry mode = %q, err = %v", cfg.CLITelemetryMode(), err)
 	}
-	pending := filepath.Join(config.ReasonixHomeDir(), "cli-telemetry-pending")
+	pending := filepath.Join(config.PattyHomeDir(), "cli-telemetry-pending")
 	if err := os.MkdirAll(pending, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -1150,7 +1159,7 @@ func TestCLITelemetryConsentDefaultsYesAndPromptsOnlyOnce(t *testing.T) {
 	if got != want || starts != 1 {
 		t.Fatalf("first start = %p, calls=%d; want %p, 1", got, starts, want)
 	}
-	if !strings.Contains(out.String(), "crash.reasonix.io") || !strings.Contains(out.String(), "[Y/n]:") || !strings.Contains(out.String(), "reasonix config telemetry off") {
+	if !strings.Contains(out.String(), "crash.patty.io") || !strings.Contains(out.String(), "[Y/n]:") || !strings.Contains(out.String(), "patcode config telemetry off") {
 		t.Fatalf("consent prompt is incomplete: %q", out.String())
 	}
 	if errOut.Len() != 0 {
@@ -1182,7 +1191,7 @@ func TestCLITelemetryConsentNoDisablesAndCleansPending(t *testing.T) {
 		starts++
 		return &telemetry.Reporter{}
 	}
-	home := config.ReasonixHomeDir()
+	home := config.PattyHomeDir()
 	pending := filepath.Join(home, "cli-telemetry-pending")
 	if err := os.MkdirAll(pending, 0o700); err != nil {
 		t.Fatal(err)
@@ -1305,7 +1314,7 @@ func TestUndecidedCLITelemetryDoesNotPromptOrUploadWhenIneligible(t *testing.T) 
 		{name: "development", version: "dev", interactive: true},
 		{name: "CI", version: "v1.20.0", interactive: true, envKey: "CI", envValue: "1"},
 		{name: "do not track", version: "v1.20.0", interactive: true, envKey: "DO_NOT_TRACK", envValue: "1"},
-		{name: "environment opt out", version: "v1.20.0", interactive: true, envKey: "REASONIX_TELEMETRY", envValue: "0"},
+		{name: "environment opt out", version: "v1.20.0", interactive: true, envKey: "PATTY_TELEMETRY", envValue: "0"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			isolateCLIConfigHome(t)
@@ -1336,7 +1345,7 @@ func TestUndecidedCLITelemetryDoesNotPromptOrUploadWhenIneligible(t *testing.T) 
 func TestLegacySafeModeEnvDoesNotAlterConfiguredCLITelemetry(t *testing.T) {
 	isolateCLIConfigHome(t)
 	clearCLITelemetryPolicyEnv(t)
-	t.Setenv("REASONIX_SAFE_MODE", "1")
+	t.Setenv("PATTY_SAFE_MODE", "1")
 	cfg := config.Default()
 	if err := cfg.SetCLITelemetryMode("auto"); err != nil {
 		t.Fatal(err)
@@ -1365,13 +1374,13 @@ func TestCLITelemetryConsentPromptIsLocalized(t *testing.T) {
 	persistCLITelemetryConsent = func(string) error { return nil }
 	startCLITelemetryReporter = func(telemetry.Options) *telemetry.Reporter { return nil }
 
-	for _, lang := range []string{"en", "zh", "zh-TW"} {
+	for _, lang := range []string{"en", "ko-KR", "en-US"} {
 		i18n.DetectLanguage(lang)
 		var out bytes.Buffer
 		startCLITelemetryWithIO(config.Default(), telemetry.Options{
 			Version: "v1.20.0", Interactive: true, CLIMode: "tui",
 		}, strings.NewReader("\n"), &out, io.Discard)
-		for _, required := range []string{"crash.reasonix.io", "reasonix config telemetry off", "[Y/n]:"} {
+		for _, required := range []string{"crash.patty.io", "patcode config telemetry off", "[Y/n]:"} {
 			if !strings.Contains(out.String(), required) {
 				t.Fatalf("%s consent prompt missing %q: %q", lang, required, out.String())
 			}
@@ -1382,7 +1391,7 @@ func TestCLITelemetryConsentPromptIsLocalized(t *testing.T) {
 func clearCLITelemetryPolicyEnv(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{
-		"DO_NOT_TRACK", "REASONIX_TELEMETRY", "REASONIX_SAFE_MODE", "CI", "CONTINUOUS_INTEGRATION",
+		"DO_NOT_TRACK", "PATTY_TELEMETRY", "PATTY_SAFE_MODE", "CI", "CONTINUOUS_INTEGRATION",
 		"GITHUB_ACTIONS", "GITLAB_CI", "BUILDKITE", "CIRCLECI", "JENKINS_URL",
 		"TEAMCITY_VERSION", "TF_BUILD",
 	} {
@@ -1392,7 +1401,7 @@ func clearCLITelemetryPolicyEnv(t *testing.T) {
 
 func TestSetupOverwritePromptShowsYNDefault(t *testing.T) {
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
-	for _, lang := range []string{"en", "zh"} {
+	for _, lang := range []string{"en", "ko-KR"} {
 		i18n.DetectLanguage(lang)
 		var out bytes.Buffer
 		if confirmReconfigureExistingConfig("config.toml", bufio.NewScanner(strings.NewReader("\n")), &out) {
@@ -1404,13 +1413,9 @@ func TestSetupOverwritePromptShowsYNDefault(t *testing.T) {
 	}
 }
 
-// TestConfigureKeys verifies that a shared api_key_env (each vendor's SKUs use
-// the same env var) is asked only once, and entered keys become env lines.
+// TestConfigureKeys verifies that a shared api_key_env (each vendors SKUs use
 func TestConfigureKeys(t *testing.T) {
-	// Force a clean baseline: any DEEPSEEK_API_KEY in the
-	// process env (e.g. inherited from the test runner) would be picked up
 	// by the new "reuse existing" path and the prompt would be skipped,
-	// making the assertion below noisy.
 	t.Setenv("DEEPSEEK_API_KEY", "")
 
 	selected := config.Default().Providers
@@ -1426,13 +1431,10 @@ func TestConfigureKeys(t *testing.T) {
 	}
 }
 
-// TestConfigureKeysReusesExistingEnv covers the "user already typed the key
+// TestConfigureKeysReusesExistingEnv covers the user already typed the key
 // in the URL-fetch flow, don't ask again" path. When the env var is set
-// (either from .env or from a prior os.Setenv in the wizard), configureKeys
 // must NOT consume from the input stream — otherwise the user's next typed
-// line bleeds into the next provider's prompt. It also must include the
-// existing value in envLines so the value is re-pinned into .env on
-// re-runs of setup.
+// line bleeds into the next providers prompt. It also must include the
 func TestConfigureKeysReusesExistingEnv(t *testing.T) {
 	t.Setenv("DEEPSEEK_API_KEY", "preset-ds-key")
 
@@ -1469,8 +1471,6 @@ func TestConfigureKeysCanResetExistingEnv(t *testing.T) {
 	}
 }
 
-// TestConfigureKeysAllSetDefaultsToReusingInput ensures that when every env var
-// is already populated, pressing Enter at each confirmation keeps the values.
 func TestConfigureKeysAllSetDefaultsToReusingInput(t *testing.T) {
 	t.Setenv("DEEPSEEK_API_KEY", "ds")
 
@@ -1481,10 +1481,6 @@ func TestConfigureKeysAllSetDefaultsToReusingInput(t *testing.T) {
 	}
 }
 
-// TestAppendEnvUpsertReplacesExistingKey covers the bug where re-running the
-// wizard with a corrected key would append a second line for the same env
-// var. Without dedupe, different dotenv readers can disagree on which
-// assignment wins, leaving stale keys hard to diagnose.
 func TestAppendEnvUpsertReplacesExistingKey(t *testing.T) {
 	t.Setenv("DEEPSEEK_API_KEY", "") // also covers the os.Setenv pin path
 	p := filepath.Join(t.TempDir(), ".env")
@@ -1504,7 +1500,6 @@ func TestAppendEnvUpsertReplacesExistingKey(t *testing.T) {
 }
 
 // TestAppendEnvUpsertHandlesExportPrefix proves `export FOO=...` style lines
-// also get replaced, since users might hand-edit .env in shell-friendly form.
 func TestAppendEnvUpsertHandlesExportPrefix(t *testing.T) {
 	t.Setenv("FOO", "")
 	p := filepath.Join(t.TempDir(), ".env")
@@ -1518,7 +1513,6 @@ func TestAppendEnvUpsertHandlesExportPrefix(t *testing.T) {
 	}
 }
 
-// TestGroupByFamily verifies the wizard groups the default preset into
 // "deepseek" (flash + pro), preserving the order each family first appears in.
 func TestGroupByFamily(t *testing.T) {
 	order, members, info := groupByFamily(config.Default().Providers)
@@ -1534,12 +1528,8 @@ func TestGroupByFamily(t *testing.T) {
 	}
 }
 
-// TestFetchOrFallbackLiveReturns covers the happy path: a live /models call
+// TestFetchOrFallbackLiveReturns covers the happy path: a live models call
 // succeeds and its result wins over the preset's static list. We can't run
-// the real probe (no key) so the FetchModels call is expected to 401 and the
-// fallback path runs; the assertion below is that fallback works (static
-// list returned) and that an empty base URL short-circuits to the static
-// list with no network call.
 func TestFetchOrFallback(t *testing.T) {
 	t.Run("empty base URL returns static list", func(t *testing.T) {
 		probe := config.ProviderEntry{
@@ -1553,10 +1543,10 @@ func TestFetchOrFallback(t *testing.T) {
 	})
 
 	t.Run("no key set returns static list (offline first-run)", func(t *testing.T) {
-		t.Setenv("REASONIX_FETCH_TEST_KEY", "")
+		t.Setenv("PATTY_FETCH_TEST_KEY", "")
 		probe := config.ProviderEntry{
 			BaseURL:   "http://127.0.0.1:1", // unreachable, no listener
-			APIKeyEnv: "REASONIX_FETCH_TEST_KEY",
+			APIKeyEnv: "PATTY_FETCH_TEST_KEY",
 			Models:    []string{"preset-a"},
 		}
 		got := fetchOrFallback(&probe, "Test")
@@ -1566,14 +1556,13 @@ func TestFetchOrFallback(t *testing.T) {
 	})
 }
 
-// TestFetchModelListCompatWalksCandidates covers the wizard's custom-provider
+// TestFetchModelListCompatWalksCandidates covers the wizards custom-provider
 // model probe. Previously the probe was a single URL (baseURL+"/models"),
-// which worked for OpenAI vendors with a /v1 base URL but silently failed
-// for Anthropic-style root URLs (no /v1) and Anthropic-compatible proxies
+// which worked for OpenAI vendors with a v1 base URL but silently failed
+// for Anthropic-style root URLs (no v1) and Anthropic-compatible proxies
 // (a /v1 base URL but a /v1/messages endpoint). The new helper walks
 // BuildModelFetchURLs's candidate list — root + /v1 + known compat
-// suffixes — so the same probe now succeeds for both shapes, matching
-// what the conversation-time client URL will actually be.
+// suffixes  so the same probe now succeeds for both shapes, matching
 func TestFetchModelListCompatWalksCandidates(t *testing.T) {
 	t.Run("anthropic root form resolves via v1 fallback", func(t *testing.T) {
 		var gotPath atomic.Value
@@ -1639,7 +1628,7 @@ func TestFetchModelListCompatWalksCandidates(t *testing.T) {
 	})
 
 	t.Run("non-404 network error short-circuits with the real error", func(t *testing.T) {
-		// Point at a closed port — connection refused, not a 404.
+		// Point at a closed port  connection refused, not a 404.
 		models, err := fetchModelListCompat(context.Background(), "http://127.0.0.1:1", "k")
 		if err == nil {
 			t.Fatalf("expected error for unreachable host, got models=%v", models)
@@ -1647,9 +1636,8 @@ func TestFetchModelListCompatWalksCandidates(t *testing.T) {
 	})
 }
 
-// TestFamilyStaticModels proves the offline fallback unions every member of a
-// family (the flash + pro SKUs), not just the first — the regression that left
-// users with only flash when the live /models probe failed.
+// family (the flash + pro SKUs), not just the first  the regression that left
+// users with only flash when the live models probe failed.
 func TestFamilyStaticModels(t *testing.T) {
 	providers := []config.ProviderEntry{
 		{Name: "deepseek-flash", Model: "deepseek-v4-flash"},
@@ -1674,9 +1662,7 @@ func TestFamilyStaticModelsDedupes(t *testing.T) {
 	}
 }
 
-// TestBuildFamilyEntriesSplitsPricing proves flash and pro land in separate
-// entries carrying their own price, rather than collapsing into one entry that
-// would bill pro at flash's rate.
+// would bill pro at flashs rate.
 func TestBuildFamilyEntriesSplitsPricing(t *testing.T) {
 	flash := config.ProviderEntry{Name: "deepseek-flash", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", Price: &provider.Pricing{Input: 1, Output: 2}}
 	pro := config.ProviderEntry{Name: "deepseek-pro", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", Price: &provider.Pricing{Input: 3, Output: 6}}
@@ -1696,8 +1682,6 @@ func TestBuildFamilyEntriesSplitsPricing(t *testing.T) {
 	}
 }
 
-// TestBuildFamilyEntriesUnknownModelUsesProbe puts a live-only SKU (no matching
-// preset) under the probe entry rather than dropping it.
 func TestBuildFamilyEntriesUnknownModelUsesProbe(t *testing.T) {
 	flash := config.ProviderEntry{Name: "deepseek-flash", Model: "deepseek-v4-flash", Price: &provider.Pricing{Input: 1}}
 	got := buildFamilyEntries(flash, []config.ProviderEntry{flash}, []string{"deepseek-v4-flash", "deepseek-v9-experimental"})
@@ -1709,13 +1693,8 @@ func TestBuildFamilyEntriesUnknownModelUsesProbe(t *testing.T) {
 	}
 }
 
-// TestBuildFamilyEntry covers the three observable behaviors:
-//   - The selected models land in the entry's Models field, with Model
-//     pointed at the first one so legacy single-model lookups still work.
-//   - A preset Default that points to a model the user didn't pick is
-//     reset to the first selected model (otherwise resolve-by-default
-//     would silently break).
-//   - A preset Default that IS in the selection is preserved.
+// - The selected models land in the entrys Models field, with Model
+// - A preset Default that points to a model the user didnt pick is
 func TestBuildFamilyEntry(t *testing.T) {
 	t.Run("default reset when not in selection", func(t *testing.T) {
 		probe := config.ProviderEntry{
@@ -1759,9 +1738,7 @@ func TestBuildFamilyEntry(t *testing.T) {
 	})
 }
 
-// TestProviderSlug covers the host-derivation rules and the sha1 fallback
 // for unparseable URLs. The exact format isn't load-bearing — what matters
-// is that the slug (a) starts with the kind prefix, (b) is stable across
 // calls with the same URL, and (c) never produces the bare "custom" /
 // "anthropic" magic names that would collide with the wizard menu items.
 func TestProviderSlug(t *testing.T) {
@@ -1798,14 +1775,13 @@ func TestProviderSlug(t *testing.T) {
 		if !strings.HasPrefix(got, "custom-") || got == "custom" {
 			t.Errorf("fallback slug = %q, want custom-<hex>", got)
 		}
-		// sha1 is 40 hex chars; we take 4 bytes (8 hex chars).
 		if len(got) != len("custom-")+8 {
 			t.Errorf("fallback slug = %q, want 8 hex chars after prefix", got)
 		}
 	})
 
 	t.Run("sha1 fallback for non-ascii host", func(t *testing.T) {
-		got := providerSlug("custom", "https://例子.测试/v1")
+		got := providerSlug("custom", "https://예시.테스트/v1")
 		if !strings.HasPrefix(got, "custom-") || got == "custom-" {
 			t.Errorf("fallback slug = %q, want custom-<hex>", got)
 		}
@@ -1833,10 +1809,10 @@ func TestAPIKeyEnvFromProviderName(t *testing.T) {
 	}
 
 	t.Run("non-ascii provider names use desktop-compatible hash fallback", func(t *testing.T) {
-		if got, want := apiKeyEnvFromProviderName("商汤"), "CUSTOM_d39b9067_API_KEY"; got != want {
+		if got, want := apiKeyEnvFromProviderName("샹탕"), "CUSTOM_47740c73_API_KEY"; got != want {
 			t.Errorf("apiKeyEnvFromProviderName(non-ascii) = %q, want %q", got, want)
 		}
-		if got := apiKeyEnvFromProviderName("通义千问"); got == "CUSTOM_d39b9067_API_KEY" || got == "CUSTOM_API_KEY" {
+		if got := apiKeyEnvFromProviderName("퉁이첸원"); got == "CUSTOM_47740c73_API_KEY" || got == "CUSTOM_API_KEY" {
 			t.Errorf("apiKeyEnvFromProviderName(second non-ascii) = %q, want distinct stable fallback", got)
 		}
 	})
@@ -1975,11 +1951,10 @@ func TestRepairInvalidProviderKeyEnvs(t *testing.T) {
 	}
 }
 
-// TestFilterStaleCustomEntries covers the wizard's auto-cleanup of legacy
+// TestFilterStaleCustomEntries covers the wizards auto-cleanup of legacy
 // "custom" / "anthropic" magic-name entries that previous versions wrote
-// into reasonix.toml. These collide with the wizard's own menu items, so
+// into patty.toml. These collide with the wizards own menu items, so
 // they're dropped from the providers list before grouping — but the caller
-// still gets them back in the dropped slice to surface a warning.
 func TestFilterStaleCustomEntries(t *testing.T) {
 	in := []config.ProviderEntry{
 		{Name: "deepseek", Kind: "openai", BaseURL: "https://api.deepseek.com"},
@@ -2025,7 +2000,7 @@ func TestFilterStaleCustomEntries(t *testing.T) {
 }
 
 func TestWithBuiltinFamiliesDoesNotAddMissingMimo(t *testing.T) {
-	// The user's case: a reasonix.toml that defines only deepseek providers.
+	// The users case: a patty.toml that defines only deepseek providers.
 	cfg := []config.ProviderEntry{
 		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com"},
 		{Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com"},
@@ -2041,14 +2016,14 @@ func TestWithBuiltinFamiliesDoesNotAddMissingMimo(t *testing.T) {
 	if seen["MiMo (Xiaomi)"] {
 		t.Fatalf("wizard families = %v, should not inject MiMo", order)
 	}
-	// A user's customized deepseek must not be duplicated.
+	// A users customized deepseek must not be duplicated.
 	if n := len(groupByFamilyKeys(withBuiltinFamilies(cfg), "deepseek")); n != 2 {
 		t.Fatalf("deepseek members = %d, want the user's 2 (no injected duplicate)", n)
 	}
 }
 
 func TestWithBuiltinFamiliesForLanguageUsesDeepSeekPricing(t *testing.T) {
-	providers := withBuiltinFamiliesForLanguage(nil, "zh")
+	providers := withBuiltinFamiliesForLanguage(nil, "ko-KR")
 	var flash *config.ProviderEntry
 	for i := range providers {
 		if providers[i].Name == "deepseek-flash" {
@@ -2064,18 +2039,13 @@ func TestWithBuiltinFamiliesForLanguageUsesDeepSeekPricing(t *testing.T) {
 	}
 }
 
-// TestWithBuiltinFamiliesRestoresSiblingEntries covers the re-run scenario:
-// a user previously selected only deepseek-v4-flash (saved as deepseek-flash
-// with a single model). Re-running `reasonix setup` must still surface the
-// sibling deepseek-pro entry so the user can pick deepseek-v4-pro too,
-// rather than only showing the previously selected model.
+// with a single model). Re-running `patcode setup` must still surface the
 func TestWithBuiltinFamiliesRestoresSiblingEntries(t *testing.T) {
 	cfg := []config.ProviderEntry{
 		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", Models: []string{"deepseek-v4-flash"}, APIKeyEnv: "DEEPSEEK_API_KEY"},
 	}
 	got := withBuiltinFamilies(cfg)
 
-	// deepseek-pro must be restored even though deepseek family already exists.
 	var found bool
 	for _, p := range got {
 		if p.Name == "deepseek-pro" {
@@ -2087,7 +2057,6 @@ func TestWithBuiltinFamiliesRestoresSiblingEntries(t *testing.T) {
 		t.Fatalf("withBuiltinFamilies(%+v) = %v, want deepseek-pro sibling restored", cfg, namesOf(got))
 	}
 
-	// The static model list for the deepseek family must include both SKUs.
 	_, members, _ := groupByFamily(got)
 	deepseekIdxs := members["deepseek"]
 	models := familyStaticModels(got, deepseekIdxs)
@@ -2114,7 +2083,7 @@ func groupByFamilyKeys(ps []config.ProviderEntry, key string) []int {
 }
 
 func TestWriteDefaultConfigOmitsLegacyInternalMCPSections(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "reasonix.toml")
+	path := filepath.Join(t.TempDir(), "patty.toml")
 	if rc := writeDefaultConfig(path); rc != 0 {
 		t.Fatalf("writeDefaultConfig rc = %d", rc)
 	}

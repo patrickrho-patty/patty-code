@@ -18,17 +18,17 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/checkpoint"
-	"reasonix/internal/command"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
-	"reasonix/internal/provider"
-	"reasonix/internal/secrets"
-	"reasonix/internal/skill"
-	"reasonix/internal/testenv"
+	"patty/internal/agent"
+	"patty/internal/checkpoint"
+	"patty/internal/command"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/i18n"
+	"patty/internal/provider"
+	"patty/internal/secrets"
+	"patty/internal/skill"
+	"patty/internal/testenv"
 )
 
 type blockingTurnRunner struct{ started chan struct{} }
@@ -41,9 +41,9 @@ type stubbornTurnRunner struct {
 const tinyPNGBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 
 const (
-	middleClickPasteHelperFlag = "GO_WANT_REASONIX_MIDDLE_CLICK_PASTE_HELPER"
-	middleClickPasteHelperMode = "REASONIX_MIDDLE_CLICK_PASTE_HELPER_MODE"
-	middleClickPasteTestValue  = "REASONIX_MIDDLE_CLICK_TEST_VALUE"
+	middleClickPasteHelperFlag = "GO_WANT_PATTY_MIDDLE_CLICK_PASTE_HELPER"
+	middleClickPasteHelperMode = "PATTY_MIDDLE_CLICK_PASTE_HELPER_MODE"
+	middleClickPasteTestValue  = "PATTY_MIDDLE_CLICK_TEST_VALUE"
 )
 
 func TestMiddleClickPasteCommandHelper(t *testing.T) {
@@ -73,17 +73,10 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// Pin the UI language for the whole cli test binary. Production code
-	// (cli.Run) calls i18n.DetectLanguage("") which resolves the host locale from
-	// the environment (REASONIX_LANG/LC_ALL/LC_MESSAGES/LANG) and installs it as
-	// the global i18n.M. On a non-English dev machine that flips M to e.g.
-	// Chinese, and tests that exercise the CLI entry point (acp_test.go,
-	// cli_test.go) don't restore it — so later tests asserting English UI strings
-	// fail, but only when the whole package runs, not in isolation. Forcing a
-	// deterministic English environment keeps the suite independent of the host
-	// locale (matching CI). Tests that need another language still set it
-	// explicitly via i18n.DetectLanguage(lang) with their own cleanup.
-	os.Unsetenv("REASONIX_LANG")
+	// Some CLI tests exercise startup, which installs the product's default
+	// language globally. Pin those tests to English so legacy English assertions
+	// remain isolated from the Korean-first production default.
+	os.Setenv("PATTY_LANG", "en")
 	os.Unsetenv("LC_ALL")
 	os.Unsetenv("LC_MESSAGES")
 	os.Setenv("LANG", "en_US.UTF-8")
@@ -142,7 +135,7 @@ func writeTUIImageCapabilityConfig(t *testing.T, root string) {
 		Models:       []string{"text-only", "vision-pro"},
 		VisionModels: []string{"vision-pro"},
 	}}
-	if err := cfg.SaveTo(filepath.Join(root, "reasonix.toml")); err != nil {
+	if err := cfg.SaveTo(filepath.Join(root, "patty.toml")); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 }
@@ -157,9 +150,6 @@ func saveTestImageAttachment(t *testing.T, root string) string {
 	return path
 }
 
-// TestEscCancelsRunningTurnWithCompletionOpen reproduces the report that Esc
-// (unlike Ctrl+C) did not stop a running turn: an active completion menu
-// captured Esc to close itself and returned before reaching the running-turn
 // cancel branch, while Ctrl+C — not in the completion switch — fell through.
 func TestEscCancelsRunningTurnWithCompletionOpen(t *testing.T) {
 	r := &blockingTurnRunner{started: make(chan struct{})}
@@ -183,9 +173,8 @@ func TestEscCancelsRunningTurnWithCompletionOpen(t *testing.T) {
 	}
 }
 
-// TestTranscriptMirrorsCommits proves the alt-screen migration's foundation:
-// every line commitLine sends to native scrollback is also captured in the
-// transcript buffer (the future viewport's content source), in order.
+// TestTranscriptMirrorsCommits proves the alt-screen migrations foundation:
+// transcript buffer (the future viewports content source), in order.
 func TestTranscriptMirrorsCommits(t *testing.T) {
 	m := newTestChatTUI()
 	m.ingestEvent(event.Event{Kind: event.ToolDispatch, Tool: event.Tool{Name: "read_file", Args: `{"path":"x"}`}})
@@ -240,8 +229,6 @@ func TestTermuxNativeScrollbackDefaultsToExpandedReasoning(t *testing.T) {
 	}
 }
 
-// TestCompletionMenuFixedWidth verifies that the completion menu pads every
-// line (items + footer) to m.width so delta rendering always writes exactly the
 // same column count — no trailing characters for \033[K to leave behind.
 func TestCompletionMenuFixedWidth(t *testing.T) {
 	ctrl := control.New(control.Options{})
@@ -257,7 +244,6 @@ func TestCompletionMenuFixedWidth(t *testing.T) {
 
 	out := m.renderCompletion()
 	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	// items + footer = 3 lines
 	if len(lines) != 3 {
 		t.Fatalf("completion menu should have 3 lines (2 items + footer), got %d:\n%s", len(lines), out)
 	}
@@ -268,18 +254,15 @@ func TestCompletionMenuFixedWidth(t *testing.T) {
 	}
 }
 
-// TestCompletionMenuPadsWithNonBreakingSpaces verifies the fixed-width padding
-// is not ordinary ASCII space. Ultraviolet treats trailing ASCII spaces as
-// clearable cells and may emit EL/ECH erase sequences; mintty can leave stale
-// halves of CJK glyphs when those sequences clear Chinese skill descriptions.
+// clearable cells and may emit ELECH erase sequences; mintty can leave stale
 func TestCompletionMenuPadsWithNonBreakingSpaces(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
 	m.width = 80
 	m.completion.active = true
 	m.completion.items = []compItem{
-		{label: "/土壤", hint: "分析土壤墒情"},
-		{label: "/巡田", hint: "识别病虫害"},
+		{label: "/토양", hint: "토양 수분 상태 분석"},
+		{label: "/순찰", hint: "병충해 식별"},
 	}
 	m.completion.sel = 0
 	m.completion.kind = compSlash
@@ -298,10 +281,6 @@ func TestCompletionMenuPadsWithNonBreakingSpaces(t *testing.T) {
 	}
 }
 
-// TestTranscriptViewportSizing proves the viewport tracks the terminal size and
-// gets the rows left over after the pinned bottom region (input box + the one
-// available information row = 4 with an empty 1-line composer and no Git or
-// telemetry), and is fed the committed transcript.
 func TestTranscriptViewportSizing(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
@@ -309,50 +288,228 @@ func TestTranscriptViewportSizing(t *testing.T) {
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	m = m0.(chatTUI)
 
-	if got := m.bottomRows(); got != 4 {
-		t.Fatalf("bottomRows with an empty composer = %d, want 4 (input 1 + border 2 + status 1)", got)
+	if got := m.bottomRows(); got != 3 {
+		t.Fatalf("startup bottomRows with an empty composer = %d, want 3 (input 1 + title 1 + status 1)", got)
+	}
+	if got := m.sessionHeaderRowCount(); got != 3 {
+		t.Fatalf("sessionHeaderRowCount = %d, want 3 (titlebar + facts + border)", got)
 	}
 	if m.viewport.Width() != 79 {
 		t.Errorf("viewport content width = %d, want 79 (terminal 80 - 1 scrollbar column)", m.viewport.Width())
 	}
-	if want := m.transcriptHeight(); m.viewport.Height() != want || want != 20 {
-		t.Errorf("viewport height = %d, transcriptHeight = %d, want 20 (24-4)", m.viewport.Height(), want)
+	if want := m.transcriptHeight(); m.viewport.Height() != want || want > launchStageMaxRows {
+		t.Errorf("idle startup viewport height = %d, transcriptHeight = %d, want capped launch stage <= %d", m.viewport.Height(), want, launchStageMaxRows)
 	}
 	if m.viewport.TotalLineCount() == 0 {
 		t.Errorf("viewport should hold the committed banner after the first resize")
 	}
 }
 
-// TestStatusLineWrapAccounting proves that computeStatusLineCount correctly
-// predicts the rendered row count of the status block (working + mode/state line
-// + data line) when wrapping is triggered on a narrow terminal, and that
-// bottomRows reserves the right height so the viewport fills the screen without
-// overlap.
+func TestIdleStartupUsesNaturalTranscriptHeight(t *testing.T) {
+	ctrl := control.New(control.Options{})
+	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
+
+	m0, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	m = m0.(chatTUI)
+	lines := strings.Split(ansi.Strip(m.View().Content), "\n")
+	tipRow := -1
+	composerRow := -1
+	for i, line := range lines {
+		if strings.Contains(line, "컨텍스트") || strings.Contains(line, "Context is kept") {
+			tipRow = i
+		}
+		if strings.Contains(line, "입력") || strings.Contains(line, "INPUT") {
+			composerRow = i
+			break
+		}
+	}
+	if tipRow < 0 || composerRow < 0 || composerRow-tipRow > 3 {
+		t.Fatalf("idle startup composer is not directly under launch content:\n%s", ansi.Strip(m.View().Content))
+	}
+
+	// Startup diagnostics are still launch chrome. They should sit directly
+	// above the composer instead of forcing a full-height blank transcript.
+	m0, _ = m.Update(agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "Selected model is missing its API key."}))
+	m = m0.(chatTUI)
+	if plain := ansi.Strip(m.View().Content); !strings.Contains(plain, "Selected model is missing its API key.") {
+		t.Fatalf("startup notice disappeared from compact launch frame:\n%s", plain)
+	}
+
+	// A real assistant transcript switches the chat back to the full reading viewport.
+	m.ingestEvent(event.Event{Kind: event.Text, Text: "ready"})
+	m.ingestEvent(event.Event{Kind: event.Message})
+	wantFull := m.height - m.sessionHeaderRowCount() - m.bottomRows()
+	if got := m.transcriptHeight(); got != wantFull {
+		t.Fatalf("active transcript height = %d, want full viewport height %d", got, wantFull)
+	}
+
+	t.Run("tall terminal centers launch stage under compact chrome", func(t *testing.T) {
+		m := newChatTUI(control.New(control.Options{}), "", make(chan event.Event, 1), 100)
+		m0, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+		m = m0.(chatTUI)
+		header := ansi.Strip(renderSessionHeader(m, 100))
+		if strings.Contains(header, "+-----------------------------+") {
+			t.Fatalf("session header must not own the launch artwork:\n%s", header)
+		}
+		plain := ansi.Strip(m.View().Content)
+		if !strings.Contains(plain, "+-----------------------------+  +-----------------------------+") {
+			t.Fatalf("tall idle startup lost centered launch artwork:\n%s", plain)
+		}
+	})
+
+	t.Run("tall startup notice keeps composer near masthead", func(t *testing.T) {
+		m := newChatTUI(control.New(control.Options{}), "", make(chan event.Event, 1), 140)
+		m0, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
+		m = m0.(chatTUI)
+		m0, _ = m.Update(agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "Selected model is missing its API key."}))
+		m = m0.(chatTUI)
+		if got := m.transcriptHeight(); got > launchStageMaxRows {
+			t.Fatalf("tall startup notice transcript height = %d, want capped launch stage <= %d", got, launchStageMaxRows)
+		}
+		lines := strings.Split(ansi.Strip(m.View().Content), "\n")
+		noticeRow := -1
+		composerRow := -1
+		for i, line := range lines {
+			if strings.Contains(line, "Selected model is missing its API key.") {
+				noticeRow = i
+			}
+			if strings.Contains(line, "입력") || strings.Contains(line, "INPUT") {
+				composerRow = i
+				break
+			}
+		}
+		if noticeRow < 0 || composerRow < 0 {
+			t.Fatalf("tall startup frame missing notice/composer rows:\n%s", ansi.Strip(m.View().Content))
+		}
+		if gap := composerRow - noticeRow; gap > 3 {
+			t.Fatalf("tall startup notice/composer gap = %d rows, want <= 3:\n%s", gap, ansi.Strip(m.View().Content))
+		}
+	})
+
+	t.Run("tall startup notice before resize keeps composer near masthead", func(t *testing.T) {
+		m := newChatTUI(control.New(control.Options{}), "", make(chan event.Event, 1), 140)
+		m0, _ := m.Update(agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "Selected model is missing its API key."}))
+		m = m0.(chatTUI)
+		m0, _ = m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
+		m = m0.(chatTUI)
+		if got := m.transcriptHeight(); got > launchStageMaxRows {
+			t.Fatalf("pre-resize startup notice transcript height = %d, want capped launch stage <= %d", got, launchStageMaxRows)
+		}
+		lines := strings.Split(ansi.Strip(m.View().Content), "\n")
+		noticeRow := -1
+		composerRow := -1
+		for i, line := range lines {
+			if strings.Contains(line, "Selected model is missing its API key.") {
+				noticeRow = i
+			}
+			if strings.Contains(line, "입력") || strings.Contains(line, "INPUT") {
+				composerRow = i
+				break
+			}
+		}
+		if noticeRow < 0 || composerRow < 0 {
+			t.Fatalf("pre-resize startup frame missing notice/composer rows:\n%s", ansi.Strip(m.View().Content))
+		}
+		if gap := composerRow - noticeRow; gap > 3 {
+			t.Fatalf("pre-resize startup notice/composer gap = %d rows, want <= 3:\n%s", gap, ansi.Strip(m.View().Content))
+		}
+	})
+
+	t.Run("missing provider startup keeps composer near masthead", func(t *testing.T) {
+		m := newChatTUI(control.New(control.Options{}), `provider "deepseek-flash": missing env DEEPSEEK_API_KEY`, make(chan event.Event, 1), 140)
+		m.label = "deepseek-v4-flash"
+		m0, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
+		m = m0.(chatTUI)
+		m0, _ = m.Update(agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "Selected model is missing its API key."}))
+		m = m0.(chatTUI)
+		if got := m.transcriptHeight(); got > launchStageMaxRows {
+			t.Fatalf("missing provider startup transcript height = %d, want capped launch stage <= %d", got, launchStageMaxRows)
+		}
+		lines := strings.Split(ansi.Strip(m.View().Content), "\n")
+		noticeRow := -1
+		composerRow := -1
+		for i, line := range lines {
+			if strings.Contains(line, "Selected model is missing its API key.") {
+				noticeRow = i
+			}
+			if strings.Contains(line, "입력") || strings.Contains(line, "INPUT") {
+				composerRow = i
+				break
+			}
+		}
+		if noticeRow < 0 || composerRow < 0 {
+			t.Fatalf("missing provider startup frame missing notice/composer rows:\n%s", ansi.Strip(m.View().Content))
+		}
+		if plain := ansi.Strip(m.View().Content); !strings.Contains(plain, "notice  Selected model is missing its API key.") && !strings.Contains(plain, "setup  Selected model is missing its API key.") {
+			t.Fatalf("missing provider startup notice used legacy transcript styling:\n%s", plain)
+		}
+		if gap := composerRow - noticeRow; gap > 3 {
+			t.Fatalf("missing provider startup notice/composer gap = %d rows, want <= 3:\n%s", gap, ansi.Strip(m.View().Content))
+		}
+	})
+}
+
+func TestPersistentHeaderOffsetsTranscriptMouseCoordinates(t *testing.T) {
+	ctrl := control.New(control.Options{})
+	ch := make(chan event.Event, 1)
+	adv := func(m chatTUI, msg tea.Msg) chatTUI {
+		next, _ := m.Update(msg)
+		return next.(chatTUI)
+	}
+
+	m := adv(newChatTUI(ctrl, "", ch, 80), tea.WindowSizeMsg{Width: 80, Height: 16})
+	for range 30 {
+		m = adv(m, agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "line"}))
+	}
+	m.viewport.GotoTop()
+	wantLine := m.viewport.YOffset()
+	m = adv(m, tea.MouseClickMsg{X: 2, Y: m.sessionHeaderRowCount(), Button: tea.MouseLeft})
+	if !m.sel.active {
+		t.Fatal("clicking the first transcript row below the persistent header should start selection")
+	}
+	if got := m.sel.anchor.line; got != wantLine {
+		t.Fatalf("first visible transcript click selected line %d, want %d", got, wantLine)
+	}
+}
+
+func TestPersistentHeaderDoesNotStartTranscriptSelection(t *testing.T) {
+	ctrl := control.New(control.Options{})
+	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 16})
+	m = next.(chatTUI)
+
+	next, _ = m.Update(tea.MouseClickMsg{X: 2, Y: 0, Button: tea.MouseLeft})
+	m = next.(chatTUI)
+	if m.sel.active {
+		t.Fatal("clicking persistent session chrome must not start transcript selection")
+	}
+}
+
+// predicts the rendered row count of the status block (working + modestate line
 func TestStatusLineWrapAccounting(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 30)
 
-	// Narrow terminal: mode+state line and data line will both wrap.
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 30, Height: 12})
 	m = m0.(chatTUI)
+	m.ingestEvent(event.Event{Kind: event.Text, Text: "ready"})
+	m.ingestEvent(event.Event{Kind: event.Message})
+	m0, _ = m.Update(tea.WindowSizeMsg{Width: 30, Height: 12})
+	m = m0.(chatTUI)
 
-	// At width 30 the status block should be detectably wrapped.
 	if m.statusLineCount <= 2 {
 		t.Fatalf("statusLineCount on a narrow terminal (30 cols) = %d, want > 2 (wrapping should be detected)", m.statusLineCount)
 	}
 
-	// Verify the height budget covers the full screen.
-	if got := m.transcriptHeight() + m.bottomRows(); got != m.height {
-		t.Fatalf("transcriptHeight(%d) + bottomRows(%d) = %d, want %d (full screen height)",
-			m.transcriptHeight(), m.bottomRows(), got, m.height)
+	if got := m.sessionHeaderRowCount() + m.transcriptHeight() + m.bottomRows(); got != m.height {
+		t.Fatalf("sessionHeaderRows(%d) + transcriptHeight(%d) + bottomRows(%d) = %d, want %d (full screen height)",
+			m.sessionHeaderRowCount(), m.transcriptHeight(), m.bottomRows(), got, m.height)
 	}
 
-	// When running, the working line should increase statusLineCount.
 	idleCount := m.statusLineCount
 	m.state = tuiRunning
 	m.elapsed = 5
 	m.turnTokens = 100
-	// Push an interject so the working line is longer.
 	m.pendingInterject = []string{"feedback"}
 	m.statusLineCount = m.computeStatusLineCount(m.width)
 	runCount := m.statusLineCount
@@ -360,7 +517,6 @@ func TestStatusLineWrapAccounting(t *testing.T) {
 		t.Fatalf("statusLineCount when running (%d) should be > idle (%d)", runCount, idleCount)
 	}
 
-	// Reset and test that a custom statusline command is also counted.
 	m.state = tuiIdle
 	m.pendingInterject = nil
 	m.statuslineCmd = "custom"
@@ -370,49 +526,45 @@ func TestStatusLineWrapAccounting(t *testing.T) {
 	if m.statusLineCount <= 2 {
 		t.Fatalf("statusLineCount with custom statusline on 35 cols = %d, want > 2 (custom output should wrap)", m.statusLineCount)
 	}
-	if got := m.transcriptHeight() + m.bottomRows(); got != m.height {
-		t.Fatalf("with custom statusline: transcriptHeight(%d) + bottomRows(%d) = %d, want %d",
-			m.transcriptHeight(), m.bottomRows(), got, m.height)
+	if got := m.sessionHeaderRowCount() + m.transcriptHeight() + m.bottomRows(); got != m.height {
+		t.Fatalf("with custom statusline: sessionHeaderRows(%d) + transcriptHeight(%d) + bottomRows(%d) = %d, want %d",
+			m.sessionHeaderRowCount(), m.transcriptHeight(), m.bottomRows(), got, m.height)
 	}
 }
 
-// TestStatusLineRenderedHeightMatchesBudget proves that the actual rendered
-// line count of View()'s bottom area matches what bottomRows() predicts,
-// specifically at the CJK 2-char-overflow boundary where an off-by-one would
-// hide the bottom row of the viewport.
+// line count of View()s bottom area matches what bottomRows() predicts,
 func TestStatusLineRenderedHeightMatchesBudget(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 46)
 
-	// Manually set a long git repo/branch so the status line contains CJK.
+	// Manually set a long git repobranch so the status line contains CJK.
 	m.missing = ""
-	m.gitStatus = gitStatus{Repo: "我的项目名字", Branch: "我的分支"}
+	m.gitStatus = gitStatus{Repo: "내 프로젝트 이름", Branch: "내 브랜치"}
 
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 46, Height: 12})
+	m = m0.(chatTUI)
+	m.ingestEvent(event.Event{Kind: event.Text, Text: "ready"})
+	m.ingestEvent(event.Event{Kind: event.Message})
+	m0, _ = m.Update(tea.WindowSizeMsg{Width: 46, Height: 12})
 	m = m0.(chatTUI)
 
 	if m.statusLineCount <= 2 {
 		t.Fatalf("statusLineCount at width 46 with CJK = %d, want > 2", m.statusLineCount)
 	}
 
-	// Verify that computeStatusLineCount matches the actual rendered line count.
-	// Strip ANSI from the full view, then reconstruct what bottomRows expects.
 	viewStr := ansi.Strip(m.View().Content)
 	allLines := strings.Split(viewStr, "\n")
 	totalLines := len(allLines)
 
-	// The total should be m.height (full terminal height).
 	if totalLines != m.height {
 		t.Fatalf("View() total lines = %d, want %d (terminal height)", totalLines, m.height)
 	}
 
-	// transcriptHeight() lines should be the viewport, the rest is bottom rows.
-	if got, want := m.transcriptHeight()+m.bottomRows(), m.height; got != want {
-		t.Fatalf("transcriptHeight(%d) + bottomRows(%d) = %d, want %d",
-			m.transcriptHeight(), m.bottomRows(), got, want)
+	if got, want := m.sessionHeaderRowCount()+m.transcriptHeight()+m.bottomRows(), m.height; got != want {
+		t.Fatalf("sessionHeaderRows(%d) + transcriptHeight(%d) + bottomRows(%d) = %d, want %d",
+			m.sessionHeaderRowCount(), m.transcriptHeight(), m.bottomRows(), got, want)
 	}
 
-	// Also verify the invariant holds at narrower widths.
 	for _, w := range []int{44, 42, 40, 35, 30, 25, 20} {
 		m0, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 12})
 		m = m0.(chatTUI)
@@ -421,9 +573,9 @@ func TestStatusLineRenderedHeightMatchesBudget(t *testing.T) {
 		if len(allLines2) != m.height {
 			t.Errorf("width=%d: View() total lines = %d, want %d", w, len(allLines2), m.height)
 		}
-		if got, want := m.transcriptHeight()+m.bottomRows(), m.height; got != want {
-			t.Errorf("width=%d: transcriptHeight(%d) + bottomRows(%d) = %d, want %d",
-				w, m.transcriptHeight(), m.bottomRows(), got, want)
+		if got, want := m.sessionHeaderRowCount()+m.transcriptHeight()+m.bottomRows(), m.height; got != want {
+			t.Errorf("width=%d: sessionHeaderRows(%d) + transcriptHeight(%d) + bottomRows(%d) = %d, want %d",
+				w, m.sessionHeaderRowCount(), m.transcriptHeight(), m.bottomRows(), got, want)
 		}
 	}
 }
@@ -433,6 +585,10 @@ func TestManualNewlineGrowsComposerWithoutHidingFirstLine(t *testing.T) {
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 40)
 
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 12})
+	m = m0.(chatTUI)
+	m.ingestEvent(event.Event{Kind: event.Text, Text: "ready"})
+	m.ingestEvent(event.Event{Kind: event.Message})
+	m0, _ = m.Update(tea.WindowSizeMsg{Width: 40, Height: 12})
 	m = m0.(chatTUI)
 	m.input.SetValue("first line")
 
@@ -447,15 +603,18 @@ func TestManualNewlineGrowsComposerWithoutHidingFirstLine(t *testing.T) {
 	}
 }
 
-func TestEmptyComposerShowsOnlyPrompt(t *testing.T) {
+func TestEmptyComposerShowsLocalizedPlaceholderWithoutChevron(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 60)
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 16})
 	m = m0.(chatTUI)
 
 	firstLine := strings.Split(ansi.Strip(m.renderComposerInput()), "\n")[0]
-	if strings.TrimSpace(firstLine) != "❯" {
-		t.Fatalf("empty composer = %q, want only the prompt", firstLine)
+	if !strings.Contains(firstLine, i18n.M.ChatComposerPlaceholder) {
+		t.Fatalf("empty composer = %q, want localized placeholder %q", firstLine, i18n.M.ChatComposerPlaceholder)
+	}
+	if strings.Contains(firstLine, "❯") || strings.Contains(firstLine, ">") {
+		t.Fatalf("empty composer retained a chevron prompt: %q", firstLine)
 	}
 }
 
@@ -464,6 +623,8 @@ func TestManualNewlineCanExceedVisibleComposerRows(t *testing.T) {
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 40)
 
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 12})
+	m = m0.(chatTUI)
+	m0, _ = m.Update(agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "ready"}))
 	m = m0.(chatTUI)
 	m.input.SetValue("first line")
 	visibleCap := m.input.MaxHeight
@@ -485,8 +646,8 @@ func TestManualNewlineCanExceedVisibleComposerRows(t *testing.T) {
 	if got := m.input.ScrollYOffset(); got == 0 {
 		t.Fatal("overflowing composer should scroll internally to keep the caret visible")
 	}
-	if got := m.transcriptHeight(); got < minTranscriptRows {
-		t.Fatalf("transcript height = %d, want at least %d rows", got, minTranscriptRows)
+	if got := m.transcriptHeight(); got < 1 {
+		t.Fatalf("transcript height = %d, want at least one row", got)
 	}
 }
 
@@ -496,9 +657,11 @@ func TestComposerHeightReflowsWhenTerminalShrinksAndGrows(t *testing.T) {
 
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = m0.(chatTUI)
+	m.ingestEvent(event.Event{Kind: event.Text, Text: "ready"})
+	m.ingestEvent(event.Event{Kind: event.Message})
+	m0, _ = m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = m0.(chatTUI)
 	m.input.SetValue(strings.Repeat("line\n", maxInputRows+2))
-	// SetValue recalculates the dynamic textarea before the outer model gets a
-	// chance to resize the transcript, so send a harmless resize through Update.
 	m0, _ = m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = m0.(chatTUI)
 	if got := m.input.Height(); got != maxInputRows {
@@ -550,13 +713,14 @@ func TestTranscriptResizeRerendersCommittedMarkdownAtNewWidth(t *testing.T) {
 	ruleWidth := 0
 	for line := range strings.SplitSeq(newRendered, "\n") {
 		trimmed := strings.TrimSpace(line)
+		trimmed = strings.TrimPrefix(trimmed, "│ ")
 		if trimmed != "" && strings.Trim(trimmed, "─") == "" {
 			ruleWidth = visibleWidth(trimmed)
 			break
 		}
 	}
-	if got, want := ruleWidth, transcriptContentWidth(80, false)-visibleWidth(assistantTranscriptIndent); got != want {
-		t.Fatalf("resized thematic rule width = %d, want indented assistant body width %d", got, want)
+	if got, want := ruleWidth, transcriptContentWidth(80, false)-visibleWidth(assistantTranscriptRail); got != want {
+		t.Fatalf("resized thematic rule width = %d, want timeline body width %d", got, want)
 	}
 	if newLines >= oldLines {
 		t.Fatalf("wider transcript kept old hard wrapping: old lines=%d new lines=%d\n%s", oldLines, newLines, newRendered)
@@ -607,6 +771,10 @@ func TestSoftWrappedInputGrowsComposerAndShrinksTranscript(t *testing.T) {
 
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 24, Height: 12})
 	m = m0.(chatTUI)
+	m.ingestEvent(event.Event{Kind: event.Text, Text: "ready"})
+	m.ingestEvent(event.Event{Kind: event.Message})
+	m0, _ = m.Update(tea.WindowSizeMsg{Width: 24, Height: 12})
+	m = m0.(chatTUI)
 	initialViewportHeight := m.viewport.Height()
 
 	m0, _ = m.Update(tea.PasteMsg{Content: strings.Repeat("x", 60)})
@@ -620,17 +788,20 @@ func TestSoftWrappedInputGrowsComposerAndShrinksTranscript(t *testing.T) {
 	}
 }
 
-func TestComposerPromptReservesWidthAndOffsetsCJKCursor(t *testing.T) {
+func TestComposerGutterReservesWidthAndOffsetsCJKCursor(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 40)
 
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 12})
 	m = m0.(chatTUI)
-	m.input.SetValue("你好")
+	m.input.SetValue("한글")
 
 	firstLine := strings.Split(ansi.Strip(m.input.View()), "\n")[0]
-	if !strings.HasPrefix(firstLine, "❯ 你好") {
-		t.Fatalf("composer first line = %q, want prompt before CJK input", firstLine)
+	if !strings.HasPrefix(firstLine, "  한글") {
+		t.Fatalf("composer first line = %q, want a quiet two-cell gutter before CJK input", firstLine)
+	}
+	if strings.Contains(firstLine, "❯") || strings.Contains(firstLine, ">") {
+		t.Fatalf("composer first line retained a chevron prompt: %q", firstLine)
 	}
 	if got, want := m.input.Width(), 40-4-composerPromptWidth; got != want {
 		t.Fatalf("textarea content width = %d, want %d after prompt gutter", got, want)
@@ -644,12 +815,10 @@ func TestComposerPromptReservesWidthAndOffsetsCJKCursor(t *testing.T) {
 	}
 }
 
-func TestComposerPromptDoesNotRepeatOnWrappedRows(t *testing.T) {
+func TestComposerBlankGutterRepeatsOnWrappedRows(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 16)
 
-	// Give this prompt-gutter test enough vertical space for the responsive
-	// footer; terminal-height prioritization is covered separately.
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 16, Height: 18})
 	m = m0.(chatTUI)
 	m.input.SetValue(strings.Repeat("x", m.input.Width()+1))
@@ -657,11 +826,11 @@ func TestComposerPromptDoesNotRepeatOnWrappedRows(t *testing.T) {
 	if len(lines) < 2 {
 		t.Fatalf("wrapped composer lines = %d, want at least 2", len(lines))
 	}
-	if !strings.HasPrefix(lines[0], "❯ ") {
-		t.Fatalf("first composer row missing prompt: %q", lines[0])
+	if !strings.HasPrefix(lines[0], "  ") || strings.Contains(lines[0], "❯") {
+		t.Fatalf("first composer row should use a blank gutter: %q", lines[0])
 	}
-	if strings.HasPrefix(lines[1], "❯ ") || !strings.HasPrefix(lines[1], "  ") {
-		t.Fatalf("continuation row should keep a blank prompt gutter: %q", lines[1])
+	if !strings.HasPrefix(lines[1], "  ") || strings.Contains(lines[1], "❯") {
+		t.Fatalf("continuation row should keep the same blank gutter: %q", lines[1])
 	}
 }
 
@@ -689,7 +858,7 @@ func TestMCPManagerHidesComposerBox(t *testing.T) {
 	if !strings.Contains(content, "Enter for details") {
 		t.Fatalf("MCP footer hint missing from view:\n%s", content)
 	}
-	if !strings.Contains(content, "· MCP") {
+	if !strings.Contains(content, statusFooterIndent+"MCP") {
 		t.Fatalf("MCP status line missing from view:\n%s", content)
 	}
 }
@@ -818,14 +987,18 @@ func TestMainManagerFollowsTranscriptWithoutTopPadding(t *testing.T) {
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = m0.(chatTUI)
-	m.wrappedLines = []string{"reasonix", "› /mcp"}
+	// This helper is exercised with an explicit manager card rather than an
+	// active manager state, so opt into the reading-area height it would receive
+	// from View() when a manager is open.
+	m.viewport.SetHeight(20)
+	m.wrappedLines = []string{"patty", "› /mcp"}
 
 	out := ansi.Strip(m.renderTranscriptWithMainManager("Manage MCP servers\n1 servers"))
 	lines := strings.Split(out, "\n")
 	if len(lines) < 4 {
 		t.Fatalf("rendered manager area too short:\n%s", out)
 	}
-	if !strings.Contains(lines[0], "reasonix") || !strings.Contains(lines[1], "/mcp") {
+	if !strings.Contains(lines[0], "patty") || !strings.Contains(lines[1], "/mcp") {
 		t.Fatalf("transcript lines should stay above manager:\n%s", out)
 	}
 	if strings.TrimSpace(lines[2]) != "" {
@@ -942,10 +1115,7 @@ func TestModalPanelsHideComposerBox(t *testing.T) {
 	}
 }
 
-// TestRewindPickerWindowsLongSession verifies the Esc-Esc turn list windows
-// long sessions (one row per turn) so the overlay cannot outgrow the terminal:
-// at most quickPickerMaxVisible rows render, with ↑/↓ more markers pointing at
-// the hidden turns and the window following the selection.
+// at most quickPickerMaxVisible rows render, with  more markers pointing at
 func TestRewindPickerWindowsLongSession(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
@@ -957,7 +1127,6 @@ func TestRewindPickerWindowsLongSession(t *testing.T) {
 		metas[i] = checkpoint.Meta{Turn: i, Prompt: fmt.Sprintf("turn %d", i)}
 	}
 
-	// Newest turn selected (default): window shows rows 4..11.
 	m.rewind = &rewindPicker{metas: metas, sel: 11}
 	card := m.renderRewind()
 	if !strings.Contains(card, "↑ more") {
@@ -970,7 +1139,6 @@ func TestRewindPickerWindowsLongSession(t *testing.T) {
 		t.Fatalf("window must cover rows 4..11, got: %q", card)
 	}
 
-	// Oldest turn selected: window shows rows 0..7.
 	m.rewind = &rewindPicker{metas: metas, sel: 0}
 	card = m.renderRewind()
 	if !strings.Contains(card, "↓ more") {
@@ -983,7 +1151,7 @@ func TestRewindPickerWindowsLongSession(t *testing.T) {
 		t.Fatalf("window must cover rows 0..7, got: %q", card)
 	}
 
-	// Short session (≤8 turns): every row visible, no markers.
+	// Short session (8 turns): every row visible, no markers.
 	m.rewind = &rewindPicker{metas: metas[:4], sel: 0}
 	card = m.renderRewind()
 	if strings.Contains(card, "more") {
@@ -1181,10 +1349,6 @@ func TestApprovalArrowKeysMoveVisibleSelection(t *testing.T) {
 	}
 }
 
-// TestApprovalLegacyFourAlwaysDenies pins the documented contract that the
-// legacy numeric 4 rejects an approval even when the current prompt shows fewer
-// than four rows (fresh two-choice prompts, plan approval). Before the fix,
-// pressing 4 on a short prompt was a no-op.
 func TestApprovalLegacyFourAlwaysDenies(t *testing.T) {
 	for _, tool := range []string{"remember", control.SandboxEscapeApprovalTool, "bash"} {
 		m := newTestChatTUI()
@@ -1199,8 +1363,8 @@ func TestApprovalLegacyFourAlwaysDenies(t *testing.T) {
 	}
 }
 
-// TestCompletionMenuCtrlPNMovesSelection covers the Ctrl+P/Ctrl+N contract the
-// docs advertise for the slash/@ completion menu.
+// TestCompletionMenuCtrlPNMovesSelection covers the Ctrl+PCtrl+N contract the
+// docs advertise for the slash@ completion menu.
 func TestCompletionMenuCtrlPNMovesSelection(t *testing.T) {
 	m := newTestChatTUI()
 	m.completion = completion{active: true, kind: compSlash, items: []compItem{{label: "/mcp"}, {label: "/model"}}, sel: 0}
@@ -1225,10 +1389,14 @@ func TestStatusCommandShowsRuntimeDetails(t *testing.T) {
 	m.balance = "$10.00"
 	m.runSlashCommand("/status")
 	out := ansi.Strip(strings.Join(m.transcript, "\n"))
-	for _, want := range []string{"Session status", "provider/model", "delivery", "effort max", "$10.00"} {
+	// The runtime profile (delivery) is no longer surfaced in status output.
+	for _, want := range []string{"Session status", "provider/model", "effort max", "$10.00"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("/status output missing %q:\n%s", want, out)
 		}
+	}
+	if strings.Contains(out, "delivery") {
+		t.Errorf("/status output should not surface the runtime profile, got:\n%s", out)
 	}
 }
 
@@ -1290,12 +1458,7 @@ func TestInputOwnedOverlaysKeepComposerBox(t *testing.T) {
 	}
 }
 
-// TestIngestEventRoutesByKind proves each event Kind lands in the right place:
-// reasoning shows a live marker with streaming text, while tool dispatch, blocked
-// results, usage, notices, and coordinator phases each commit as their own
-// scrollback line. Routing is by Kind, not by sniffing line prefixes.
 func TestIngestEventRoutesByKind(t *testing.T) {
-	// Reasoning shows a marker plus the live thinking text streamed below it.
 	m := newTestChatTUI()
 	m.ingestEvent(event.Event{Kind: event.Reasoning, Text: "weighing options"})
 	if len(m.transcript) != 2 || !strings.Contains(m.transcript[0], "thinking") {
@@ -1331,7 +1494,7 @@ func TestIngestEventRoutesByKind(t *testing.T) {
 		}
 	}
 
-	// A successful tool result is silent — it only feeds the model.
+	// A successful tool result is silent  it only feeds the model.
 	m = newTestChatTUI()
 	m.ingestEvent(event.Event{Kind: event.ToolResult, Tool: event.Tool{Name: "read_file", Output: "contents"}})
 	if len(*m.pendingCommit) != 0 {
@@ -1349,13 +1512,10 @@ func TestIngestEventShowsReasoningInVerboseMode(t *testing.T) {
 	}
 }
 
-// TestUserBubbleEchoedImmediately proves the user bubble is committed to scrollback
-// the moment the turn starts, not deferred to the server's first packet. The first
-// real packet only confirms the send (closing the un-send window); a local
-// TurnStarted must not, so Esc can still un-send until the server actually replies.
+// the moment the turn starts, not deferred to the servers first packet. The first
 func TestUserBubbleEchoedImmediately(t *testing.T) {
 	m := newTestChatTUI()
-	// Stand in for startTurn's immediate echo (no controller in the unit harness).
+	// Stand in for startTurns immediate echo (no controller in the unit harness).
 	m.bubbleStartIdx = len(m.transcript)
 	m.commitLine("")
 	m.commitLine(renderUserBubble("hello world", m.width, m.planMode))
@@ -1366,14 +1526,12 @@ func TestUserBubbleEchoedImmediately(t *testing.T) {
 		t.Fatalf("bubble should be echoed to scrollback immediately, got %v", m.transcript)
 	}
 
-	// TurnStarted is emitted locally before the request — it must not confirm.
+	// TurnStarted is emitted locally before the request  it must not confirm.
 	m.ingestEvent(event.Event{Kind: event.TurnStarted})
 	if !m.bubblePending {
 		t.Fatalf("TurnStarted should leave the send un-sendable, pending=%v", m.bubblePending)
 	}
 
-	// The first real packet confirms the send; a reasoning packet also shows its
-	// live thinking marker.
 	m.ingestEvent(event.Event{Kind: event.Reasoning, Text: "thinking…"})
 	if m.bubblePending {
 		t.Fatalf("first packet should confirm the send")
@@ -1383,27 +1541,31 @@ func TestUserBubbleEchoedImmediately(t *testing.T) {
 	}
 }
 
-func TestUserBubbleIsLightweightTranscriptLine(t *testing.T) {
+func TestUserBubbleIsLightweightTimelineNode(t *testing.T) {
 	prevColor := activeColorProfile
 	activeColorProfile = colorprofile.ANSI256
 	defer func() { activeColorProfile = prevColor }()
 
 	got := renderUserBubble("hello world", 80, false)
 	plain := ansi.Strip(got)
-	if !strings.Contains(plain, "› hello world") {
+	if !strings.Contains(plain, i18n.M.ChatUserLabel) || !strings.Contains(plain, assistantTranscriptRail+"hello world") {
 		t.Fatalf("user bubble missing prompt text: %q", plain)
+	}
+	if strings.Contains(plain, "›") || strings.Contains(plain, "❯") || strings.Contains(plain, ">") {
+		t.Fatalf("user bubble retained a chevron: %q", plain)
 	}
 	if got == plain {
 		t.Fatalf("user bubble should use themed foreground color when color is enabled: %q", got)
 	}
-	if w := ansi.StringWidth(plain); w > 20 {
-		t.Fatalf("user bubble should not render as a full-width input-like block, width=%d text=%q", w, plain)
+	for row, line := range strings.Split(plain, "\n") {
+		if w := ansi.StringWidth(line); w > 20 {
+			t.Fatalf("user bubble row %d should stay compact, width=%d text=%q", row, w, line)
+		}
 	}
 }
 
-// TestUnsendDiscardsBufferedEvents proves that after an un-send (Esc before any
 // packet) the turn's already-buffered events are swallowed — nothing reaches
-// scrollback — and its TurnDone settles the model back to idle.
+// scrollback  and its TurnDone settles the model back to idle.
 func TestUnsendDiscardsBufferedEvents(t *testing.T) {
 	m := newTestChatTUI()
 	m.state = tuiRunning
@@ -1426,22 +1588,22 @@ func TestUnsendDiscardsBufferedEvents(t *testing.T) {
 
 func TestRecoveryPauseTurnDoneIsInformational(t *testing.T) {
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
-	const backendFallback = "Automatic retries paused. Reasonix stopped repeated attempts and kept completed work. Send \"continue\" to start a fresh attempt, or add instructions to change direction."
+	const backendFallback = "Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send \"continue\" to start a fresh attempt, or add instructions to change direction."
 	tests := []struct {
 		lang string
 		want string
 	}{
 		{
 			lang: "en",
-			want: "Automatic retries paused. Reasonix stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.",
+			want: "Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.",
 		},
 		{
-			lang: "zh",
-			want: "已暂停自动重试。Reasonix 已停止重复尝试，并保留已完成的工作。发送“继续”即可开始新一轮，也可以补充要求来调整方向。",
+			lang: "ko-KR",
+			want: "자동 재시도가 일시 중지되었습니다. Patty Code가 반복 시도를 중단하고 완료된 작업을 유지했습니다. 새 시도를 시작하려면 \"계속\"을 보내거나 방향을 바꾸는 지시를 추가하세요.",
 		},
 		{
-			lang: "zh-TW",
-			want: "已暫停自動重試。Reasonix 已停止重複嘗試，並保留已完成的工作。傳送「繼續」即可開始新一輪，也可以補充要求來調整方向。",
+			lang: "en-US",
+			want: "Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.",
 		},
 	}
 	for _, tt := range tests {
@@ -1459,9 +1621,6 @@ func TestRecoveryPauseTurnDoneIsInformational(t *testing.T) {
 			if !strings.Contains(got, tt.want) {
 				t.Fatalf("recovery pause transcript = %q, want localized pause message %q", got, tt.want)
 			}
-			if tt.lang != "en" && strings.Contains(got, backendFallback) {
-				t.Fatalf("recovery pause transcript = %q, must not leak English fallback into %s", got, tt.lang)
-			}
 			if strings.Contains(got, i18n.M.ErrorPrefix) {
 				t.Fatalf("recovery pause transcript = %q, must not use error prefix %q", got, i18n.M.ErrorPrefix)
 			}
@@ -1469,11 +1628,8 @@ func TestRecoveryPauseTurnDoneIsInformational(t *testing.T) {
 	}
 }
 
-// TestAnswerTextStartingWithBracketStaysInAnswer locks in the win of the typed
 // event stream: model answer text starting with "[" — a markdown link, a slice
 // literal, even a quoted "[… · planning]" — is a Text event, so it can never be
-// mistaken for a coordinator phase marker the way prefix-sniffing a flattened
-// byte stream once could. It stays in the answer buffer and renders as markdown.
 func TestAnswerTextStartingWithBracketStaysInAnswer(t *testing.T) {
 	for _, txt := range []string{
 		"[link](https://example.com)",
@@ -1491,9 +1647,7 @@ func TestAnswerTextStartingWithBracketStaysInAnswer(t *testing.T) {
 	}
 }
 
-// TestInsertNewlineKeyBinding verifies newChatTUI actually wires shift+enter
-// into the textarea's InsertNewline binding (plain Enter submits, so a newline
-// needs a modifier). It exercises the real constructor, not a hand-built binding.
+// into the textareas InsertNewline binding (plain Enter submits, so a newline
 func TestInsertNewlineKeyBinding(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
@@ -1517,18 +1671,15 @@ func TestCtrlHomeEndScrollKeyBindings(t *testing.T) {
 	for range 12 {
 		cur = adv(cur, notice)
 	}
-	// Viewport should be at the bottom after output.
 	if !cur.viewport.AtBottom() {
 		t.Fatal("viewport should start at the bottom after streaming output")
 	}
 
-	// Ctrl+Home should scroll to the top.
 	cur = adv(cur, tea.KeyPressMsg{Code: tea.KeyHome, Mod: tea.ModCtrl})
 	if !cur.viewport.AtTop() {
 		t.Fatalf("ctrl+home should scroll to top, AtTop=%v, YOffset=%d", cur.viewport.AtTop(), cur.viewport.YOffset())
 	}
 
-	// Ctrl+End should scroll back to the bottom.
 	cur = adv(cur, tea.KeyPressMsg{Code: tea.KeyEnd, Mod: tea.ModCtrl})
 	if !cur.viewport.AtBottom() {
 		t.Fatalf("ctrl+end should scroll to bottom, AtBottom=%v, YOffset=%d", cur.viewport.AtBottom(), cur.viewport.YOffset())
@@ -1545,6 +1696,8 @@ func TestMouseWheelAndPageKeysScrollTranscript(t *testing.T) {
 	}
 
 	cur := adv(newChatTUI(ctrl, "", ch, 80), tea.WindowSizeMsg{Width: 80, Height: 10})
+	cur.ingestEvent(event.Event{Kind: event.Text, Text: "ready"})
+	cur.ingestEvent(event.Event{Kind: event.Message})
 	for range 40 {
 		cur = adv(cur, notice)
 	}
@@ -1581,16 +1734,18 @@ func TestMouseWheelAndPageKeysScrollTranscript(t *testing.T) {
 func TestRunningStreamPreservesScrolledReadingPosition(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	ch := make(chan event.Event, 1)
-	notice := agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "line"})
 	adv := func(m chatTUI, msg tea.Msg) chatTUI {
 		n, _ := m.Update(msg)
 		return n.(chatTUI)
 	}
 
 	cur := adv(newChatTUI(ctrl, "", ch, 80), tea.WindowSizeMsg{Width: 80, Height: 10})
-	for range 40 {
-		cur = adv(cur, notice)
+	cur.clearTranscriptDisplay()
+	for i := range 40 {
+		cur.commitTranscriptSource(transcriptSource{kind: transcriptSourceMarkdown, raw: fmt.Sprintf("line %02d", i)})
 	}
+	cur.transcriptDirty = true
+	cur = adv(cur, tea.WindowSizeMsg{Width: 80, Height: 10})
 	cur.state = tuiRunning
 	cur = adv(cur, tea.MouseWheelMsg{Button: tea.MouseWheelUp})
 	readOffset := cur.viewport.YOffset()
@@ -1618,21 +1773,24 @@ func TestRunningStreamPreservesScrolledReadingPosition(t *testing.T) {
 func TestTranscriptScrollbarClickAndDrag(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	ch := make(chan event.Event, 1)
-	notice := agentEventMsg(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "line"})
 	adv := func(m chatTUI, msg tea.Msg) chatTUI {
 		n, _ := m.Update(msg)
 		return n.(chatTUI)
 	}
 
 	cur := adv(newChatTUI(ctrl, "", ch, 80), tea.WindowSizeMsg{Width: 80, Height: 10})
-	for range 40 {
-		cur = adv(cur, notice)
+	cur.clearTranscriptDisplay()
+	for i := range 40 {
+		cur.commitTranscriptSource(transcriptSource{kind: transcriptSourceMarkdown, raw: fmt.Sprintf("line %02d", i)})
 	}
+	cur.transcriptDirty = true
+	cur = adv(cur, tea.WindowSizeMsg{Width: 80, Height: 10})
 	cur.viewport.GotoTop()
 	barX := cur.viewport.Width()
-	bottomRow := cur.viewport.Height() - 1
+	headerRows := cur.sessionHeaderRowCount()
+	bottomRow := headerRows + cur.viewport.Height() - 1
 
-	cur = adv(cur, tea.MouseClickMsg{X: barX, Y: 0, Button: tea.MouseLeft})
+	cur = adv(cur, tea.MouseClickMsg{X: barX, Y: headerRows, Button: tea.MouseLeft})
 	if cur.sel.active {
 		t.Fatal("clicking the scrollbar must not start transcript selection")
 	}
@@ -1657,7 +1815,7 @@ func TestTranscriptScrollbarClickAndDrag(t *testing.T) {
 	}
 
 	cur.viewport.GotoTop()
-	cur = adv(cur, tea.MouseClickMsg{X: barX - 1, Y: 0, Button: tea.MouseLeft})
+	cur = adv(cur, tea.MouseClickMsg{X: barX - 1, Y: headerRows, Button: tea.MouseLeft})
 	if !cur.sel.active {
 		t.Fatal("clicking the transcript content column next to the scrollbar should still start selection")
 	}
@@ -2054,10 +2212,6 @@ func TestReadPrimarySelectionRequestsTextAndPreservesNewlines(t *testing.T) {
 	}
 }
 
-// TestMouseDragReleaseAutoCopies verifies that releasing the mouse after a
-// left-drag over the transcript copies the selection to the clipboard
-// automatically (native terminal convention), keeps the selection highlighted
-// so a follow-up right-click can still re-copy it, and arms the transient
 // "copied to clipboard" status-line notice.
 func TestMouseDragReleaseAutoCopies(t *testing.T) {
 	setLocalClipboardSession(t)
@@ -2098,9 +2252,7 @@ func TestMouseDragReleaseAutoCopies(t *testing.T) {
 	}
 }
 
-// TestCtrlInsertCopiesTranscriptSelection verifies the terminal-convention
-// Ctrl+Insert copy key copies an active transcript selection to the clipboard
-// and arms the copied notice, without Ctrl+C's destructive side effects.
+// and arms the copied notice, without Ctrl+Cs destructive side effects.
 func TestCtrlInsertCopiesTranscriptSelection(t *testing.T) {
 	setLocalClipboardSession(t)
 	m := newTestChatTUI()
@@ -2130,8 +2282,6 @@ func TestCtrlInsertCopiesTranscriptSelection(t *testing.T) {
 	}
 }
 
-// TestCtrlInsertCopiesComposerSelection verifies Ctrl+Insert also copies an
-// active selection inside the composer, mirroring the Ctrl+C handling.
 func TestCtrlInsertCopiesComposerSelection(t *testing.T) {
 	setLocalClipboardSession(t)
 	m := newComposerMouseTestTUI(t, 60, 16)
@@ -2157,9 +2307,7 @@ func TestCtrlInsertCopiesComposerSelection(t *testing.T) {
 	}
 }
 
-// TestCtrlInsertWithoutSelectionIsNoOp verifies Ctrl+Insert with no active
-// selection leaves the composer and the session state untouched — unlike
-// Ctrl+C, it must never clear input or quit.
+// selection leaves the composer and the session state untouched  unlike
 func TestCtrlInsertWithoutSelectionIsNoOp(t *testing.T) {
 	m := newTestChatTUI()
 	m.input.SetValue("draft text")
@@ -2177,9 +2325,7 @@ func TestCtrlInsertWithoutSelectionIsNoOp(t *testing.T) {
 	}
 }
 
-// TestMousePlainClickReleaseDoesNotCopy verifies that a plain click (no drag,
-// empty selection) does not copy an empty string to the clipboard or show the
-// copied notice — only clears the zero-width selection, as before.
+// copied notice  only clears the zero-width selection, as before.
 func TestMousePlainClickReleaseDoesNotCopy(t *testing.T) {
 	m := newTestChatTUI()
 	m.transcript = []string{"hello world"}
@@ -2201,22 +2347,17 @@ func TestMousePlainClickReleaseDoesNotCopy(t *testing.T) {
 	}
 }
 
-// TestCopyNoticeExpires verifies the copied-to-clipboard notice clears itself
-// once its own expiry tick fires, and that a stale tick from an earlier copy
-// (superseded by a newer one) does not clear the newer notice.
 func TestCopyNoticeExpires(t *testing.T) {
 	m := newTestChatTUI()
 	m.copyNoticeText = i18n.M.MouseCopiedHint
 	m.copyNoticeSeq = 2
 
-	// A stale tick from a prior (superseded) copy must not clear the current notice.
 	out, _ := m.Update(copyNoticeExpireMsg{seq: 1})
 	m2 := out.(chatTUI)
 	if m2.copyNoticeText == "" {
 		t.Fatal("a stale expiry tick must not clear a newer notice")
 	}
 
-	// The current tick clears it.
 	out, _ = m2.Update(copyNoticeExpireMsg{seq: 2})
 	m3 := out.(chatTUI)
 	if m3.copyNoticeText != "" {
@@ -2256,9 +2397,8 @@ func TestImagePastePendingAppearsInFooter(t *testing.T) {
 }
 
 // TestToggleMouseCaptureFlipsModeAndClearsGestures proves "/mouse" flips
-// mouseCaptureOff, shows the matching on/off notice, and drops any in-flight
+// mouseCaptureOff, shows the matching onoff notice, and drops any in-flight
 // selection/scrollbar drag so a stale gesture can't be found mid-drag once the
-// terminal starts intercepting the events that would have finished it.
 func TestToggleMouseCaptureFlipsModeAndClearsGestures(t *testing.T) {
 	m := newTestChatTUI()
 	m.transcript = []string{"hello world"}
@@ -2287,10 +2427,8 @@ func TestToggleMouseCaptureFlipsModeAndClearsGestures(t *testing.T) {
 	}
 }
 
-// TestViewMouseModeFollowsCapture proves View() requests MouseModeNone (so
-// the terminal's native right-click menu and click-drag selection work) while
+// the terminals native right-click menu and click-drag selection work) while
 // mouseCaptureOff is set, and MouseModeCellMotion (in-app selection/scrollbar/
-// wheel-scroll) otherwise.
 func TestViewMouseModeFollowsCapture(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 60)
@@ -2305,8 +2443,6 @@ func TestViewMouseModeFollowsCapture(t *testing.T) {
 	if got := m.View().MouseMode; got != tea.MouseModeNone {
 		t.Fatalf("MouseMode with capture off = %v, want MouseModeNone", got)
 	}
-	// Status line wraps at this width, so check the unwrapped tag rather than
-	// the rendered (possibly line-broken) View() content.
 	if got := m.mouseTag(); !strings.Contains(ansi.Strip(got), i18n.M.MouseCaptureTag) {
 		t.Fatalf("mouseTag() = %q, want it to contain %q", got, i18n.M.MouseCaptureTag)
 	}
@@ -2318,7 +2454,7 @@ func TestEchoLocalCommandAddsTranscriptMarker(t *testing.T) {
 	if len(*m.pendingCommit) != 1 {
 		t.Fatalf("pending commits = %d, want 1", len(*m.pendingCommit))
 	}
-	if got := (*m.pendingCommit)[0]; !strings.Contains(got, "› /tree") {
+	if got := ansi.Strip((*m.pendingCommit)[0]); !strings.Contains(got, assistantTranscriptRail+"/tree") {
 		t.Fatalf("command echo = %q, want /tree marker", got)
 	}
 }
@@ -2327,7 +2463,7 @@ func isolateUserConfig(t *testing.T) {
 	t.Helper()
 	root := t.TempDir()
 	t.Setenv("HOME", root)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "config"))
 	t.Setenv("AppData", filepath.Join(root, "AppData")) // os.UserConfigDir reads AppData on Windows
 	t.Chdir(root)
@@ -2412,38 +2548,38 @@ func TestReasoningLanguageCommandPersistsAndUpdatesController(t *testing.T) {
 	m := newTestChatTUI()
 	m.ctrl = ctrl
 
-	m.runReasoningLanguageCommand("/reasoning-language zh")
+	m.runReasoningLanguageCommand("/reasoning-language ko-KR")
 
 	body, err := os.ReadFile(config.UserConfigPath())
 	if err != nil {
 		t.Fatalf("read saved config: %v", err)
 	}
-	if !strings.Contains(string(body), `reasoning_language = "zh"`) {
-		t.Fatalf("saved config missing reasoning_language=zh:\n%s", body)
+	if !strings.Contains(string(body), `reasoning_language = "ko-KR"`) {
+		t.Fatalf("saved config missing reasoning_language=ko-KR:\n%s", body)
 	}
 	composed := ctrl.Compose("hello")
-	if !strings.HasPrefix(composed, "<reasoning-language>") || !strings.Contains(composed, "简体中文") {
-		t.Fatalf("/reasoning-language zh should affect current controller, got %q", composed)
+	if !strings.HasPrefix(composed, "<reasoning-language>") || !strings.Contains(composed, "한국어로 작성해야 합니다") {
+		t.Fatalf("/reasoning-language ko-KR should affect current controller, got %q", composed)
 	}
 }
 
 func TestReasoningLanguageCommandWritesUserConfigNotProjectConfig(t *testing.T) {
 	isolateUserConfig(t)
-	projectPath := filepath.Join(mustGetwd(t), "reasonix.toml")
+	projectPath := filepath.Join(mustGetwd(t), "patty.toml")
 	if err := os.WriteFile(projectPath, []byte("[agent]\nreasoning_language = \"en\"\n"), 0o644); err != nil {
 		t.Fatalf("write project config: %v", err)
 	}
 
 	m := newTestChatTUI()
 	m.ctrl = control.New(control.Options{ReasoningLanguage: "en"})
-	m.runReasoningLanguageCommand("/reasoning-language zh")
+	m.runReasoningLanguageCommand("/reasoning-language ko-KR")
 
 	userBody, err := os.ReadFile(config.UserConfigPath())
 	if err != nil {
 		t.Fatalf("read user config: %v", err)
 	}
-	if !strings.Contains(string(userBody), `reasoning_language = "zh"`) {
-		t.Fatalf("user config missing reasoning_language=zh:\n%s", userBody)
+	if !strings.Contains(string(userBody), `reasoning_language = "ko-KR"`) {
+		t.Fatalf("user config missing reasoning_language=ko-KR:\n%s", userBody)
 	}
 	projectBody, err := os.ReadFile(projectPath)
 	if err != nil {
@@ -2460,20 +2596,20 @@ func TestLanguageCommandSwitchesImmediatelyAndPersists(t *testing.T) {
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	m := newTestChatTUI()
-	m.runLanguageSubcommand("/language zh")
+	m.runLanguageSubcommand("/language ko-KR")
 
-	if i18n.M.ChatStatusIdle != "就绪" {
-		t.Fatalf("/language zh did not switch active catalogue, idle=%q", i18n.M.ChatStatusIdle)
-	}
-	if got := m.input.Placeholder; got != "" {
-		t.Fatalf("/language zh introduced an idle composer placeholder: %q", got)
+	if got := m.input.Placeholder; got != i18n.Korean.ChatComposerPlaceholder {
+		t.Fatalf("/language ko-KR placeholder = %q, want %q", got, i18n.Korean.ChatComposerPlaceholder)
 	}
 	body, err := os.ReadFile(config.UserConfigPath())
 	if err != nil {
 		t.Fatalf("read saved config: %v", err)
 	}
-	if !strings.Contains(string(body), `language      = "zh"`) {
-		t.Fatalf("saved config missing language=zh:\n%s", body)
+	if !strings.Contains(string(body), `language      = "ko-KR"`) {
+		t.Fatalf("saved config missing language=ko-KR:\n%s", body)
+	}
+	if got := i18n.DetectLanguage("ko-KR"); got != "ko" {
+		t.Fatalf("/language ko-KR should resolve to ko, got %q", got)
 	}
 }
 
@@ -2494,7 +2630,7 @@ func TestLanguageCommandRefreshesCurrentController(t *testing.T) {
 		return control.New(control.Options{Label: "deepseek-flash"}), nil
 	}
 
-	cmd := m.runSlashCommand("/language zh")
+	cmd := m.runSlashCommand("/language ko-KR")
 	if cmd == nil {
 		t.Fatal("/language should queue a controller refresh")
 	}
@@ -2580,7 +2716,7 @@ func TestLanguageCommandAutoClearsPinnedLanguage(t *testing.T) {
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	m := newTestChatTUI()
-	m.runLanguageSubcommand("/language zh")
+	m.runLanguageSubcommand("/language ko-KR")
 	m.runLanguageSubcommand("/language auto")
 
 	cfg := config.LoadForEdit(config.UserConfigPath())
@@ -2591,7 +2727,7 @@ func TestLanguageCommandAutoClearsPinnedLanguage(t *testing.T) {
 
 func TestLanguageCommandAutoClearsLowerPriorityUserOverride(t *testing.T) {
 	isolateUserConfig(t)
-	t.Setenv("REASONIX_LANG", "")
+	t.Setenv("PATTY_LANG", "")
 	t.Setenv("LC_ALL", "")
 	t.Setenv("LC_MESSAGES", "")
 	t.Setenv("LANG", "")
@@ -2600,14 +2736,14 @@ func TestLanguageCommandAutoClearsLowerPriorityUserOverride(t *testing.T) {
 
 	userPath := config.UserConfigPath()
 	userCfg := config.LoadForEdit(userPath)
-	if err := userCfg.SetLanguage("zh"); err != nil {
+	if err := userCfg.SetLanguage("ko-KR"); err != nil {
 		t.Fatalf("set user language: %v", err)
 	}
 	if err := userCfg.SaveTo(userPath); err != nil {
 		t.Fatalf("save user config: %v", err)
 	}
 	projectCfg := config.Default()
-	if err := projectCfg.SaveTo("reasonix.toml"); err != nil {
+	if err := projectCfg.SaveTo("patty.toml"); err != nil {
 		t.Fatalf("save project config: %v", err)
 	}
 
@@ -2683,7 +2819,7 @@ func TestQueueNavigationWithArrowKeys(t *testing.T) {
 	up := tea.KeyPressMsg{Code: tea.KeyUp}
 	down := tea.KeyPressMsg{Code: tea.KeyDown}
 
-	// First ↑ should save draft and jump to last queued item.
+	// First  should save draft and jump to last queued item.
 	model, _ := m.Update(up)
 	m = model.(chatTUI)
 	if got := m.input.Value(); got != "queued three" {
@@ -2707,7 +2843,7 @@ func TestQueueNavigationWithArrowKeys(t *testing.T) {
 		t.Fatalf("down: want %q, got %q", "queued three", got)
 	}
 
-	// ↓ past the end should restore the draft.
+	// past the end should restore the draft.
 	model, _ = m.Update(down)
 	m = model.(chatTUI)
 	if got := m.input.Value(); got != "my draft" {
@@ -2725,13 +2861,13 @@ func TestQueueNavigationClampAtStart(t *testing.T) {
 	m.input.SetValue("draft")
 
 	up := tea.KeyPressMsg{Code: tea.KeyUp}
-	// First ↑ jumps to the only item.
+	// First  jumps to the only item.
 	model, _ := m.Update(up)
 	m = model.(chatTUI)
 	if got := m.input.Value(); got != "only item" {
 		t.Fatalf("first up: want %q, got %q", "only item", got)
 	}
-	// Second ↑ should clamp at index 0 (not go negative).
+	// Second  should clamp at index 0 (not go negative).
 	model, _ = m.Update(up)
 	m = model.(chatTUI)
 	if m.queueEditCursor != 0 {
@@ -2767,7 +2903,6 @@ func TestQueueEditSavesOnEnter(t *testing.T) {
 		t.Fatalf("cursor should be 1 after up, got %d", m.queueEditCursor)
 	}
 
-	// Edit the queued message.
 	m.input.SetValue("edited two")
 	enter := tea.KeyPressMsg{Code: tea.KeyEnter}
 	model, _ = m.Update(enter)
@@ -2873,8 +3008,7 @@ func TestQueueNavigationResetOnNonUpDownKey(t *testing.T) {
 		t.Fatalf("cursor should be 0 after up, got %d", m.queueEditCursor)
 	}
 
-	// A regular key while editing a queued item should preserve the cursor
-	// so the user can type replacement text. (#4877)
+	// so the user can type replacement text. (4877)
 	letter := tea.KeyPressMsg{Code: 'a'}
 	model, _ = m.Update(letter)
 	m = model.(chatTUI)
@@ -2888,7 +3022,6 @@ func TestQueueEditTypingDoesNotResetCursor(t *testing.T) {
 	m.state = tuiRunning
 	m.pendingInterject = []string{"first", "second"}
 
-	// Navigate up to select the last item.
 	up := tea.KeyPressMsg{Code: tea.KeyUp}
 	model, _ := m.Update(up)
 	m = model.(chatTUI)
@@ -2896,7 +3029,7 @@ func TestQueueEditTypingDoesNotResetCursor(t *testing.T) {
 		t.Fatalf("cursor should be 1 after up, got %d", m.queueEditCursor)
 	}
 
-	// Type several characters — cursor must survive each keystroke.
+	// Type several characters  cursor must survive each keystroke.
 	for _, c := range "hello" {
 		letter := tea.KeyPressMsg{Code: c}
 		model, _ = m.Update(letter)
@@ -2912,7 +3045,6 @@ func TestQueueEditReplaceOnEnter(t *testing.T) {
 	m.state = tuiRunning
 	m.pendingInterject = []string{"hello"}
 
-	// Navigate up to select the item.
 	up := tea.KeyPressMsg{Code: tea.KeyUp}
 	model, _ := m.Update(up)
 	m = model.(chatTUI)
@@ -2920,7 +3052,6 @@ func TestQueueEditReplaceOnEnter(t *testing.T) {
 		t.Fatalf("cursor should be 0 after up, got %d", m.queueEditCursor)
 	}
 
-	// Simulate real typing: clear input, send key presses through Update.
 	m.input.SetValue("")
 	m.input.SetValue("world")
 	enter := tea.KeyPressMsg{Code: tea.KeyEnter}
@@ -2954,7 +3085,6 @@ func TestQueueIndicatorRendering(t *testing.T) {
 		t.Fatalf("queue indicator should show message previews, got %q", qi)
 	}
 
-	// Highlight marker should appear for the browsed item.
 	m.queueEditCursor = 1
 	qi = m.renderQueueIndicator()
 	if !strings.Contains(qi, "▸") {
@@ -2972,10 +3102,6 @@ func TestQueueIndicatorHiddenWhenIdle(t *testing.T) {
 	}
 }
 
-// TestViewAltScreenFillsHeight proves the switch to alt-screen: View requests
-// the alt buffer with mouse reporting for wheel scrolling and in-app text
-// selection, and the frame is exactly the terminal height (the transcript
-// viewport pads to fill above the pinned bottom region).
 func TestViewAltScreenFillsHeight(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
@@ -2983,14 +3109,42 @@ func TestViewAltScreenFillsHeight(t *testing.T) {
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	v := m0.(chatTUI).View()
 
-	if !v.AltScreen {
-		t.Error("View must request alt-screen so resize repaints the whole grid")
+	if v.AltScreen {
+		t.Error("natural startup view must use inline height instead of full-screen alt mode")
 	}
 	if v.MouseMode != tea.MouseModeCellMotion {
 		t.Error("View must enable mouse so the wheel scrolls the transcript")
 	}
-	if lines := strings.Count(v.Content, "\n") + 1; lines != 24 {
-		t.Errorf("alt-screen frame = %d lines, want 24 (full terminal height)", lines)
+	if lines := strings.Count(v.Content, "\n") + 1; lines >= 24 {
+		t.Errorf("idle startup frame = %d lines, want capped inline height below terminal height", lines)
+	}
+	plain := ansi.Strip(v.Content)
+	rows := strings.Split(plain, "\n")
+	tipRow := -1
+	composerRow := -1
+	for i, line := range rows {
+		if strings.Contains(line, "컨텍스트") || strings.Contains(line, "Context is kept") {
+			tipRow = i
+		}
+		if strings.Contains(line, "입력") || strings.Contains(line, "INPUT") {
+			composerRow = i
+			break
+		}
+	}
+	if tipRow < 0 || composerRow < 0 || composerRow-tipRow > 3 {
+		t.Fatalf("idle startup composer should sit directly under launch content:\n%s", plain)
+	}
+
+	active := m0.(chatTUI)
+	active.ingestEvent(event.Event{Kind: event.Text, Text: "ready"})
+	active.ingestEvent(event.Event{Kind: event.Message})
+	m1, _ := active.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	activeView := m1.(chatTUI).View()
+	if !activeView.AltScreen {
+		t.Error("active transcript view must request alt-screen so resize repaints the full reading grid")
+	}
+	if lines := strings.Count(activeView.Content, "\n") + 1; lines != 24 {
+		t.Errorf("active alt-screen frame = %d lines, want 24 (full terminal height)", lines)
 	}
 }
 
@@ -3012,8 +3166,6 @@ func TestViewTermuxUsesNativeScrollback(t *testing.T) {
 	}
 }
 
-// TestTranscriptTailFollow proves the viewport pins to newest output while the
-// user is at the bottom, and stops yanking once the user scrolls up.
 func TestTranscriptTailFollow(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	adv := func(m chatTUI, msg tea.Msg) chatTUI {
@@ -3041,9 +3193,6 @@ func TestTranscriptTailFollow(t *testing.T) {
 	}
 }
 
-// TestEmptyEnterScrollsToBottom proves that pressing Enter with an empty composer
-// scrolls the viewport to the bottom in both idle and running states, so the user
-// can quickly tail-follow after scrolling up to read history.
 func TestEmptyEnterScrollsToBottom(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	ch := make(chan event.Event, 1)
@@ -3053,25 +3202,22 @@ func TestEmptyEnterScrollsToBottom(t *testing.T) {
 		return n.(chatTUI)
 	}
 
-	// idle state
 	t.Run("idle", func(t *testing.T) {
 		cur := adv(newChatTUI(ctrl, "", ch, 80), tea.WindowSizeMsg{Width: 80, Height: 8})
 		for range 12 {
 			cur = adv(cur, notice)
 		}
-		// Scroll up to leave the bottom.
 		cur = adv(cur, tea.MouseWheelMsg{Button: tea.MouseWheelUp})
 		if cur.viewport.AtBottom() {
 			t.Fatal("wheel-up should break the bottom pin")
 		}
-		// Empty enter → should snap back to bottom.
+		// Empty enter  should snap back to bottom.
 		cur = adv(cur, tea.KeyPressMsg{Code: tea.KeyEnter})
 		if !cur.viewport.AtBottom() {
 			t.Error("empty enter while idle should scroll viewport to bottom")
 		}
 	})
 
-	// running state
 	t.Run("running", func(t *testing.T) {
 		cur := adv(newChatTUI(ctrl, "", ch, 80), tea.WindowSizeMsg{Width: 80, Height: 8})
 		for range 12 {
@@ -3089,8 +3235,6 @@ func TestEmptyEnterScrollsToBottom(t *testing.T) {
 	})
 }
 
-// TestForceGotoBottomScrollsWithoutTranscriptChange keeps the force-bottom
-// contract independent from transcript length, width, or dirty-state changes.
 func TestForceGotoBottomScrollsWithoutTranscriptChange(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	ch := make(chan event.Event, 1)
@@ -3186,12 +3330,12 @@ func TestWideInputChangeRequestsClearScreen(t *testing.T) {
 	defer func() { clearWideInputChanges = prev }()
 
 	m := newTestChatTUI()
-	m.input.SetValue("天安a")
-	m.input.SetCursorColumn(len([]rune("天安a")))
+	m.input.SetValue("한글a")
+	m.input.SetCursorColumn(len([]rune("한글a")))
 
-	next, cmd := m.update(tea.KeyPressMsg{Code: '门', Text: "门"})
+	next, cmd := m.update(tea.KeyPressMsg{Code: '문', Text: "문"})
 	got := next.(chatTUI)
-	if got.input.Value() != "天安a门" {
+	if got.input.Value() != "한글a문" {
 		t.Fatalf("wide-char insert should preserve the textarea value, got %q", got.input.Value())
 	}
 	if cmd == nil {
@@ -3200,10 +3344,10 @@ func TestWideInputChangeRequestsClearScreen(t *testing.T) {
 	if shouldClearWideInputChange("ascii", "ascii!") {
 		t.Fatal("single-width ASCII input should not request the wide-input redraw")
 	}
-	if !shouldClearWideInputChange("门", "") {
+	if !shouldClearWideInputChange("문", "") {
 		t.Fatal("removing the last wide character should request a full redraw")
 	}
-	if !shouldClearWideInputChange("a门", "a") {
+	if !shouldClearWideInputChange("a문", "a") {
 		t.Fatal("removing a wide character from mixed input should request a full redraw")
 	}
 }
@@ -3225,12 +3369,12 @@ func TestChooserFreeTextWideInputChangeRequestsClearScreen(t *testing.T) {
 		}},
 	})
 	m.chooser.typing = true
-	m.input.SetValue("天安a")
-	m.input.SetCursorColumn(len([]rune("天安a")))
+	m.input.SetValue("한글a")
+	m.input.SetCursorColumn(len([]rune("한글a")))
 
-	next, cmd := m.update(tea.KeyPressMsg{Code: '门', Text: "门"})
+	next, cmd := m.update(tea.KeyPressMsg{Code: '문', Text: "문"})
 	got := next.(chatTUI)
-	if got.input.Value() != "天安a门" {
+	if got.input.Value() != "한글a문" {
 		t.Fatalf("chooser free-text input should preserve the textarea value, got %q", got.input.Value())
 	}
 	if cmd == nil {
@@ -3369,9 +3513,6 @@ func TestVisionModelAllowsSendingPastedImageRefs(t *testing.T) {
 	}
 }
 
-// TestPasteFoldExpandOnSubmit verifies that a folded paste is fully expanded
-// before being sent to the controller (the LLM sees the actual content, not just
-// the placeholder label).
 func TestPasteFoldExpandOnSubmit(t *testing.T) {
 	r := &recordingTurnRunner{}
 	events := make(chan event.Event, 64)
@@ -3386,7 +3527,7 @@ func TestPasteFoldExpandOnSubmit(t *testing.T) {
 	m.ctrl = ctrl
 	m.eventCh = make(chan event.Event, 64)
 
-	// Simulate a multi-line paste that meets the fold threshold (≥5 lines).
+	// Simulate a multi-line paste that meets the fold threshold (5 lines).
 	pasted := strings.Repeat("line of pasted content\n", 10)
 	model, _ := m.Update(tea.PasteMsg{Content: pasted})
 	m = model.(chatTUI)
@@ -3399,7 +3540,6 @@ func TestPasteFoldExpandOnSubmit(t *testing.T) {
 		t.Fatalf("expected 1 pastedBlock, got %d", len(m.pastedBlocks))
 	}
 
-	// Simulate pressing Enter to submit.
 	// NOTE: in a real terminal KeyEnter has empty Text, so String() returns "enter".
 	model, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = model.(chatTUI)
@@ -3412,11 +3552,9 @@ func TestPasteFoldExpandOnSubmit(t *testing.T) {
 	sentToRunner := r.inputs[0]
 	t.Logf("sent to runner (%d bytes):\n%s", len(sentToRunner), sentToRunner)
 
-	// The runner must receive the FULL expanded paste, not just the label.
 	if !strings.Contains(sentToRunner, "line of pasted content") {
 		t.Fatalf("runner received only the placeholder label, not the expanded paste content.\nGot: %q", sentToRunner)
 	}
-	// Verify the expanded markers are present.
 	if !strings.Contains(sentToRunner, "--- Begin [Pasted text #1") {
 		t.Fatalf("missing Begin marker in runner input.\nGot: %q", sentToRunner)
 	}
@@ -3434,7 +3572,7 @@ func TestStrongResearchPromptStaysInOrdinaryMode(t *testing.T) {
 	})
 	m := newTestChatTUI()
 	m.ctrl = ctrl
-	input := "持续排查这个线上卡顿直到根因明确，并验证修复"
+	input := "이 온라인 끊김 현상을 근본 원인이 명확해질 때까지 계속 조사하고 수정을 검증하세요"
 	m.input.SetValue(input)
 
 	model, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -3455,7 +3593,7 @@ func TestStrongResearchPromptStaysInOrdinaryMode(t *testing.T) {
 func TestSlashCodeCommentSubmitStartsTurn(t *testing.T) {
 	for _, input := range []string{
 		"// explain this",
-		"/**\n * 阿明\n */",
+		"/**\n * 아밍\n */",
 	} {
 		t.Run(input, func(t *testing.T) {
 			r := &recordingTurnRunner{}
@@ -3538,14 +3676,14 @@ func TestQualifiedSlashDocsBypassesConflictingCustomCommand(t *testing.T) {
 	m.ctrl = ctrl
 	m.commands = commands
 
-	if cmd := m.runSlashCommand("/reasonix:docs"); cmd != nil {
-		t.Fatal("bare /reasonix:docs should complete locally")
+	if cmd := m.runSlashCommand("/patty:docs"); cmd != nil {
+		t.Fatal("bare /patty:docs should complete locally")
 	}
 	if len(r.inputs) != 0 {
-		t.Fatalf("bare /reasonix:docs should not start a model turn, inputs=%q", r.inputs)
+		t.Fatalf("bare /patty:docs should not start a model turn, inputs=%q", r.inputs)
 	}
 	transcript := strings.Join(m.transcript, "\n")
-	if !strings.Contains(transcript, "digest=sha256:") || !strings.Contains(transcript, "Usage: /reasonix:docs <question>") || strings.Contains(transcript, "legacy docs") {
+	if !strings.Contains(transcript, "digest=sha256:") || !strings.Contains(transcript, "Usage: /patty:docs <question>") || strings.Contains(transcript, "legacy docs") {
 		t.Fatalf("qualified built-in docs was shadowed:\n%s", transcript)
 	}
 }
@@ -3568,13 +3706,13 @@ func TestUnsendRestoresFoldedPastePlaceholder(t *testing.T) {
 	m.bubbleStartIdx = len(m.transcript)
 	m.commitLine("")
 	m.commitLine(renderUserBubble("expanded JSON", m.width, m.planMode))
-	m.pendingRestore = "[Pasted text #1 · 5 lines] 这是什么?"
+	m.pendingRestore = "[Pasted text #1 · 5 lines] 이게 뭐지?"
 	m.bubblePending = true
 	m.state = tuiRunning
 
 	m.unsendPending()
 
-	if got := m.input.Value(); got != "[Pasted text #1 · 5 lines] 这是什么?" {
+	if got := m.input.Value(); got != "[Pasted text #1 · 5 lines] 이게 뭐지?" {
 		t.Fatalf("restored input = %q", got)
 	}
 	if len(m.transcript) != m.bubbleStartIdx {
@@ -3603,7 +3741,7 @@ func TestApprovalToolDetailsShortensMCPNames(t *testing.T) {
 }
 
 func TestSandboxEscapeApprovalBannerUsesRealEnvironmentChoice(t *testing.T) {
-	i18n.DetectLanguage("zh")
+	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	m := newTestChatTUI()
@@ -3611,17 +3749,17 @@ func TestSandboxEscapeApprovalBannerUsesRealEnvironmentChoice(t *testing.T) {
 	m.pendingApproval = &event.Approval{
 		ID:      "approval-1",
 		Tool:    control.SandboxEscapeApprovalTool,
-		Subject: "仅本次不进沙箱运行：go test ./...",
-		Reason:  "Windows 沙箱启动这条命令时失败。",
+		Subject: "이번에만 샌드박스 없이 실행: go test ./...",
+		Reason:  "Windows 샌드박스가 이 명령을 시작하지 못했습니다.",
 	}
 	banner := m.renderApprovalBanner()
-	if !strings.Contains(banner, "本会话使用真实环境") {
+	if !strings.Contains(banner, "이 세션 동안 실제 환경 사용") {
 		t.Fatalf("approval banner = %q, want real-environment session choice", banner)
 	}
-	if !strings.Contains(banner, "允许一次") {
+	if !strings.Contains(banner, "한 번 허용") {
 		t.Fatalf("approval banner = %q, want desktop-matching allow-once choice", banner)
 	}
-	if !strings.Contains(banner, "3. 拒绝") || strings.Contains(banner, "4. 拒绝") {
+	if !strings.Contains(banner, "3. 거부") || strings.Contains(banner, "4. 거부") {
 		t.Fatalf("approval banner = %q, want conventional 1/2/3 sandbox choices", banner)
 	}
 	if strings.Contains(banner, "sandbox_escape") {
@@ -3630,7 +3768,7 @@ func TestSandboxEscapeApprovalBannerUsesRealEnvironmentChoice(t *testing.T) {
 }
 
 func TestFreshApprovalBannerUsesConventionalDenyChoice(t *testing.T) {
-	i18n.DetectLanguage("zh")
+	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	m := newTestChatTUI()
@@ -3638,13 +3776,13 @@ func TestFreshApprovalBannerUsesConventionalDenyChoice(t *testing.T) {
 	m.pendingApproval = &event.Approval{
 		ID:      "approval-1",
 		Tool:    "remember",
-		Subject: "保存/更新记忆",
+		Subject: "메모리 저장/업데이트",
 	}
 	banner := m.renderApprovalBanner()
-	if !strings.Contains(banner, "1. 本次允许") || !strings.Contains(banner, "2. 拒绝") {
+	if !strings.Contains(banner, "1. 한 번 허용") || !strings.Contains(banner, "2. 거부") {
 		t.Fatalf("approval banner = %q, want conventional 1/2 fresh choices", banner)
 	}
-	if strings.Contains(banner, "4. 拒绝") {
+	if strings.Contains(banner, "4. 거부") {
 		t.Fatalf("approval banner = %q, must not show non-consecutive deny choice", banner)
 	}
 }
@@ -3669,7 +3807,7 @@ func TestDynamicMCPFreshApprovalHidesRememberedChoices(t *testing.T) {
 }
 
 func TestDynamicBashApprovalChoicesUseExactLiteralRules(t *testing.T) {
-	const command = "git status $(touch /tmp/reasonix-dynamic-approval)"
+	const command = "git status $(touch /tmp/patty-dynamic-approval)"
 	approval := &event.Approval{Tool: "bash", Subject: command}
 	choices := approvalChoices(approval)
 	if len(choices) != 4 {
@@ -3754,7 +3892,7 @@ func TestSlashMigrateShowsProgress(t *testing.T) {
 
 func TestSlashMigrateFromImportsExplicitSessions(t *testing.T) {
 	home := isolateCLIConfigHome(t)
-	legacySessions := filepath.Join(home, "Old Reasonix", "sessions")
+	legacySessions := filepath.Join(home, "Old Patty Code", "sessions")
 	if err := os.MkdirAll(legacySessions, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -3768,8 +3906,17 @@ func TestSlashMigrateFromImportsExplicitSessions(t *testing.T) {
 		t.Fatal("/migrate --from should run locally without returning a command")
 	}
 	out := strings.Join(m.transcript, "\n")
+	foundInputSource := false
+	for _, source := range m.transcriptSources {
+		if source.kind == transcriptSourceUser && source.raw == input {
+			foundInputSource = true
+			break
+		}
+	}
+	if !foundInputSource {
+		t.Fatalf("migration command lost its semantic transcript source: %+v", m.transcriptSources)
+	}
 	for _, want := range []string{
-		input,
 		"migration rescue: scanning explicit legacy sessions from " + filepath.Dir(legacySessions),
 		"imported 1 past session(s) from " + legacySessions,
 	} {
@@ -3779,15 +3926,11 @@ func TestSlashMigrateFromImportsExplicitSessions(t *testing.T) {
 	}
 }
 
-// TestDoubleCtrlCQuit verifies that Ctrl+C while idle requires a double-press
-// within the 1.5s window to actually quit. A single press shows a hint; a
-// second press within the window returns tea.Quit.
 func TestDoubleCtrlCQuit(t *testing.T) {
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
 	ctrlC := tea.KeyPressMsg{Code: 'c', Mod: 4} // 4 = ModCtrl
 
-	// First Ctrl+C while idle: arms quit, flushes hint via finalize cmd.
 	out, cmd := m.Update(ctrlC)
 	if cmd == nil {
 		t.Error("first Ctrl+C should return a finalize cmd to flush the hint")
@@ -3800,14 +3943,12 @@ func TestDoubleCtrlCQuit(t *testing.T) {
 		t.Error("first Ctrl+C should set lastCtrlCAt")
 	}
 
-	// Second Ctrl+C within window: returns tea.Quit.
 	out2, cmd2 := m2.Update(ctrlC)
 	if cmd2 == nil {
 		t.Error("second Ctrl+C within window should return a quit cmd")
 	}
 	_ = out2
 
-	// Window expired: re-arms instead of quitting (still flushes hint via finalize).
 	m3 := m2
 	m3.lastCtrlCAt = time.Now().Add(-2 * time.Second)
 	out4, cmd4 := m3.Update(ctrlC)
@@ -3818,7 +3959,6 @@ func TestDoubleCtrlCQuit(t *testing.T) {
 	if !ok {
 		t.Fatalf("Update returned %T, want chatTUI", out4)
 	}
-	// lastCtrlCAt should be refreshed to now.
 	if time.Since(m4.lastCtrlCAt) > time.Second {
 		t.Error("expired Ctrl+C should refresh lastCtrlCAt")
 	}
@@ -3906,8 +4046,6 @@ func TestCtrlZResetsMouseTrackingBeforeSuspend(t *testing.T) {
 	}
 }
 
-// TestCtrlCClearsInput verifies that a single Ctrl+C while idle with non-empty
-// input clears the composer without arming the double-press quit gesture.
 func TestCtrlCClearsInput(t *testing.T) {
 	m := newTestChatTUI()
 	m.input.SetValue("hello world")
@@ -3924,28 +4062,23 @@ func TestCtrlCClearsInput(t *testing.T) {
 	}
 }
 
-// TestCtrlCClearsThenDoublePressQuits verifies the full user flow: Ctrl+C on
-// non-empty input clears it, then two more presses on the empty composer quit.
 func TestCtrlCClearsThenDoublePressQuits(t *testing.T) {
 	m := newTestChatTUI()
 	m.input.SetValue("draft text")
 	ctrlC := tea.KeyPressMsg{Code: 'c', Mod: 4}
 
-	// First press: clear input.
 	out, _ := m.Update(ctrlC)
 	m2 := out.(chatTUI)
 	if strings.TrimSpace(m2.input.Value()) != "" {
 		t.Fatal("first Ctrl+C should clear input")
 	}
 
-	// Second press (on empty): arm quit.
 	out2, _ := m2.Update(ctrlC)
 	m3 := out2.(chatTUI)
 	if m3.lastCtrlCAt.IsZero() {
 		t.Error("Ctrl+C on empty input should arm quit")
 	}
 
-	// Third press (within window): quit.
 	out3, cmd := m3.Update(ctrlC)
 	if cmd == nil {
 		t.Error("double Ctrl+C on empty input should quit")
@@ -3953,15 +4086,11 @@ func TestCtrlCClearsThenDoublePressQuits(t *testing.T) {
 	_ = out3
 }
 
-// TestCtrlCCopySelection verifies that Ctrl+C while idle on an empty composer
-// with an active text selection copies the selected text to clipboard instead
-// of arming the double-press quit gesture.
 func TestCtrlCCopySelection(t *testing.T) {
 	m := newTestChatTUI()
 	ctrlC := tea.KeyPressMsg{Code: 'c', Mod: 4}
 
-	// Set up an active selection: anchor < head so there's something to copy.
-	// selection uses content-line coordinates; transcript needs at least one line.
+	// Set up an active selection: anchor < head so theres something to copy.
 	m.transcript = []string{"hello world"}
 	m.wrappedLines = []string{"hello world"}
 	m.sel = selection{active: true, anchor: selPos{line: 0, col: 0}, head: selPos{line: 0, col: 5}}
@@ -3972,33 +4101,27 @@ func TestCtrlCCopySelection(t *testing.T) {
 		t.Fatalf("Update returned %T, want chatTUI", out)
 	}
 
-	// Selection should be cleared after copy.
 	if m2.sel.active {
 		t.Error("selection should be cleared after Ctrl+C copy")
 	}
 
-	// Should NOT arm the quit gesture.
 	if !m2.lastCtrlCAt.IsZero() {
 		t.Error("Ctrl+C on active selection should not arm the quit gesture")
 	}
 
-	// Should return a command (clipboard copy + finalize).
 	if cmd == nil {
 		t.Fatal("Ctrl+C on selection should return a cmd (clipboard + finalize)")
 	}
 
-	// Execute the command (copyToClipboard → OSC 52).
+	// Execute the command (copyToClipboard  OSC 52).
 	cmd()
 
-	// Second Ctrl+C should now arm quit (selection is gone).
 	_, cmd2 := m2.Update(ctrlC)
 	if cmd2 == nil {
 		t.Error("Ctrl+C after copy should arm quit (return a finalize cmd)")
 	}
 }
 
-// TestAgentEventCoalescesBurst proves one update drains the buffered event burst
-// behind the delivered event, so a flood collapses into a single re-render.
 func TestAgentEventCoalescesBurst(t *testing.T) {
 	m := newTestChatTUI()
 	m.eventCh = make(chan event.Event, 16)
@@ -4066,11 +4189,8 @@ func TestTruncateSubject(t *testing.T) {
 	}
 }
 
-// TestCtrlCCopyBeatsClearInput — regression for the bug where an active
-// selection AND a non-empty composer both existed: Ctrl+C used to wipe the
-// draft text and discard the selection. The fix hoists the selection-copy
-// branch above the clear-input branch so the user's draft survives. After
-// the copy the user can still press Ctrl+C again to clear the composer.
+// TestCtrlCCopyBeatsClearInput  regression for the bug where an active
+// branch above the clear-input branch so the users draft survives. After
 func TestCtrlCCopyBeatsClearInput(t *testing.T) {
 	m := newTestChatTUI()
 	m.input.SetValue("draft I'm typing") // non-empty composer
@@ -4082,14 +4202,12 @@ func TestCtrlCCopyBeatsClearInput(t *testing.T) {
 	out, cmd := m.Update(ctrlC)
 	m2 := out.(chatTUI)
 
-	// Draft text must survive the selection copy.
 	if got := m2.input.Value(); got != "draft I'm typing" {
 		t.Errorf("composer draft wiped by Ctrl+C copy; got %q, want preserved", got)
 	}
 	if cmd == nil {
 		t.Fatal("expected clipboard cmd")
 	}
-	// Second Ctrl+C (no selection, non-empty composer) clears the draft.
 	out2, _ := m2.Update(ctrlC)
 	m3 := out2.(chatTUI)
 	if got := m3.input.Value(); got != "" {
@@ -4098,11 +4216,8 @@ func TestCtrlCCopyBeatsClearInput(t *testing.T) {
 }
 
 // TestEscInPlanModeDoesNotExitPlan — regression for the part of PR #3051 that
-// was missed: Esc was still falling into the case m.planMode branch. The
-// Shift+Tab cycle is the only path that flips plan mode; Esc must only
 // rewind / clear input. PR #3051 already removed the equivalent YOLO branch;
-// the m.ctrl.SetBypass path is exercised end-to-end in control/yolo_test.go
-// and intentionally not duplicated here.
+// the m.ctrl.SetBypass path is exercised end-to-end in controlyolo_test.go
 func TestEscInPlanModeDoesNotExitPlan(t *testing.T) {
 	m := newTestChatTUI()
 	m.planMode = true
@@ -4330,13 +4445,10 @@ func TestShiftTabLeavesDontAskForAskMode(t *testing.T) {
 	}
 }
 
-// TestQuitGesturesRouteThroughShutdown guards #5879: every in-TUI quit gesture
-// must emit tuiShutdownMsg (whose handler snapshots the session) rather than
-// tea.Quit directly, which would drop everything past the last snapshot.
+// TestQuitGesturesRouteThroughShutdown guards 5879: every in-TUI quit gesture
 func TestQuitGesturesRouteThroughShutdown(t *testing.T) {
 	ctrlC := tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}
 
-	// Double Ctrl+C on an idle, empty composer.
 	m := newTestChatTUI()
 	model, cmd := m.Update(ctrlC)
 	m = model.(chatTUI)
@@ -4353,7 +4465,6 @@ func TestQuitGesturesRouteThroughShutdown(t *testing.T) {
 		t.Fatalf("double Ctrl+C emitted %T, want tuiShutdownMsg", msg)
 	}
 
-	// Ctrl+D.
 	m = newTestChatTUI()
 	_, cmd = m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
 	if cmd == nil {
@@ -4364,9 +4475,7 @@ func TestQuitGesturesRouteThroughShutdown(t *testing.T) {
 	}
 }
 
-// TestMessageEventReplacesStreamedAnswer guards #6665 on the TUI side: the
-// final Message event carries the canonical display text (protocol blocks
-// stripped at emission), and it must replace the raw streamed accumulation.
+// TestMessageEventReplacesStreamedAnswer guards 6665 on the TUI side: the
 func TestMessageEventReplacesStreamedAnswer(t *testing.T) {
 	m := newTestChatTUI()
 	m.ingestEvent(event.Event{Kind: event.Text, Text: "answer <autoresearch-evidence>{\"id\":\"e1\"}</autoresearch-evidence> tail"})

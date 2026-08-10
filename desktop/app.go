@@ -32,36 +32,36 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/autoresearch"
-	"reasonix/internal/billing"
-	"reasonix/internal/boot"
-	"reasonix/internal/botruntime"
-	"reasonix/internal/checkpoint"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/extension/providerext"
-	"reasonix/internal/fileref"
-	fileenc "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/i18n"
-	"reasonix/internal/jobs"
-	"reasonix/internal/mcpdiag"
-	"reasonix/internal/mcplaunch"
-	"reasonix/internal/mcpregistry"
-	"reasonix/internal/memory"
-	"reasonix/internal/notify"
-	"reasonix/internal/plugin"
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/provider"
-	"reasonix/internal/repair"
-	"reasonix/internal/sessiontemp"
-	"reasonix/internal/skill"
-	"reasonix/internal/stats"
-	"reasonix/internal/store"
-	"reasonix/internal/taskmonitor"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/autoresearch"
+	"patty/internal/billing"
+	"patty/internal/boot"
+	"patty/internal/botruntime"
+	"patty/internal/checkpoint"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/extension/providerext"
+	"patty/internal/fileref"
+	fileenc "patty/internal/fileutil/encoding"
+	"patty/internal/i18n"
+	"patty/internal/jobs"
+	"patty/internal/mcpdiag"
+	"patty/internal/mcplaunch"
+	"patty/internal/mcpregistry"
+	"patty/internal/memory"
+	"patty/internal/notify"
+	"patty/internal/plugin"
+	"patty/internal/pluginpkg"
+	"patty/internal/provider"
+	"patty/internal/repair"
+	"patty/internal/sessiontemp"
+	"patty/internal/skill"
+	"patty/internal/stats"
+	"patty/internal/store"
+	"patty/internal/taskmonitor"
+	"patty/internal/tool"
 )
 
 // sessionTempFromController returns the logical-session private temporary
@@ -81,21 +81,21 @@ func sessionTempFromController(ctrl control.SessionAPI) *sessiontemp.Manager {
 // `data:` frames.
 const eventChannel = "agent:event"
 
-const singleInstanceIDPrefix = "com.reasonix.desktop"
+const singleInstanceIDPrefix = "com.patty.desktop"
 
 // singleInstanceID is used by Wails to route a second desktop launch back to the
-// process that owns the same Reasonix data home. Basing the identity on the
+// process that owns the same Patty Code data home. Basing the identity on the
 // executable path let installed, portable, stable, and canary binaries write the
-// same sessions concurrently. Explicit REASONIX_HOME isolation still produces
-// an independent instance; REASONIX_DEV continues to bypass the lock entirely.
+// same sessions concurrently. Explicit PATTY_HOME isolation still produces
+// an independent instance; PATTY_DEV continues to bypass the lock entirely.
 func singleInstanceID() string {
-	root := strings.TrimSpace(config.ReasonixHomeDir())
+	root := strings.TrimSpace(config.PattyHomeDir())
 	if root == "" {
 		return singleInstanceIDPrefix
 	}
 	// Reuse the lease path canonicalizer so a missing home below a symlink or
 	// junction still hashes to the same physical data directory.
-	if marker := agent.CanonicalSessionPath(filepath.Join(root, ".reasonix-home.identity")); marker != "" {
+	if marker := agent.CanonicalSessionPath(filepath.Join(root, ".patty-home.identity")); marker != "" {
 		root = filepath.Dir(marker)
 	}
 	root = filepath.Clean(root)
@@ -243,7 +243,6 @@ type App struct {
 	hangWatchdogCancel  context.CancelFunc
 
 	mediaTokens *mediaTokenStore
-	botInstalls map[string]*botInstallSession
 	botRuntime  *desktopBotRuntime
 	// botBridge gives the embedded bot gateway a god view over desktop
 	// sessions (/desktop commands). Set once in NewApp before any tab exists,
@@ -452,13 +451,13 @@ func (a *App) jsProfilingMiddleware() func(http.Handler) http.Handler {
 }
 
 // workspaceMediaMiddleware returns an HTTP middleware that intercepts
-// /__reasonix_workspace_media/{token}/{filename} requests and serves the
+// /__patty_workspace_media/{token}/{filename} requests and serves the
 // corresponding workspace file. All other paths pass through to the Wails
 // default asset handler unchanged.
 func (a *App) workspaceMediaMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			prefix := "/__reasonix_workspace_media/"
+			prefix := "/__patty_workspace_media/"
 			if !strings.HasPrefix(r.URL.Path, prefix) {
 				next.ServeHTTP(w, r)
 				return
@@ -508,7 +507,6 @@ func NewApp() *App {
 		runtimeBySessionKey: map[string]*desktopSessionRuntime{},
 		detachedSessions:    map[string]*WorkspaceTab{},
 		mediaTokens:         newMediaTokenStore(),
-		botInstalls:         map[string]*botInstallSession{},
 		botRuntime:          newDesktopBotRuntime(),
 		remoteWindows:       newRemoteWindowRegistry(),
 		remoteWindowOwnerID: newRemoteWindowOwnerID(),
@@ -2210,7 +2208,7 @@ func (a *App) NewSessionForTab(tabID string) error {
 		return err
 	}
 	// The rotated session starts with zero spend: without this reset the tab
-	// telemetry keeps the previous session's totals and the status bar 会话费用
+	// telemetry keeps the previous session's totals and the status bar 세션 비용
 	// silently turns into an all-sessions running total (#5850).
 	tab.resetTelemetry(ctrl.SessionPath())
 	// Mirror the controller: NewSession cleared the active goal, and the tab's
@@ -3358,20 +3356,7 @@ func botSessionPathTarget(sessionID string) string {
 
 func channelDisplayName(provider, domain string) string {
 	provider = strings.TrimSpace(provider)
-	domain = strings.TrimSpace(domain)
-	switch provider {
-	case "feishu":
-		if strings.EqualFold(domain, "lark") {
-			return "Lark"
-		}
-		return "Feishu"
-	case "weixin":
-		return "WeChat"
-	case "qq":
-		return "QQ"
-	default:
-		return provider
-	}
+	return provider
 }
 
 // DeleteSession moves a saved session to the local trash. If the session still
@@ -5769,7 +5754,7 @@ func (a *App) HistoryCheckpointTurnsForTab(tabID string) []int {
 	)
 }
 
-var pastedTextDisplayLabelPattern = regexp.MustCompile(`^\[(?:已粘贴文本|已貼上文字|Pasted text) #[0-9]+ · [0-9]+ (?:行|lines)\]$`)
+var pastedTextDisplayLabelPattern = regexp.MustCompile(`^\[(?:붙여넣은 텍스트|Pasted text) #[0-9]+ · [0-9]+ ?(?:줄|lines)\]$`)
 
 // historyReplayUserContent keeps only user-authored replay data. Provider-facing
 // capability, goal, hook, and resolved-reference context must not be resubmitted.
@@ -7330,7 +7315,7 @@ type CommandInfo struct {
 }
 
 // Commands lists the slash commands available this session — built-in actions,
-// custom commands (.reasonix/commands), and MCP prompts — for the composer's "/"
+// custom commands (.patty/commands), and MCP prompts — for the composer's "/"
 // autocomplete menu.
 func (a *App) Commands() []CommandInfo {
 	out := []CommandInfo{
@@ -7462,7 +7447,7 @@ func (a *App) SlashArgs(input string) SlashArgsResult {
 		DisconnectedMCP: ctrl.DisconnectedMCPNames(),
 		CurrentModel:    model,
 	}
-	if names, err := pluginpkg.InstalledNames(config.ReasonixHomeDir()); err == nil {
+	if names, err := pluginpkg.InstalledNames(config.PattyHomeDir()); err == nil {
 		data.PluginNames = names
 	}
 	seen := map[string]bool{}
@@ -8042,8 +8027,8 @@ func (a *App) mcpLaunchSpecForEntry(root string, entry config.PluginEntry) (plug
 func (a *App) mcpLaunchSpecForEntryWithConfig(root string, entry config.PluginEntry, cfg *config.Config) (plugin.Spec, error) {
 	specs := boot.PluginSpecsForRootWithOptions([]config.PluginEntry{entry}, root, boot.PluginSpecOptions{
 		DefaultCallTimeout: time.Duration(cfg.MCPCallTimeoutSeconds()) * time.Second,
-		LaunchManager:      mcplaunch.ForWorkspace(config.ReasonixHomeDir(), root),
-		ConfigSource:       "workspace_config", StateHome: config.ReasonixHomeDir(),
+		LaunchManager:      mcplaunch.ForWorkspace(config.PattyHomeDir(), root),
+		ConfigSource:       "workspace_config", StateHome: config.PattyHomeDir(),
 		WriterRoots: cfg.WriteRootsForRoot(root), ForbidReadRoots: boot.RuntimeForbidReadRoots(cfg, root),
 		Network: cfg.Sandbox.Network,
 	})
@@ -8446,7 +8431,7 @@ func withPluginConfigInWorkspace(v ServerView, p config.PluginEntry, workspace s
 func mcpServerSource(source config.MCPConfigSource) (kind, configSource string) {
 	switch source {
 	case config.MCPSourceProjectConfig:
-		return "project", "reasonix.toml"
+		return "project", "patty.toml"
 	case config.MCPSourceProjectMCPJSON:
 		return "project", ".mcp.json"
 	case config.MCPSourcePluginPackage:
@@ -9209,7 +9194,7 @@ func (a *App) ClearMCPServerAuthentication(name string) error {
 }
 
 // SetMCPServerEnabled is the durable enable/disable switch for an installed MCP
-// server. It writes $REASONIX_HOME/mcp-activation.json and updates the live
+// server. It writes $PATTY_HOME/mcp-activation.json and updates the live
 // registry: disable removes tools and may stop the process; enable restores
 // cached tools and starts the process only on the next real tool call.
 func (a *App) SetMCPServerEnabled(name string, enabled bool) error {
@@ -9792,9 +9777,9 @@ func (e *sessionLeaseBusyError) Error() string {
 	// the session itself (startup bind), not changing a setting on it.
 	setting := strings.TrimSpace(e.setting)
 	if setting == "" {
-		return "this session is already open in another Reasonix window or still running in the background; close the other window or open a copy"
+		return "this session is already open in another patty window or still running in the background; close the other window or open a copy"
 	}
-	return fmt.Sprintf("this session is already open in another Reasonix window or still running in the background; close the other window or open a copy before changing %s", setting)
+	return fmt.Sprintf("this session is already open in another patty window or still running in the background; close the other window or open a copy before changing %s", setting)
 }
 
 func (e *sessionLeaseBusyError) Unwrap() error {
@@ -9840,7 +9825,7 @@ var (
 	// sub-agent's parent session lease inside every controller build, holding
 	// it only for the duration of a metadata rewrite (sub-millisecond); a
 	// concurrent tab build that races that probe must not surface a spurious
-	// "already open in another Reasonix window" error for a lease that is
+	// "already open in another patty window" error for a lease that is
 	// genuinely free once the probe releases it. A lease held by another
 	// window or process stays held for its whole lifetime, so the bounded
 	// retry still fails fast there.
@@ -10869,7 +10854,7 @@ func (a *App) ReadFileForTab(tabID, rel string) FilePreview {
 		token := a.ensureMediaTokenStore().create(path, info.Name(), mime, kind, info.Size(), info.ModTime())
 		out.Kind = kind
 		out.Mime = mime
-		out.URL = "/__reasonix_workspace_media/" + token + "/" + url.PathEscape(info.Name())
+		out.URL = "/__patty_workspace_media/" + token + "/" + url.PathEscape(info.Name())
 		return out
 	}
 	f, err := os.Open(path)
@@ -11130,7 +11115,7 @@ func (a *App) withActiveWorkspaceDo(fn func() error) error {
 }
 
 // SavePastedImage stores a browser clipboard image data URL under the active
-// tab's workspace .reasonix/attachments and returns the relative @-reference path.
+// tab's workspace .patty/attachments and returns the relative @-reference path.
 func (a *App) SavePastedImage(dataURL string) (string, error) {
 	return a.withActiveWorkspace(func() (string, error) {
 		return control.SaveImageDataURL(dataURL)
@@ -11138,14 +11123,14 @@ func (a *App) SavePastedImage(dataURL string) (string, error) {
 }
 
 // SaveClipboardImage reads the native OS clipboard image under the active tab's
-// workspace .reasonix/attachments and returns the relative @-reference path.
+// workspace .patty/attachments and returns the relative @-reference path.
 func (a *App) SaveClipboardImage() (string, error) {
 	return a.withActiveWorkspace(control.SaveClipboardImage)
 }
 
 // SavePastedFile stores a dropped non-image file (the browser exposes its bytes
 // as a data URL but not a real path) under the active tab's workspace
-// .reasonix/attachments and returns the relative @-reference path.
+// .patty/attachments and returns the relative @-reference path.
 func (a *App) SavePastedFile(name, dataURL string) (string, error) {
 	return a.withActiveWorkspace(func() (string, error) {
 		return control.SaveAttachmentDataURL(name, dataURL)
@@ -11325,7 +11310,7 @@ func createExportTempFile(dir string) (*os.File, os.FileMode, error) {
 		if _, err := rand.Read(suffix[:]); err != nil {
 			return nil, 0, fmt.Errorf("generate export temp name: %w", err)
 		}
-		path := filepath.Join(dir, ".reasonix-export-"+hex.EncodeToString(suffix[:]))
+		path := filepath.Join(dir, ".patty-export-"+hex.EncodeToString(suffix[:]))
 		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 		if errors.Is(err, os.ErrExist) {
 			continue
@@ -11423,7 +11408,7 @@ func exportOperationError(operation, path string, err error) error {
 func safeExportFilename(name string) string {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return "reasonix-session.md"
+		return "patty-session.md"
 	}
 	return filepath.Base(name)
 }
@@ -11455,7 +11440,7 @@ func (a *App) AttachmentDataURL(path string) (string, error) {
 // DroppedItem is one OS-dropped file resolved into a composer context entry: an
 // in-tree file becomes a workspace @reference (read in place, no copy), while an
 // outside directory becomes a session-scoped workspace @reference; an image or
-// out-of-tree file is copied into .reasonix/attachments.
+// out-of-tree file is copied into .patty/attachments.
 type DroppedItem struct {
 	Kind        string `json:"kind"` // "workspace" | "attachment"
 	Path        string `json:"path"`
@@ -11468,7 +11453,7 @@ type DroppedItem struct {
 // composer context entry. Images are stored as attachments so the chip shows a
 // thumbnail; in-workspace files are referenced relatively (no copy); directories
 // outside the workspace are registered as current-session folder references;
-// files outside the workspace are copied into .reasonix/attachments.
+// files outside the workspace are copied into .patty/attachments.
 func (a *App) AttachDropped(path string) (DroppedItem, error) {
 	var item DroppedItem
 	err := a.withActiveWorkspaceDo(func() error {
@@ -11659,7 +11644,7 @@ type MemoryView struct {
 // writableScopes are the quick-add targets the panel offers, broad → specific.
 var writableScopes = []memory.Scope{memory.ScopeUser, memory.ScopeProject, memory.ScopeLocal}
 
-// Memory returns the loaded memory for the panel: the REASONIX.md hierarchy,
+// Memory returns the loaded memory for the panel: the PATTY_CODE.md hierarchy,
 // active/archived auto-memories, and the writable scopes. Read-only; mutations
 // go through Remember / SaveDoc.
 func (a *App) Memory() MemoryView {
@@ -11974,7 +11959,7 @@ func parseScope(s string) memory.Scope {
 
 // taskStore is the Store backing the task monitor panel.
 func (a *App) taskStore() taskmonitor.WriteStore {
-	return taskmonitor.NewFileStore(filepath.Join(".reasonix", "tasks"))
+	return taskmonitor.NewFileStore(filepath.Join(".patty", "tasks"))
 }
 
 // taskControl returns the process-wide ControlService backing the task
@@ -12304,7 +12289,7 @@ func (a *App) NeedsOnboarding() bool {
 }
 
 // ConnectKey validates apiKey against the balance endpoint, persists it to
-// Reasonix's global .env, and rebuilds the controller so the new key takes effect.
+// Patty Code's global .env, and rebuilds the controller so the new key takes effect.
 func (a *App) ConnectKey(apiKey string) (string, error) {
 	apiKey = strings.TrimSpace(apiKey)
 	if apiKey == "" {

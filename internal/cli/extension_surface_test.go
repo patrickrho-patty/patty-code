@@ -7,9 +7,9 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/i18n"
 )
 
 // extensionStubCtrl stubs the SessionAPI surface the extension slash dispatch
@@ -202,7 +202,7 @@ func TestRunSlashCommandInvokesExtensionAction(t *testing.T) {
 		t.Fatal("extension action returned no cmd")
 	}
 	// The command line echoes synchronously; the invocation itself is async.
-	if plain := ansi.Strip(strings.Join(m.transcript, "\n")); !strings.Contains(plain, "› /alpha:act1 k=v extra") {
+	if plain := ansi.Strip(strings.Join(m.transcript, "\n")); !strings.Contains(plain, assistantTranscriptRail+"/alpha:act1 k=v extra") {
 		t.Fatalf("echo missing, transcript = %q", plain)
 	}
 	msg, ok := cmd().(extensionActionMsg)

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func boolPtr(value bool) *bool { return &value }
@@ -784,11 +784,11 @@ func TestCompletedResponseDefaultsFinishReasonToStop(t *testing.T) {
 }
 
 func TestAllZeroUsageCompletedEmitsCompletionSemantics(t *testing.T) {
-	// DashScope 偶发全零 usage（服务端上报缺口）。旧实现无条件抑制——
-	// agent 收不到 usage → reasoningOnlyFinishHonoured 失效 → reasoning-only
-	// 完成被误判触发重试（#7168 评审"完成语义保留"只做了一半）。新语义：
-	// 全零+stop 也发送（计费层 Pricing.Cost 对全零天然 0 成本，不污染统计），
-	// 完成语义恢复；全零且无 finish reason 才抑制（异常前哨场景）。
+	// DashScope는 간헐적으로 전부 0인 usage를 보고합니다(서버 측 보고 누락). 이전 구현은 무조건 억제했지만——
+	// agent가 usage를 받지 못하면 → reasoningOnlyFinishHonoured가 무력화되고 → reasoning-only
+	// 완료가 오판되어 재시도를 유발했습니다(#7168 리뷰의 "완료 의미 보존"은 절반만 구현됨). 새 의미:
+	// 전부 0 + stop도 전송합니다(과금 계층 Pricing.Cost는 전부 0에 대해 자연히 0 비용이라 통계를 오염시키지 않음),
+	// 완료 의미가 복원됩니다. 전부 0이고 finish reason이 없을 때만 억제합니다(이상 센티널 시나리오).
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeEvents(w, `{"type":"response.completed","response":{"id":"resp_1","usage":{"input_tokens":0,"output_tokens":0,"total_tokens":0}}}`)
 	}))
@@ -1033,16 +1033,16 @@ func TestConversationDigestMirrorsWireKnobs(t *testing.T) {
 }
 
 // TestSingleSegmentReasoningWiredIntoWarningPolicy：singleSegmentReasoning
-// capability 驱动警告策略（评审 #7234 Copilot：wire into behavior）。
+// capability 기반 경고 정책(리뷰 #7234 Copilot: wire into behavior).
 func TestSingleSegmentReasoningWiredIntoWarningPolicy(t *testing.T) {
 	cases := []struct {
 		name, baseURL, model string
 		want                 bool
 	}{
-		{"mimo 单段不警告", "https://api.xiaomimimo.com/v1", "mimo-v2.5-pro", false},
-		{"dashscope 无回传契约不警告", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3", false},
-		{"deepseek pro 多段警告", "https://api.deepseek.com", "deepseek-v4-pro", true},
-		{"deepseek flash 豁免", "https://api.deepseek.com", "deepseek-v4-flash", false},
+		{"mimo 단일 세그먼트 경고 없음", "https://api.xiaomimimo.com/v1", "mimo-v2.5-pro", false},
+		{"dashscope 콜백 계약 없음 경고 안 함", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3", false},
+		{"deepseek pro 다중 세그먼트 경고", "https://api.deepseek.com", "deepseek-v4-pro", true},
+		{"deepseek flash 면제", "https://api.deepseek.com", "deepseek-v4-flash", false},
 	}
 	for _, tc := range cases {
 		pro := New(Config{Name: "t", APIKey: "k", BaseURL: tc.baseURL, Model: tc.model}).(interface {
@@ -1054,8 +1054,8 @@ func TestSingleSegmentReasoningWiredIntoWarningPolicy(t *testing.T) {
 	}
 }
 
-// TestFactoryPassesExtraThrough：newFromConfig 原样透传 cfg.Extra——
-// vision 开关经 provider factory 后仍生效（评审 #7234 第 3 点）。
+// TestFactoryPassesExtraThrough: newFromConfig는 cfg.Extra를 그대로 전달합니다——
+// vision 스위치는 provider factory를 거친 후에도 여전히 적용됩니다(리뷰 #7234 3번 항목).
 func TestFactoryPassesExtraThrough(t *testing.T) {
 	p, err := newFromConfig(provider.Config{
 		Name: "mimo", BaseURL: "https://api.xiaomimimo.com/v1", Model: "mimo-v2.5-pro",
@@ -1073,9 +1073,9 @@ func TestFactoryPassesExtraThrough(t *testing.T) {
 	}
 }
 
-// TestReasoningMetaChunkEndToEnd：第一轮 SSE（reasoning item 带 id/status）
-// → meta chunk 携带 → 用捕获的 id/status 构造第二轮 Message →
-// messagesToInput 回传（评审 #7234 第 1 点要求的端到端回归路径）。
+// TestReasoningMetaChunkEndToEnd: 첫 번째 SSE 라운드(reasoning item에 id/status 포함)
+// → meta chunk가 전달 → 캡처한 id/status로 두 번째 라운드 Message 구성 →
+// messagesToInput으로 반환(리뷰 #7234 1번 항목이 요구한 엔드투엔드 회귀 경로).
 func TestReasoningMetaChunkEndToEnd(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeEvents(w,
@@ -1125,24 +1125,24 @@ func TestReasoningMetaChunkEndToEnd(t *testing.T) {
 	}
 }
 
-// TestVendorTableMaxOutputTokens：默认输出预算完全由 vendor 表驱动——
-// mimo 128000（长思考不截断）、deepseek 128K、unknown 不设。
+// TestVendorTableMaxOutputTokens: 기본 출력 예산은 전적으로 vendor 테이블에 의해 결정됩니다——
+// mimo 128000(긴 사고 절단 없음), deepseek 128K, unknown은 미설정.
 func TestVendorTableMaxOutputTokens(t *testing.T) {
 	msg := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
 
-	// mimo：表默认 128000（思考模式不设会顶到服务端 32768 截断）
+	// mimo: 테이블 기본 128000(사고 모드 미설정 시 서버 32768 절단에 부딪힘)
 	mimo := New(Config{Name: "mimo", BaseURL: "https://api.xiaomimimo.com/v1", Model: "mimo-v2.5-pro"}).(*client)
 	body, _, _ := mimo.buildRequestBody(provider.Request{Messages: msg})
 	if got := body["max_output_tokens"]; got != 128000 {
 		t.Fatalf("mimo max_output_tokens = %#v, want 128000 (vendor table)", got)
 	}
-	// mimo 思考禁用也设 128000（mimo 无 thinking-disabled 豁免——表无条件）
+	// mimo 사고 비활성화도 128000으로 설정(mimo에는 thinking-disabled 면제 없음——테이블은 무조건)
 	noThinking := New(Config{Name: "mimo", BaseURL: "https://api.xiaomimimo.com/v1", Model: "mimo-v2.5-pro", Effort: "none"}).(*client)
 	nb, _, _ := noThinking.buildRequestBody(provider.Request{Messages: msg})
 	if nb["max_output_tokens"] != 128000 {
 		t.Fatalf("mimo thinking-disabled budget = %#v, want 128000", nb["max_output_tokens"])
 	}
-	// deepseek 值来自表（非硬编码常量）
+	// deepseek 값은 테이블에서 옴(하드코딩 상수 아님)
 	ds := New(Config{Name: "deepseek", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro"}).(*client)
 	db, _, _ := ds.buildRequestBody(provider.Request{Messages: msg})
 	if got := db["max_output_tokens"]; got != capabilitiesFor("deepseek").defaultMaxOutputTokens {

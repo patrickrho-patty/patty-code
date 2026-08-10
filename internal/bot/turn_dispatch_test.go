@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/control"
+	"patty/internal/control"
 )
 
 // approvalBlockingController is a botController whose RunTurn blocks the way a
@@ -73,12 +73,12 @@ func TestGatewayApprovalReplyUnblocksTurnOffDispatchGoroutine(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	gw := NewGateway(GatewayConfig{Allowlist: AllowlistConfig{AllowAll: true}}, nil, logger)
 
-	adapter := newFakeAdapter(PlatformWeixin, "fake-weixin")
-	binding := AdapterBinding{ID: "weixin", Platform: PlatformWeixin, Adapter: adapter}
+	adapter := newFakeAdapter(Platform("weixin"), "fake-weixin")
+	binding := AdapterBinding{ID: "weixin", Platform: Platform("weixin"), Adapter: adapter}
 
 	ctrl := newApprovalBlockingController()
 	msg := InboundMessage{
-		Platform:     PlatformWeixin,
+		Platform:     Platform("weixin"),
 		ConnectionID: "weixin",
 		ChatType:     ChatDM,
 		ChatID:       "chat",

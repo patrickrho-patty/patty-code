@@ -2,10 +2,10 @@
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
-test_root="$(mktemp -d "${TMPDIR:-/tmp}/reasonix-release-workflow-test.XXXXXX")"
+test_root="$(mktemp -d "${TMPDIR:-/tmp}/patty-code-release-workflow-test.XXXXXX")"
 cleanup() {
 	case "$test_root" in
-	*/reasonix-release-workflow-test.*) rm -rf -- "$test_root" ;;
+	*/patty-code-release-workflow-test.*) rm -rf -- "$test_root" ;;
 	*) echo "refusing to clean unexpected test directory: $test_root" >&2 ;;
 	esac
 }
@@ -240,7 +240,7 @@ grep -Fq 'legacy-preview "$current_version" "$legacy_preview_base"' \
 	"$repo_root/.github/workflows/release-desktop.yml"
 grep -Fq 'publish_pointer canary' "$repo_root/.github/workflows/release-desktop.yml"
 grep -Fq 'publish_pointer preview' "$repo_root/.github/workflows/release-desktop.yml"
-grep -Fq 'cmp -s /tmp/reasonix-desktop-canary-latest.json /tmp/reasonix-desktop-preview-latest.json' \
+grep -Fq 'cmp -s /tmp/patty-desktop-canary-latest.json /tmp/patty-desktop-preview-latest.json' \
 	"$repo_root/.github/workflows/release-desktop.yml"
 grep -Fq 'steps.mirror_r2.outputs.pointer_moved' "$repo_root/.github/workflows/release-desktop.yml"
 if grep -Fq 'aws s3 cp assets/ "s3://${R2_BUCKET}/preview/"' "$repo_root/.github/workflows/release-desktop.yml" ||
@@ -363,42 +363,42 @@ if bash "$cli_pointer_decider" stable "$cli_pointer_candidate" "$test_root/missi
 	exit 1
 fi
 for asset in \
-	reasonix-darwin-amd64.tar.gz \
-	reasonix-darwin-arm64.tar.gz \
-	reasonix-linux-amd64.tar.gz \
-	reasonix-linux-arm64.tar.gz \
-	reasonix-windows-amd64.zip \
-	reasonix-windows-arm64.zip \
+	patty-code-darwin-amd64.tar.gz \
+	patty-code-darwin-arm64.tar.gz \
+	patty-code-linux-amd64.tar.gz \
+	patty-code-linux-arm64.tar.gz \
+	patty-code-windows-amd64.zip \
+	patty-code-windows-arm64.zip \
 	SHA256SUMS; do
 	grep -Fq "\"$asset\"" "$cli_release_workflow"
 done
 publication_decider="$repo_root/scripts/decide-cli-release-publication.sh"
 test -x "$publication_decider"
-[ "$(bash "$publication_decider" stable v1.2.3 esengine/DeepSeek-Reasonix - -)" = "publish" ]
+[ "$(bash "$publication_decider" stable v1.2.3 pattycorp/DeepSeek-Patty Code - -)" = "publish" ]
 publication_checksums="$test_root/cli-publication-SHA256SUMS"
 publication_release="$test_root/cli-publication-release.json"
 publication_hash="0000000000000000000000000000000000000000000000000000000000000000"
 publication_assets='[
-	"reasonix-darwin-amd64.tar.gz",
-	"reasonix-darwin-arm64.tar.gz",
-	"reasonix-linux-amd64.tar.gz",
-	"reasonix-linux-arm64.tar.gz",
-	"reasonix-windows-amd64.zip",
-	"reasonix-windows-arm64.zip",
+	"patty-code-darwin-amd64.tar.gz",
+	"patty-code-darwin-arm64.tar.gz",
+	"patty-code-linux-amd64.tar.gz",
+	"patty-code-linux-arm64.tar.gz",
+	"patty-code-windows-amd64.zip",
+	"patty-code-windows-arm64.zip",
 	"SHA256SUMS"
 ]'
 for asset in \
-	reasonix-darwin-amd64.tar.gz \
-	reasonix-darwin-arm64.tar.gz \
-	reasonix-linux-amd64.tar.gz \
-	reasonix-linux-arm64.tar.gz \
-	reasonix-windows-amd64.zip \
-	reasonix-windows-arm64.zip; do
+	patty-code-darwin-amd64.tar.gz \
+	patty-code-darwin-arm64.tar.gz \
+	patty-code-linux-amd64.tar.gz \
+	patty-code-linux-arm64.tar.gz \
+	patty-code-windows-amd64.zip \
+	patty-code-windows-arm64.zip; do
 	printf '%s  %s\n' "$publication_hash" "$asset"
 done >"$publication_checksums"
 publication_checksum_hash="$(shasum -a 256 "$publication_checksums" | awk '{print $1}')"
 jq -n \
-	--arg repo "esengine/DeepSeek-Reasonix" \
+	--arg repo "pattycorp/DeepSeek-PattyCode" \
 	--arg tag "v1.2.3" \
 	--arg archive_hash "$publication_hash" \
 	--arg checksum_hash "$publication_checksum_hash" \
@@ -421,33 +421,33 @@ jq -n \
 		]
 	}
 ' >"$publication_release"
-[ "$(bash "$publication_decider" stable v1.2.3 esengine/DeepSeek-Reasonix \
+[ "$(bash "$publication_decider" stable v1.2.3 pattycorp/DeepSeek-Patty Code \
 	"$publication_release" "$publication_checksums")" = "reuse" ]
 publication_preview="$test_root/cli-publication-preview-release.json"
 jq '.tag_name = "v1.2.3-preview.4" | .prerelease = true |
-	.html_url = "https://github.com/esengine/DeepSeek-Reasonix/releases/tag/v1.2.3-preview.4" |
+	.html_url = "https://github.com/pattycorp/DeepSeek-PattyCode/releases/tag/v1.2.3-preview.4" |
 	.assets |= map(.browser_download_url |= sub("/v1.2.3/"; "/v1.2.3-preview.4/"))' \
 	"$publication_release" >"$publication_preview"
-[ "$(bash "$publication_decider" preview v1.2.3-preview.4 esengine/DeepSeek-Reasonix \
+[ "$(bash "$publication_decider" preview v1.2.3-preview.4 pattycorp/DeepSeek-Patty Code \
 	"$publication_preview" "$publication_checksums")" = "reuse" ]
 publication_rc="$test_root/cli-publication-rc-release.json"
 jq '.tag_name = "v1.2.3-rc.1" | .prerelease = true |
-	.html_url = "https://github.com/esengine/DeepSeek-Reasonix/releases/tag/v1.2.3-rc.1" |
+	.html_url = "https://github.com/pattycorp/DeepSeek-PattyCode/releases/tag/v1.2.3-rc.1" |
 	.assets |= map(.browser_download_url |= sub("/v1.2.3/"; "/v1.2.3-rc.1/"))' \
 	"$publication_release" >"$publication_rc"
-[ "$(bash "$publication_decider" any v1.2.3-rc.1 esengine/DeepSeek-Reasonix \
+[ "$(bash "$publication_decider" any v1.2.3-rc.1 pattycorp/DeepSeek-Patty Code \
 	"$publication_rc" "$publication_checksums")" = "reuse" ]
 publication_partial="$test_root/cli-publication-partial-release.json"
-jq '.assets |= map(select(.name != "reasonix-linux-arm64.tar.gz"))' \
+jq '.assets |= map(select(.name != "patty-code-linux-arm64.tar.gz"))' \
 	"$publication_release" >"$publication_partial"
-if bash "$publication_decider" stable v1.2.3 esengine/DeepSeek-Reasonix \
+if bash "$publication_decider" stable v1.2.3 pattycorp/DeepSeek-Patty Code \
 	"$publication_partial" "$publication_checksums" >/dev/null 2>&1; then
 	echo "CLI publication decider accepted a partial existing release" >&2
 	exit 1
 fi
 publication_bad_checksums="$test_root/cli-publication-bad-SHA256SUMS"
 sed '1s/^0/1/' "$publication_checksums" >"$publication_bad_checksums"
-if bash "$publication_decider" stable v1.2.3 esengine/DeepSeek-Reasonix \
+if bash "$publication_decider" stable v1.2.3 pattycorp/DeepSeek-Patty Code \
 	"$publication_release" "$publication_bad_checksums" >/dev/null 2>&1; then
 	echo "CLI publication decider accepted mismatched checksums" >&2
 	exit 1
@@ -457,15 +457,15 @@ manifest_comparator="$repo_root/scripts/compare-cli-release-manifests.sh"
 test -x "$manifest_validator"
 test -x "$manifest_comparator"
 manifest_assets='[
-	"reasonix-darwin-amd64.tar.gz",
-	"reasonix-darwin-arm64.tar.gz",
-	"reasonix-linux-amd64.tar.gz",
-	"reasonix-linux-arm64.tar.gz",
-	"reasonix-windows-amd64.zip",
-	"reasonix-windows-arm64.zip",
+	"patty-code-darwin-amd64.tar.gz",
+	"patty-code-darwin-arm64.tar.gz",
+	"patty-code-linux-amd64.tar.gz",
+	"patty-code-linux-arm64.tar.gz",
+	"patty-code-windows-amd64.zip",
+	"patty-code-windows-arm64.zip",
 	"SHA256SUMS"
 ]'
-manifest_repo="esengine/DeepSeek-Reasonix"
+manifest_repo="pattycorp/DeepSeek-PattyCode"
 manifest_tag="v1.2.3"
 manifest_file="$test_root/cli-release-manifest.json"
 jq -n \
@@ -476,7 +476,7 @@ jq -n \
 		tag_name: $tag,
 		prerelease: false,
 		html_url: ("https://github.com/" + $repo + "/releases/tag/" + $tag),
-		release_notes_url: ("https://reasonix.io/changelog/" + $tag + "/"),
+		release_notes_url: ("https://patty-code.io/changelog/" + $tag + "/"),
 		assets: [
 			$names[] as $name |
 			{
@@ -500,7 +500,7 @@ if bash "$manifest_validator" stable "$manifest_tag" "$manifest_repo" "$legacy_m
 	exit 1
 fi
 wrong_legacy_notes="$test_root/cli-release-manifest-wrong-legacy-notes.json"
-jq '.release_notes_url = "https://reasonix.io/changelog/v9.9.9/"' \
+jq '.release_notes_url = "https://patty-code.io/changelog/v9.9.9/"' \
 	"$manifest_file" >"$wrong_legacy_notes"
 if bash "$manifest_validator" legacy-stable "$manifest_tag" "$manifest_repo" \
 	"$wrong_legacy_notes" >/dev/null 2>&1; then
@@ -522,7 +522,7 @@ jq \
 	.tag_name = $tag |
 	.prerelease = true |
 	.html_url = ("https://github.com/" + $repo + "/releases/tag/" + $tag) |
-	.release_notes_url = ("https://reasonix.io/changelog/" + $notes_tag + "/") |
+	.release_notes_url = ("https://patty-code.io/changelog/" + $notes_tag + "/") |
 	.assets |= map(
 		.browser_download_url =
 			("https://github.com/" + $repo + "/releases/download/" + $tag + "/" + .name)
@@ -539,10 +539,10 @@ expect_invalid_cli_manifest() {
 	fi
 }
 
-jq '.assets[0].browser_download_url = "https://github.com/attacker/project/releases/download/v1.2.3/reasonix-darwin-amd64.tar.gz"' \
+jq '.assets[0].browser_download_url = "https://github.com/attacker/project/releases/download/v1.2.3/patty-code-darwin-amd64.tar.gz"' \
 	"$manifest_file" >"$test_root/wrong-repository.json"
 expect_invalid_cli_manifest "an asset from another repository" "$test_root/wrong-repository.json"
-jq '.assets[0].browser_download_url = "https://github.com/esengine/DeepSeek-Reasonix/releases/download/v9.9.9/reasonix-darwin-amd64.tar.gz"' \
+jq '.assets[0].browser_download_url = "https://github.com/pattycorp/DeepSeek-PattyCode/releases/download/v9.9.9/patty-code-darwin-amd64.tar.gz"' \
 	"$manifest_file" >"$test_root/wrong-tag.json"
 expect_invalid_cli_manifest "an asset from another tag" "$test_root/wrong-tag.json"
 jq '.assets = .assets[:-1]' "$manifest_file" >"$test_root/missing-asset.json"
@@ -713,9 +713,9 @@ printf 'candidate-payload\n' >"$recovery_candidate_directory/artifact"
 printf 'candidate-signature\n' >"$recovery_candidate_directory/artifact.minisig"
 printf 'existing-payload\n' >"$recovery_existing_directory/artifact"
 printf 'existing-signature\n' >"$recovery_existing_directory/artifact.minisig"
-printf '{"version":"v1.2.3","release_notes_url":"https://reasonix.io/changelog/v1.2.3/","marker":"candidate"}\n' \
+printf '{"version":"v1.2.3","release_notes_url":"https://patty-code.io/changelog/v1.2.3/","marker":"candidate"}\n' \
 	>"$recovery_candidate_directory/latest.json"
-printf '{"version":"v1.2.3","release_notes_url":"https://reasonix.io/changelog/v1.2.3/","marker":"existing"}\n' \
+printf '{"version":"v1.2.3","release_notes_url":"https://patty-code.io/changelog/v1.2.3/","marker":"existing"}\n' \
 	>"$recovery_existing_directory/latest.json"
 if bash "$desktop_directory_verifier" --allow-missing --allow-legacy-manifest \
 	--allow-authenticated-payload-differences \
@@ -735,7 +735,7 @@ printf 'asset\n' >"$legacy_candidate_directory/artifact"
 cp "$legacy_candidate_directory/artifact" "$legacy_existing_directory/artifact"
 jq -n '{
 	version: "v1.2.3",
-	release_notes_url: "https://reasonix.io/changelog/v1.2.3/",
+	release_notes_url: "https://patty-code.io/changelog/v1.2.3/",
 	platforms: {"darwin-arm64": {size: 42}}
 }' >"$legacy_candidate_directory/latest.json"
 jq 'del(.release_notes_url)' "$legacy_candidate_directory/latest.json" \
@@ -767,10 +767,10 @@ manifest_asset_size="$(wc -c <"$manifest_asset_directory/payload.zip" | tr -d '[
 manifest_native_sha="$(shasum -a 256 "$manifest_asset_directory/payload.deb" | awk '{print $1}')"
 manifest_native_size="$(wc -c <"$manifest_asset_directory/payload.deb" | tr -d '[:space:]')"
 jq -n \
-	--arg url "https://dl.reasonix.io/desktop-v1.2.3/payload.zip" \
+	--arg url "https://dl.patty-code.io/desktop-v1.2.3/payload.zip" \
 	--arg sha "$manifest_asset_sha" \
 	--argjson size "$manifest_asset_size" \
-	--arg native_url "https://dl.reasonix.io/desktop-v1.2.3/payload.deb" \
+	--arg native_url "https://dl.patty-code.io/desktop-v1.2.3/payload.deb" \
 	--arg native_sha "$manifest_native_sha" \
 	--argjson native_size "$manifest_native_size" \
 	'{
@@ -933,21 +933,21 @@ printf 'asset-a\n' >"$github_candidate/a"
 printf 'asset-b\n' >"$github_candidate/b"
 printf 'Release notes.\n' >"$github_notes"
 PATH="$fake_gh_bin:$PATH" FAKE_GH_STATE="$fake_gh_state" \
-	GITHUB_REPOSITORY=esengine/DeepSeek-Reasonix \
+	GITHUB_REPOSITORY=pattycorp/DeepSeek-Patty Code \
 	bash "$desktop_github_publisher" desktop-v1.2.3 v1.2.3 false \
 	"$github_notes" "$github_candidate"
 bash "$desktop_directory_verifier" "$github_candidate" "$fake_gh_state/assets"
 
 rm -f "$fake_gh_state/assets/b"
 PATH="$fake_gh_bin:$PATH" FAKE_GH_STATE="$fake_gh_state" \
-	GITHUB_REPOSITORY=esengine/DeepSeek-Reasonix \
+	GITHUB_REPOSITORY=pattycorp/DeepSeek-Patty Code \
 	bash "$desktop_github_publisher" desktop-v1.2.3 v1.2.3 false \
 	"$github_notes" "$github_candidate"
 bash "$desktop_directory_verifier" "$github_candidate" "$fake_gh_state/assets"
 
 printf 'conflict\n' >"$fake_gh_state/assets/a"
 if PATH="$fake_gh_bin:$PATH" FAKE_GH_STATE="$fake_gh_state" \
-	GITHUB_REPOSITORY=esengine/DeepSeek-Reasonix \
+	GITHUB_REPOSITORY=pattycorp/DeepSeek-Patty Code \
 	bash "$desktop_github_publisher" desktop-v1.2.3 v1.2.3 false \
 	"$github_notes" "$github_candidate" >/dev/null 2>&1; then
 	echo "Desktop GitHub recovery accepted conflicting immutable content" >&2
@@ -956,7 +956,7 @@ fi
 cp "$github_candidate/a" "$fake_gh_state/assets/a"
 printf 'unexpected\n' >"$fake_gh_state/assets/unexpected"
 if PATH="$fake_gh_bin:$PATH" FAKE_GH_STATE="$fake_gh_state" \
-	GITHUB_REPOSITORY=esengine/DeepSeek-Reasonix \
+	GITHUB_REPOSITORY=pattycorp/DeepSeek-Patty Code \
 	bash "$desktop_github_publisher" desktop-v1.2.3 v1.2.3 false \
 	"$github_notes" "$github_candidate" >/dev/null 2>&1; then
 	echo "Desktop GitHub recovery accepted an unexpected immutable asset" >&2
@@ -966,7 +966,7 @@ rm -f "$fake_gh_state/assets/unexpected"
 jq '.name = "Wrong title"' "$fake_gh_state/release.json" >"$fake_gh_state/release.json.new"
 mv "$fake_gh_state/release.json.new" "$fake_gh_state/release.json"
 if PATH="$fake_gh_bin:$PATH" FAKE_GH_STATE="$fake_gh_state" \
-	GITHUB_REPOSITORY=esengine/DeepSeek-Reasonix \
+	GITHUB_REPOSITORY=pattycorp/DeepSeek-Patty Code \
 	bash "$desktop_github_publisher" desktop-v1.2.3 v1.2.3 false \
 	"$github_notes" "$github_candidate" >/dev/null 2>&1; then
 	echo "Desktop GitHub recovery accepted conflicting release metadata" >&2
@@ -992,46 +992,46 @@ write_desktop_manifest() {
 		};
 		{
 			version: $version,
-			download_page: "https://reasonix.io/?download=desktop#start",
-			release_notes_url: ("https://reasonix.io/changelog/" + $notes_version + "/"),
+			download_page: "https://patty-code.io/?download=desktop#start",
+			release_notes_url: ("https://patty-code.io/changelog/" + $notes_version + "/"),
 			platforms: {
-				"darwin-arm64": asset("Reasonix-darwin-arm64.zip"),
-				"darwin-amd64": asset("Reasonix-darwin-amd64.zip"),
-				"windows-amd64": asset("Reasonix-windows-amd64-installer.exe"),
-				"windows-arm64": asset("Reasonix-windows-arm64-installer.exe"),
-				"linux-amd64": asset("Reasonix-linux-amd64.tar.gz")
+				"darwin-arm64": asset("Patty Code-darwin-arm64.zip"),
+				"darwin-amd64": asset("Patty Code-darwin-amd64.zip"),
+				"windows-amd64": asset("Patty Code-windows-amd64-installer.exe"),
+				"windows-arm64": asset("Patty Code-windows-arm64-installer.exe"),
+				"linux-amd64": asset("Patty Code-linux-amd64.tar.gz")
 			},
 			native_packages: {
-				"linux-amd64": asset("Reasonix-linux-amd64.deb")
+				"linux-amd64": asset("Patty Code-linux-amd64.deb")
 			},
 			downloads: {
-				"Reasonix-darwin-universal.dmg": asset("Reasonix-darwin-universal.dmg"),
-				"Reasonix-windows-amd64.zip": asset("Reasonix-windows-amd64.zip")
+				"Patty Code-darwin-universal.dmg": asset("Patty Code-darwin-universal.dmg"),
+				"Patty Code-windows-amd64.zip": asset("Patty Code-windows-amd64.zip")
 			}
 		}
 	' >"$output"
 }
 
 desktop_stable_version="v1.2.3"
-desktop_stable_base="https://dl.reasonix.io/desktop-${desktop_stable_version}/"
+desktop_stable_base="https://dl.patty-code.io/desktop-${desktop_stable_version}/"
 desktop_stable_manifest="$test_root/desktop-stable.json"
 write_desktop_manifest "$desktop_stable_version" "$desktop_stable_base" "$desktop_stable_manifest"
 bash "$desktop_validator" stable "$desktop_stable_version" "$desktop_stable_base" "$desktop_stable_manifest"
 
-desktop_github_base="https://github.com/esengine/DeepSeek-Reasonix/releases/download/desktop-${desktop_stable_version}/"
+desktop_github_base="https://github.com/pattycorp/DeepSeek-PattyCode/releases/download/desktop-${desktop_stable_version}/"
 desktop_github_manifest="$test_root/desktop-stable-github.json"
 write_desktop_manifest "$desktop_stable_version" "$desktop_github_base" "$desktop_github_manifest"
 bash "$desktop_validator" stable "$desktop_stable_version" "$desktop_github_base" "$desktop_github_manifest"
 
 desktop_preview_version="v1.3.0-preview.42"
-desktop_preview_base="https://dl.reasonix.io/desktop-${desktop_preview_version}/"
+desktop_preview_base="https://dl.patty-code.io/desktop-${desktop_preview_version}/"
 desktop_preview_manifest="$test_root/desktop-preview.json"
 write_desktop_manifest "$desktop_preview_version" "$desktop_preview_base" "$desktop_preview_manifest"
 bash "$desktop_validator" preview "$desktop_preview_version" "$desktop_preview_base" "$desktop_preview_manifest"
 
 desktop_rc_version="v1.3.0-rc.1"
 desktop_rc_notes_version="v1.3.0"
-desktop_rc_base="https://dl.reasonix.io/desktop-${desktop_rc_version}/"
+desktop_rc_base="https://dl.patty-code.io/desktop-${desktop_rc_version}/"
 desktop_rc_manifest="$test_root/desktop-rc.json"
 write_desktop_manifest "$desktop_rc_version" "$desktop_rc_base" "$desktop_rc_manifest" \
 	"$desktop_rc_notes_version"
@@ -1048,7 +1048,7 @@ if bash "$desktop_validator" stable "$desktop_stable_version" "$desktop_stable_b
 	echo "strict Desktop manifest validator accepted a legacy release-notes manifest" >&2
 	exit 1
 fi
-jq '.release_notes_url = "https://reasonix.io/changelog/v9.9.9/"' \
+jq '.release_notes_url = "https://patty-code.io/changelog/v9.9.9/"' \
 	"$desktop_stable_manifest" >"$test_root/desktop-wrong-legacy-notes.json"
 if bash "$desktop_manifest_comparator" "$desktop_stable_manifest" \
 	"$test_root/desktop-wrong-legacy-notes.json" >/dev/null 2>&1; then
@@ -1093,11 +1093,11 @@ jq '.native_packages["linux-amd64"].size = 9007199254740992' \
 expect_invalid_desktop_manifest "an asset size above the JavaScript safe-integer range" preview \
 	"$desktop_preview_version" "$desktop_preview_base" \
 	"$test_root/desktop-unsafe-integer-size.json"
-jq '.downloads["Reasonix-darwin-universal.dmg"].sha256 = ("A" * 64)' \
+jq '.downloads["Patty Code-darwin-universal.dmg"].sha256 = ("A" * 64)' \
 	"$desktop_preview_manifest" >"$test_root/desktop-bad-sha.json"
 expect_invalid_desktop_manifest "an uppercase SHA-256" preview "$desktop_preview_version" \
 	"$desktop_preview_base" "$test_root/desktop-bad-sha.json"
-jq 'del(.downloads["Reasonix-windows-amd64.zip"])' \
+jq 'del(.downloads["Patty Code-windows-amd64.zip"])' \
 	"$desktop_preview_manifest" >"$test_root/desktop-missing-download.json"
 expect_invalid_desktop_manifest "a missing website download" preview "$desktop_preview_version" \
 	"$desktop_preview_base" "$test_root/desktop-missing-download.json"
@@ -1105,14 +1105,14 @@ jq '.platforms.extra = .platforms["darwin-arm64"]' \
 	"$desktop_preview_manifest" >"$test_root/desktop-extra-platform.json"
 expect_invalid_desktop_manifest "an unexpected platform" preview "$desktop_preview_version" \
 	"$desktop_preview_base" "$test_root/desktop-extra-platform.json"
-write_desktop_manifest "$desktop_preview_version" "https://dl.reasonix.io/desktop-preview/" \
+write_desktop_manifest "$desktop_preview_version" "https://dl.patty-code.io/desktop-preview/" \
 	"$test_root/desktop-rolling-preview.json"
 expect_invalid_desktop_manifest "the legacy mutable Preview directory" preview "$desktop_preview_version" \
 	"$desktop_preview_base" "$test_root/desktop-rolling-preview.json"
 jq 'del(.downloads)' "$test_root/desktop-rolling-preview.json" \
 	>"$test_root/desktop-legacy-preview.json"
 bash "$desktop_validator" legacy-preview "$desktop_preview_version" \
-	"https://dl.reasonix.io/desktop-preview/" "$test_root/desktop-legacy-preview.json"
+	"https://dl.patty-code.io/desktop-preview/" "$test_root/desktop-legacy-preview.json"
 jq 'del(.release_notes_url, .downloads)' "$desktop_preview_manifest" \
 	>"$test_root/desktop-legacy-preview-immutable.json"
 bash "$desktop_validator" legacy-preview "$desktop_preview_version" \
@@ -1132,10 +1132,10 @@ expect_invalid_desktop_manifest "empty downloads in a legacy Stable manifest" le
 	"$desktop_stable_version" "$desktop_stable_base" "$test_root/desktop-empty-downloads.json"
 expect_invalid_desktop_manifest "a legacy Stable manifest as a new publication" stable \
 	"$desktop_stable_version" "$desktop_stable_base" "$test_root/desktop-legacy-stable.json"
-jq 'del(.downloads["Reasonix-windows-amd64.zip"])' \
+jq 'del(.downloads["Patty Code-windows-amd64.zip"])' \
 	"$test_root/desktop-rolling-preview.json" >"$test_root/desktop-partial-legacy-downloads.json"
 expect_invalid_desktop_manifest "partial downloads in a legacy Preview manifest" legacy-preview \
-	"$desktop_preview_version" "https://dl.reasonix.io/desktop-preview/" \
+	"$desktop_preview_version" "https://dl.patty-code.io/desktop-preview/" \
 	"$test_root/desktop-partial-legacy-downloads.json"
 expect_invalid_desktop_manifest "a Preview manifest as Stable" stable "$desktop_preview_version" \
 	"$desktop_preview_base" "$desktop_preview_manifest"
@@ -1236,14 +1236,14 @@ git clone -q "$test_root/remote.git" "$test_root/repo"
 		"$test_root/desktop-tagged-preview-candidate.log"
 	git tag -d desktop-v1.3.0-preview.42 >/dev/null
 
-	ACTUAL_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-stable.yml@refs/tags/v1.2.3' \
-		EXPECTED_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-stable.yml@refs/tags/v1.2.3' \
+	ACTUAL_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-stable.yml@refs/tags/v1.2.3' \
+		EXPECTED_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-stable.yml@refs/tags/v1.2.3' \
 		CALLER_EVENT_NAME=push CALLER_REF=refs/tags/v1.2.3 CALLER_REF_PROTECTED=true \
 		CALLER_WORKFLOW_SHA="$approved_sha" CALLER_SHA="$approved_sha" \
 		APPROVED_CLI_TAG=v1.2.3 APPROVED_SHA="$approved_sha" \
 		"$repo_root/scripts/verify-release-authorization.sh"
-	ACTUAL_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-preview.yml@refs/heads/main-v2' \
-		EXPECTED_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-preview.yml@refs/heads/main-v2' \
+	ACTUAL_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-preview.yml@refs/heads/main-v2' \
+		EXPECTED_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-preview.yml@refs/heads/main-v2' \
 		CALLER_EVENT_NAME=workflow_dispatch CALLER_REF=refs/heads/main-v2 CALLER_REF_PROTECTED=true \
 		CALLER_WORKFLOW_SHA="$approved_sha" CALLER_SHA="$approved_sha" \
 		APPROVED_CHANNEL=preview APPROVED_CLI_TAG=v1.3.0-preview.42 APPROVED_SHA="$approved_sha" \
@@ -1300,16 +1300,16 @@ git clone -q "$test_root/remote.git" "$test_root/repo"
 	GITHUB_OUTPUT="$test_root/recovery.out" ALLOW_STABLE_RECOVERY=true RELEASE_TAG=v1.2.3 \
 		"$repo_root/scripts/resolve-stable-release.sh"
 	grep -Eq '^sha='"$approved_sha"'$' "$test_root/recovery.out"
-	ACTUAL_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-stable.yml@refs/heads/main-v2' \
-		EXPECTED_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-stable.yml@refs/heads/main-v2' \
+	ACTUAL_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-stable.yml@refs/heads/main-v2' \
+		EXPECTED_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-stable.yml@refs/heads/main-v2' \
 		CALLER_EVENT_NAME=workflow_dispatch CALLER_REF=refs/heads/main-v2 CALLER_REF_PROTECTED=true \
 		CALLER_WORKFLOW_SHA="$recovery_workflow_sha" CALLER_SHA="$recovery_workflow_sha" \
 		APPROVED_CLI_TAG=v1.2.3 APPROVED_SHA="$approved_sha" \
 		"$repo_root/scripts/verify-release-authorization.sh"
 	RELEASE_TAG=v1.2.3 APPROVED_SHA="$approved_sha" VERIFY_RELEASE_CHECKOUT=false \
 		"$repo_root/scripts/verify-release-tag.sh"
-	if ACTUAL_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-stable.yml@refs/heads/main-v2' \
-		EXPECTED_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-stable.yml@refs/heads/main-v2' \
+	if ACTUAL_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-stable.yml@refs/heads/main-v2' \
+		EXPECTED_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-stable.yml@refs/heads/main-v2' \
 		CALLER_EVENT_NAME=workflow_dispatch CALLER_REF=refs/heads/main-v2 CALLER_REF_PROTECTED=true \
 		CALLER_WORKFLOW_SHA="$approved_sha" CALLER_SHA="$recovery_workflow_sha" \
 		APPROVED_CLI_TAG=v1.2.3 APPROVED_SHA="$approved_sha" \
@@ -1319,8 +1319,8 @@ git clone -q "$test_root/remote.git" "$test_root/repo"
 	fi
 	grep -Eq 'recovery caller workflow SHA is' "$test_root/stale-workflow.log"
 
-	if ACTUAL_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-stable.yml@refs/heads/topic' \
-		EXPECTED_CALLER_WORKFLOW_REF='example/reasonix/.github/workflows/release-stable.yml@refs/heads/topic' \
+	if ACTUAL_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-stable.yml@refs/heads/topic' \
+		EXPECTED_CALLER_WORKFLOW_REF='example/patty/.github/workflows/release-stable.yml@refs/heads/topic' \
 		CALLER_EVENT_NAME=workflow_dispatch CALLER_REF=refs/heads/topic CALLER_REF_PROTECTED=false \
 		CALLER_WORKFLOW_SHA="$recovery_workflow_sha" CALLER_SHA="$recovery_workflow_sha" \
 		APPROVED_CLI_TAG=v1.2.3 APPROVED_SHA="$approved_sha" \
@@ -1562,9 +1562,9 @@ fi
 grep -Eq 'does not match requested version' "$test_root/npm-mismatch.log"
 
 e2e_workflow="$repo_root/.github/workflows/e2e-bot.yml"
-grep -Fq 'REASONIX_HOME: ${{ runner.temp }}/reasonix-e2e-home' "$e2e_workflow"
-grep -Fq 'cp /tmp/reasonix-e2e.toml "$REASONIX_HOME/config.toml"' "$e2e_workflow"
-grep -Fq "printf 'DEEPSEEK_API_KEY=%s\\n' \"\$DEEPSEEK_API_KEY\" > \"\$REASONIX_HOME/.env\"" "$e2e_workflow"
+grep -Fq 'PATTY_CODE_HOME: ${{ runner.temp }}/patty-code-e2e-home' "$e2e_workflow"
+grep -Fq 'cp /tmp/patty-code-e2e.toml "$PATTY_CODE_HOME/config.toml"' "$e2e_workflow"
+grep -Fq "printf 'DEEPSEEK_API_KEY=%s\\n' \"\$DEEPSEEK_API_KEY\" > \"\$PATTY_CODE_HOME/.env\"" "$e2e_workflow"
 grep -Fq 'const unsuccessful = results.filter((result) => !result.Passed || result.Skipped);' "$e2e_workflow"
 grep -Fq "if: always() && hashFiles('report.md') != ''" "$e2e_workflow"
 if grep -A2 -F 'missing DEEPSEEK_API_KEY secret' "$e2e_workflow" | grep -Fq 'exit 0'; then
@@ -1583,10 +1583,10 @@ for workflow in release.yml release-npm.yml release-desktop.yml; do
 	grep -Fq 'bash scripts/verify-embedded-docs.sh "$DOCS_BUILD_VERSION"' \
 		"$repo_root/.github/workflows/$workflow"
 done
-grep -Fq 'reasonix/internal/productdocs.linkedVersion={{ .Tag }}' "$repo_root/.goreleaser.yaml"
-grep -Fq 'reasonix/internal/productdocs.linkedRevision={{ .Commit }}' "$repo_root/.goreleaser.yaml"
-grep -Fq 'reasonix/internal/productdocs.linkedVersion=${binaryVersion}' "$repo_root/npm/build.mjs"
-grep -Fq 'product_docs_ldflags="-X reasonix/internal/productdocs.linkedVersion=$VERSION' \
+grep -Fq 'patty/internal/productdocs.linkedVersion={{ .Tag }}' "$repo_root/.goreleaser.yaml"
+grep -Fq 'patty/internal/productdocs.linkedRevision={{ .Commit }}' "$repo_root/.goreleaser.yaml"
+grep -Fq 'patty/internal/productdocs.linkedVersion=${binaryVersion}' "$repo_root/npm/build.mjs"
+grep -Fq 'product_docs_ldflags="-X patty/internal/productdocs.linkedVersion=$VERSION' \
 	"$repo_root/scripts/desktop-build.sh"
 
 echo "release workflow contract tests: PASS"

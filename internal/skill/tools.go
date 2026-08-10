@@ -10,8 +10,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"reasonix/internal/event"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/tool"
 )
 
 // SubagentRunner runs a runAs=subagent skill: it spawns an isolated child loop
@@ -453,9 +453,9 @@ func (*installSkillTool) Name() string   { return "install_skill" }
 func (*installSkillTool) ReadOnly() bool { return false }
 
 func (t *installSkillTool) Description() string {
-	scope := "'global' (only option — no project workspace) writes to the Reasonix home skills directory."
+	scope := "'global' (only option — no project workspace) writes to the patty home skills directory."
 	if t.store.HasProjectScope() {
-		scope = "'project' (default) writes to <repo>/.reasonix/skills/ (this workspace only); 'global' writes to the Reasonix home skills directory (every project)."
+		scope = "'project' (default) writes to <repo>/.patty/skills/ (this workspace only); 'global' writes to the patty home skills directory (every project)."
 	}
 	return "Author and save a new skill — a reusable playbook future turns invoke via run_skill (or /<name>). Runnable immediately this turn; appears in the pinned Skills index on the next launch. " + scope
 }

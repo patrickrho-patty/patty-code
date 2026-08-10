@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/filelock"
+	"patty/internal/filelock"
 )
 
-const activationLockName = ".reasonix-activate.lock"
+const activationLockName = ".patty-activate.lock"
 
 // Member is one file to publish into a version directory.
 type Member struct {

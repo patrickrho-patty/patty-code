@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 type usageProvider struct {
@@ -176,13 +176,13 @@ func TestRepriceTabUsageUsesDetectedLocaleForAutoCurrency(t *testing.T) {
 		Pricing:     &provider.Pricing{Input: 0.14, Currency: "USD"},
 	})
 	app := NewApp()
-	app.setDesktopLocale("zh-CN")
+	app.setDesktopLocale("ko-KR")
 
 	app.repriceTabUsageForCurrentCurrency(tab)
 
 	got := tab.telemetrySnapshot().Usage
-	if got.SessionCurrency != "¥" || got.SessionCost != 1 {
-		t.Fatalf("auto-locale repriced usage = %f %q, want 1 CNY", got.SessionCost, got.SessionCurrency)
+	if got.SessionCurrency != "$" || got.SessionCost != 0.14 {
+		t.Fatalf("auto-locale repriced usage = %f %q, want USD", got.SessionCost, got.SessionCurrency)
 	}
 }
 

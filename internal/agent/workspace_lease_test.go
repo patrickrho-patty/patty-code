@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
-	"reasonix/internal/workspacelease"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/provider"
+	"patty/internal/tool"
+	"patty/internal/workspacelease"
 )
 
 type workspaceLeaseTestTool struct {

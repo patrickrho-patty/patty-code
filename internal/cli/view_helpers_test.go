@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/command"
-	"reasonix/internal/hook"
-	"reasonix/internal/memory"
-	"reasonix/internal/outputstyle"
-	"reasonix/internal/plugin"
-	"reasonix/internal/skill"
+	"patty/internal/command"
+	"patty/internal/hook"
+	"patty/internal/memory"
+	"patty/internal/outputstyle"
+	"patty/internal/plugin"
+	"patty/internal/skill"
 )
 
 func TestRenderSkillListUsesSharedVisualLanguage(t *testing.T) {
@@ -60,12 +60,12 @@ func TestRenderMemoryGroupsDocsAndStore(t *testing.T) {
 		t.Fatalf("save memory: %v", err)
 	}
 	got := renderMemory(width, &memory.Set{
-		Docs:  []memory.Source{{Path: "/Users/me/project/REASONIX.md", Scope: memory.ScopeProject}},
+		Docs:  []memory.Source{{Path: "/Users/me/project/PATTY_CODE.md", Scope: memory.ScopeProject}},
 		Store: store,
 		Index: store.Index(),
 	})
 	for _, want := range []string{
-		"memory", "instructions", "precedence=1", "scope=project", "REASONIX.md",
+		"memory", "instructions", "precedence=1", "scope=project", "PATTY_CODE.md",
 		"saved memories", "saved-fact", "Saved Fact", "revision=1", "freshness=fresh",
 		"doc edits apply next session",
 	} {
@@ -111,7 +111,7 @@ func TestRenderHooksUsesSharedVisualLanguage(t *testing.T) {
 		Event:      hook.PreToolUse,
 		Scope:      hook.ScopeProject,
 	}})
-	for _, want := range []string{"hooks (1 active)", "PreToolUse", "project", "…", ".reasonix/settings.json"} {
+	for _, want := range []string{"hooks (1 active)", "PreToolUse", "project", "…", ".patty/settings.json"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("hooks view missing %q:\n%s", want, got)
 		}
@@ -164,7 +164,7 @@ func TestRenderHelpDocsShowsOnlyRuntimeWinner(t *testing.T) {
 	if !strings.Contains(got, "custom docs") || strings.Contains(got, "docs skill") {
 		t.Fatalf("help did not preserve the runtime-winning custom command:\n%s", got)
 	}
-	if !strings.Contains(got, "/reasonix:docs") {
+	if !strings.Contains(got, "/patty:docs") {
 		t.Fatalf("help did not preserve the qualified built-in docs fallback:\n%s", got)
 	}
 }
@@ -181,7 +181,7 @@ func TestRenderHelpDocsUsesQualifiedFallbackForHiddenAlias(t *testing.T) {
 	if strings.Contains(got, "\n  /docs ") {
 		t.Fatalf("help exposed a misleading hidden /docs alias:\n%s", got)
 	}
-	for _, want := range []string{"/reasonix:docs", "/manuals:docs"} {
+	for _, want := range []string{"/patty:docs", "/manuals:docs"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q:\n%s", want, got)
 		}
@@ -191,7 +191,7 @@ func TestRenderHelpDocsUsesQualifiedFallbackForHiddenAlias(t *testing.T) {
 func TestRenderSkillPathsStaysWithinWidth(t *testing.T) {
 	width := 72
 	got := renderSkillPaths(width, []skill.Root{{
-		Dir:      "/Users/me/projects/really/deep/path/to/.reasonix/skills",
+		Dir:      "/Users/me/projects/really/deep/path/to/.patty/skills",
 		Scope:    skill.ScopeProject,
 		Priority: 0,
 		Status:   skill.StatusMissing,

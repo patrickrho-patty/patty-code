@@ -9,9 +9,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/i18n"
 )
 
 func newComposerMouseTestTUI(t *testing.T, width, height int) chatTUI {
@@ -77,6 +77,22 @@ func TestComposerWheelScrollsViewWithoutMovingInsertionCursor(t *testing.T) {
 	}
 }
 
+func TestComposerMouseRegionIncludesWrappedHintRows(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 34, 16)
+	_, contentY, ok := m.composerOrigin()
+	if !ok {
+		t.Fatal("composer should expose a mouse origin")
+	}
+	hintRows := composerHintRowCount(m.width)
+	if hintRows < 2 {
+		t.Fatalf("test width produced %d hint rows, want wrapped hints", hintRows)
+	}
+	lastHintY := contentY + m.input.Height() + hintRows - 1
+	if !m.mouseOverComposer(2, lastHintY) {
+		t.Fatalf("last hint row y=%d is outside composer mouse region", lastHintY)
+	}
+}
+
 func TestComposerTypingRestoresCaretFollowingAfterWheel(t *testing.T) {
 	m := overflowingComposerMouseTestTUI(t)
 	x, y, _ := m.composerOrigin()
@@ -129,14 +145,12 @@ func TestComposerWheelChainsToTranscriptAtInternalBoundary(t *testing.T) {
 
 func TestComposerMouseClickMovesCursorAcrossWideRunes(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
-	m.input.SetValue("你好abc")
+	m.input.SetValue("한글abc")
 	x, y, ok := m.composerOrigin()
 	if !ok {
 		t.Fatal("composer should expose a mouse origin while visible")
 	}
 
-	// Each CJK rune occupies two terminal cells. Clicking after both should put
-	// the textarea cursor before the ASCII suffix, not leave it at the end.
 	m = updateComposerMouseTestTUI(t, m, tea.MouseClickMsg{X: x + 4, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseReleaseMsg{X: x + 4, Y: y, Button: tea.MouseLeft})
 	if got := m.input.Column(); got != 2 {
@@ -154,8 +168,8 @@ func TestComposerMouseLayoutRoundTripsTextareaCursor(t *testing.T) {
 	}{
 		{40, ""},
 		{20, "hello world and wrapped words"},
-		{16, "1234567890中文"},
-		{18, "alpha  beta\n中文 mixed\n\nlast"},
+		{16, "1234567890機能"},
+		{18, "alpha  beta\n機能整理檢討 mixed\n\nlast"},
 		{18, "one\ntwo\nthree\nfour\nfive\nsix\nseven"},
 	}
 	for _, tc := range cases {
@@ -178,18 +192,18 @@ func TestComposerMouseLayoutRoundTripsTextareaCursor(t *testing.T) {
 
 func TestComposerMouseDragSelectsAndTypingReplaces(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
-	m.input.SetValue("你好abc")
+	m.input.SetValue("한글abc")
 	x, y, _ := m.composerOrigin()
 
 	m = updateComposerMouseTestTUI(t, m, tea.MouseClickMsg{X: x, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseMotionMsg{X: x + 4, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseReleaseMsg{X: x + 4, Y: y, Button: tea.MouseLeft})
 
-	if got := m.selectedComposerText(); got != "你好" {
-		t.Fatalf("selected composer text = %q, want %q", got, "你好")
+	if got := m.selectedComposerText(); got != "한글" {
+		t.Fatalf("selected composer text = %q, want %q", got, "한글")
 	}
 	highlighted := m.renderComposerInput()
-	if !strings.Contains(highlighted, selStyle.Render("你好")) {
+	if !strings.Contains(highlighted, selStyle.Render("한글")) {
 		t.Fatalf("rendered composer should highlight exactly the selected wide runes: %q", highlighted)
 	}
 
@@ -220,8 +234,6 @@ func TestComposerMouseSelectionSnapsToGraphemeClusters(t *testing.T) {
 	m.input.SetValue("e\u0301x 👨‍👩‍👧‍👦z")
 	x, y, _ := m.composerOrigin()
 
-	// The combining accent is a separate rune but part of the same one-cell
-	// grapheme, so a one-cell drag must select both runes together.
 	m = updateComposerMouseTestTUI(t, m, tea.MouseClickMsg{X: x, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseMotionMsg{X: x + 1, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseReleaseMsg{X: x + 1, Y: y, Button: tea.MouseLeft})
@@ -229,7 +241,6 @@ func TestComposerMouseSelectionSnapsToGraphemeClusters(t *testing.T) {
 		t.Fatalf("combining grapheme selection = %q, want %q", got, "e\u0301")
 	}
 
-	// The family emoji contains seven runes but renders as one two-cell grapheme.
 	m = updateComposerMouseTestTUI(t, m, tea.MouseClickMsg{X: x + 3, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseMotionMsg{X: x + 5, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseReleaseMsg{X: x + 5, Y: y, Button: tea.MouseLeft})
@@ -240,17 +251,14 @@ func TestComposerMouseSelectionSnapsToGraphemeClusters(t *testing.T) {
 
 func TestComposerSelectionTracksSoftWrapAndNewlines(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 16, 14)
-	m.input.SetValue("1234567890中文\nsecond")
+	m.input.SetValue("1234567890機能\nsecond")
 	x, y, _ := m.composerOrigin()
 
-	// The configured textarea content width is 12 cells. Drag from the final two
-	// ASCII characters on the first visual row through the two wide CJK runes on
-	// the wrapped row and into the explicit second logical line.
 	m = updateComposerMouseTestTUI(t, m, tea.MouseClickMsg{X: x + 10, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseMotionMsg{X: x + 3, Y: y + 2, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseReleaseMsg{X: x + 3, Y: y + 2, Button: tea.MouseLeft})
 
-	if got, want := m.selectedComposerText(), "中文\nsec"; got != want {
+	if got, want := m.selectedComposerText(), "機能\nsec"; got != want {
 		t.Fatalf("wrapped multi-line selection = %q, want %q", got, want)
 	}
 
@@ -344,7 +352,6 @@ func TestComposerSelectionDoesNotTurnCommandShortcutIntoText(t *testing.T) {
 	m = updateComposerMouseTestTUI(t, m, tea.MouseMotionMsg{X: x + 4, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseReleaseMsg{X: x + 4, Y: y, Button: tea.MouseLeft})
 
-	// Ctrl+Y is an application command and must not replace the selected draft.
 	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'y', Mod: tea.ModCtrl})
 	if got := m.input.Value(); got != "keep this" {
 		t.Fatalf("Ctrl+Y changed selected composer text to %q", got)
@@ -365,8 +372,6 @@ func TestComposerImagePasteShortcutKeepsSelectionUntilImageArrives(t *testing.T)
 		shortcut.Mod = tea.ModAlt
 		shortcutName = "Alt+V"
 	}
-	// The platform image-only shortcut must preserve the selection until the
-	// asynchronous attachment result can replace it.
 	next, cmd := m.Update(shortcut)
 	m = next.(chatTUI)
 	if cmd == nil {
@@ -379,7 +384,7 @@ func TestComposerImagePasteShortcutKeepsSelectionUntilImageArrives(t *testing.T)
 		t.Fatalf("%s should keep the selection until the clipboard arrives, got %q", shortcutName, got)
 	}
 
-	m = updateComposerMouseTestTUI(t, m, clipboardImageMsg{path: ".reasonix/attachments/test.png"})
+	m = updateComposerMouseTestTUI(t, m, clipboardImageMsg{path: ".patty/attachments/test.png"})
 	if got := m.input.Value(); got != "alpha [image #1] " {
 		t.Fatalf("image paste over selection produced %q, want %q", got, "alpha [image #1] ")
 	}
@@ -424,7 +429,6 @@ func TestComposerArrowKeysCollapseSelection(t *testing.T) {
 	}
 
 	// Left/Right collapse to the ordered selection start/end without moving
-	// an extra character, for forward and backward drags alike.
 	m = drag(m, 6, 10)
 	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: tea.KeyLeft})
 	if m.composerSel.active {
@@ -461,8 +465,6 @@ func TestComposerNewlineSelectionHighlightsTrailingSpace(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
 	m.input.SetValue("abc\ndef")
 
-	// Selecting only the newline must highlight the caret space after the
-	// line, not the preceding character.
 	m.composerSel = composerSelection{active: true, anchor: 3, head: 4, value: m.input.Value()}
 	highlighted := m.renderComposerInput()
 	if strings.Contains(highlighted, selStyle.Render("c")) {
@@ -472,7 +474,6 @@ func TestComposerNewlineSelectionHighlightsTrailingSpace(t *testing.T) {
 		t.Fatalf("newline-only selection should highlight the trailing caret space: %q", highlighted)
 	}
 
-	// A selection covering content plus the newline extends one cell past it.
 	m.composerSel = composerSelection{active: true, anchor: 2, head: 4, value: m.input.Value()}
 	highlighted = m.renderComposerInput()
 	if !strings.Contains(highlighted, selStyle.Render("c ")) {
@@ -486,7 +487,7 @@ func TestClipboardPasteOverWideSelectionRequestsClearScreen(t *testing.T) {
 	defer func() { clearWideInputChanges = prev }()
 
 	m := newComposerMouseTestTUI(t, 40, 12)
-	m.input.SetValue("你好abc")
+	m.input.SetValue("한글abc")
 	x, y, _ := m.composerOrigin()
 	m = updateComposerMouseTestTUI(t, m, tea.MouseClickMsg{X: x, Y: y, Button: tea.MouseLeft})
 	m = updateComposerMouseTestTUI(t, m, tea.MouseMotionMsg{X: x + 4, Y: y, Button: tea.MouseLeft})

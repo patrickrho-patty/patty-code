@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/proc"
-	"reasonix/internal/tool"
+	"patty/internal/proc"
+	"patty/internal/tool"
 )
 
 // DefaultWaitDelay mirrors the bash tool's child-process wait grace.

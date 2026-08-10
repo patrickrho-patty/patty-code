@@ -338,12 +338,12 @@ jobs:
           fi
 
           required_assets='[
-            "reasonix-darwin-amd64.tar.gz",
-            "reasonix-darwin-arm64.tar.gz",
-            "reasonix-linux-amd64.tar.gz",
-            "reasonix-linux-arm64.tar.gz",
-            "reasonix-windows-amd64.zip",
-            "reasonix-windows-arm64.zip",
+            "patty-code-darwin-amd64.tar.gz",
+            "patty-code-darwin-arm64.tar.gz",
+            "patty-code-linux-amd64.tar.gz",
+            "patty-code-linux-arm64.tar.gz",
+            "patty-code-windows-amd64.zip",
+            "patty-code-windows-arm64.zip",
             "SHA256SUMS"
           ]'
           gh api "repos/${{ github.repository }}/releases/tags/$TAG" > /tmp/cli-release.raw.json
@@ -357,7 +357,7 @@ jobs:
               tag_name: $release.tag_name,
               prerelease: $release.prerelease,
               html_url: $release.html_url,
-              release_notes_url: ("https://reasonix.io/changelog/" + $notes_tag + "/"),
+              release_notes_url: ("https://patty-code.io/changelog/" + $notes_tag + "/"),
               assets: [
                 $required[] as $name |
                 $assets[$name] |
@@ -478,7 +478,7 @@ jobs:
             echo "R2 secrets not configured; skipping desktop manifest compatibility asset"
             exit 0
           fi
-          # dl.reasonix.io serves 403 to GitHub Actions egress IPs (Cloudflare bot
+          # dl.patty.io serves 403 to GitHub Actions egress IPs (Cloudflare bot
           # protection), so read the manifest over the authenticated S3 API instead
           # of the public edge.
           aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
@@ -486,10 +486,10 @@ jobs:
           aws configure set region auto
           aws s3 cp "s3://${R2_BUCKET}/latest/latest.json" latest.raw.json \
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
-          jq '.download_page = "https://reasonix.io/?download=desktop#start"' latest.raw.json > latest.json
+          jq '.download_page = "https://patty-code.io/?download=desktop#start"' latest.raw.json > latest.json
           jq -e '
             ([.platforms[] | (.url, .sig)] |
-              all(type == "string" and startswith("https://dl.reasonix.io/") and (contains("/releases/latest/") | not)))
+              all(type == "string" and startswith("https://dl.patty.io/") and (contains("/releases/latest/") | not)))
           ' latest.json >/dev/null
           gh release upload "$TAG" latest.json --clobber
 
@@ -497,7 +497,7 @@ jobs:
       # still poll GitHub's repository-wide latest URL. Desktop releases now
       # own that Latest badge, but this check still exercises the public fallback
       # path exactly the way those clients fetch it: anonymously, over the public
-      # edge, with a Go client UA. Unlike dl.reasonix.io (whose bot protection
+      # edge, with a Go client UA. Unlike dl.patty.io (whose bot protection
       # 403s Actions egress — see the R2 note above), GitHub serves its own
       # runners, so this can hard-fail. #5826/#5858 shipped a broken update check
       # for weeks precisely because nothing exercised the public path. Retries
@@ -562,11 +562,11 @@ jobs:
           esac
           version="${TAG#v}"
           if ! git ls-remote --exit-code origin "refs/tags/npm-v$version" >/dev/null; then
-            echo "::error::the npm-v$version tag was never pushed — the npm channel is being left behind and 'npm update -g' users will be downgraded to the old 'latest'. Push it: git tag npm-v$version ${TAG} && git push origin npm-v$version (or 'npm dist-tag add reasonix@$version latest' for an already-published version)."
+            echo "::error::the npm-v$version tag was never pushed — the npm channel is being left behind and 'npm update -g' users will be downgraded to the old 'latest'. Push it: git tag npm-v$version ${TAG} && git push origin npm-v$version (or 'npm dist-tag add patty-code@$version latest' for an already-published version)."
             exit 1
           fi
           for attempt in 1 2 3 4 5 6; do
-            got="$(npm view reasonix dist-tags.latest 2>/dev/null || true)"
+            got="$(npm view patty-code dist-tags.latest 2>/dev/null || true)"
             if [ -n "$got" ]; then
               newest="$(printf '%s\n%s\n' "$got" "$version" | sort -V | tail -1)"
               if [ "$newest" = "$got" ]; then

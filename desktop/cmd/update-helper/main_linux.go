@@ -1,6 +1,6 @@
 //go:build linux
 
-// Command reasonix-update-helper (Linux) installs a verified .deb under Polkit.
+// Command patty-update-helper (Linux) installs a verified .deb under Polkit.
 // It is invoked only via pkexec with fixed argv and re-validates every input as
 // root before calling apt-get. The unprivileged desktop process never runs apt.
 package main
@@ -21,7 +21,7 @@ import (
 	"strings"
 	"syscall"
 
-	"reasonix/desktop/internal/update"
+	"patty/desktop/internal/update"
 )
 
 // Stable exit codes observed by the desktop installer.
@@ -38,7 +38,7 @@ const (
 )
 
 const (
-	packageName   = "reasonix-desktop"
+	packageName   = "patty-desktop"
 	dpkgDebPath   = "/usr/bin/dpkg-deb"
 	dpkgQueryPath = "/usr/bin/dpkg-query"
 	dpkgPath      = "/usr/bin/dpkg"
@@ -51,7 +51,7 @@ const (
 	// phasePrefix is a single-line protocol the desktop parses from stderr so
 	// the UI can leave "authorizing" once Polkit has launched this helper and
 	// validation finished, before apt-get starts.
-	phasePrefix = "REASONIX_UPDATE_PHASE="
+	phasePrefix = "PATTY_UPDATE_PHASE="
 )
 
 type helperResult struct {
@@ -86,7 +86,7 @@ func realDeps() installDeps {
 	return installDeps{
 		geteuid:          os.Geteuid,
 		getenv:           os.Getenv,
-		mkTempDir:        func() (string, error) { return os.MkdirTemp("", "reasonix-update-*") },
+		mkTempDir:        func() (string, error) { return os.MkdirTemp("", "patty-update-*") },
 		removeAll:        os.RemoveAll,
 		copyOwnedRegular: copyOwnedRegularFile,
 		readFile:         os.ReadFile,

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 func TestResolveBuiltin(t *testing.T) {
@@ -17,7 +17,6 @@ func TestResolveBuiltin(t *testing.T) {
 	if !st.Builtin || !st.KeepCoding || strings.TrimSpace(st.Body) == "" {
 		t.Errorf("unexpected built-in shape: %+v", st)
 	}
-	// Case-insensitive.
 	if _, ok := Resolve("LEARNING", nil); !ok {
 		t.Error("resolve should be case-insensitive")
 	}
@@ -85,7 +84,7 @@ func TestCustomFileOverridesBuiltinAndParses(t *testing.T) {
 
 func TestResolveDecodesGB18030CustomFile(t *testing.T) {
 	dir := t.TempDir()
-	body := "---\nname: concise-cn\ndescription: 中文风格\n---\n请用中文简洁回答。"
+	body := "---\nname: concise-cn\ndescription: 중국어 스타일\n---\n중국어로 간결하게 답변하세요."
 	if err := os.WriteFile(filepath.Join(dir, "concise-cn.md"), fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +93,7 @@ func TestResolveDecodesGB18030CustomFile(t *testing.T) {
 	if !ok {
 		t.Fatal("custom style should resolve")
 	}
-	if st.Description != "中文风格" || st.Body != "请用中文简洁回答。" {
+	if st.Description != "중국어 스타일" || st.Body != "중국어로 간결하게 답변하세요." {
 		t.Fatalf("decoded style = %+v", st)
 	}
 }

@@ -6,14 +6,12 @@ import (
 	"log/slog"
 	"strings"
 
-	"reasonix/internal/bot"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
+	"patty/internal/bot"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
 )
 
-// 本文件是 botBridgeHub 对 App 的全部胶水：会话枚举（含后台 detached）、
-// 按 tab 寻址的审批/问答/驱动、transcript 公告、订阅持久化。
 
 func (a *App) newBotBridge() *botBridgeHub {
 	return newBotBridgeHub(botBridgeDeps{
@@ -29,8 +27,6 @@ func (a *App) newBotBridge() *botBridgeHub {
 	})
 }
 
-// bridgeSessions 枚举所有 live 会话：可见 tab 用完整 TabMeta，后台 detached
-// 会话补一份轻量快照（controller 仍存活，审批/问答仍可路由）。
 func (a *App) bridgeSessions() []bot.DesktopSessionInfo {
 	tabs := a.ListTabs()
 	out := make([]bot.DesktopSessionInfo, 0, len(tabs)+4)
@@ -66,8 +62,6 @@ func (a *App) bridgeSessions() []bot.DesktopSessionInfo {
 	return out
 }
 
-// bridgeCtrlByTabID 解析可见与后台 detached 两张表（区别于 ctrlByTabID：
-// 那是前端语义，空 tabID 落到活跃 tab，且不看 detached）。
 func (a *App) bridgeCtrlByTabID(tabID string) control.SessionAPI {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
@@ -95,7 +89,6 @@ func (a *App) bridgeAnswer(tabID, id string, answers []QuestionAnswer) {
 	ctrl.AnswerQuestion(id, out)
 }
 
-// bridgeAnnounce 往会话 transcript 发一条 Notice，桌面用户在聊天流里可见。
 func (a *App) bridgeAnnounce(tabID, text string) {
 	a.mu.RLock()
 	tab := a.tabByEventSinkIDLocked(tabID)
@@ -110,8 +103,6 @@ func (a *App) bridgeAnnounce(tabID, text string) {
 	sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: text})
 }
 
-// bridgeDrive 把远程文本提交为可见 tab 的新 turn，并为这一轮挂上事件转发器,
-// 让输出流回接管聊天（转发器在 TurnDone 自动卸载）。
 func (a *App) bridgeDrive(tabID, text string, route bot.DesktopWatchRoute) error {
 	admission, ctrl, err := a.beginTabTurn(tabID, false)
 	if err != nil {
@@ -123,13 +114,10 @@ func (a *App) bridgeDrive(tabID, text string, route bot.DesktopWatchRoute) error
 	defer admission.abort()
 	tab := admission.tab
 	if tab.sink == nil {
-		return fmt.Errorf("会话事件通道不可用，无法驱动")
+		return fmt.Errorf("세션 이벤트 채널을 사용할 수 없습니다.")
 	}
-	// A local submission may have reclaimed the tab while this drive was waiting
-	// for the per-tab admission gate. Revalidate ownership only after the gate is
-	// held, immediately before attaching the route-specific forwarder.
 	if a.botBridge == nil || a.botBridge.TakeoverTab(route) != tabID {
-		return fmt.Errorf("接管已解除，请重新接管会话")
+		return fmt.Errorf("인수 해제됨, 세션을 다시 인수하세요.")
 	}
 	target := botForwardTarget{
 		ConnID:   route.ConnectionID,
@@ -140,9 +128,6 @@ func (a *App) bridgeDrive(tabID, text string, route bot.DesktopWatchRoute) error
 	generation := tab.sink.SetBotSink(newBotEventForwarder(a.botRuntime, []botForwardTarget{target}))
 	a.ensureTabTopicIndexedForUserTurn(tab)
 	ctrl.SubmitDisplay(text, text)
-	// Confirm the submit actually started a turn. If nothing is running now, the
-	// controller was rotating and the submit no-oped — detach this exact
-	// generation so a later turn's output does not leak.
 	if !admission.finish(ctrl) {
 		tab.sink.clearBotSink(generation)
 		return errDriveBusy
@@ -150,8 +135,6 @@ func (a *App) bridgeDrive(tabID, text string, route bot.DesktopWatchRoute) error
 	return nil
 }
 
-// bridgePersistWatchers 把订阅全集回写用户配置（bot.desktop_watchers），
-// 桌面重启后由 refreshBotRuntime 重新种子。
 func (a *App) bridgePersistWatchers(routes []bot.DesktopWatchRoute) error {
 	return a.applyConfigOnly(func(c *config.Config) error {
 		watchers := make([]config.BotDesktopWatcherConfig, 0, len(routes))

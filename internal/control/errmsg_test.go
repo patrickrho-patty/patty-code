@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/i18n"
-	"reasonix/internal/provider"
+	"patty/internal/i18n"
+	"patty/internal/provider"
 )
 
 func TestExplainError(t *testing.T) {
@@ -41,8 +41,8 @@ func TestExplainError(t *testing.T) {
 		t.Errorf("401 should name the key source: %q", sourced.Error())
 	}
 
-	authBody := explainError(&provider.AuthError{Provider: "relay", KeyEnv: "RELAY_API_KEY", Status: 401, HasKey: true, Body: `{"error":{"message":"令牌已过期","type":"new_api_error"}}`})
-	for _, want := range []string{i18n.M.ProviderErrAuthRejected, "RELAY_API_KEY", "令牌已过期"} {
+	authBody := explainError(&provider.AuthError{Provider: "relay", KeyEnv: "RELAY_API_KEY", Status: 401, HasKey: true, Body: `{"error":{"message":"토큰이 만료되었습니다","type":"new_api_error"}}`})
+	for _, want := range []string{i18n.M.ProviderErrAuthRejected, "RELAY_API_KEY", "토큰이 만료되었습니다"} {
 		if !strings.Contains(authBody.Error(), want) {
 			t.Errorf("401 with a body = %q, want it to contain %q", authBody.Error(), want)
 		}
@@ -72,7 +72,7 @@ func TestExplainError(t *testing.T) {
 		Provider:    "mimo",
 		Status:      400,
 		Body:        `{"error":{"message":"Tool 197 function has invalid 'parameters' schema"}}`,
-		ToolContext: `Provider tool 197 maps to Reasonix tool "mcp__files__search" (MCP server "files", tool "search").`,
+		ToolContext: `Provider tool 197 maps to patty tool "mcp__files__search" (MCP server "files", tool "search").`,
 	})
 	for _, want := range []string{"invalid 'parameters' schema", `MCP server "files"`} {
 		if !strings.Contains(toolSchema.Error(), want) {
@@ -123,7 +123,6 @@ func TestExplainError(t *testing.T) {
 
 	// Relay gateways (one-api/new-api style) wrap the real failure — dead
 	// upstream channel, unsupported tools, exhausted quota — in a 5xx JSON
-	// body; the category line alone made those undiagnosable.
 	relay := explainError(&provider.APIError{Provider: "relay", Status: 500, Body: `{"error":{"message":"no available channel for model claude-fable-5 in group default","type":"new_api_error"}}`})
 	if !strings.Contains(relay.Error(), i18n.M.ProviderErrServer) || !strings.Contains(relay.Error(), "no available channel") {
 		t.Errorf("500 should append the provider reason from a JSON body, got %q", relay.Error())

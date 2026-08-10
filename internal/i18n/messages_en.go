@@ -6,15 +6,24 @@ var English = Messages{
 	WelcomeTitleFmt: "Welcome to %s",
 	NoConfigYet:     "No configuration found yet — let's set it up.",
 
-	InitHint: "Project memory (AGENTS.md) is generated in-session: run `reasonix`, then `/init` — the model analyzes the codebase and writes it. For configuration, use `reasonix setup`.",
+	InitHint: "Project memory (AGENTS.md) is generated in-session: run `patcode`, then `/init` — the model analyzes the codebase and writes it. For configuration, use `patcode setup`.",
 
-	ChatTip:             "Context is kept across turns. Type 'exit' or Ctrl-D to quit.",
-	TurnCancelled:       "cancelled — back to prompt",
-	InterruptedRecovery: "This turn was interrupted. Partial output is kept for reference; only completed tool pairs and a bounded recovery summary enter the next model turn. Inspect the workspace before continuing or reverting changes.",
-	RecoveryPaused:      "Automatic retries paused. Reasonix stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.",
-	NoSessionToResume:   "no saved session to resume — start a new one with `reasonix`",
-	ResumeRequiresTTY:   "--resume needs an interactive terminal; pass --continue for the most recent session",
-	PickSessionLabel:    "Resume which session?",
+	ChatTip:                   "Context is kept across turns. Type 'exit' or Ctrl-D to quit.",
+	ChatComposerTitle:         "COMMAND / MESSAGE",
+	ChatComposerPlaceholder:   "Type a command or ask a question",
+	ChatComposerCommandsHint:  "/ commands",
+	ChatComposerFilesHint:     "@ files",
+	ChatComposerShellHint:     "! shell",
+	ChatComposerShortcutsHint: "? shortcuts",
+	ChatMastheadTitle:         "PATTY / WORKFLOW",
+	ChatUserLabel:             "USER",
+	ChatPlanLabel:             "PLAN",
+	TurnCancelled:             "cancelled — back to prompt",
+	InterruptedRecovery:       "This turn was interrupted. Partial output is kept for reference; only completed tool pairs and a bounded recovery summary enter the next model turn. Inspect the workspace before continuing or reverting changes.",
+	RecoveryPaused:            "Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.",
+	NoSessionToResume:         "no saved session to resume — start a new one with `patcode`",
+	ResumeRequiresTTY:         "--resume needs an interactive terminal; pass --continue for the most recent session",
+	PickSessionLabel:          "Resume which session?",
 
 	ResumeBusy:          "finish or cancel the current turn before resuming",
 	ResumeBadIndexFmt:   "pick a session 1–%d (run /resume to list)",
@@ -51,8 +60,10 @@ var English = Messages{
 	ChatStatusCycleHint:                    "Shift+Tab ask/auto/plan · Ctrl+Y YOLO",
 	ChatStatusCycleHintCompact:             "Shift+Tab ask/auto/plan · Ctrl+Y YOLO",
 	ChatTurnReceiptLabel:                   "TURN",
+	ChatStatusModeLabel:                    "MODE",
 	ChatStatusModelLabel:                   "MODEL",
 	ChatStatusEffortLabel:                  "EFFORT",
+	ChatStatusHeadroomLabel:                "HEADROOM",
 	ChatStatusWorkLabel:                    "WORK",
 	ChatStatusCacheLabel:                   "CACHE",
 	ChatStatusContextLabel:                 "CTX",
@@ -61,6 +72,20 @@ var English = Messages{
 	ChatStatusBalanceLabel:                 "BAL",
 	ChatStatusCacheNowFmt:                  "turn hit %s",
 	ChatStatusCacheAvgFmt:                  "avg %s",
+	ChatModeAsk:                            "ASK",
+	ChatModeAuto:                           "AUTO",
+	ChatModePlan:                           "PLAN",
+	ChatModeGoal:                           "GOAL",
+	ChatModeShell:                          "SHELL",
+	ChatModeYOLO:                           "YOLO",
+	ChatModeDontAsk:                        "DON'T ASK",
+	ChatModeApprove:                        "APPROVE",
+	ChatEffortAuto:                         "AUTO",
+	ChatEffortLow:                          "LOW",
+	ChatEffortMedium:                       "MEDIUM",
+	ChatEffortHigh:                         "HIGH",
+	ChatEffortXHigh:                        "XHIGH",
+	ChatEffortMax:                          "MAX",
 	ChatStatusPlanApproval:                 "1 execute · 2 revise · 3 exit without executing · n/Esc keeps planning · PgUp/PgDn/Ctrl+Home/End scrolls",
 	PlanApprovalPrompt:                     "Plan ready above — choose what to do next",
 	PlanApprovalChoices:                    "1. Start execution\n2. Revise plan (keep planning)\n3. Exit without executing\nChoose [1/2/3] (y starts; n/Esc keeps planning)",
@@ -105,17 +130,17 @@ var English = Messages{
 	MemoryApprovalBodyLabel:                "body",
 	MemoryApprovalArchiveFmt:               "Archive memory %q",
 	PlanModeBashTrustSubjectFmt:            "Trust %q as a read-only command prefix while planning\nCommand: %s",
-	PlanModeBashTrustReason:                "This bash command is not in Reasonix's built-in read-only set. Confirm only if this exact prefix is read-only for planning and research. Auto/YOLO approval cannot answer this trust prompt.",
+	PlanModeBashTrustReason:                "This bash command is not in patty's built-in read-only set. Confirm only if this exact prefix is read-only for planning and research. Auto/YOLO approval cannot answer this trust prompt.",
 	PlanModeBashTrustDeclined:              "the user declined to trust this bash command as read-only for plan mode - do not retry it; continue with other trusted read-only tools or ask how to proceed.",
 	SandboxEscapeSubjectFallback:           "run shell command unconfined once",
 	SandboxEscapeSubjectPrefix:             "run unconfined once: ",
 	SandboxEscapeWrapReason:                "Windows does not provide an OS-level Bash sandbox for this command. Run it unconfined one time? This bypasses OS isolation for this command only.",
 	SandboxEscapeRuntimeReason:             "The OS sandbox could not start this command. Run it unconfined one time? This bypasses OS isolation for this command only.",
 	SandboxEscapeDeclined:                  "the user declined to run this command without the OS sandbox - do not retry it unconfined; ask how they would like to proceed.",
-	ApprovalToolLabelConfigWrite:           "Reasonix config write",
-	ConfigWriteSubjectPrefix:               "write Reasonix config: ",
-	ConfigWriteReason:                      "This write targets a Reasonix-managed configuration file outside the workspace. It can change providers, sandbox rules, permissions, and MCP servers for future sessions, so it needs your explicit approval.",
-	ConfigWriteDeclined:                    "the user declined this Reasonix config write - do not retry it; ask how they would like to proceed.",
+	ApprovalToolLabelConfigWrite:           "Patty Code config write",
+	ConfigWriteSubjectPrefix:               "write Patty Code config: ",
+	ConfigWriteReason:                      "This write targets a patty-managed configuration file outside the workspace. It can change providers, sandbox rules, permissions, and MCP servers for future sessions, so it needs your explicit approval.",
+	ConfigWriteDeclined:                    "the user declined this Patty Code config write - do not retry it; ask how they would like to proceed.",
 	ConfigWriteApprovalChoices:             "1. Allow once\n2. Allow for this session\n3. Deny\nChoose [1/2/3] (y/a/n also work)",
 	PermissionSavedFmt:                     "permission saved to %s: %s",
 	PermissionAlreadyAllowedFmt:            "permission already covered in %s: %s",
@@ -203,7 +228,7 @@ var English = Messages{
 	SkillPickerStatusNotDir:      "not-directory",
 	SkillPickerStatusUnreadable:  "unreadable",
 	SlashPromptEmpty:             "the MCP prompt returned no content to send",
-	SlashMCPNone:                 "no MCP servers configured — add a [[plugins]] entry in reasonix.toml",
+	SlashMCPNone:                 "no MCP servers configured — add a [[plugins]] entry in patty.toml",
 	CtrlCQuitHint:                "press Ctrl+C again to quit",
 	CompHintSlash:                "↑/↓ move · Tab/Enter select · Esc close",
 	CompHintFile:                 "↑/↓ move · Tab/Enter open folder or pick file · Esc close",
@@ -285,9 +310,9 @@ var English = Messages{
 	ArgEffortXHigh:      "extra deep reasoning",
 	ArgEffortMax:        "maximum reasoning",
 	ArgThemeCurrent:     "current",
-	ArgLanguageAuto:     "auto-detect from REASONIX_LANG / locale",
+	ArgLanguageAuto:     "auto-detect from PATTY_LANG / locale",
 	ArgLanguageEn:       "English",
-	ArgLanguageZh:       "中文",
+	ArgLanguageKo:       "한국어",
 
 	ListModelsHeaderFmt: "models (active: %s)",
 	ListModelsHint:      "switch with the model switcher, or type /model <provider/model>",
@@ -297,9 +322,9 @@ var English = Messages{
 	ListSkillsHeaderFmt: "skills (%d)",
 	ListSkillsNone:      "skills: none defined — invoke a built-in like /init, or author one with install_skill",
 	ListHooksHeaderFmt:  "hooks (%d active)",
-	ListHooksNone:       "hooks: none active — configure in .reasonix/settings.json (project) or <Reasonix home>/settings.json (global)",
+	ListHooksNone:       "hooks: none active — configure in .patty/settings.json (project) or <patty home>/settings.json (global)",
 	ListMcpHeader:       "mcp servers",
-	ListMcpNone:         "mcp: no servers connected — add one in reasonix.toml ([[plugins]]) or a project .mcp.json",
+	ListMcpNone:         "mcp: no servers connected — add one in patty.toml ([[plugins]]) or a project .mcp.json",
 
 	MemoryEditHint:               "edit doc files or use “/remember <note>”; doc edits apply next session",
 	ForgetUsage:                  "usage: /forget <name> — the slug shown under “saved memories” in /memory",
@@ -365,7 +390,7 @@ var English = Messages{
 	SetupComplete:            "Setup complete.",
 	SetupCancelled:           "setup cancelled.",
 	TryHintFmt:               "Try: %s",
-	NextHint:                 "Next: set your API key (run `reasonix setup` or export DEEPSEEK_API_KEY=...), then run `reasonix run \"your task\"`.",
+	NextHint:                 "Next: set your API key (run `patcode setup` or export DEEPSEEK_API_KEY=...), then run `patcode run \"your task\"`.",
 	ConfirmReconfigureFmt:    "%s already exists. Reconfigure and overwrite?",
 	NotOverwritingFmt:        "%s already exists; not overwriting",
 	SetupManagerTitle:        "Provider configuration",
@@ -451,18 +476,18 @@ var English = Messages{
 	RemotePassphrasePromptFmt: "passphrase for %s:",
 	RemotePasswordPromptFmt:   "password for %s:",
 	RemoteBootstrapStepFmt:    "remote serve: %s %s",
-	RemoteNoHostsHint:         "no remote hosts configured; add one with `reasonix remote add <name> [user@]host`",
+	RemoteNoHostsHint:         "no remote hosts configured; add one with `patcode remote add <name> [user@]host`",
 
 	UnknownCommandFmt:         "unknown command %q",
-	UsageRunHint:              "usage: reasonix -p [--model NAME] <task>",
+	UsageRunHint:              "usage: patcode -p [--model NAME] <task>",
 	ErrorPrefix:               "error:",
 	ReconfigureOnUnknownModel: "Configured model is no longer available — re-running setup.",
 	WriteConfigErr:            "write config:",
 	WriteEnvErr:               "write .env:",
 
 	ProviderErrBadRequest:          "Malformed request (HTTP 400): the request body was rejected. This is likely a bug — please report it if it persists.",
-	ProviderErrAuth:                "Authentication failed (HTTP 401): your API key is missing or unset. Add it to .env or run `reasonix setup`.",
-	ProviderErrAuthRejected:        "Authentication failed (HTTP 401): the server rejected your API key. It may be wrong or expired, or the provider hit a transient auth/quota issue — retried with backoff and still failed. Try again shortly, or check the key in .env / run `reasonix setup`.",
+	ProviderErrAuth:                "Authentication failed (HTTP 401): your API key is missing or unset. Add it to .env or run `patcode setup`.",
+	ProviderErrAuthRejected:        "Authentication failed (HTTP 401): the server rejected your API key. It may be wrong or expired, or the provider hit a transient auth/quota issue — retried with backoff and still failed. Try again shortly, or check the key in .env / run `patcode setup`.",
 	ProviderErrInsufficientBalance: "Insufficient balance (HTTP 402): your account is out of credit. Top up your account, then retry.",
 	ProviderErrUnprocessable:       "Invalid parameters (HTTP 422): a request parameter was rejected. This is likely a bug — please report it if it persists.",
 	ProviderErrInputSensitive:      "MiniMax rejected the input during content review (error 1026). The review may include conversation history and tool results; adjust the relevant content or start a new session with only the necessary context. Repeating the same request is unlikely to help.",
@@ -509,8 +534,8 @@ var English = Messages{
 	ReportNoPending:           "No pending CLI crash reports.",
 	ReportHeaderFmt:           "CLI crash report %s",
 	ReportCapturedFmt:         "Captured: %s",
-	ReportPreviewOnlyFmt:      "Preview only. Run `reasonix report send %s` to send this report.",
-	ReportSendPrompt:          "Send this sanitized report to crash.reasonix.io?",
+	ReportPreviewOnlyFmt:      "Preview only. Run `patcode report send %s` to send this report.",
+	ReportSendPrompt:          "Send this sanitized report to crash.patty.io?",
 	ReportKept:                "Report kept locally.",
 	ReportDeletedFmt:          "Deleted CLI crash report %s.",
 	ReportSentFmt:             "Sent CLI crash report %s.",
@@ -518,64 +543,64 @@ var English = Messages{
 	ReportUploadFailedFmt:     "report upload failed; the local report was kept: %v",
 	ReportSentDeleteFailedFmt: "report was sent but the local copy could not be deleted: %v",
 	ReportUsageBody: `Usage:
-  reasonix report                 preview the newest local report and confirm sending
-  reasonix report list            list local CLI crash reports
-  reasonix report show [ID]       preview a report (newest when ID is omitted)
-  reasonix report send [ID]       send a reviewed report and delete it after success
-  reasonix report delete [ID]     delete a local report without sending`,
+  patcode report                 preview the newest local report and confirm sending
+  patcode report list            list local CLI crash reports
+  patcode report show [ID]       preview a report (newest when ID is omitted)
+  patcode report send [ID]       send a reviewed report and delete it after success
+  patcode report delete [ID]     delete a local report without sending`,
 
-	CLITelemetryConsentNotice:           "Reasonix can send anonymous, content-free CLI usage statistics to crash.reasonix.io: a random install ID, version, OS, and fixed quality buckets. It never sends prompts, answers, code, paths, model or tool content, or environment variables. You can disable this later with `reasonix config telemetry off`.",
+	CLITelemetryConsentNotice:           "Patty Code can send anonymous, content-free CLI usage statistics to crash.patty.io: a random install ID, version, OS, and fixed quality buckets. It never sends prompts, answers, code, paths, model or tool content, or environment variables. You can disable this later with `patcode config telemetry off`.",
 	CLITelemetryConsentPrompt:           "Allow anonymous CLI usage statistics?",
 	CLITelemetryConsentInvalid:          "Please answer y or n.",
 	CLITelemetryConsentSaveFailedFmt:    "CLI telemetry remains disabled because the preference could not be saved: %v",
 	CLITelemetryConsentCleanupFailedFmt: "CLI telemetry is disabled, but pending statistics could not be deleted: %v",
 
-	UsageBody: `reasonix — a config- and plugin-driven coding agent (multi-model)
+	UsageBody: `patcode — a config- and plugin-driven coding agent (multi-model)
 
 Usage:
-  reasonix [--model NAME] [-c|--continue] [-r|--resume [QUERY]] [--permission-mode MODE] [--effort LEVEL] [--add-dir PATH]   interactive session
-  reasonix -p|--print [--model NAME] [--output-format text|json|stream-json] [--allowed-tools RULES] [--add-dir PATH] <task>
-  reasonix run [--model NAME] [--max-steps N] [-c|--continue] [--resume PATH] [--copy] [--output-format FORMAT] <task>
-  reasonix run --events-jsonl [--model NAME] <task>      emit redacted structured events as JSONL
-  reasonix review [--base BRANCH] [--commit SHA] [--model NAME]  AI-powered code review on local diffs
-  reasonix serve [--model NAME] [--addr HOST:PORT] [--auth none|token|password] [--token STR] [--password STR] [--hash-password]  serve over HTTP+SSE (with optional auth)
-  reasonix acp [--model NAME]                           serve Agent Client Protocol over stdio (also: reasonix --acp)
-  reasonix setup [path]                                 interactive config wizard; writes reasonix.toml (+ .env)
-  reasonix config reasoning-language [auto|zh|en]        configure visible reasoning language
-  reasonix config compact-ratio [--local] [65..85]       configure automatic compaction threshold
-  reasonix config telemetry [auto|on|off]                configure content-free CLI usage metrics
-  reasonix report [list|show|send|delete] [ID]           review and explicitly send local CLI crash reports
-  reasonix mcp <add|remove|list|import>                 manage MCP servers in reasonix.toml
-  reasonix subagent <list|create|edit|delete|try|run>   manage and run isolated subagent profiles
-  reasonix init                                         show how to generate project memory (AGENTS.md)
-  reasonix doctor [--json]                              print redacted local diagnostics
-  reasonix doctor session <branch-id> [--zip] [--out PATH]  export a session conflict diagnostic zip
-  reasonix session list --json [--dir PATH]             list redacted sessions for machine clients
-  reasonix session show|status <machine-session-id> --json [--dir PATH]  query one redacted session
-  reasonix session recovery [<machine-session-id>] --json [--dir PATH]  query redacted recovery state
-  reasonix hook list|status --json [--dir PATH]         inspect redacted hook state
-  reasonix task list|show|status|events|stop|cancel|monitor|tmux --json [--dir PATH]
+  patcode [--model NAME] [-c|--continue] [-r|--resume [QUERY]] [--permission-mode MODE] [--effort LEVEL] [--add-dir PATH]   interactive session
+  patcode -p|--print [--model NAME] [--output-format text|json|stream-json] [--allowed-tools RULES] [--add-dir PATH] <task>
+  patcode run [--model NAME] [--max-steps N] [-c|--continue] [--resume PATH] [--copy] [--output-format FORMAT] <task>
+  patcode run --events-jsonl [--model NAME] <task>      emit redacted structured events as JSONL
+  patcode review [--base BRANCH] [--commit SHA] [--model NAME]  AI-powered code review on local diffs
+  patcode serve [--model NAME] [--addr HOST:PORT] [--auth none|token|password] [--token STR] [--password STR] [--hash-password]  serve over HTTP+SSE (with optional auth)
+  patcode acp [--model NAME]                           serve Agent Client Protocol over stdio (also: patcode --acp)
+  patcode setup [path]                                 interactive config wizard; writes patty.toml (+ .env)
+  patcode config reasoning-language [auto|ko-KR|en]        configure visible reasoning language
+  patcode config compact-ratio [--local] [65..85]       configure automatic compaction threshold
+  patcode config telemetry [auto|on|off]                configure content-free CLI usage metrics
+  patcode report [list|show|send|delete] [ID]           review and explicitly send local CLI crash reports
+  patcode mcp <add|remove|list|import>                 manage MCP servers in patty.toml
+  patcode subagent <list|create|edit|delete|try|run>   manage and run isolated subagent profiles
+  patcode init                                         show how to generate project memory (AGENTS.md)
+  patcode doctor [--json]                              print redacted local diagnostics
+  patcode doctor session <branch-id> [--zip] [--out PATH]  export a session conflict diagnostic zip
+  patcode session list --json [--dir PATH]             list redacted sessions for machine clients
+  patcode session show|status <machine-session-id> --json [--dir PATH]  query one redacted session
+  patcode session recovery [<machine-session-id>] --json [--dir PATH]  query redacted recovery state
+  patcode hook list|status --json [--dir PATH]         inspect redacted hook state
+  patcode task list|show|status|events|stop|cancel|monitor|tmux --json [--dir PATH]
                                                          inspect or control redacted tasks
-  reasonix bot start|doctor|weixin-login                multi-channel IM bot gateway
-  reasonix upgrade [--check] [--force]                   update to the latest official release (also: reasonix update)
-  reasonix completion bash|zsh|fish                     print a shell completion script to stdout
-  reasonix version [--verbose|--json]                   print version (single line) or build metadata
-  reasonix --version | -v                               single-line version (script-safe)
-  reasonix help
+  patcode bot start|doctor                             multi-channel IM bot gateway
+  patcode upgrade [--check] [--force]                   update to the latest official release (also: patcode update)
+  patcode completion bash|zsh|fish                     print a shell completion script to stdout
+  patcode version [--verbose|--json]                   print version (single line) or build metadata
+  patcode --version | -v                               single-line version (script-safe)
+  patcode help
 
 Examples:
-  reasonix
-  reasonix --continue
-  reasonix --resume provider-config
-  reasonix run "implement the TODOs in main.go"
-  reasonix run --model mimo-pro "add unit tests for this function"
-  reasonix -p "summarize this repository" --output-format json
-  reasonix subagent run review "review the current changes"
-  echo "explain this code" | reasonix run
+  patcode
+  patcode --continue
+  patcode --resume provider-config
+  patcode run "implement the TODOs in main.go"
+  patcode run --model mimo-pro "add unit tests for this function"
+  patcode -p "summarize this repository" --output-format json
+  patcode subagent run review "review the current changes"
+  echo "explain this code" | patcode run
 
 Configuration:
-  Resolution: flag > ./reasonix.toml > <Reasonix home>/config.toml > built-in defaults
+  Resolution: flag > ./patty.toml > <patty home>/config.toml > built-in defaults
   Secrets come from the environment via api_key_env (e.g. DEEPSEEK_API_KEY).
-  Run 'reasonix setup' to scaffold a config; see docs/SPEC.md.
+  Run 'patcode setup' to scaffold a config; see docs/SPEC.md.
 `,
 }

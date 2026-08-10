@@ -4,17 +4,17 @@ export type TypographyPlatform = "windows" | "darwin" | "linux";
 type FontProbe = (fontNames: readonly string[]) => boolean;
 
 const UI_FONT_CANDIDATES: Record<Exclude<FontFamily, "system" | "custom">, { platforms: TypographyPlatform[]; fonts: string[] }> = {
-  yahei: {
+  malgun: {
     platforms: ["windows"],
-    fonts: ["Microsoft YaHei UI", "Microsoft YaHei", "微软雅黑"],
+    fonts: ["Malgun Gothic", "맑은 고딕"],
   },
-  pingfang: {
+  applesdgothic: {
     platforms: ["darwin"],
-    fonts: ["PingFang SC", "PingFang TC", "苹方-简"],
+    fonts: ["Apple SD Gothic Neo", "Apple SD Gothic Neo Light"],
   },
-  noto: {
+  notokr: {
     platforms: ["linux"],
-    fonts: ["Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "思源黑体"],
+    fonts: ["Noto Sans KR", "Noto Sans CJK KR", "Source Han Sans KR", "본고딕"],
   },
 };
 
@@ -79,7 +79,7 @@ function isLocalFontAvailable(fontName: string): boolean {
   const ctx = canvas.getContext("2d");
   if (!ctx) return false;
 
-  const sample = "Reasonix 字体检测 0123456789";
+  const sample = "Patty Code 한국어 타이포 0123456789";
   const size = "72px";
   const fallbacks = ["monospace", "serif", "sans-serif"] as const;
   return fallbacks.some((fallback) => {

@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 
 const distDir = resolve("dist");
@@ -38,7 +38,7 @@ const initialCSSGzip = initialCSS.reduce((total, path) => total + gzipBytes(path
 const largestInitialJS = Math.max(...initialJS.map(gzipBytes));
 const largestInitialJSRaw = Math.max(...initialJS.map((path) => statSync(path).size));
 const localeChunks = readdirSync(resolve(distDir, "assets"))
-  .filter((name) => /^(?:zh|zh-TW)-.+\.js$/.test(name))
+  .filter((name) => /^(?:zh|en-US)-.+\.js$/.test(name))
   .map((name) => resolve(distDir, "assets", name));
 
 console.log("\nbundle budgets");
@@ -47,18 +47,10 @@ assertBudget("largest initial JavaScript chunk gzip", largestInitialJS, 295 * 10
 // Extension surfaces, Task Monitor, and compact decision receipts share the
 // always-loaded shell. Keep their combined allowance bounded to 113 KiB gzip.
 assertBudget("initial CSS gzip", initialCSSGzip, 113 * 1024);
-if (localeChunks.length !== 2) {
-  throw new Error(`expected 2 on-demand Chinese locale chunks, found ${localeChunks.length}`);
-}
-for (const path of localeChunks) {
-  const name = basename(path);
-  // Task Monitor adds 37 user-facing labels to each on-demand locale, while
-  // Extension UI and Storage & paths add their own status, action, and
-  // accessibility copy. Shell execution contract cards add a small set of
-  // verification/risk strings. Keep both dictionaries within narrowly
-  // measured, explicit allowances.
-  const budget = name.startsWith("zh-TW-") ? 53.75 * 1024 : 53 * 1024;
-  assertBudget(`${name} gzip`, gzipBytes(path), budget);
+// English is the only shipped locale and loads eagerly, so no on-demand
+// locale chunks may exist; a zh/zh-TW chunk would mean the removal regressed.
+if (localeChunks.length !== 0) {
+  throw new Error(`expected no on-demand locale chunks (English only), found ${localeChunks.length}`);
 }
 
 const rawInitialBytes = [...initialJS, ...initialCSS].reduce((total, path) => total + statSync(path).size, 0);

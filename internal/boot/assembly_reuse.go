@@ -1,11 +1,11 @@
 package boot
 
 import (
-	"reasonix/internal/command"
-	"reasonix/internal/extension"
-	"reasonix/internal/hook"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/command"
+	"patty/internal/extension"
+	"patty/internal/hook"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 // ReusedAssembly holds rediscovery-free inputs for narrow/no-op rebuilds.

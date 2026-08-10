@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/evidence"
-	"reasonix/internal/nilutil"
+	"patty/internal/evidence"
+	"patty/internal/nilutil"
 )
 
 // coalesceMaxBytes bounds a merged delta so one event never carries an

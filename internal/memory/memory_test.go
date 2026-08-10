@@ -6,29 +6,24 @@ import (
 	"strings"
 	"testing"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
-// TestComposeEmptyIsIdentity is the cache-first invariant: with no memory at
-// all, Compose must return the base prompt byte-for-byte, so the cached system
-// prefix is exactly what it was before memory existed.
 func TestComposeEmptyIsIdentity(t *testing.T) {
 	base := "You are a helpful coding agent.\nBe concise."
 	got := Compose(base, &Set{})
 	if got != base {
 		t.Fatalf("empty memory changed the prompt:\n base=%q\n got =%q", base, got)
 	}
-	// A nil-ish set (no docs, blank index) must also be identity.
 	if got := Compose(base, &Set{Index: "   \n"}); got != base {
 		t.Fatalf("blank index changed the prompt: got %q", got)
 	}
 }
 
 // TestComposeAppendsAfterBase verifies memory folds in *after* the base prompt,
-// so the base stays a valid cache prefix even as memory changes between sessions.
 func TestComposeAppendsAfterBase(t *testing.T) {
 	base := "BASE PROMPT"
-	set := &Set{Docs: []Source{{Path: "/p/REASONIX.md", Scope: ScopeProject, Body: "Use tabs."}}}
+	set := &Set{Docs: []Source{{Path: "/p/PATTY_CODE.md", Scope: ScopeProject, Body: "Use tabs."}}}
 	got := Compose(base, set)
 	if !strings.HasPrefix(got, base) {
 		t.Fatalf("base is not the prefix of the composed prompt:\n%q", got)
@@ -125,7 +120,7 @@ func TestLoadProjectFactSuppressesEquivalentGlobalGuidance(t *testing.T) {
 	}
 	if _, err := store.Save(Memory{
 		Name: "language", Type: TypeUser, Scope: FactScopeGlobal,
-		Description: "global language", Body: "Answer in Chinese.",
+		Description: "global language", Body: "Answer in Korean.",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -138,25 +133,23 @@ func TestLoadProjectFactSuppressesEquivalentGlobalGuidance(t *testing.T) {
 	if strings.Contains(block, "Always be verbose.") {
 		t.Fatalf("shadowed global guidance leaked into stable prefix:\n%s", block)
 	}
-	if !strings.Contains(block, "Answer in Chinese.") {
+	if !strings.Contains(block, "Answer in Korean.") {
 		t.Fatalf("unshadowed global guidance missing from stable prefix:\n%s", block)
 	}
 }
 
 // TestDiscoverPrecedenceOrder checks user → ancestor → project → local ordering,
-// which puts the most specific guidance last.
 func TestDiscoverPrecedenceOrder(t *testing.T) {
 	root := t.TempDir()
 	user := filepath.Join(root, "userconfig")
 	proj := filepath.Join(root, "proj")
 	mustMkdir(t, user)
 	mustMkdir(t, proj)
-	// Make proj a git root so discovery stops there.
 	mustMkdir(t, filepath.Join(proj, ".git"))
 
-	mustWrite(t, filepath.Join(user, "REASONIX.md"), "USER LEVEL")
-	mustWrite(t, filepath.Join(proj, "REASONIX.md"), "PROJECT LEVEL")
-	mustWrite(t, filepath.Join(proj, "REASONIX.local.md"), "LOCAL LEVEL")
+	mustWrite(t, filepath.Join(user, "PATTY_CODE.md"), "USER LEVEL")
+	mustWrite(t, filepath.Join(proj, "PATTY_CODE.md"), "PROJECT LEVEL")
+	mustWrite(t, filepath.Join(proj, "PATTY_CODE.local.md"), "LOCAL LEVEL")
 
 	set := Load(Options{CWD: proj, UserDir: user})
 	if len(set.Docs) != 3 {
@@ -168,7 +161,6 @@ func TestDiscoverPrecedenceOrder(t *testing.T) {
 			t.Fatalf("doc %d: want scope %q, got %q", i, s, set.Docs[i].Scope)
 		}
 	}
-	// In the composed block, local must appear after project must appear after user.
 	block := set.Block()
 	iu, ip, il := strings.Index(block, "USER LEVEL"), strings.Index(block, "PROJECT LEVEL"), strings.Index(block, "LOCAL LEVEL")
 	if !(iu >= 0 && iu < ip && ip < il) {
@@ -179,13 +171,13 @@ func TestDiscoverPrecedenceOrder(t *testing.T) {
 func TestDiscoverDecodesGB18030PrimaryDoc(t *testing.T) {
 	proj := t.TempDir()
 	mustMkdir(t, filepath.Join(proj, ".git"))
-	body := "# 项目约定\n\n始终使用中文回答。"
+	body := "# 프로젝트 규칙\n\n항상 중국어로 답변하세요."
 	if err := os.WriteFile(filepath.Join(proj, "AGENTS.md"), fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	set := Load(Options{CWD: proj})
-	if len(set.Docs) != 1 || !strings.Contains(set.Docs[0].Body, "始终使用中文回答") {
+	if len(set.Docs) != 1 || !strings.Contains(set.Docs[0].Body, "항상 중국어로 답변") {
 		t.Fatalf("decoded docs = %+v", set.Docs)
 	}
 }
@@ -195,7 +187,7 @@ func TestImportResolution(t *testing.T) {
 	proj := t.TempDir()
 	mustMkdir(t, filepath.Join(proj, ".git"))
 	mustWrite(t, filepath.Join(proj, "shared.md"), "SHARED CONTENT")
-	mustWrite(t, filepath.Join(proj, "REASONIX.md"), "Top line\n@shared.md\nBottom line")
+	mustWrite(t, filepath.Join(proj, "PATTY_CODE.md"), "Top line\n@shared.md\nBottom line")
 
 	set := Load(Options{CWD: proj})
 	if len(set.Docs) != 1 {
@@ -215,7 +207,7 @@ func TestImportResolutionRejectsEscapes(t *testing.T) {
 	mustMkdir(t, filepath.Join(proj, ".git"))
 	outside := t.TempDir()
 	mustWrite(t, filepath.Join(outside, "secret.md"), "SECRET")
-	mustWrite(t, filepath.Join(proj, "REASONIX.md"), "Top\n@/abs/path.md\n@~/secret.md\n@../secret.md\nBottom")
+	mustWrite(t, filepath.Join(proj, "PATTY_CODE.md"), "Top\n@/abs/path.md\n@~/secret.md\n@../secret.md\nBottom")
 
 	set := Load(Options{CWD: proj})
 	if len(set.Docs) != 1 {
@@ -240,7 +232,7 @@ func TestImportResolutionRejectsSymlinkEscape(t *testing.T) {
 	if err := os.Symlink(filepath.Join(outside, "secret.md"), filepath.Join(proj, "linked.md")); err != nil {
 		t.Skipf("symlink unavailable: %v", err)
 	}
-	mustWrite(t, filepath.Join(proj, "REASONIX.md"), "Top\n@linked.md\nBottom")
+	mustWrite(t, filepath.Join(proj, "PATTY_CODE.md"), "Top\n@linked.md\nBottom")
 
 	set := Load(Options{CWD: proj})
 	if len(set.Docs) != 1 {
@@ -252,13 +244,12 @@ func TestImportResolutionRejectsSymlinkEscape(t *testing.T) {
 	}
 }
 
-// TestImportCycleDoesNotHang verifies cycle detection terminates.
 func TestImportCycleDoesNotHang(t *testing.T) {
 	proj := t.TempDir()
 	mustMkdir(t, filepath.Join(proj, ".git"))
 	mustWrite(t, filepath.Join(proj, "a.md"), "A\n@b.md")
 	mustWrite(t, filepath.Join(proj, "b.md"), "B\n@a.md")
-	mustWrite(t, filepath.Join(proj, "REASONIX.md"), "@a.md")
+	mustWrite(t, filepath.Join(proj, "PATTY_CODE.md"), "@a.md")
 
 	set := Load(Options{CWD: proj}) // must return, not loop forever
 	body := set.Docs[0].Body
@@ -288,7 +279,7 @@ func TestImportDiamondAndCycle(t *testing.T) {
 	mustWrite(t, filepath.Join(proj, "shared.md"), "SHARED CONTENT")
 	mustWrite(t, filepath.Join(proj, "a.md"), "A\n@shared.md")
 	mustWrite(t, filepath.Join(proj, "b.md"), "B\n@shared.md")
-	mustWrite(t, filepath.Join(proj, "REASONIX.md"), "@a.md\n@b.md")
+	mustWrite(t, filepath.Join(proj, "PATTY_CODE.md"), "@a.md\n@b.md")
 
 	set := Load(Options{CWD: proj})
 	if len(set.Docs) != 1 {
@@ -308,7 +299,7 @@ func TestImportDiamondAndCycle(t *testing.T) {
 	mustMkdir(t, filepath.Join(projCycle, ".git"))
 	mustWrite(t, filepath.Join(projCycle, "cycle1.md"), "CYCLE1\n@cycle2.md")
 	mustWrite(t, filepath.Join(projCycle, "cycle2.md"), "CYCLE2\n@cycle1.md")
-	mustWrite(t, filepath.Join(projCycle, "REASONIX.md"), "@cycle1.md")
+	mustWrite(t, filepath.Join(projCycle, "PATTY_CODE.md"), "@cycle1.md")
 
 	setCycle := Load(Options{CWD: projCycle})
 	if len(setCycle.Docs) != 1 {

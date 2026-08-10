@@ -11,7 +11,7 @@ import (
 // dispatch goroutines used to load-modify-save pairing.json without a lock and
 // overwrite each other's requests. Run with -race.
 func TestCreateOrRefreshPairingRequestConcurrent(t *testing.T) {
-	t.Setenv("REASONIX_HOME", t.TempDir())
+	t.Setenv("PATTY_HOME", t.TempDir())
 	cfg := PairingConfig{Enabled: true, RequestTTL: time.Hour, MaxPendingPerPlatform: 64}
 
 	const workers = 8
@@ -22,7 +22,7 @@ func TestCreateOrRefreshPairingRequestConcurrent(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			msg := InboundMessage{
-				Platform: PlatformFeishu,
+				Platform: Platform("feishu"),
 				ChatType: ChatDM,
 				ChatID:   fmt.Sprintf("chat-%d", i),
 				UserID:   fmt.Sprintf("user-%d", i),

@@ -61,7 +61,8 @@ function ok(value: unknown, label: string) {
 }
 
 function flushTimers(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+  // The lazy Markdown renderer needs real async settling, not just a tick.
+  return new Promise((resolve) => setTimeout(resolve, 300));
 }
 
 function installDom() {

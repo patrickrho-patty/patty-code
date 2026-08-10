@@ -23,10 +23,10 @@ provider-visible tool names:
 
 | Name | Payload |
 |---|---|
-| `reasonix.subagent.status` | exactly one of `queued`, `running`, `reasoning`, `responding`, `tool`, `retrying`, `completed`, `failed`, `cancelled` |
-| `reasonix.subagent.reasoning` | bounded UTF-8 text delta (the child's thinking) |
-| `reasonix.subagent.text` | bounded UTF-8 text delta (the child's response preview) |
-| `reasonix.subagent.notice` | bounded UTF-8 text delta (the child's notices) |
+| `patty-code.subagent.status` | exactly one of `queued`, `running`, `reasoning`, `responding`, `tool`, `retrying`, `completed`, `failed`, `cancelled` |
+| `patty-code.subagent.reasoning` | bounded UTF-8 text delta (the child's thinking) |
+| `patty-code.subagent.text` | bounded UTF-8 text delta (the child's response preview) |
+| `patty-code.subagent.notice` | bounded UTF-8 text delta (the child's notices) |
 
 Field conventions:
 
@@ -52,7 +52,7 @@ State machine (emitted by the unified run chain in `RunProfileSpec`, shared by
   Frontends never infer group completion from the children observed so far,
   since background children dispatch asynchronously and a fast first child
   can finish before later ones appear.
-- The child's `Reasoning` / `Text` / `Notice` / `Retrying` events become the
+- The child's `Patty Code` / `Text` / `Notice` / `Retrying` events become the
   corresponding preview channels; the child's real tool activity flips the
   phase to `tool` while the nested tool cards render as before.
 - Every run emits exactly **one** terminal status: `completed` on success,
@@ -119,6 +119,6 @@ What is **not** done:
 
 ## Contract stability
 
-Frontends match the reserved names by the `reasonix.subagent.` prefix, so a
+Frontends match the reserved names by the `patty-code.subagent.` prefix, so a
 future channel added by a newer agent is ignored (never appended to ordinary
 tool output) by older frontends.

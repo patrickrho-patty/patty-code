@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/provider"
 )
 
 type readinessSink struct {

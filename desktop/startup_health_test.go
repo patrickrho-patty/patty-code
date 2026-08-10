@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/control"
-	"reasonix/internal/repair"
+	"patty/internal/control"
+	"patty/internal/repair"
 )
 
 type shutdownSnapshotController struct {
@@ -113,8 +113,8 @@ func TestCaptureAndCommitPendingUpdateHealthUsesExactStartupIdentity(t *testing.
 		CreatedAt:     "2026-08-05T00:00:00Z",
 		Platform:      "darwin/arm64",
 		TargetKind:    "app-bundle",
-		TargetPath:    "/Applications/Reasonix.app",
-		BackupPath:    "/Applications/Reasonix.app.reasonix-update-backup",
+		TargetPath:    "/Applications/Patty Code.app",
+		BackupPath:    "/Applications/Patty Code.app.patty-update-backup",
 	}
 	readPendingUpdateForHealth = func() (*repair.UpdateTransaction, error) { return tx, nil }
 	app := NewApp()

@@ -8,8 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"reasonix/internal/control"
-	"reasonix/internal/event"
+	"patty/internal/control"
+	"patty/internal/event"
 )
 
 func TestModalOpenDoesNotDisableTailFollow(t *testing.T) {
@@ -90,13 +90,14 @@ func TestScrollbarDragMotionSyncsBeforeRelease(t *testing.T) {
 		t.Fatal("expected followTail before drag")
 	}
 	barX := cur.viewport.Width()
+	headerRows := cur.sessionHeaderRowCount()
 	// Click thumb region near the top of the scrollbar.
-	cur = adv(cur, tea.MouseClickMsg{X: barX, Y: 0, Button: tea.MouseLeft})
+	cur = adv(cur, tea.MouseClickMsg{X: barX, Y: headerRows, Button: tea.MouseLeft})
 	if !cur.scrollbarDrag {
 		t.Fatal("expected scrollbar drag")
 	}
 	// First motion moves the offset — must mark userScrolled before release.
-	cur = adv(cur, tea.MouseMotionMsg{X: barX, Y: 0, Button: tea.MouseLeft})
+	cur = adv(cur, tea.MouseMotionMsg{X: barX, Y: headerRows, Button: tea.MouseLeft})
 	if cur.shouldFollowTail() {
 		t.Fatal("drag motion must mark userScrolled before mouse release")
 	}

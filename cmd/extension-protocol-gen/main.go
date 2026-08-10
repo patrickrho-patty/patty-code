@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"reasonix/internal/extension/protocolgen"
+	"patty/internal/extension/protocolgen"
 )
 
 func main() {

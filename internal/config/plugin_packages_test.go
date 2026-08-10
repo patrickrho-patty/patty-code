@@ -5,15 +5,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/pluginpkg"
+	"patty/internal/pluginpkg"
 )
 
 func TestLoadMergesInstalledPluginSkillRootsAndMCP(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	root := filepath.Join(home, "plugins", "superpowers")
 	writeConfigTestFile(t, filepath.Join(root, pluginpkg.NativeManifest), `{
-  "apiVersion": "reasonix.io/plugin/v2",
+  "apiVersion": "patty.io/plugin/v2",
   "name": "superpowers",
   "version": "1.0.0",
   "skills": "skills",
@@ -25,7 +25,7 @@ func TestLoadMergesInstalledPluginSkillRootsAndMCP(t *testing.T) {
 		Name:         "superpowers",
 		Root:         "plugins/superpowers",
 		Version:      "1.0.0",
-		ManifestKind: "reasonix",
+		ManifestKind: "patty",
 		Enabled:      true,
 	}); err != nil {
 		t.Fatal(err)
@@ -49,7 +49,7 @@ func TestLoadMergesInstalledPluginSkillRootsAndMCP(t *testing.T) {
 			if p.Command != filepath.Join(root, "bin", "helper") {
 				t.Fatalf("plugin command = %q", p.Command)
 			}
-			if p.Env["REASONIX_PLUGIN_NAME"] != "superpowers" {
+			if p.Env["PATTY_PLUGIN_NAME"] != "superpowers" {
 				t.Fatalf("plugin env = %#v", p.Env)
 			}
 		}
@@ -64,7 +64,7 @@ func TestLoadMergesInstalledPluginSkillRootsAndMCP(t *testing.T) {
 
 func TestClaudePackageMCPExpandsRootAndDoesNotAutoStart(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	root := filepath.Join(home, "plugins", "claude-mcp")
 	writeConfigTestFile(t, filepath.Join(root, pluginpkg.ClaudeManifest), `{"name":"claude-mcp"}`)
 	writeConfigTestFile(t, filepath.Join(root, ".mcp.json"), `{
@@ -107,12 +107,12 @@ func TestClaudePackageMCPExpandsRootAndDoesNotAutoStart(t *testing.T) {
 
 func TestClaudePackageMCPDeduplicatesSameConnectionAcrossPackages(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	for i, name := range []string{"legal-one", "legal-two"} {
 		root := filepath.Join(home, "plugins", name)
 		writeConfigTestFile(t, filepath.Join(root, pluginpkg.ClaudeManifest), `{"name":"`+name+`"}`)
 		writeConfigTestFile(t, filepath.Join(root, ".mcp.json"), `{
-  "mcpServers":{"飞书":{"type":"http","url":"https://open.feishu.cn/mcp","description":"package `+string(rune('A'+i))+` description"}}
+  "mcpServers":{"페이수":{"type":"http","url":"https://open.feishu.cn/mcp","description":"package `+string(rune('A'+i))+` description"}}
 }`)
 		if err := pluginpkg.Upsert(home, pluginpkg.InstalledPlugin{Name: name, Root: "plugins/" + name, ManifestKind: "claude", Enabled: true}); err != nil {
 			t.Fatal(err)
@@ -137,13 +137,11 @@ func writeConfigTestFile(t *testing.T, path, body string) {
 	}
 }
 
-// TestCommandDirsIncludePluginPackageCommands pins the plugin-commands wiring:
-// an enabled plugin package's command roots join command discovery at the
-// before user/project entries, retaining package ownership, while a disabled
-// package contributes nothing.
+// an enabled plugin packages command roots join command discovery at the
+// before userproject entries, retaining package ownership, while a disabled
 func TestCommandDirsIncludePluginPackageCommands(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	root := filepath.Join(home, "plugins", "pwf")
 	writeConfigTestFile(t, filepath.Join(root, pluginpkg.ClaudeManifest), `{"name": "pwf"}`)
 	writeConfigTestFile(t, filepath.Join(root, "skills", "planner", "SKILL.md"), "---\ndescription: p\n---\nbody")
@@ -177,10 +175,9 @@ func TestCommandDirsIncludePluginPackageCommands(t *testing.T) {
 	}
 }
 
-// TestCommandDirsWithoutPluginState keeps the no-plugin fast path intact.
 func TestCommandDirsWithoutPluginState(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
+	t.Setenv("PATTY_HOME", home)
 	if dirs := CommandDirsForRoot(t.TempDir()); len(dirs) == 0 {
 		t.Fatal("CommandDirsForRoot must still return the conventional dirs")
 	}

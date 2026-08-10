@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"reasonix/internal/control"
+	"patty/internal/control"
 )
 
 type initialGoalSubmitRecorder struct {

@@ -7,24 +7,19 @@ import (
 	"strings"
 	"unicode"
 
-	"reasonix/internal/ablation"
-	"reasonix/internal/agent"
-	"reasonix/internal/memory"
-	"reasonix/internal/planmode"
-	"reasonix/internal/skill"
+	"patty/internal/ablation"
+	"patty/internal/agent"
+	"patty/internal/memory"
+	"patty/internal/planmode"
+	"patty/internal/skill"
 )
 
-// InvocationRequest is an explicit user-selected Skill or Subagent entity.
-// Offset is used only to preserve the visual order chosen in the composer.
 type InvocationRequest struct {
 	Name   string `json:"name"`
 	Kind   string `json:"kind"`
 	Offset int    `json:"offset"`
 }
 
-// PlanModeMarker is prepended to every user turn while plan mode is on. It rides
-// in the user message (not the system prompt or tools), so the cache-stable
-// prompt prefix is left untouched and the toggle costs nothing in cache hits.
 const PlanModeMarker = planmode.Marker
 
 const legacyPlanModeMarker = "[Plan mode — read-only. Explore the codebase first (read_file, ls, grep, glob, web_fetch, task, ask are available; writers are refused by the harness). Before planning, if a decision that is genuinely the user's — tech stack, an ambiguous requirement, scope, an irreversible choice — would materially shape the plan and you can't settle it from the codebase or a sensible default, use the ask tool to clarify it first; otherwise pick the obvious default and state the assumption in the plan instead of asking. Then present a LAYERED plan as your reply and stop — do not write files, edit, or run side-effecting bash. Structure the plan as a two-level markdown list so it becomes a layered task list: each PHASE is a top-level numbered list item (a coherent milestone, e.g. \"1. Add the config loader\"), and each phase's concrete, verifiable sub-steps are bullets indented beneath it (e.g. \"   - parse the TOML into Config\"). Use plain numbered list items for phases — do NOT write phases as markdown headings (##, ###) — so both levels parse. Keep phases few (about 2-6). The user will be asked to approve before any changes are made.]"
@@ -55,13 +50,6 @@ const (
 	GoalResearchOff
 )
 
-// StripComposePrefixes removes controller-injected prefixes from a composed
-// user message so that the display text matches what the user actually typed.
-// It strips the PlanModeMarker plus transient XML blocks such as
-// <reasoning-language>, <memory-update>, and <background-jobs> that Compose
-// prepends to user turns. This is used as a fallback when no .display.json
-// sidecar recording exists (e.g. sessions created before the display-recording
-// feature, or synthetic user messages injected by the controller).
 func StripComposePrefixes(content string) string {
 	s := agent.StripTransientUserBlocks(content)
 	s = stripComposeMarker(s, PlanModeMarker)
@@ -75,33 +63,22 @@ func stripComposeMarker(s, marker string) string {
 	return strings.TrimPrefix(s, marker)
 }
 
-// StripReferencedContextPrefix removes the "Referenced context:" preamble and
-// the trailing XML reference blocks (<file>, <dir>, <resource>, <image>) that
-// controller.ResolveRefs injects when the user @-references files or resources.
-// The user's actual input follows the reference blocks after a blank line.
-// Used for title generation and previews so the displayed text matches what
-// the user typed, not the injected context preamble (#4954).
 func StripReferencedContextPrefix(content string) string {
 	const preamble = "Referenced context:"
 	s := strings.TrimSpace(content)
 	if !strings.HasPrefix(s, preamble) {
 		return content
 	}
-	// Skip past the preamble.
 	s = strings.TrimSpace(s[len(preamble):])
-	// Skip past all XML reference blocks: <file ...>...</file>, <dir ...>...</dir>,
-	// <resource ...>...</resource>, <image ...>...</image>.
 	for {
 		s = strings.TrimSpace(s)
 		if s == "" {
 			return ""
 		}
-		// Check for a reference block start.
 		if !strings.HasPrefix(s, "<file ") && !strings.HasPrefix(s, "<dir ") &&
 			!strings.HasPrefix(s, "<resource ") && !strings.HasPrefix(s, "<image ") {
 			break
 		}
-		// Find the matching close tag.
 		tagEnd := strings.IndexByte(s, ' ')
 		if tagEnd < 0 {
 			break
@@ -117,23 +94,13 @@ func StripReferencedContextPrefix(content string) string {
 	return s
 }
 
-// IsSyntheticUserMessage returns true if the content matches one of the known
-// synthetic user messages injected by the controller or agent loop (plan
-// approval, stream recovery, readiness retry, etc.). These should not be shown
-// in the chat UI.
 func IsSyntheticUserMessage(content string) bool {
 	if trimmed := strings.TrimSpace(agent.StripTransientUserBlocks(content)); trimmed == planApprovedMessage {
 		return true
 	}
-	// The prefix list lives in internal/agent (agent.SyntheticUserPrefixes) so
-	// preview/title/turn-count derivations there share the exact same filter
-	// (#3653).
 	return agent.IsSyntheticUserText(content)
 }
 
-// Compose applies the plan-mode marker to a turn's text when plan mode is on,
-// returning the message to actually send to the model. The frontend keeps
-// showing the raw text as the user bubble.
 func (c *Controller) Compose(text string) string {
 	return c.compose(text, text, true)
 }
@@ -178,9 +145,6 @@ func (c *Controller) composeWithGoal(
 	text = agent.WithResponseLanguage(text, responseLanguage)
 	text = agent.WithReasoningLanguageForSource(text, reasoningLanguage, source)
 
-	// Memory added mid-session rides the turn (never the cached system prefix),
-	// so it takes effect now without invalidating the prompt cache. It folds into
-	// the system prefix on the next session, where it costs nothing per turn.
 	if len(notes) > 0 {
 		var b strings.Builder
 		b.WriteString("<memory-update>\n")
@@ -192,9 +156,6 @@ func (c *Controller) composeWithGoal(
 		text = b.String() + text
 	}
 
-	// Background jobs that finished since the last turn ride the turn too, so the
-	// model learns of completions even though the user-facing notices don't reach
-	// its context. Like memory, this never touches the cache-stable prefix.
 	if c.jobs != nil {
 		if note := c.jobs.DrainCompletedNoteForSession(c.parentSessionID()); note != "" {
 			text = "<background-jobs>\n" + note + "\n</background-jobs>\n\n" + text
@@ -204,9 +165,6 @@ func (c *Controller) composeWithGoal(
 		if block := c.drainHookContextBlock(); block != "" {
 			text = block + "\n\n" + text
 		}
-		// Relevant facts ride only the real user-turn tail. This preserves the
-		// stable system/tool prefix and keeps synthetic recovery turns free of
-		// accidental recall. A just-written fact already arrives in memory-update.
 		if len(notes) == 0 && !c.ablation.Off(ablation.Retrieval) {
 			if block := c.memory.recall(source).Block(); block != "" {
 				text = strings.TrimRight(text, "\n") + "\n\n" + block
@@ -221,8 +179,6 @@ func (c *Controller) composeWithGoal(
 	return text
 }
 
-// LastMemoryRecall returns the last real turn's automatic-recall decision for
-// diagnostics and context-management surfaces.
 func (c *Controller) LastMemoryRecall() memory.RecallResult {
 	return c.memory.lastRecallResult()
 }
@@ -378,8 +334,8 @@ const goalTaskContractInstructions = `Goal mode: pursue this goal autonomously. 
 Do not stop after describing a plan; execute the next useful step. End every goal-mode turn by calling the update_goal tool with your disposition: continue (work is ongoing — give the next concrete step in next_action), complete (only when fully done and verified), or blocked (only when the user can unblock). The host validates your claim and decides whether to continue automatically.`
 
 const autoResearchGoalInstructions = `AutoResearch protocol: this goal looks like long-horizon research, debugging, optimization, or implementation work. Treat AutoResearch as a durable strategy for this Goal, not as a background daemon or a global skill.
-- Say briefly in the first visible reply that the goal is being handled with AutoResearch and that host-owned state lives under .reasonix/autoresearch/<task-id>/, using the actual task_id from <autoresearch-runtime>.
-- Keep dynamic state out of REASONIX.md, AGENTS.md, project memory, system prompts, and tool schemas. Use project-local .reasonix/autoresearch/ state only.
+- Say briefly in the first visible reply that the goal is being handled with AutoResearch and that host-owned state lives under .patty/autoresearch/<task-id>/, using the actual task_id from <autoresearch-runtime>.
+- Keep dynamic state out of PATTY_CODE.md, AGENTS.md, project memory, system prompts, and tool schemas. Use project-local .patty/autoresearch/ state only.
 - Use the task_id and open_success_criteria in <autoresearch-runtime> as authoritative. The host creates task ids and owns state/task_spec.json, state/progress.json, state/findings.jsonl, state/directions_tried.json, state/iteration_log.jsonl, and logs/heartbeat.jsonl.
 - Do not hand-edit the host-owned AutoResearch state files. When you have direct evidence for an open criterion, include an <autoresearch-evidence> block in your assistant reply so the host can persist it:
 <autoresearch-evidence>
@@ -388,7 +344,7 @@ const autoResearchGoalInstructions = `AutoResearch protocol: this goal looks lik
 - Before each iteration, use the runtime summary as authoritative, choose a direction that differs materially from directions already tried, execute the smallest evidence-producing chunk, verify it, and report accepted evidence with <autoresearch-evidence> blocks.
 - Increment stale_count when an iteration lacks accepted evidence or repeats a prior direction. At stale_count >= 2, make a structural pivot such as changing evidence source, entrypoint, implementation boundary, test oracle, benchmark, decomposition, environment, platform, or refutation angle. At stale_count >= 4, stop autonomous digging and ask for the smallest external input needed.
 - Workers or subagents may gather evidence, but the orchestrator owns canonical state writes. Workers must not publish, push, delete, contact external systems, or write canonical state unless explicitly designated.
-- Complete only after auditing every open success criterion in <autoresearch-runtime> against direct evidence. Public publishing, destructive changes, credential use, payments, external notifications, privacy-sensitive output, and cache-sensitive changes still require the normal Reasonix gates.`
+- Complete only after auditing every open success criterion in <autoresearch-runtime> against direct evidence. Public publishing, destructive changes, credential use, payments, external notifications, privacy-sensitive output, and cache-sensitive changes still require the normal Patty Code gates.`
 
 func shouldUseAutoResearch(goal string, mode GoalResearchMode) bool {
 	switch mode {
@@ -406,7 +362,7 @@ func isAutoResearchGoal(goal string) bool {
 		return false
 	}
 	lower := strings.ToLower(trimmed)
-	if strings.Contains(lower, ".reasonix/autoresearch/") {
+	if strings.Contains(lower, ".patty/autoresearch/") {
 		return true
 	}
 	for _, kw := range autoResearchStrongKeywords {
@@ -428,24 +384,24 @@ func autoResearchPhaseCount(lower string) int {
 }
 
 var autoResearchStrongKeywords = []string{
-	"持续",
-	"长期",
-	"彻底",
-	"直到根因",
-	"根因明确",
-	"多轮",
-	"不要原地打转",
-	"别原地打转",
-	"完整方案",
-	"完整做成方案",
-	"跑实验",
-	"反复验证",
-	"长期优化",
-	"系统性研究",
-	"持续研究",
-	"持续排查",
-	"持续推进",
-	"长期跑",
+	"지속",
+	"장기",
+	"철저히",
+	"근본 원인까지",
+	"근본 원인 명확",
+	"여러 라운드",
+	"제자리에서 맴돌지 마세요",
+	"제자리에서 맴돌지 말아요",
+	"완전한 방안",
+	"완전히 완성된 방안",
+	"실험 돌리기",
+	"반복 검증",
+	"장기 최적화",
+	"체계적 연구",
+	"지속 연구",
+	"지속 추적",
+	"지속 추진",
+	"장기 실행",
 	"long-horizon",
 	"long horizon",
 	"long-running",
@@ -460,12 +416,12 @@ var autoResearchStrongKeywords = []string{
 }
 
 var autoResearchPhaseKeywords = [][]string{
-	{"研究", "调研", "排查", "分析", "定位", "诊断", "research", "investigate", "diagnose", "analyze", "analysis"},
-	{"实现", "修复", "改造", "开发", "重构", "implement", "build", "fix", "refactor"},
-	{"验证", "测试", "复现", "联调", "benchmark", "verify", "validate", "test", "reproduce"},
-	{"优化", "完善", "提升", "收敛", "optimize", "improve", "tune", "polish"},
-	{"文档", "方案", "说明", "总结", "document", "docs", "writeup", "plan"},
-	{"发布", "上线", "提交", "pull request", "publish", "ship", "deploy"},
+	{"연구", "조사", "추적", "분석", "위치 파악", "진단", "research", "investigate", "diagnose", "analyze", "analysis"},
+	{"구현", "복구", "개조", "개발", "리팩토링", "implement", "build", "fix", "refactor"},
+	{"검증", "테스트", "재현", "연동 조정", "benchmark", "verify", "validate", "test", "reproduce"},
+	{"최적화", "완성", "개선", "수렴", "optimize", "improve", "tune", "polish"},
+	{"문서", "방안", "설명", "요약", "document", "docs", "writeup", "plan"},
+	{"배포", "출시", "커미트", "pull request", "publish", "ship", "deploy"},
 }
 
 func containsAnyGoalKeyword(s string, needles []string) bool {
@@ -477,12 +433,6 @@ func containsAnyGoalKeyword(s string, needles []string) bool {
 	return false
 }
 
-// MemoryQuickAddNote parses the "# <note>" memory shortcut. The space after
-// "#" is intentional: "#7", "#issue", and "#标题" are ordinary user prompts,
-// not memory writes. Multi-line input starting with "# " is NOT treated as a
-// quick-add note — it is almost certainly a Markdown heading in a structured
-// prompt (e.g. "# Context\n\n- file.go\n# Objective"). Only single-line input
-// may be a quick-add note.
 func MemoryQuickAddNote(input string) (note string, ok bool) {
 	trimmed := strings.TrimSpace(input)
 	if strings.Contains(trimmed, "\n") {
@@ -494,7 +444,6 @@ func MemoryQuickAddNote(input string) (note string, ok bool) {
 	return "", false
 }
 
-// RememberCommandNote parses the explicit "/remember <note>" memory command.
 func RememberCommandNote(input string) (note string, ok bool) {
 	trimmed := strings.TrimSpace(input)
 	switch {
@@ -576,9 +525,6 @@ func leadingGoalToken(s string) (string, string) {
 	return s, ""
 }
 
-// CustomCommand resolves a "/name args…" line against the loaded custom slash
-// commands, returning the rendered prompt to send (found=false when no command
-// matches). It does not apply the plan-mode marker — call Compose for that.
 func (c *Controller) CustomCommand(input string) (sent string, found bool) {
 	fields := strings.Fields(input)
 	if len(fields) == 0 {
@@ -593,10 +539,6 @@ func (c *Controller) CustomCommand(input string) (sent string, found bool) {
 	return "", false
 }
 
-// resolveSkillInvocation resolves a "/<name> args…" line to its live Skill and
-// task text. Submit uses RunAs to choose inline main-loop execution or isolated
-// subagent execution; RunSkill remains the compatibility renderer used by
-// management/existence checks and callers that explicitly need the body.
 func (c *Controller) resolveSkillInvocation(input string) (skill.Skill, string, bool) {
 	fields := strings.Fields(input)
 	if len(fields) == 0 {
@@ -610,10 +552,6 @@ func (c *Controller) resolveSkillInvocation(input string) (skill.Skill, string, 
 	return sk, strings.Join(fields[1:], " "), true
 }
 
-// RunSkill resolves a "/<name> args…" line against the loaded skills and
-// renders its body. Controller.Submit does not use this renderer for
-// runAs=subagent skills: direct slash invocation executes those through the
-// isolated SkillRunner instead.
 func (c *Controller) RunSkill(input string) (sent string, found bool) {
 	sk, task, ok := c.resolveSkillInvocation(input)
 	if !ok {
@@ -622,10 +560,6 @@ func (c *Controller) RunSkill(input string) (sent string, found bool) {
 	return c.skills.render(sk, task), true
 }
 
-// MCPPrompt resolves a "/mcp__server__prompt args…" line: it maps the positional
-// args onto the prompt's declared arguments and fetches the rendered prompt from
-// the MCP server (an async prompts/get). found is false when no such prompt
-// exists; err carries a fetch failure. Honours ctx.
 func (c *Controller) MCPPrompt(ctx context.Context, input string) (sent string, found bool, err error) {
 	fields := strings.Fields(input)
 	if len(fields) == 0 {

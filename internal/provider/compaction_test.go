@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"reasonix/internal/provider"
-	"reasonix/internal/provider/responses"
+	"patty/internal/provider"
+	"patty/internal/provider/responses"
 )
 
 type unsupportedCompactor struct{}

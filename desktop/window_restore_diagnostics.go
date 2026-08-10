@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 const (
@@ -174,7 +174,7 @@ func windowRestoreFailureReport(kind, source, startedAt string) crashReport {
 	report.OccurredAt = time.Now().UTC().Format(time.RFC3339)
 	report.Message = sanitizeCrashText(fmt.Sprintf(`[windows.window_restore.%s]
 
-Reasonix could not confirm that the hidden window was restored.
+Patty Code could not confirm that the hidden window was restored.
 
 source: %s
 attempt started at: %s

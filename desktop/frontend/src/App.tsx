@@ -102,7 +102,6 @@ import {
 } from "./lib/todoVisibility";
 import {
   type BotConnectionView,
-  type BotRuntimeStatusView,
   type BotSettingsView,
   type ActiveWorkView,
   type BackgroundRuntimeView,
@@ -257,7 +256,7 @@ function noticePreviewItems(): Item[] {
     notice(8, "info", "Context was compacted without a generated summary.", "compaction completed after upstream summary generation returned empty content; retained transcript checkpoint"),
     notice(9, "info", "Goal is not ready to complete yet; continuing the remaining work.", "goal completion check found pending validation: desktop/frontend typecheck"),
     notice(13, "info", "Goal still has unfinished task state; continuing the remaining work.", "active goal has open task state: implement preview, verify browser, report result"),
-    notice(14, "warn", "AutoResearch status update failed.", "autoresearch task completion update failed: write .reasonix/autoresearch/task-42/state/task_spec.json: permission denied"),
+    notice(14, "warn", "AutoResearch status update failed.", "autoresearch task completion update failed: write .patty/autoresearch/task-42/state/task_spec.json: permission denied"),
     notice(15, "warn", "AutoResearch task marked blocked.", "autoresearch task blocked: task-42\nreason: missing accepted verification evidence after three turns"),
     notice(16, "warn", "background export failed: needs attention", "background export failed: session archive upload returned 503 after 3 retries"),
     notice(17, "warn", "Job artifact migration failed.", "artifact migration failed for job job_123: checksum mismatch while moving output.zip"),
@@ -431,7 +430,7 @@ type HistoryViewState =
   | { kind: "history"; source: "scope"; filter: HistoryScopeFilter; sessions: SessionMeta[] }
   | { kind: "history"; source: "all"; sessions: SessionMeta[] }
   | { kind: "trash"; sessions: SessionMeta[] };
-type SidebarImPlatform = "qq" | "feishu" | "lark" | "weixin";
+type SidebarImPlatform = string;
 type SidebarImStatus = "connected" | "disabled" | "pending" | "error" | "disconnected";
 type SidebarImConnection = {
   id: string;
@@ -498,22 +497,6 @@ function saveDismissedTodoKeys(keys: ReadonlySet<string>): void {
   }
 }
 
-function isSidebarImConnection(connection: BotConnectionView): boolean {
-  return connection.provider === "feishu" || connection.provider === "weixin";
-}
-
-function sidebarImPlatform(connection: BotConnectionView): SidebarImPlatform {
-  if (connection.provider === "weixin") return "weixin";
-  return connection.domain === "lark" ? "lark" : "feishu";
-}
-
-function sidebarImPlatformLabel(platform: SidebarImPlatform, translate: Translator): string {
-  if (platform === "qq") return "QQ";
-  if (platform === "lark") return "Lark";
-  if (platform === "weixin") return translate("settings.botWeixin");
-  return translate("settings.botFeishu");
-}
-
 function botMappingScope(mapping: BotConnectionView["sessionMappings"][number] | null | undefined, connectionWorkspaceRoot: string): "global" | "project" {
   if (mapping?.scope === "project") return "project";
   if ((mapping?.workspaceRoot ?? "").trim()) return "project";
@@ -570,87 +553,22 @@ function uniqueTrimmedValues(values: string[]): string[] {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 }
 
-function sidebarImAllowlistUsers(bot: BotSettingsView, platform: SidebarImPlatform): string[] {
-  if (platform === "qq") return uniqueTrimmedValues(asArray(bot.allowlist.qqUsers));
-  if (platform === "weixin") return uniqueTrimmedValues(asArray(bot.allowlist.weixinUsers));
-  return uniqueTrimmedValues(asArray(bot.allowlist.feishuUsers));
-}
-
-function sidebarImQQAdded(qq: BotSettingsView["qq"]): boolean {
-  return Boolean(qq.enabled || qq.secretSet || qq.appId.trim());
-}
-
-function sidebarImQQStatus(bot: BotSettingsView, runtimeStatus: BotRuntimeStatusView | null | undefined): SidebarImStatus {
-  const appId = bot.qq.appId.trim();
-  if (!bot.enabled || !bot.qq.enabled) return "disabled";
-  if (!appId || !bot.qq.secretSet) return "disconnected";
-  if (typeof window !== "undefined" && !window.runtime) return "pending";
-  if (!runtimeStatus) return "pending";
-  const status = runtimeStatus.status.trim().toLowerCase();
-  if (runtimeStatus.running && runtimeStatus.connections > 0 && status === "running") {
-    return "connected";
-  }
-  if (status === "error" || status === "blocked" || status === "degraded") return "error";
-  if (status === "stopped") return "disconnected";
-  return "pending";
-}
-
-async function loadBotRuntimeStatus(): Promise<BotRuntimeStatusView | null> {
-  if (typeof window !== "undefined" && !window.runtime) return null;
-  try {
-    return await app.BotRuntimeStatus();
-  } catch (e) {
-    console.warn("bot runtime status failed", e);
-    return null;
-  }
-}
-
-function sidebarImQQConnection(bot: BotSettingsView, translate: Translator, runtimeStatus?: BotRuntimeStatusView | null): SidebarImConnection | null {
-  if (!sidebarImQQAdded(bot.qq)) return null;
-  const remoteId = bot.qq.appId.trim();
-  const status = sidebarImQQStatus(bot, runtimeStatus);
-  const statusLabel = sidebarImStatusLabel(status, translate);
-  const allowlistUsers = sidebarImAllowlistUsers(bot, "qq");
-  const subtitleParts = [
-    remoteId ? compactRemoteId(remoteId) : "QQ",
-    statusLabel,
-  ].filter(Boolean);
-  return {
-    id: "__qq_bot__",
-    connectionId: "__qq_bot__",
-    platform: "qq",
-    title: "QQ Bot",
-    platformLabel: "QQ",
-    subtitle: subtitleParts.join(" · "),
-    status,
-    statusLabel,
-    remoteId,
-    sessionId: "",
-    sessionSource: "",
-    scope: "global",
-    workspaceRoot: "",
-    allowAll: bot.allowlist.allowAll,
-    allowlistEnabled: bot.allowlist.enabled,
-    allowlistUsers,
-    allowlistMatched: remoteId ? allowlistUsers.includes(remoteId) : false,
-  };
+function sidebarImAllowlistUsers(bot: BotSettingsView): string[] {
+  return uniqueTrimmedValues(asArray(bot.allowlist.users));
 }
 
 function sidebarImConnectionsFromBot(
   bot: BotSettingsView | null | undefined,
   translate: Translator,
-  runtimeStatus?: BotRuntimeStatusView | null,
 ): SidebarImConnection[] {
   if (!bot) return [];
-  const qqConnection = sidebarImQQConnection(bot, translate, runtimeStatus);
   const connectionItems: SidebarImConnection[] = [];
   for (const connection of asArray(bot.connections)) {
-    if (!isSidebarImConnection(connection)) continue;
     const mappings = connection.sessionMappings.filter((mapping) => mapping.sessionId.trim() || mapping.remoteId.trim());
     const rowMappings = mappings.length > 0 ? mappings : [null];
     rowMappings.forEach((mapping, index) => {
-      const platform = sidebarImPlatform(connection);
-      const platformLabel = sidebarImPlatformLabel(platform, translate);
+      const platform = connection.provider;
+      const platformLabel = platform;
       const remoteId = mapping?.remoteId.trim() ?? "";
       const sessionId = mapping?.sessionId.trim() ?? "";
       const sessionSource = mapping?.sessionSource.trim() ?? "";
@@ -658,7 +576,7 @@ function sidebarImConnectionsFromBot(
       const workspaceRoot = botMappingWorkspaceRoot(mapping, connection.workspaceRoot);
       const status = sidebarImStatus(connection, bot.enabled);
       const title = connection.label.trim() || platformLabel;
-      const allowlistUsers = sidebarImAllowlistUsers(bot, platform);
+      const allowlistUsers = sidebarImAllowlistUsers(bot);
       const identityLabel = botMappingIdentityLabel(mapping);
       const mappedUserId = mapping?.userId.trim() ?? "";
       const subtitleParts = [
@@ -690,7 +608,7 @@ function sidebarImConnectionsFromBot(
       });
     });
   }
-  return qqConnection ? [qqConnection, ...connectionItems] : connectionItems;
+  return connectionItems;
 }
 
 function mappedSessionTarget(sessionId: string): { kind: "path" | "topic"; value: string } | null {
@@ -725,13 +643,12 @@ function isChannelSession(session: SessionMeta): boolean {
   return session.kind === "channel" || session.sessionSource === "auto";
 }
 
-function sidebarImTopicSourcesFromBot(bot: BotSettingsView | null | undefined, translate: Translator): Record<string, SidebarImTopicSource> {
+function sidebarImTopicSourcesFromBot(bot: BotSettingsView | null | undefined): Record<string, SidebarImTopicSource> {
   if (!bot?.connections?.length) return {};
   const sources: Record<string, SidebarImTopicSource> = {};
   for (const connection of bot.connections) {
-    if (!isSidebarImConnection(connection)) continue;
-    const platform = sidebarImPlatform(connection);
-    const label = sidebarImPlatformLabel(platform, translate);
+    const platform = connection.provider;
+    const label = platform;
     const title = connection.label.trim() || label;
     for (const mapping of asArray(connection.sessionMappings)) {
       const scope = botMappingScope(mapping, connection.workspaceRoot);
@@ -791,8 +708,8 @@ function SidebarImConnectionDetail({ connection, onClose, onOpenSession, onOpenS
   return (
     <div className="bot-detail">
       <section className="bot-detail__summary">
-        <div className={`bot-detail__avatar bot-detail__avatar--${connection.platform}`} aria-hidden="true">
-          {connection.platform === "qq" ? "Q" : connection.platform === "weixin" ? "微" : connection.platform === "lark" ? "L" : "飞"}
+        <div className={`bot-detail__avatar bot-detail__avatar--bot`} aria-hidden="true">
+          {(connection.platformLabel || "B").slice(0, 1).toUpperCase()}
         </div>
         <div className="bot-detail__summary-main">
           <span>{translate("botDetail.subtitle")}</span>
@@ -926,9 +843,9 @@ function browserPlatformOverride(): DesktopPlatform | null {
 }
 
 const GUIDANCE_QUEUE_MOCK_ITEMS = [
-  "先确认发送后输入框为什么残留刚发的消息，再决定修哪里。",
-  "保持真实 steer 协议不变，只调整前端乐观队列和按钮状态。",
-  "最后补后端 submit 悬挂时的回归测试，确保输入框会立刻释放。",
+  "Confirm why the composer kept the just-sent message before fixing it.",
+  "Keep the real steer protocol unchanged; only adjust the optimistic queue and button state.",
+  "Finally add a regression test for hanging submits so the composer releases immediately.",
 ] as const;
 
 function browserMockScenarioParam(): string {
@@ -1002,7 +919,7 @@ function fence(label: string, value: string): string {
 }
 
 function sessionItemsToMarkdown(title: string, items: Item[], live?: LiveStream): string {
-  const lines: string[] = [`# ${title.trim() || "Reasonix session"}`, ""];
+  const lines: string[] = [`# ${title.trim() || "Patty Code session"}`, ""];
   for (const item of materializeLiveItems(items, live)) {
     switch (item.kind) {
       case "user":
@@ -1064,7 +981,7 @@ function sessionItemsToJson(title: string, items: Item[], live?: LiveStream): st
 
 function safeFilename(name: string): string {
   const cleaned = name.trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").slice(0, 80);
-  return cleaned || "reasonix-session";
+  return cleaned || "patty-session";
 }
 
 /** Global hotkey handler for shell-expand toggle (Ctrl/Cmd+B). */
@@ -1397,18 +1314,16 @@ export default function App() {
   }, []);
 
   const reloadSidebarImConnections = useCallback(async () => {
-    const [settings, runtimeStatus] = await Promise.all([
+    const [settings] = await Promise.all([
       app.DesktopStartupSettings(),
-      loadBotRuntimeStatus(),
     ]);
-    setSidebarImConnections(sidebarImConnectionsFromBot(settings.bot, t, runtimeStatus));
-    setImTopicSources(sidebarImTopicSourcesFromBot(settings.bot, t));
+    setSidebarImConnections(sidebarImConnectionsFromBot(settings.bot, t));
+    setImTopicSources(sidebarImTopicSourcesFromBot(settings.bot));
   }, [t]);
 
   const refreshSidebarImConnectionsFromSettings = useCallback(async (settings: Pick<SettingsView | DesktopStartupSettingsView, "bot">) => {
-    const runtimeStatus = await loadBotRuntimeStatus();
-    setSidebarImConnections(sidebarImConnectionsFromBot(settings.bot, t, runtimeStatus));
-    setImTopicSources(sidebarImTopicSourcesFromBot(settings.bot, t));
+    setSidebarImConnections(sidebarImConnectionsFromBot(settings.bot, t));
+    setImTopicSources(sidebarImTopicSourcesFromBot(settings.bot));
   }, [t]);
 
   const openBotSettings = useCallback(() => {
@@ -1521,9 +1436,8 @@ export default function App() {
         clearLegacyLangPref();
         clearLegacyThemePreference();
       }
-      const [settings, runtimeStatus] = await Promise.all([
+      const [settings] = await Promise.all([
         app.DesktopStartupSettings(),
-        loadBotRuntimeStatus(),
       ]);
       if (cancelled) return;
       applyDesktopPreferences(settings);
@@ -1533,8 +1447,8 @@ export default function App() {
           : [],
       );
       hydrateDisplayMode(settings.displayMode);
-      setSidebarImConnections(sidebarImConnectionsFromBot(settings.bot, t, runtimeStatus));
-      setImTopicSources(sidebarImTopicSourcesFromBot(settings.bot, t));
+      setSidebarImConnections(sidebarImConnectionsFromBot(settings.bot, t));
+      setImTopicSources(sidebarImTopicSourcesFromBot(settings.bot));
       // Load unified theme experience after base appearance so pack tokens win.
       {
         try {
@@ -2767,7 +2681,7 @@ export default function App() {
   }, [desktopLayoutStyle, rightDockTreeWidth]);
 
   // Creation no longer exposes the overview tab. If a previous session left
-  // rightDockMode on "context", coerce it to files so 文件 stays selected.
+  // rightDockMode on "context", coerce it to files so files stays selected.
   useEffect(() => {
     if (desktopLayoutStyle !== "creation") return;
     if (rightDockMode !== "context") return;
@@ -3063,7 +2977,7 @@ export default function App() {
       return;
     }
     // Creation hides the overview tab; never reopen into the invisible "context"
-    // mode or neither 文件/改动 will show an active selection.
+    // mode or neither files/changes will show an active selection.
     if (desktopLayoutStyle === "creation") {
       openWorkspacePanel(rightDockMode === "changed" ? "changed" : "files");
       return;
@@ -4004,17 +3918,17 @@ export default function App() {
 
   const paletteItems = useMemo<PaletteItem[]>(() => {
     const cmds: PaletteItem[] = [
-      { id: "cmd-new", group: t("palette.group.commands"), title: t("palette.cmd.newSession"), icon: <SquarePen size={15} />, compact: true, keywords: ["new", "新建"], run: () => void handleNewTab() },
-      { id: "cmd-trash", group: t("palette.group.commands"), title: t("palette.cmd.trash"), icon: <Trash2 size={15} />, compact: true, keywords: ["trash", "回收站"], run: () => void openTrash() },
-      { id: "cmd-settings", group: t("palette.group.commands"), title: t("palette.cmd.settings"), icon: <SettingsIcon size={15} />, compact: true, keywords: ["settings", "设置"], run: () => setSettingsTarget("general") },
-      { id: "cmd-appearance", group: t("palette.group.commands"), title: t("palette.cmd.appearance"), icon: <Palette size={15} />, compact: true, keywords: ["theme", "appearance", "外观", "主题"], run: () => setSettingsTarget("appearance") },
+      { id: "cmd-new", group: t("palette.group.commands"), title: t("palette.cmd.newSession"), icon: <SquarePen size={15} />, compact: true, keywords: ["new"], run: () => void handleNewTab() },
+      { id: "cmd-trash", group: t("palette.group.commands"), title: t("palette.cmd.trash"), icon: <Trash2 size={15} />, compact: true, keywords: ["trash"], run: () => void openTrash() },
+      { id: "cmd-settings", group: t("palette.group.commands"), title: t("palette.cmd.settings"), icon: <SettingsIcon size={15} />, compact: true, keywords: ["settings"], run: () => setSettingsTarget("general") },
+      { id: "cmd-appearance", group: t("palette.group.commands"), title: t("palette.cmd.appearance"), icon: <Palette size={15} />, compact: true, keywords: ["theme", "appearance"], run: () => setSettingsTarget("appearance") },
       {
         id: "cmd-theme-reset",
         group: t("palette.group.commands"),
         title: t("settings.themeLibrary.reset"),
         icon: <Palette size={15} />,
         compact: true,
-        keywords: ["theme", "reset", "default", "恢复默认", "主题"],
+        keywords: ["theme", "reset", "default"],
         run: () => {
           void app.ResetThemePack()
             .then(() => {
@@ -4024,15 +3938,15 @@ export default function App() {
             .catch((err) => showToast(err instanceof Error ? err.message : String(err), "error"));
         },
       },
-      { id: "cmd-memory", group: t("palette.group.commands"), title: t("palette.cmd.memory"), icon: <Brain size={15} />, compact: true, keywords: ["memory", "记忆"], run: () => setSettingsTarget("memory") },
-      { id: "cmd-models", group: t("palette.group.commands"), title: t("palette.cmd.models"), icon: <Cpu size={15} />, compact: true, keywords: ["model", "模型"], run: () => setSettingsTarget("models") },
+      { id: "cmd-memory", group: t("palette.group.commands"), title: t("palette.cmd.memory"), icon: <Brain size={15} />, compact: true, keywords: ["memory"], run: () => setSettingsTarget("memory") },
+      { id: "cmd-models", group: t("palette.group.commands"), title: t("palette.cmd.models"), icon: <Cpu size={15} />, compact: true, keywords: ["model"], run: () => setSettingsTarget("models") },
       {
         id: "cmd-usage-stats",
         group: t("palette.group.commands"),
         title: t("palette.cmd.usageStats"),
         icon: <BarChart3 size={15} />,
         compact: true,
-        keywords: ["usage", "stats", "statistics", "用量", "统计"],
+        keywords: ["usage", "stats", "statistics"],
         run: () => {
           setSettingsFocus((current) => ({
             target: "model-stats",
@@ -4041,14 +3955,14 @@ export default function App() {
           setSettingsTarget("models");
         },
       },
-      { id: "cmd-terminal", group: t("palette.group.commands"), title: t("rightDock.terminal"), icon: <TerminalSquare size={15} />, compact: true, keywords: ["terminal", "shell", "终端"], run: () => toggleTerminalPanel() },
+      { id: "cmd-terminal", group: t("palette.group.commands"), title: t("rightDock.terminal"), icon: <TerminalSquare size={15} />, compact: true, keywords: ["terminal", "shell"], run: () => toggleTerminalPanel() },
       {
         id: "cmd-reload-runtime",
         group: t("palette.group.commands"),
         title: t("palette.cmd.reloadRuntime"),
         icon: <RotateCw size={15} />,
         compact: true,
-        keywords: ["reload", "runtime", "重载", "运行时"],
+        keywords: ["reload", "runtime"],
         run: () => {
           const tabID = activeTab?.id;
           if (!tabID) return;
@@ -4087,7 +4001,7 @@ export default function App() {
           : t("palette.remote.connect", { host: host.label }),
         hint: host.defaultWorkspace || target,
         icon: <Server size={15} />,
-        keywords: ["ssh", "remote", "远程", "连接", host.label, host.host],
+        keywords: ["ssh", "remote", host.label, host.host],
         run: () => {
           if (connected) openRemoteWorkspaceFromStatus(host);
           else connectAndOpenRemoteWorkspace(host);
@@ -4100,7 +4014,7 @@ export default function App() {
       title: action.description || action.slash,
       hint: action.slash,
       icon: <Puzzle size={15} />,
-      keywords: ["extension", "扩展", action.plugin, action.action, action.slash],
+      keywords: ["extension", action.plugin, action.action, action.slash],
       run: () => {
         const tabID = activeTab?.id;
         if (!tabID) return;
@@ -4405,7 +4319,7 @@ export default function App() {
             <>
               <div className="sidebar__head" aria-hidden={sidebarCollapsed}>
                 <div className="sidebar__brand sidebar__brand--workbench">
-                  <img src={logoWordmark} alt="Reasonix" className="sidebar__brand-logo sidebar__brand-logo--workbench" draggable={false} />
+                  <img src={logoWordmark} alt="Patty Code" className="sidebar__brand-logo sidebar__brand-logo--workbench" draggable={false} />
                 </div>
               </div>
 
@@ -4425,7 +4339,7 @@ export default function App() {
           ) : (
             <>
               <div className="sidebar__brand" aria-hidden={sidebarCollapsed}>
-                <img src={logoWordmark} alt="Reasonix" className="sidebar__brand-logo" draggable={false} />
+                <img src={logoWordmark} alt="Patty Code" className="sidebar__brand-logo" draggable={false} />
               </div>
 
               <button
@@ -4934,7 +4848,7 @@ export default function App() {
             enabled={startupUpdateChecksEnabled === true}
             onShowReleaseNotes={(latest) => {
               const version = latest.replace(/^(?:desktop-)?v/, "");
-              void openExternal(`https://reasonix.io/changelog/v${version}/`);
+              void openExternal(`https://patty.io/changelog/v${version}/`);
             }}
           />
 

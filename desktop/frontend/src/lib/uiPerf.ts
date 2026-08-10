@@ -97,7 +97,7 @@ function defaultEnv(): PerfEnv {
         const observer = new PerformanceObserver((list) => {
           const durations: number[] = [];
           for (const entry of list.getEntries()) {
-            if (type === "measure" && !entry.name.startsWith("reasonix:markdown")) continue;
+            if (type === "measure" && !entry.name.startsWith("patty:markdown")) continue;
             if (type === "event") {
               const timing = entry as PerformanceEntry & { processingStart?: number };
               durations.push((timing.processingStart ?? entry.startTime + entry.duration) - entry.startTime);

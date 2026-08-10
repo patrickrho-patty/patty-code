@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/capability"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/hook"
-	"reasonix/internal/provider"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/capability"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/hook"
+	"patty/internal/provider"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 type plannerMetadataRunner struct {
@@ -353,9 +353,6 @@ func TestGoalReadinessFailureContinuesThenPausesOnNoProgress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run err = %v, want the loop to absorb FinalReadinessError and pause on no-progress", err)
 	}
-	// The FSM absorbs the readiness failure and continues with the missing
-	// requirements; with no host-verifiable progress across turns the
-	// no-progress gate pauses the goal instead of looping forever.
 	if got := c.GoalStatus(); got != GoalStatusBlocked {
 		t.Fatalf("GoalStatus = %q, want blocked (no-progress pause)", got)
 	}
@@ -384,7 +381,7 @@ func (r *recoveryPauseRunner) Run(ctx context.Context, _ string) error {
 		r.scopes = append(r.scopes, scope)
 	}
 	return &agent.RecoveryPauseError{
-		Message:    "Automatic retries paused. Reasonix stopped repeated attempts and kept completed work. Send \"continue\" to start a fresh attempt, or add instructions to change direction.",
+		Message:    "Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send \"continue\" to start a fresh attempt, or add instructions to change direction.",
 		StopReason: "episode_failures",
 	}
 }
@@ -403,8 +400,7 @@ func TestRecoveryPauseKeepsGoalRunningAndDeliveryScope(t *testing.T) {
 	if !errors.As(err, &pause) {
 		t.Fatalf("run err = %v, want RecoveryPauseError", err)
 	}
-	// Recovery pause ends auto-continue only; Goal must stay running so the next
-	// ordinary "continue" keeps the same Goal prompt and delivery scope.
+// ordinary "continue" keeps the same Goal prompt and delivery scope.
 	if got := c.GoalStatus(); got != GoalStatusRunning {
 		t.Fatalf("GoalStatus = %q, want running after recovery pause", got)
 	}
@@ -415,7 +411,6 @@ func TestRecoveryPauseKeepsGoalRunningAndDeliveryScope(t *testing.T) {
 		t.Fatalf("delivery scopes = %+v, want one call with scope %q", runner.scopes, scopeID)
 	}
 
-	// A follow-up ordinary Goal turn reuses the same delivery scope without ResumeGoal.
 	err = newTurnOrchestrator(c).runGoalLoopWithRawDisplay(context.Background(), "continue", "continue", "")
 	if !errors.As(err, &pause) {
 		t.Fatalf("follow-up err = %v, want RecoveryPauseError again", err)
@@ -631,7 +626,7 @@ func TestTurnOrchestratorAutoReasoningLanguageUsesRawPromptForRefTurns(t *testin
 		}),
 	})
 
-	const visible = "解释 @auth.go 的报错"
+	const visible = "AuthHandler 說明 整理 檢討 @auth.go"
 	c.runRefTurn(visible, visible)
 	waitForTurnDone(t, events)
 
@@ -639,14 +634,14 @@ func TestTurnOrchestratorAutoReasoningLanguageUsesRawPromptForRefTurns(t *testin
 		t.Fatalf("runner inputs = %d, want 1", len(runner.inputs))
 	}
 	got := runner.inputs[0]
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") {
-		t.Fatalf("auto reasoning language should anchor Chinese before referenced context, got %q", got)
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") {
+		t.Fatalf("auto reasoning language should anchor Korean before referenced context, got %q", got)
 	}
 	if !strings.Contains(got, "Referenced context:") || !strings.Contains(got, "AuthHandler") {
 		t.Fatalf("ref context missing from model input: %q", got)
 	}
 	if strings.Contains(got, "use English") {
-		t.Fatalf("English referenced file content should not win over raw Chinese prompt:\n%s", got)
+		t.Fatalf("English referenced file content should not win over raw Korean prompt:\n%s", got)
 	}
 }
 
@@ -697,12 +692,9 @@ func TestTurnOrchestratorCheckpointBoundaryPrecedesUserMessage(t *testing.T) {
 	}
 }
 
-// TestTurnOrchestratorCheckpointPromptIsRawUserInput verifies the rewind picker
-// label records the user's own text, not the composed provider input. compose()
-// prefixes the turn with transient blocks (<response-language>,
-// <reasoning-language>, plan marker, memory, hook context, …); storing that
-// string as checkpoint.Prompt made the Esc-Esc picker show a wall of prefab
-// prompt text instead of the user's messages.
+// label records the users own text, not the composed provider input. compose()
+// <reasoning-language>, plan marker, memory, hook context, ); storing that
+// prompt text instead of the users messages.
 func TestTurnOrchestratorCheckpointPromptIsRawUserInput(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "session.jsonl")
@@ -715,7 +707,7 @@ func TestTurnOrchestratorCheckpointPromptIsRawUserInput(t *testing.T) {
 		SessionDir:        dir,
 		SessionPath:       path,
 		Label:             "test",
-		ResponseLanguage:  "zh",
+		ResponseLanguage:  "ko-KR",
 		ReasoningLanguage: "en",
 	})
 	o := newTurnOrchestrator(c)
@@ -805,20 +797,12 @@ func TestTurnOrchestratorStopFailureHookCancelledContext(t *testing.T) {
 	}
 }
 
-// TestTurnOrchestratorCancelPreservesVisibleUserPrompt verifies that when the
-// user explicitly cancels a visible turn (Ctrl+C), the real user prompt and
-// fully paired tool work remain in the session while unsafe fragments become
-// provider-excluded display history.
 func TestTurnOrchestratorCancelPreservesVisibleUserPrompt(t *testing.T) {
 	sess := agent.NewSession("you are a helpful agent")
-	// Pre-populate with a few messages from an earlier turn.
 	sess.Add(provider.Message{Role: provider.RoleUser, Content: "previous work"})
 	sess.Add(provider.Message{Role: provider.RoleAssistant, Content: "done"})
 	preCount := len(sess.Messages)
 
-	// runner that simulates a cancelled turn: it adds the user message plus
-	// some tool-call garbage the real agent would leave behind, then returns
-	// context.Canceled.
 	runner := &cancelStrippingRunner{
 		session: sess,
 		add: []provider.Message{
@@ -833,14 +817,11 @@ func TestTurnOrchestratorCancelPreservesVisibleUserPrompt(t *testing.T) {
 	ex := agent.New(nil, nil, sess, agent.Options{}, event.Discard)
 	c := New(Options{Runner: runner, Executor: ex})
 	c.SetPlanMode(true)
-	// Simulate a user-initiated cancel: set the cancelling flag.
 	c.mu.Lock()
 	c.canceling = true
 	c.mu.Unlock()
 
-	// Pre-seed todoState as if a successful todo_write from the cancelled turn
-	// had already updated it — this is the state the runner leaves behind before
-	// returning context.Canceled, and what RebuildTodoState must clear.
+// had already updated it  this is the state the runner leaves behind before
 	ex.ReplaceTodoState([]evidence.TodoItem{{Content: "add abc", Status: "in_progress"}})
 
 	o := newTurnOrchestrator(c)
@@ -849,8 +830,6 @@ func TestTurnOrchestratorCancelPreservesVisibleUserPrompt(t *testing.T) {
 		t.Fatalf("expected context.Canceled, got %v", err)
 	}
 
-	// The visible user prompt and completed tool pair stay, followed by a durable
-	// provider-excluded recovery record.
 	msgs := sess.Messages
 	if len(msgs) != preCount+4 {
 		t.Fatalf("session messages after cancel = %d, want user + tool pair + recovery %d: %+v", len(msgs), preCount+4, msgs)
@@ -867,8 +846,6 @@ func TestTurnOrchestratorCancelPreservesVisibleUserPrompt(t *testing.T) {
 		t.Fatalf("pending recovery metadata missing: %+v", last)
 	}
 
-	// The completed todo_write result is canonical, so its state remains visible
-	// and the next model turn can inspect rather than blindly repeat it.
 	if todos := c.Todos(); len(todos) != 1 || todos[0].Status != "in_progress" {
 		t.Fatalf("Todos() after cancel = %v, want retained completed todo_write state", todos)
 	}
@@ -1024,16 +1001,11 @@ func TestTurnOrchestratorCancelBeforeRunnerAddsUserPreservesVisiblePrompt(t *tes
 	}
 }
 
-// TestTurnOrchestratorCancelFlushesCleanTranscriptToDisk verifies that after a
-// user-cancel strip the cleaned transcript is written to disk, so a restart or
-// session resume does not reload the partial turn from a stale mid-turn
-// autosave.  See #5286.
+// autosave.  See 5286.
 func TestTurnOrchestratorCancelFlushesCleanTranscriptToDisk(t *testing.T) {
 	sess := agent.NewSession("system")
 	sess.Add(provider.Message{Role: provider.RoleUser, Content: "earlier turn"})
 	sess.Add(provider.Message{Role: provider.RoleAssistant, Content: "done"})
-	// Count only non-system messages; the system prompt is not written to the
-	// .jsonl by Session.Save (it is reconstructed from the session options).
 	wantNonSystem := 0
 	for _, m := range sess.Messages {
 		if m.Role != provider.RoleSystem {
@@ -1069,8 +1041,6 @@ func TestTurnOrchestratorCancelFlushesCleanTranscriptToDisk(t *testing.T) {
 		t.Fatalf("expected context.Canceled, got %v", err)
 	}
 
-	// Load the session file written after cleanup and verify the complete pair and
-	// provider-excluded recovery marker survive restart.
 	loaded, err := agent.LoadSession(sessionPath)
 	if err != nil {
 		t.Fatalf("LoadSession: %v", err)
@@ -1185,8 +1155,6 @@ func TestResumeClearsStaleSyntheticInFlightTurn(t *testing.T) {
 	}
 }
 
-// cancelStrippingRunner adds messages to a session then returns a fixed error,
-// simulating an agent that was interrupted mid-turn.
 type cancelStrippingRunner struct {
 	session *agent.Session
 	add     []provider.Message

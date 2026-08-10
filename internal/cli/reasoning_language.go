@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 func (m *chatTUI) runReasoningLanguageCommand(input string) {
@@ -15,11 +15,11 @@ func (m *chatTUI) runReasoningLanguageCommand(input string) {
 			m.notice("reasoning-language: " + err.Error())
 			return
 		}
-		m.notice(fmt.Sprintf("reasoning-language: %s (usage: /reasoning-language auto|zh|en)", cliReasoningLanguageMode(cfg.ReasoningLanguage())))
+		m.notice(fmt.Sprintf("reasoning-language: %s (usage: /reasoning-language auto|ko-KR|en)", cliReasoningLanguageMode(cfg.ReasoningLanguage())))
 		return
 	}
 	if len(args) > 2 {
-		m.notice("usage: /reasoning-language auto|zh|en")
+		m.notice("usage: /reasoning-language auto|ko-KR|en")
 		return
 	}
 	if m.ctrl != nil && m.ctrl.Running() {
@@ -64,19 +64,19 @@ func parseCLIReasoningLanguage(mode string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
 	case "auto":
 		return "auto", nil
-	case "zh":
-		return "zh", nil
+	case "ko-kr", "ko":
+		return "ko-KR", nil
 	case "en":
 		return "en", nil
 	default:
-		return "", fmt.Errorf("reasoning_language %q: must be auto|zh|en", mode)
+		return "", fmt.Errorf("reasoning_language %q: must be auto|ko-KR|en", mode)
 	}
 }
 
 func cliReasoningLanguageMode(mode string) string {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case "zh":
-		return "zh"
+	case "ko-kr", "ko":
+		return "ko-KR"
 	case "en":
 		return "en"
 	default:

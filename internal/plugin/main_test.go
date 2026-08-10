@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"reasonix/internal/testenv"
+	"patty/internal/testenv"
 
 	"go.uber.org/goleak"
 )

@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/provider"
-	"reasonix/internal/store"
+	"patty/internal/agent"
+	"patty/internal/provider"
+	"patty/internal/store"
 )
 
 func TestRemoveSessionFilesSweepsEventLogAndSidecars(t *testing.T) {

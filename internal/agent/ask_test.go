@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
 type recordingAsker struct {

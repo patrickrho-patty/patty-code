@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"reasonix/internal/shellparse"
+	"patty/internal/shellparse"
 )
 
 // pastedPathCandidates returns literal filesystem paths without executing a

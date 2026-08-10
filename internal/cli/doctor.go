@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"reasonix/internal/doctor"
-	"reasonix/internal/repair"
+	"patty/internal/doctor"
+	"patty/internal/repair"
 )
 
 func doctorCommand(args []string, version string) int {
@@ -54,13 +54,13 @@ func doctorRepairCommand(args []string) int {
 	fs := flag.NewFlagSet("doctor repair", flag.ContinueOnError)
 	root := fs.String("root", ".", "project root to inspect")
 	apply := fs.Bool("apply", false, "quarantine invalid config and restore the last-known-good global snapshot")
-	includeProject := fs.Bool("project", false, "allow --apply to quarantine an invalid project reasonix.toml")
+	includeProject := fs.Bool("project", false, "allow --apply to quarantine an invalid project patty.toml")
 	jsonOut := fs.Bool("json", false, "print result as JSON")
 	if code, ok := parseCommandFlags(fs, args); !ok {
 		return code
 	}
 	if fs.NArg() != 0 {
-		fmt.Fprintln(os.Stderr, "usage: reasonix doctor repair [--root PATH] [--apply] [--project] [--json]")
+		fmt.Fprintln(os.Stderr, "usage: patcode doctor repair [--root PATH] [--apply] [--project] [--json]")
 		return 2
 	}
 	report, err := repair.InspectAndRepairConfig(repair.ConfigOptions{
@@ -80,7 +80,7 @@ func doctorRepairCommand(args []string) int {
 			return 1
 		}
 	} else {
-		fmt.Println("Reasonix repair report")
+		fmt.Println("Patty Code repair report")
 		for _, check := range report.Checks {
 			status := "ok"
 			if !check.Exists {
@@ -111,21 +111,21 @@ func doctorQualityCommand(args []string, version string) int {
 	for _, arg := range args {
 		switch arg {
 		case "-h", "--help":
-			fmt.Fprintln(os.Stdout, "usage: reasonix doctor quality <branch-id-or-path> [--json]")
+			fmt.Fprintln(os.Stdout, "usage: patcode doctor quality <branch-id-or-path> [--json]")
 			fmt.Fprintln(os.Stdout, "Prints a public-safe, content-free coding-quality summary for one session.")
 			return 0
 		case "--json":
 			jsonOut = true
 		default:
 			if strings.HasPrefix(arg, "-") || ref != "" {
-				fmt.Fprintln(os.Stderr, "usage: reasonix doctor quality <branch-id-or-path> [--json]")
+				fmt.Fprintln(os.Stderr, "usage: patcode doctor quality <branch-id-or-path> [--json]")
 				return 2
 			}
 			ref = arg
 		}
 	}
 	if ref == "" {
-		fmt.Fprintln(os.Stderr, "usage: reasonix doctor quality <branch-id-or-path> [--json]")
+		fmt.Fprintln(os.Stderr, "usage: patcode doctor quality <branch-id-or-path> [--json]")
 		return 2
 	}
 	report, err := doctor.CollectQuality(doctor.QualityOptions{Version: version, SessionRef: ref})
@@ -174,7 +174,7 @@ func doctorRedactSessionsCommand(args []string) int {
 		return code
 	}
 	if fs.NArg() != 0 {
-		fmt.Fprintln(os.Stderr, "usage: reasonix doctor redact-sessions [--dry-run] [--json] [--dir PATH]")
+		fmt.Fprintln(os.Stderr, "usage: patcode doctor redact-sessions [--dry-run] [--json] [--dir PATH]")
 		return 2
 	}
 	res := doctor.RedactSessions(doctor.RedactSessionsOptions{
@@ -215,10 +215,10 @@ func doctorSessionCommand(args []string, version string) int {
 		arg := args[i]
 		switch arg {
 		case "-h", "--help":
-			fmt.Fprintln(os.Stdout, "usage: reasonix doctor session <branch-id-or-path> [--zip] [--out PATH]")
+			fmt.Fprintln(os.Stdout, "usage: patcode doctor session <branch-id-or-path> [--zip] [--out PATH]")
 			fmt.Fprintln(os.Stdout, "")
 			fmt.Fprintln(os.Stdout, "Bundles the session transcript, persistence sidecars, conflict diagnostics,")
-			fmt.Fprintln(os.Stdout, "and the recovery parent chain into a zip for support. Unlike `reasonix doctor`,")
+			fmt.Fprintln(os.Stdout, "and the recovery parent chain into a zip for support. Unlike `patcode doctor`,")
 			fmt.Fprintln(os.Stdout, "bundled transcripts are NOT redacted; share only with a trusted support channel.")
 			return 0
 		case "--zip":
@@ -246,14 +246,14 @@ func doctorSessionCommand(args []string, version string) int {
 				return 2
 			}
 			if ref != "" {
-				fmt.Fprintln(os.Stderr, "usage: reasonix doctor session <branch-id-or-path> [--zip] [--out PATH]")
+				fmt.Fprintln(os.Stderr, "usage: patcode doctor session <branch-id-or-path> [--zip] [--out PATH]")
 				return 2
 			}
 			ref = arg
 		}
 	}
 	if ref == "" {
-		fmt.Fprintln(os.Stderr, "usage: reasonix doctor session <branch-id-or-path> [--zip] [--out PATH]")
+		fmt.Fprintln(os.Stderr, "usage: patcode doctor session <branch-id-or-path> [--zip] [--out PATH]")
 		return 2
 	}
 	result, err := doctor.WriteSessionBundle(doctor.SessionBundleOptions{

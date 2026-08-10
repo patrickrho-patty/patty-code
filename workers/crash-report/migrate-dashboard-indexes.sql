@@ -1,5 +1,5 @@
 -- Indexes for the dashboard's filter/aggregation queries. Apply:
---   wrangler d1 execute reasonix-crash --remote --file=migrate-dashboard-indexes.sql
+--   wrangler d1 execute patty-crash --remote --file=migrate-dashboard-indexes.sql
 -- groups has no index but crashGroups filters/sorts by these columns every load.
 -- The date-partitioned tables are deliberately left alone — see
 -- migrate-window-index-fix.sql for why a GROUP BY index loses to their PK.

@@ -3,8 +3,8 @@ package acp
 import (
 	"strings"
 
-	"reasonix/internal/extension/providerext"
-	"reasonix/internal/provider"
+	"patty/internal/extension/providerext"
+	"patty/internal/provider"
 )
 
 // enrichStateWithExtensionModels folds a live controller's merged provider

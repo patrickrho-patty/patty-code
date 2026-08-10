@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"reasonix/internal/tool"
-	"reasonix/internal/tool/builtin"
+	"patty/internal/tool"
+	"patty/internal/tool/builtin"
 )
 
 // pathBoundWriter wraps a built-in write tool so each Execute stays inside a

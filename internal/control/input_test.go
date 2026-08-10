@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
+	"patty/internal/agent"
 
-	"reasonix/internal/command"
-	"reasonix/internal/event"
-	"reasonix/internal/hook"
-	"reasonix/internal/memory"
-	"reasonix/internal/provider"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/command"
+	"patty/internal/event"
+	"patty/internal/hook"
+	"patty/internal/memory"
+	"patty/internal/provider"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 type fakeTurnRunner struct {
@@ -66,7 +66,7 @@ func TestSkillsReflectStoreChangesAfterControllerBuild(t *testing.T) {
 	if _, ok := c.RunSkill("/hot now"); ok {
 		t.Fatal("skill should not exist before it is written")
 	}
-	writeControlSkill(t, project, ".reasonix/skills/hot/SKILL.md", "---\nname: hot\ndescription: Hot install\n---\nHot body")
+	writeControlSkill(t, project, ".patty/skills/hot/SKILL.md", "---\nname: hot\ndescription: Hot install\n---\nHot body")
 
 	if skills := c.Skills(); len(skills) != 1 || skills[0].Name != "hot" {
 		t.Fatalf("Skills() = %+v, want newly installed hot skill", skills)
@@ -163,8 +163,6 @@ func TestSubmitSlashSubagentRunsIsolatedAndPersistsDistilledAnswer(t *testing.T)
 		t.Fatalf("slash subagent events missing: start=%v parent=%v nested=%v text=%v events=%+v", sawStart, sawParent, sawNested, sawText, gotEvents)
 	}
 
-	// The isolated turn must release the ordinary foreground admission gate so
-	// the same session can keep chatting immediately afterwards.
 	waitIdle(t, c)
 	c.SubmitUserTurn("next turn", "next turn")
 	waitForTurnEvents(t, events)
@@ -196,7 +194,7 @@ func TestSubmitInvocationDisplayExecutesStructuredEntitiesInVisualOrder(t *testi
 	})
 	defer c.Close()
 
-	input := "历史会话：prior\n\n当前用户问题：\ninspect auth"
+	input := "이전 세션: prior\n\n현재 사용자 질문:\ninspect auth"
 	c.SubmitInvocationDisplay("inspect auth", input, []InvocationRequest{
 		{Name: "second", Kind: "subagent", Offset: 20},
 		{Name: "format", Kind: "skill", Offset: 0},
@@ -208,7 +206,7 @@ func TestSubmitInvocationDisplayExecutesStructuredEntitiesInVisualOrder(t *testi
 	if strings.Join(names, ",") != "first,second" {
 		t.Fatalf("subagent execution order = %v, want visual order first,second", names)
 	}
-	if len(tasks) != 2 || !strings.Contains(tasks[0], "FORMAT_RULE") || !strings.Contains(tasks[0], "历史会话：prior") || tasks[0] != tasks[1] {
+	if len(tasks) != 2 || !strings.Contains(tasks[0], "FORMAT_RULE") || !strings.Contains(tasks[0], "이전 세션: prior") || tasks[0] != tasks[1] {
 		t.Fatalf("structured tasks = %#v", tasks)
 	}
 	if len(mainRunner.inputs) != 0 {
@@ -614,19 +612,19 @@ func TestComposeReasoningLanguagePreference(t *testing.T) {
 		t.Fatalf("auto reasoning language should not alter the turn, got %q", got)
 	}
 
-	zh := New(Options{ReasoningLanguage: "zh"})
+	zh := New(Options{ReasoningLanguage: "ko-KR"})
 	got := zh.Compose("hi")
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") || !strings.HasSuffix(got, "hi") {
-		t.Fatalf("zh reasoning language should ride the user turn, got %q", got)
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") || !strings.HasSuffix(got, "hi") {
+		t.Fatalf("ko-KR reasoning language should ride the user turn, got %q", got)
 	}
 	if stripped := StripComposePrefixes(got); stripped != "hi" {
 		t.Fatalf("StripComposePrefixes = %q, want hi", stripped)
 	}
 
 	autoZh := New(Options{ReasoningLanguage: "auto"})
-	got = autoZh.Compose("解释 AuthHandler 的 panic")
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") || !strings.HasSuffix(got, "解释 AuthHandler 的 panic") {
-		t.Fatalf("auto reasoning language should infer Chinese from the user prompt, got %q", got)
+	got = autoZh.Compose("AuthHandler 說明 整理 檢討")
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") || !strings.HasSuffix(got, "AuthHandler 說明 整理 檢討") {
+		t.Fatalf("auto reasoning language should infer Korean from a Hanja user prompt, got %q", got)
 	}
 }
 
@@ -648,7 +646,7 @@ func TestRunComposesResponseLanguagePreference(t *testing.T) {
 
 func TestRunComposesReasoningLanguagePreference(t *testing.T) {
 	runner := &fakeTurnRunner{}
-	c := New(Options{ReasoningLanguage: "zh", Runner: runner})
+	c := New(Options{ReasoningLanguage: "ko-KR", Runner: runner})
 
 	if err := c.Run(context.Background(), "hi"); err != nil {
 		t.Fatal(err)
@@ -657,7 +655,7 @@ func TestRunComposesReasoningLanguagePreference(t *testing.T) {
 		t.Fatalf("runner inputs = %d, want 1", len(runner.inputs))
 	}
 	got := runner.inputs[0]
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") || !strings.HasSuffix(got, "hi") {
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") || !strings.HasSuffix(got, "hi") {
 		t.Fatalf("headless Run should compose the reasoning language preference, got %q", got)
 	}
 }
@@ -779,8 +777,8 @@ func TestSetReasoningLanguageUpdatesRunner(t *testing.T) {
 	runner := &fakeLanguageRunner{}
 	c := New(Options{Runner: runner})
 
-	c.SetReasoningLanguage("zh")
-	if runner.lang != "zh" {
+	c.SetReasoningLanguage("ko-KR")
+	if runner.lang != "ko-KR" {
 		t.Fatalf("runner reasoning language = %q, want zh", runner.lang)
 	}
 
@@ -803,10 +801,10 @@ func TestComposeSyntheticResponseLanguagePreference(t *testing.T) {
 }
 
 func TestComposeSyntheticReasoningLanguagePreference(t *testing.T) {
-	c := New(Options{ReasoningLanguage: "zh"})
+	c := New(Options{ReasoningLanguage: "ko-KR"})
 
 	got := c.ComposeSynthetic(planApprovedMessage)
-	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "简体中文") || !strings.HasSuffix(got, planApprovedMessage) {
+	if !strings.HasPrefix(got, "<reasoning-language>") || !strings.Contains(got, "한국어로 작성해야 합니다") || !strings.HasSuffix(got, planApprovedMessage) {
 		t.Fatalf("ComposeSynthetic should prefix reasoning language, got %q", got)
 	}
 	if !IsSyntheticUserMessage(got) {
@@ -841,7 +839,7 @@ func TestGoalAutoResearchTriggersForLongHorizonGoals(t *testing.T) {
 		root = resolved
 	}
 	c := New(Options{WorkspaceRoot: root})
-	c.SetGoal("持续排查这个线上卡顿直到根因明确，并验证修复")
+	c.SetGoal("지속적으로 이 온라인 끊김 현상을 근본 원인이 명확해질 때까지 조사하고, 수정을 검증해 줘")
 
 	got := c.Compose("next step?")
 	for _, want := range []string{
@@ -865,7 +863,7 @@ func TestGoalAutoResearchCanBeForcedOrDisabled(t *testing.T) {
 		t.Fatalf("forced research goal should include AutoResearch protocol:\n%s", got)
 	}
 
-	c.SetGoalWithResearchMode("持续排查这个线上卡顿直到根因明确", GoalResearchOff)
+	c.SetGoalWithResearchMode("지속적으로 이 온라인 끊김 현상을 근본 원인이 명확해질 때까지 조사", GoalResearchOff)
 	if got := c.Compose("start"); strings.Contains(got, "AutoResearch protocol") {
 		t.Fatalf("simple override should suppress AutoResearch protocol:\n%s", got)
 	}
@@ -881,7 +879,7 @@ func TestGoalCommandPreservesResearchModeFlags(t *testing.T) {
 	}
 
 	c = New(Options{})
-	if !c.applyGoalCommand("/goal --simple 持续排查这个线上卡顿直到根因明确", "") {
+	if !c.applyGoalCommand("/goal --simple 지속적으로 이 온라인 끊김 현상을 근본 원인이 명확해질 때까지 조사", "") {
 		t.Fatal("goal command was not parsed")
 	}
 	if got := c.Compose("start"); strings.Contains(got, "AutoResearch protocol") {
@@ -895,8 +893,8 @@ func TestParseGoalCommandResearchFlags(t *testing.T) {
 		t.Fatalf("ParseGoalCommand --research = %+v ok=%v", cmd, ok)
 	}
 
-	cmd, ok = ParseGoalCommand("/goal --simple 持续排查直到根因明确")
-	if !ok || cmd.Action != GoalCommandSet || cmd.Text != "持续排查直到根因明确" || cmd.ResearchMode != GoalResearchOff {
+	cmd, ok = ParseGoalCommand("/goal --simple 지속적으로 근본 원인이 명확해질 때까지 조사")
+	if !ok || cmd.Action != GoalCommandSet || cmd.Text != "지속적으로 근본 원인이 명확해질 때까지 조사" || cmd.ResearchMode != GoalResearchOff {
 		t.Fatalf("ParseGoalCommand --simple = %+v ok=%v", cmd, ok)
 	}
 }
@@ -1013,9 +1011,8 @@ func TestMemoryQuickAddNoteRequiresWhitespace(t *testing.T) {
 		{in: "#issue needs work", ok: false},
 		{in: "# Heading", note: "Heading", ok: true},
 		{in: "#", ok: false},
-		// Multi-line input is NOT a quick-add — it's a Markdown heading (# Context)
-		// followed by structured content. Desktop users pasting COSTAR-style prompts
-		// hit this when the first line starts with "# ".
+// Multi-line input is NOT a quick-add — it's a Markdown heading (# Context)
+// hit this when the first line starts with "# ".
 		{in: "# Context\n\n- file.go\n", ok: false},
 		{in: "# Heading\nmore text", ok: false},
 		{in: "  # Context\n  - file.go  ", ok: false},
@@ -1132,7 +1129,7 @@ func TestSubmitBlockCommentPrefixStartsTurn(t *testing.T) {
 		}),
 	})
 
-	input := "/**\n * 阿明\n */"
+	input := "/**\n * 아밍\n */"
 	c.Submit(input)
 	waitForTurnDone(t, events)
 
@@ -1153,8 +1150,7 @@ func TestSubmitUnknownSlashCommandStillReportsNotice(t *testing.T) {
 
 	c.Submit("/definitely-not-a-command")
 
-	// Unknown slash input is sent as a regular message (#5756); the notice
-	// still fires so genuine typos stay visible.
+// Unknown slash input is sent as a regular message (5756); the notice
 	var noticeText string
 	deadline := time.After(30 * time.Second)
 	for noticeText == "" {
@@ -1199,12 +1195,12 @@ func TestSubmitDocsShowsLocalOverviewAndGroundsModelTurn(t *testing.T) {
 		t.Fatalf("bare /docs should not start a model turn, inputs=%q", runner.inputs)
 	}
 
-	c.Submit("/docs 1.19.5 更新日志")
+	c.Submit("/docs 1.19.5 업데이트 로그")
 	waitForTurnDone(t, events)
 	if len(runner.inputs) != 1 {
 		t.Fatalf("/docs query model turns = %d, inputs=%q", len(runner.inputs), runner.inputs)
 	}
-	for _, want := range []string{"1.19.5 更新日志", "changelog/v1.19.5.zh-CN.md", "embedded_docs_search_results"} {
+	for _, want := range []string{"1.19.5 업데이트 로그", "changelog/v1.19.5.ko-KR.md", "embedded_docs_search_results"} {
 		if !strings.Contains(runner.inputs[0], want) {
 			t.Fatalf("grounded /docs prompt missing %q:\n%s", want, runner.inputs[0])
 		}
@@ -1232,21 +1228,21 @@ func TestSubmitDocsPreservesExistingCustomCommand(t *testing.T) {
 	}
 }
 
-func TestSubmitQualifiedReasonixDocsPreservesExistingCommandAndUsesNextFallback(t *testing.T) {
+func TestSubmitQualifiedPattyCodeDocsPreservesExistingCommandAndUsesNextFallback(t *testing.T) {
 	runner := &fakeTurnRunner{}
 	events := make(chan event.Event, 8)
 	c := New(Options{
 		Runner: runner,
 		Commands: []command.Command{
 			{Name: "docs", Body: "legacy docs workflow: $ARGUMENTS"},
-			{Name: ReasonixDocsSlashName, Body: "must not shadow built-in docs: $ARGUMENTS"},
+			{Name: PattyCodeDocsSlashName, Body: "must not shadow built-in docs: $ARGUMENTS"},
 		},
 		Sink: event.FuncSink(func(e event.Event) {
 			events <- e
 		}),
 	})
 
-	c.Submit("/reasonix:docs existing workflow")
+	c.Submit("/patty:docs existing workflow")
 	waitForTurnDone(t, events)
 	if len(runner.inputs) != 1 {
 		t.Fatalf("qualified custom command model turns = %d, inputs=%q", len(runner.inputs), runner.inputs)
@@ -1256,7 +1252,7 @@ func TestSubmitQualifiedReasonixDocsPreservesExistingCommandAndUsesNextFallback(
 	}
 	waitIdle(t, c)
 
-	c.Submit("/reasonix:builtin:docs 1.19.5 update notes")
+	c.Submit("/patty:builtin:docs 1.19.5 update notes")
 	waitForTurnDone(t, events)
 	if len(runner.inputs) != 2 {
 		t.Fatalf("generated docs fallback model turns = %d, inputs=%q", len(runner.inputs), runner.inputs)
@@ -1284,8 +1280,7 @@ func TestSubmitUserTurnBypassesCommandDispatch(t *testing.T) {
 	for _, input := range []string{"!echo should stay a prompt", "/clear"} {
 		c.SubmitUserTurn(input, input)
 		waitForTurnDone(t, events)
-		// The next SubmitUserTurn must wait out the finishing window or it is
-		// silently dropped by runGuarded — see waitIdle.
+// silently dropped by runGuarded  see waitIdle.
 		waitIdle(t, c)
 	}
 
@@ -1319,15 +1314,10 @@ func TestSubmitRememberCommandQuickAddsMemory(t *testing.T) {
 	}
 }
 
-// waitIdle blocks until the controller's turn-admission gate reopens.
-// TurnDone is emitted INSIDE the finishing window (finishGuardedTurn sets
-// running=false, finishing=true, emits, then clears finishing), and runGuarded
+// waitIdle blocks until the controllers turn-admission gate reopens.
 // silently no-ops while finishing is set — so "received TurnDone" does NOT
 // mean "may submit the next turn". A submit raced into that window is
-// dropped, and the next turn's TurnDone never arrives; under parallel test
-// load the window is wide enough to hit (observed in CI and on a clean
-// main-v2 worktree). Poll the same running||finishing gate the controller
-// admission checks.
+// dropped, and the next turns TurnDone never arrives; under parallel test
 func waitIdle(t *testing.T, c *Controller) {
 	t.Helper()
 	deadline := time.Now().Add(30 * time.Second)
@@ -1494,7 +1484,7 @@ func TestIsSyntheticUserMessage(t *testing.T) {
 		},
 		{
 			name:  "plan approved message with reasoning language",
-			input: reasoningLanguageBlock("zh") + "\n\n" + planApprovedMessage,
+			input: reasoningLanguageBlock("ko-KR") + "\n\n" + planApprovedMessage,
 			want:  true,
 		},
 		{

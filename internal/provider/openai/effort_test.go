@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func newClient(t *testing.T, baseURL, effort string) *client {

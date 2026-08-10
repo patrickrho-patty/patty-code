@@ -2,7 +2,7 @@ const DOWNLOAD_PANES = new Set(["npm", "brew", "desktop", "cli", "vscode"]);
 
 // Return the requested install pane only for the homepage download section.
 // Plain #start links keep the rendered default pane; query links opt into one.
-export function downloadPaneFromURL(input, base = "https://reasonix.io/") {
+export function downloadPaneFromURL(input, base = "https://patty-code.io/") {
   let url;
   try {
     url = new URL(input, base);
@@ -14,7 +14,7 @@ export function downloadPaneFromURL(input, base = "https://reasonix.io/") {
   return DOWNLOAD_PANES.has(pane) ? pane : "";
 }
 
-export function releaseChannelFromURL(input, base = "https://reasonix.io/") {
+export function releaseChannelFromURL(input, base = "https://patty-code.io/") {
   let url;
   try {
     url = new URL(input, base);
@@ -27,7 +27,7 @@ export function releaseChannelFromURL(input, base = "https://reasonix.io/") {
   return "";
 }
 
-export function downloadURLForPane(input, pane, channel, base = "https://reasonix.io/") {
+export function downloadURLForPane(input, pane, channel, base = "https://patty-code.io/") {
   if (!DOWNLOAD_PANES.has(pane)) return "";
   let url;
   try {

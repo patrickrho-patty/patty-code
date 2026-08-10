@@ -3,8 +3,8 @@ package control
 import (
 	"testing"
 
-	"reasonix/internal/command"
-	"reasonix/internal/skill"
+	"patty/internal/command"
+	"patty/internal/skill"
 )
 
 func TestResolvedBuiltinDocsSlashNameMatchesRuntimeOwner(t *testing.T) {
@@ -20,25 +20,25 @@ func TestResolvedBuiltinDocsSlashNameMatchesRuntimeOwner(t *testing.T) {
 			name:     "visible custom command",
 			commands: []command.Command{{Name: DocsSlashName}},
 			owner:    SlashOwnerCustom,
-			builtin:  ReasonixDocsSlashName,
+			builtin:  PattyCodeDocsSlashName,
 		},
 		{
 			name:     "hidden plugin command alias",
 			commands: []command.Command{{Name: DocsSlashName, Plugin: "manuals", Hidden: true}},
 			owner:    SlashOwnerCustom,
-			builtin:  ReasonixDocsSlashName,
+			builtin:  PattyCodeDocsSlashName,
 		},
 		{
 			name:    "visible project skill",
 			skills:  []skill.Skill{{Name: DocsSlashName}},
 			owner:   SlashOwnerSkill,
-			builtin: ReasonixDocsSlashName,
+			builtin: PattyCodeDocsSlashName,
 		},
 		{
 			name:    "compatible plugin skill alias",
 			skills:  []skill.Skill{{Name: DocsSlashName, Plugin: "manuals"}},
 			owner:   SlashOwnerSkill,
-			builtin: ReasonixDocsSlashName,
+			builtin: PattyCodeDocsSlashName,
 		},
 		{
 			name: "ambiguous plugin skill aliases",
@@ -62,8 +62,8 @@ func TestResolvedBuiltinDocsSlashNameMatchesRuntimeOwner(t *testing.T) {
 			if got := IsBuiltinDocsSlash(DocsSlashName, tt.commands, tt.skills); got != (tt.owner == SlashOwnerBuiltin) {
 				t.Fatalf("short built-in = %v, owner=%v", got, tt.owner)
 			}
-			if !IsBuiltinDocsSlash(ReasonixDocsSlashName, tt.commands, tt.skills) {
-				t.Fatal("preferred qualified Reasonix docs name should resolve to the built-in when unoccupied")
+			if !IsBuiltinDocsSlash(PattyCodeDocsSlashName, tt.commands, tt.skills) {
+				t.Fatal("preferred qualified Patty Code docs name should resolve to the built-in when unoccupied")
 			}
 		})
 	}
@@ -72,14 +72,14 @@ func TestResolvedBuiltinDocsSlashNameMatchesRuntimeOwner(t *testing.T) {
 func TestQualifiedBuiltinDocsSlashPreservesExistingQualifiedCommands(t *testing.T) {
 	commands := []command.Command{
 		{Name: DocsSlashName},
-		{Name: ReasonixDocsSlashName},
-		{Name: "reasonix:builtin:docs"},
+		{Name: PattyCodeDocsSlashName},
+		{Name: "patty:builtin:docs"},
 	}
-	want := "reasonix:builtin:docs:2"
+	want := "patty:builtin:docs:2"
 	if got := ResolvedBuiltinSlashName(DocsSlashName, commands, nil); got != want {
 		t.Fatalf("resolved built-in name = %q, want %q", got, want)
 	}
-	for _, existing := range []string{DocsSlashName, ReasonixDocsSlashName, "reasonix:builtin:docs"} {
+	for _, existing := range []string{DocsSlashName, PattyCodeDocsSlashName, "patty:builtin:docs"} {
 		if IsBuiltinDocsSlash(existing, commands, nil) {
 			t.Fatalf("existing command %q was displaced by the built-in", existing)
 		}

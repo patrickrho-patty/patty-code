@@ -2,7 +2,7 @@
 // full URL parsing against the real page origin, so control characters and
 // protocol-relative tricks get the same normalization a browser applies
 // before navigating — to a same-origin path, or to an absolute https URL
-// under reasonix.io. That lets a subdomain (e.g. crash.reasonix.io) return
+// under patty.io. That lets a subdomain (e.g. crash.patty.io) return
 // here after sign-in without opening a redirect to an arbitrary host.
 //
 // Validating a raw string prefix (e.g. checking it starts with "/") is not
@@ -19,7 +19,7 @@
 // same-origin URL whose *pathname* is "//evil.example", and handing that
 // bare pathname back to `location.href` re-parses it as a protocol-relative
 // URL to evil.example. `u.href` keeps the origin attached, so assigning it
-// can never leave reasonix.io.
+// can never leave patty.io.
 export function safeNext(next, origin) {
   if (!next) return null;
   let u;
@@ -29,6 +29,6 @@ export function safeNext(next, origin) {
     return null;
   }
   if (u.origin === origin) return u.href;
-  if (u.protocol === "https:" && (u.host === "reasonix.io" || u.host.endsWith(".reasonix.io"))) return u.href;
+  if (u.protocol === "https:" && (u.host === "patty.io" || u.host.endsWith(".patty.io"))) return u.href;
   return null;
 }

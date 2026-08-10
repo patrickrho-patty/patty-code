@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"reasonix/internal/extension"
+	"patty/internal/extension"
 )
 
 // RuntimeDoctorReport is the structured runtime diagnostics document for
-// `reasonix doctor runtime` and desktop status panels.
+// `patcode doctor runtime` and desktop status panels.
 type RuntimeDoctorReport struct {
 	Status                *extension.RuntimeStatus           `json:"status,omitempty"`
 	Metrics               extension.LifecycleMetricsSnapshot `json:"metrics"`

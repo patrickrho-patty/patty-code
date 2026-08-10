@@ -9,16 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/capability"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/provider"
-	"reasonix/internal/taskintent"
-	"reasonix/internal/tool"
+	"patty/internal/capability"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/provider"
+	"patty/internal/taskintent"
+	"patty/internal/tool"
 )
 
-// fakeReadFileTool is a minimal read-only tool whose successful calls produce
-// Read receipts with an extractable path, like the real read_file.
 type fakeReadFileTool struct{}
 
 func (fakeReadFileTool) Name() string            { return "read_file" }
@@ -29,8 +27,6 @@ func (fakeReadFileTool) Execute(context.Context, json.RawMessage) (string, error
 	return "contents", nil
 }
 
-// fakeWriterTool is registered (never called) so a registry counts as
-// writer-capable for delivery mutation expectations.
 type fakeWriterTool struct{}
 
 func (fakeWriterTool) Name() string            { return "fake_write" }
@@ -41,7 +37,6 @@ func (fakeWriterTool) Execute(context.Context, json.RawMessage) (string, error) 
 	return "wrote", nil
 }
 
-// legacyWorkspaceContext reproduces the pre-fix host framing whose incidental
 // "resolve" classified every wrapped subagent prompt as a mutation request.
 const legacyWorkspaceContext = `<workspace-context event="SubagentWorkspace">
 Current workspace: "/w"
@@ -49,10 +44,7 @@ File tools resolve relative paths against this workspace. For project inspection
 </workspace-context>`
 
 func TestDeliveryClassificationUsesTrustedTaskText(t *testing.T) {
-	// The trusted override wins over host framing in the raw input: the
-	// legacy workspace wording ("resolve") plus an extra mutation verb in the
-	// wrapper must not arm the mutation expectation when the actual task is a
-	// review. Writer-capable registry so the read-only guard cannot mask it.
+// legacy workspace wording ("resolve") plus an extra mutation verb in the
 	reg := tool.NewRegistry()
 	reg.Add(fakeReadFileTool{})
 	reg.Add(fakeWriterTool{})
@@ -71,10 +63,6 @@ func TestDeliveryClassificationUsesTrustedTaskText(t *testing.T) {
 }
 
 func TestDeliveryClassificationResistsFramingSpoof(t *testing.T) {
-	// A user message dressed up as host framing must not disarm the delivery
-	// gates: with no trusted override the raw input is classified verbatim, so
-	// the mutation verb inside the fake block still arms the expectation and
-	// an answer without any state change is refused.
 	reg := tool.NewRegistry()
 	reg.Add(fakeReadFileTool{})
 	reg.Add(fakeWriterTool{})
@@ -105,9 +93,7 @@ func TestReadOnlyRegistryDisarmsMutationExpectation(t *testing.T) {
 		t.Fatal("writer registry not detected")
 	}
 
-	// End-to-end: a read-only delivery subagent given a mutation-worded prompt
-	// must not deadlock on "the request requires a state change". The scripted
-	// sub reads a file (host-observable work) and answers.
+// must not deadlock on "the request requires a state change". The scripted
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
 		{toolCallChunk("1", "read_file", `{"path":"a.go"}`), {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "reviewed; two issues found"}, {Type: provider.ChunkDone}},
@@ -267,17 +253,12 @@ func TestDeliveryPlanModeReturnsProposalBeforeExecutionReadiness(t *testing.T) {
 		t.Fatalf("last assistant text = %q, want proposal %q", got, proposal)
 	}
 
-	// Approval disables plan mode before the controller starts execution. The
-	// same delivery expectations must become enforceable again at that boundary.
 	a.SetPlanMode(false)
 	if got := a.ReadinessResult(); !strings.Contains(got.Reason, "state change") {
 		t.Fatalf("execution readiness did not resume after plan mode: %q", got.Reason)
 	}
 }
 
-// TestPlanModeDefersCapabilityRequirementsUntilExecution ensures Delivery does
-// not force a required writer capability while the model is drafting a plan.
-// The same requirement becomes active immediately after Plan is disabled.
 func TestPlanModeDefersCapabilityRequirementsUntilExecution(t *testing.T) {
 	reg := tool.NewRegistry()
 	a := New(&scriptedProvider{name: "p"}, reg, NewSession("sys"),
@@ -303,10 +284,9 @@ func TestRunSubAgentReviewReportNudgeRecovers(t *testing.T) {
 	reg.Add(fakeReadFileTool{})
 	AttachReviewReportTool(reg)
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
-		// Run 1: reads the file, then finishes with prose only — no report.
+// Run 1: reads the file, then finishes with prose only  no report.
 		{toolCallChunk("1", "read_file", `{"path":"a.go"}`), {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "verdict: pass, no issues"}, {Type: provider.ChunkDone}},
-		// Nudge run: submits the typed report citing the run-1 read, then answers.
 		{toolCallChunk("2", "review_report", `{"kind":"review","verdict":"pass","reviewed_paths":["a.go"]}`), {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "review_report submitted: pass"}, {Type: provider.ChunkDone}},
 	}}
@@ -322,8 +302,7 @@ func TestRunSubAgentReviewReportNudgeRecovers(t *testing.T) {
 	if !sessionHasUserMessageContaining(sess, "Call review_report now") {
 		t.Fatal("expected the host completion nudge in the subagent session")
 	}
-	// The report cited a path read in run 1 — only possible because the nudge
-	// run preserved the evidence ledger instead of resetting it.
+// The report cited a path read in run 1  only possible because the nudge
 	if got := lastToolResult(sess, "review_report"); !strings.Contains(got, "review_report accepted") {
 		t.Fatalf("review_report result = %q", got)
 	}
@@ -348,7 +327,6 @@ func TestRunSubAgentReviewReportExhaustionNamesRecovery(t *testing.T) {
 			t.Fatalf("error %q missing %q", err.Error(), want)
 		}
 	}
-	// The failed transcript is dumped for diagnosis.
 	matches, globErr := filepath.Glob(filepath.Join(dir, "subagent-report-failures", "review-*.jsonl"))
 	if globErr != nil || len(matches) != 1 {
 		t.Fatalf("expected one dumped transcript, got %v (%v)", matches, globErr)
@@ -359,11 +337,6 @@ func TestRunSubAgentReviewReportExhaustionNamesRecovery(t *testing.T) {
 }
 
 func TestRunSubAgentSalvagesReadinessExhaustedWork(t *testing.T) {
-	// The child performs a real mutation, then keeps answering without the
-	// delivery sign-off receipts until the readiness budget is exhausted. Its
-	// work is on disk, so the run must degrade to an explicitly unverified
-	// answer instead of a hard failure that tricks the parent into spawning
-	// repair tasks for changes that already landed.
 	reg := evidenceRegistry()
 	finalText := []provider.Chunk{{Type: provider.ChunkText, Text: "done, explanations added"}, {Type: provider.ChunkDone}}
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
@@ -387,9 +360,7 @@ func TestRunSubAgentSalvagesReadinessExhaustedWork(t *testing.T) {
 }
 
 func TestRunSubAgentReadinessFailureWithoutMutationStillFails(t *testing.T) {
-	// An unbacked "done" claim keeps failing: with a mutation expected and no
-	// successful mutation receipt, salvage must not launder the claim into an
-	// unverified answer.
+// An unbacked "done" claim keeps failing: with a mutation expected and no
 	reg := tool.NewRegistry()
 	reg.Add(fakeReadFileTool{})
 	reg.Add(fakeWriterTool{})
@@ -408,10 +379,6 @@ func TestRunSubAgentReadinessFailureWithoutMutationStillFails(t *testing.T) {
 }
 
 func TestFinalReadinessFailsImmediatelyWithoutRetries(t *testing.T) {
-	// Delivery no longer retries readiness with hidden model messages: the run
-	// ends on the FIRST unsatisfied final answer, and the host decides what
-	// happens next (Goal FSM auto-continues; plain turns surface the recovery
-	// card). Repeated reads must not buy extra provider calls.
 	newReg := func() *tool.Registry {
 		reg := tool.NewRegistry()
 		reg.Add(fakeReadFileTool{})
@@ -440,7 +407,6 @@ func TestFinalReadinessFailsImmediatelyWithoutRetries(t *testing.T) {
 		t.Fatal("delivery recovery must be pending for an explicit continuation")
 	}
 
-	// A read that changed nothing still ends the run at the first final answer.
 	converging := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
 		readCall("1"), finalText,
 		readCall("2"), finalText,
@@ -518,13 +484,10 @@ func TestOrdinaryFollowUpDoesNotPreserveFailedDeliveryEvidence(t *testing.T) {
 }
 
 func TestPreviewStripsDeliveryMarkerAndSyntheticTurns(t *testing.T) {
-	first := "你是谁？\n\n" + DeliveryRuntimeMarker
-	if got := UserPreviewText(first); got != "你是谁？" {
+	first := "누구세요?\n\n" + DeliveryRuntimeMarker
+	if got := UserPreviewText(first); got != "누구세요?" {
 		t.Fatalf("UserPreviewText kept framing: %q", got)
 	}
-	// A literal <delivery-runtime> mention inside user prose is not the host
-	// suffix: nothing may be cut. (The agent never appends the marker when the
-	// input already mentions the tag, so this content carries no host suffix.)
 	inline := "Explain this literal: <delivery-runtime>example</delivery-runtime> and keep this sentence"
 	if got := UserPreviewText(inline); got != inline {
 		t.Fatalf("inline delivery-runtime mention was mangled: %q", got)
@@ -534,10 +497,10 @@ func TestPreviewStripsDeliveryMarkerAndSyntheticTurns(t *testing.T) {
 		{Role: provider.RoleUser, Content: first},
 		{Role: provider.RoleAssistant, Content: "hi"},
 		{Role: provider.RoleUser, Content: MidTurnSteerPrefix + "\nslow down"},
-		{Role: provider.RoleUser, Content: "帮我写一个魂斗罗游戏\n\n" + DeliveryRuntimeMarker},
+		{Role: provider.RoleUser, Content: "콘트라 게임을 만들어 줘\n\n" + DeliveryRuntimeMarker},
 	}
 	preview, turns := SessionPreviewFromMessages(msgs)
-	if preview != "你是谁？" {
+	if preview != "누구세요?" {
 		t.Fatalf("preview = %q", preview)
 	}
 	if turns != 2 {
@@ -546,9 +509,8 @@ func TestPreviewStripsDeliveryMarkerAndSyntheticTurns(t *testing.T) {
 }
 
 func TestDeliveryTaskNeedsEvidenceSkipsDiagnosticConversations(t *testing.T) {
-	// Diagnostic/troubleshooting conversations ask "what's wrong" or "why"
-	// without requesting code changes. They must not demand host-observable
-	// work — the agent can only give advice, not mutate files.
+// Diagnostic/troubleshooting conversations ask "what's wrong" or "why"
+// work  the agent can only give advice, not mutate files.
 	diagnostic := []string{
 		"what's wrong with my wifi",
 		"I don't want to install dependencies",
@@ -564,18 +526,18 @@ func TestDeliveryTaskNeedsEvidenceSkipsDiagnosticConversations(t *testing.T) {
 		"why is `Python` popular?",
 		"what does `context.Context` mean?",
 		"why can't I open github.com/?",
-		"为什么wps导入zetero参考文献报错",
-		"为什么无法安装插件",
-		"为什么不能安装插件",
-		"为什么 WPS 不能运行",
-		"为什么无法检查 Outlook 邮件",
-		"分析一下为什么 WPS 不能运行",
-		"为什么安装插件失败",
-		"为什么更新配置后报错",
-		"帮我看看这是什么问题",
-		"为什么zotero连接不上，我不敢重新安装",
-		"诊断数据库连接失败的原因",
-		"这软件打不开了，怎么回事",
+		"왜 wps가 zetero 참고문헌을 가져올 때 오류가 나는지",
+		"왜 플러그인을 설치할 수 없는지",
+		"왜 플러그인을 설치하지 못하는지",
+		"왜 WPS가 실행되지 않는지",
+		"왜 Outlook 메일을 확인할 수 없는지",
+		"WPS가 왜 실행되지 않는지 분석해 주세요",
+		"왜 플러그인 설치가 실패했는지",
+		"왜 구성을 업데이트한 후 오류가 나는지",
+		"이게 왜 이런 문제인지 봐 주세요",
+		"왜 zotero에 연결이 안 되는지 모르겠어요, 다시 깔기엔 두렵습니다",
+		"데이터베이스 연결이 왜 실패했는지 진단해 주세요",
+		"이 소프트웨어가 열리지 않는데, 왜 그런가요",
 	}
 	for _, input := range diagnostic {
 		if taskintent.NeedsEvidence(input) {
@@ -583,20 +545,19 @@ func TestDeliveryTaskNeedsEvidenceSkipsDiagnosticConversations(t *testing.T) {
 		}
 	}
 
-	// Mutation-worded tasks still require evidence.
 	taskInputs := []string{
 		"fix the crash in a.go",
-		"帮我修复wps的崩溃问题",
+		"wps의 크래시 문제를 수정해 주세요",
 		"create a new login endpoint",
-		"添加一个单元测试",
+		"단위 테스트를 추가해 주세요",
 		"modify the existing config",
 		"patch the parser",
 		"replace the old endpoint",
 		"make the requested changes",
-		"调整现有配置",
-		"替换旧接口",
+		"기존 구성을 조정해 주세요",
+		"기존 인터페이스를 변경해 주세요",
 		"thanks for fixing that, now update the tests",
-		"谢谢你，请继续修改配置",
+		"고마워요, 계속해서 구성을 수정해 주세요",
 	}
 	for _, input := range taskInputs {
 		if !taskintent.NeedsEvidence(input) {
@@ -615,12 +576,12 @@ func TestDeliveryTaskNeedsEvidenceKeepsReadOnlyTechnicalWork(t *testing.T) {
 		"why does git status fail?",
 		"why does `custom-lint --strict` fail?",
 		"why does ./scripts/verify.sh fail?",
-		"为什么 go build ./... 会失败",
+		"왜 go build ./...가 실패하는지",
 		"why can't I run main.go?",
 		"why does README.md render incorrectly?",
 		"reproduce the crash and identify the root cause",
 		"inspect main.go for security vulnerabilities",
-		"诊断当前项目的数据库连接失败原因",
+		"현재 프로젝트의 데이터베이스 연결 실패 원인을 진단해 주세요",
 	}
 	for _, input := range inputs {
 		if !taskintent.NeedsEvidence(input) {
@@ -644,14 +605,14 @@ func TestDeliveryTaskNeedsMutationHandlesMixedIntent(t *testing.T) {
 		"I can't install dependencies so update the config",
 		"I can't install dependencies please update the existing config",
 		"can you explain why it fails and fix it",
-		"我不想安装新依赖，请修改现有配置修复这个问题",
-		"我无法安装新依赖，但请修改现有配置",
-		"无法安装新依赖请修改配置",
-		"不要安装依赖请更新配置",
-		"无法安装新依赖所以修改配置",
-		"为什么这个方案失败，请修复它",
-		"调整现有配置",
-		"替换旧接口",
+		"새 의존성을 설치하고 싶지 않아요. 기존 구성을 수정해서 이 문제를 해결해 주세요",
+		"새 의존성을 설치할 수 없지만, 기존 구성을 수정해 주세요",
+		"새 의존성을 설치할 수 없으니 구성을 수정해 주세요",
+		"의존성을 설치하지 말고 구성을 업데이트해 주세요",
+		"새 의존성을 설치할 수 없으므로 구성을 수정해 주세요",
+		"이 방안이 왜 실패했는지, 수정해 주세요",
+		"기존 구성을 조정해 주세요",
+		"기존 인터페이스를 변경해 주세요",
 	}
 	for _, input := range mutationInputs {
 		if !taskintent.NeedsMutation(input) {
@@ -666,13 +627,13 @@ func TestDeliveryTaskNeedsMutationHandlesMixedIntent(t *testing.T) {
 		"why can't I install the plugin?",
 		"do not install and update dependencies",
 		"don't fix or update anything",
-		"只分析，不要修改代码",
-		"请不要安装或更新依赖",
-		"不想请团队修改代码",
-		"禁止申请修改配置",
-		"为什么无法安装插件",
-		"为什么不能安装插件",
-		"为什么zotero连接不上，我不敢重新安装",
+		"분석만 하고 코드는 건드리지 마세요",
+		"의존성은 새로 깔거나 갱신하지 말아 주세요",
+		"팀이 코드를 건드리기를 원하지 않아요",
+		"구성은 그대로 두세요",
+		"왜 플러그인을 설치할 수 없는지",
+		"왜 플러그인을 설치하지 못하는지",
+		"왜 zotero에 연결이 안 되는지 모르겠어요, 다시 깔기엔 두렵습니다",
 	}
 	for _, input := range readOnlyInputs {
 		if taskintent.NeedsMutation(input) {
@@ -684,7 +645,7 @@ func TestDeliveryTaskNeedsMutationHandlesMixedIntent(t *testing.T) {
 func TestDeliveryMixedIntentRequiresMutationEvidence(t *testing.T) {
 	inputs := []string{
 		"I can't install dependencies and please update the config",
-		"无法安装新依赖请修改配置",
+		"새 의존성을 설치할 수 없으니 구성을 수정해 주세요",
 	}
 	for _, input := range inputs {
 		t.Run(input, func(t *testing.T) {
@@ -741,12 +702,11 @@ func TestDeliveryReadOnlyTechnicalTaskRequiresEvidence(t *testing.T) {
 }
 
 func TestDeliveryDiagnosticConversationCompletes(t *testing.T) {
-	// End-to-end: a diagnostic troubleshooting conversation with no mutation
-	// keywords must complete without a FinalReadinessError — the agent can
-	// give advice but can't write files on the user's machine.
+// keywords must complete without a FinalReadinessError  the agent can
+// give advice but can't write files on the user's machine.
 	inputs := []string{
-		"为什么wps导入zetero参考文献报错，请你帮我诊断一下",
-		"分析一下为什么 WPS 不能运行",
+		"왜 wps가 zetero 참고문헌을 가져올 때 오류가 나는지, 진단해 주세요",
+		"WPS가 왜 실행되지 않는지 분석해 주세요",
 		"why can't I check my email in Outlook?",
 		"what does `context.Context` mean?",
 	}
@@ -755,9 +715,9 @@ func TestDeliveryDiagnosticConversationCompletes(t *testing.T) {
 			reg := tool.NewRegistry()
 			reg.Add(fakeReadFileTool{})
 			reg.Add(fakeWriterTool{})
-			// The model gives advice text (no tool calls) — a diagnostic response.
+// The model gives advice text (no tool calls)  a diagnostic response.
 			advice := []provider.Chunk{
-				{Type: provider.ChunkText, Text: "请尝试以下步骤：1. 检查端口监听 2. 重新注册插件"},
+				{Type: provider.ChunkText, Text: "다음 단계를 시도해 보세요: 1. 포트 수신 상태 확인 2. 플러그인 다시 등록"},
 				{Type: provider.ChunkDone},
 			}
 			prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{advice}}

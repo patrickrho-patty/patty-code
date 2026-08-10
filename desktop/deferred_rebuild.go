@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/control"
-	"reasonix/internal/secrets"
+	"patty/internal/agent"
+	"patty/internal/control"
+	"patty/internal/secrets"
 )
 
 // deferredRebuildRetryInterval is how often the retry loop probes a held
@@ -28,7 +28,7 @@ const deferredRuntimeReloadLabel = "__reload__"
 
 // deferredRebuildState tracks tabs whose settings were saved to disk but whose
 // runtime could not refresh, plus tabs whose initial startup failed, because
-// the session lease was held by another Reasonix process. A single background
+// the session lease was held by another patty process. A single background
 // loop probes the lease and replays the rebuild once the other side releases
 // it. The loop only runs after enableDeferredRebuildRetry (the wails startup
 // hook); tests that never call it get the pending bookkeeping without a

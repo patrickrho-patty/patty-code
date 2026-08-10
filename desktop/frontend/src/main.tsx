@@ -54,7 +54,7 @@ initTypographyPreferences();
 function prewarmFontFallbacks() {
   const span = document.createElement("span");
   span.style.cssText = "position:absolute;visibility:hidden;font-size:1px;pointer-events:none";
-  span.textContent = "中文日本語한국어 математика 😀🎉✓⚠∑∏∫";
+  span.textContent = "한국어 English математика 😀🎉✓⚠∑∏∫";
   document.body.appendChild(span);
   // Force layout so the browser resolves font fallback chains.
   void span.offsetHeight;

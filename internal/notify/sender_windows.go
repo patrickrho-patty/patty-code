@@ -5,7 +5,7 @@ package notify
 import (
 	"git.sr.ht/~jackmordaunt/go-toast/v2"
 
-	"reasonix/internal/appidentity"
+	"patty/internal/appidentity"
 )
 
 // PlatformSender delivers notifications through the Windows Toast API.

@@ -3,9 +3,9 @@ package main
 import (
 	"testing"
 
-	"reasonix/internal/control"
-	"reasonix/internal/jobs"
-	"reasonix/internal/workspacelease"
+	"patty/internal/control"
+	"patty/internal/jobs"
+	"patty/internal/workspacelease"
 )
 
 type backgroundRuntimeController struct {

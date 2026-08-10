@@ -7,7 +7,7 @@ import (
 )
 
 func TestClipPostWriteSpanPreservesUTF8AndBothEnds(t *testing.T) {
-	text := "head\n" + strings.Repeat("修改后的内容\n", 800) + "tail\n"
+	text := "head\n" + strings.Repeat("수정된 내용\n", 800) + "tail\n"
 	got := clipPostWriteSpan(text, 512)
 
 	if len(got) > 512 {
@@ -27,7 +27,7 @@ func TestRenderPostWriteReceiptsKeepsFirstAndLastBounded(t *testing.T) {
 	receipts := []editReplacementReceipt{
 		{matched: "first-old", replacement: "first-new", occurrences: 1},
 		{matched: "middle-old", replacement: "middle-new", occurrences: 2},
-		{matched: strings.Repeat("最后一项", 500), replacement: "last-new", occurrences: 1, fuzzy: true},
+		{matched: strings.Repeat("마지막 항목", 500), replacement: "last-new", occurrences: 1, fuzzy: true},
 	}
 	got := renderPostWriteReceipts(receipts)
 

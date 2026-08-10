@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"sync"
 
-	"reasonix/internal/event"
-	"reasonix/internal/eventwire"
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/dispatch"
+	"patty/internal/event"
+	"patty/internal/eventwire"
+	"patty/internal/extension"
+	"patty/internal/extension/dispatch"
 )
 
 // Extension dispatch wiring (stage 6b1). Nil dispatcher is a no-op.

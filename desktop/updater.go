@@ -25,11 +25,11 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	"reasonix/desktop/internal/update"
-	"reasonix/internal/config"
-	"reasonix/internal/installlayout"
-	"reasonix/internal/netclient"
-	"reasonix/internal/repair"
+	"patty/desktop/internal/update"
+	"patty/internal/config"
+	"patty/internal/installlayout"
+	"patty/internal/netclient"
+	"patty/internal/repair"
 )
 
 // updater.go is the transport-free core of the desktop auto-updater: manifest
@@ -44,10 +44,10 @@ import (
 // gateway still avoids GitHub's repository-wide /releases/latest shortcut so the
 // app is not coupled to GitHub's homepage badge semantics.
 const (
-	r2Base                     = "https://dl.reasonix.io"
-	releaseGatewayBase         = "https://crash.reasonix.io/v1/desktop/releases"
-	downloadPageURL            = "https://reasonix.io/#start"
-	manifestDownloadPageURL    = "https://reasonix.io/?download=desktop#start"
+	r2Base                     = "https://dl.patty.io"
+	releaseGatewayBase         = "https://crash.patty.io/v1/desktop/releases"
+	downloadPageURL            = "https://patty.io/#start"
+	manifestDownloadPageURL    = "https://patty.io/?download=desktop#start"
 	httpTimeout                = 15 * time.Second
 	manifestEndpointTimeout    = 5 * time.Second
 	maxDesktopReleaseAssetSize = int64(1 << 30)
@@ -70,27 +70,27 @@ type requiredDesktopAsset struct {
 
 var (
 	requiredDesktopUpdaterAssets = []requiredDesktopAsset{
-		{group: "platforms", key: "darwin-arm64", filename: "Reasonix-darwin-arm64.zip"},
-		{group: "platforms", key: "darwin-amd64", filename: "Reasonix-darwin-amd64.zip"},
-		{group: "platforms", key: "windows-amd64", filename: "Reasonix-windows-amd64-installer.exe"},
-		{group: "platforms", key: "windows-arm64", filename: "Reasonix-windows-arm64-installer.exe"},
-		{group: "platforms", key: "linux-amd64", filename: "Reasonix-linux-amd64.tar.gz"},
-		{group: "native_packages", key: "linux-amd64", filename: "Reasonix-linux-amd64.deb"},
+		{group: "platforms", key: "darwin-arm64", filename: "Patty Code-darwin-arm64.zip"},
+		{group: "platforms", key: "darwin-amd64", filename: "Patty Code-darwin-amd64.zip"},
+		{group: "platforms", key: "windows-amd64", filename: "Patty Code-windows-amd64-installer.exe"},
+		{group: "platforms", key: "windows-arm64", filename: "Patty Code-windows-arm64-installer.exe"},
+		{group: "platforms", key: "linux-amd64", filename: "Patty Code-linux-amd64.tar.gz"},
+		{group: "native_packages", key: "linux-amd64", filename: "Patty Code-linux-amd64.deb"},
 	}
 	requiredDesktopDownloadAssets = []requiredDesktopAsset{
-		{group: "downloads", key: "Reasonix-darwin-universal.dmg", filename: "Reasonix-darwin-universal.dmg"},
-		{group: "downloads", key: "Reasonix-windows-amd64.zip", filename: "Reasonix-windows-amd64.zip"},
+		{group: "downloads", key: "Patty Code-darwin-universal.dmg", filename: "Patty Code-darwin-universal.dmg"},
+		{group: "downloads", key: "Patty Code-windows-amd64.zip", filename: "Patty Code-windows-amd64.zip"},
 	}
 )
 
 // githubManifestFallback is the stable channel's last-resort manifest source.
-// dl.reasonix.io and crash.reasonix.io share one Cloudflare zone, so bot
+// dl.patty.io and crash.patty.io share one Cloudflare zone, so bot
 // protection that 403s a user's egress IP takes out both first-party endpoints
 // at once (#6005); GitHub is separate infrastructure. Stable desktop releases
 // own the repo-wide latest badge and publish latest.json directly, while
 // The unified official Release carries the desktop manifest as a final fallback
 // when both first-party endpoints are unavailable.
-const githubManifestFallback = "https://github.com/esengine/DeepSeek-Reasonix/releases/latest/download/latest.json"
+const githubManifestFallback = "https://github.com/pattycorp/PattyCode/releases/latest/download/latest.json"
 
 func normalizeUpdateChannel(ch string) string {
 	return config.NormalizeDesktopUpdateChannel(ch)
@@ -129,7 +129,7 @@ func manifestEndpoints(selected string) []string {
 // lets the release edge allowlist updater requests and makes them attributable
 // in server logs.
 func updaterUserAgent(selected string) string {
-	return fmt.Sprintf("Reasonix-Updater/%s (%s/%s; build=%s; update=%s)", version, runtime.GOOS, runtime.GOARCH, channel, normalizeUpdateChannel(selected))
+	return fmt.Sprintf("Patty Code-Updater/%s (%s/%s; build=%s; update=%s)", version, runtime.GOOS, runtime.GOARCH, channel, normalizeUpdateChannel(selected))
 }
 
 // downloadPage is the human-facing releases page shown when self-update is
@@ -157,7 +157,7 @@ func manifestDownloadPage(selected, manifestPage string) string {
 		return downloadPage(selected)
 	}
 	host := strings.ToLower(u.Hostname())
-	if host != "reasonix.io" && !strings.HasSuffix(host, ".reasonix.io") {
+	if host != "patty.io" && !strings.HasSuffix(host, ".patty.io") {
 		return u.String()
 	}
 	query := u.Query()
@@ -252,8 +252,8 @@ func validateUpdateRedirect(req *http.Request, via []*http.Request) error {
 
 func isTrustedUpdateRedirectHost(host string) bool {
 	host = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(host), "."))
-	return host == "reasonix.io" ||
-		strings.HasSuffix(host, ".reasonix.io") ||
+	return host == "patty.io" ||
+		strings.HasSuffix(host, ".patty.io") ||
 		host == "github.com" ||
 		strings.HasSuffix(host, ".githubusercontent.com")
 }
@@ -309,8 +309,8 @@ func desktopAssetBases(selected, version string, allowLegacyPreview bool) []stri
 	tag := desktopReleaseTag(selected, version)
 	return []string{
 		fmt.Sprintf("%s/%s/", r2Base, tag),
-		fmt.Sprintf("https://github.com/esengine/DeepSeek-Reasonix/releases/download/%s/", tag),
-		fmt.Sprintf("https://github.com/esengine/DeepSeek-Reasonix/releases/download/%s/", version),
+		fmt.Sprintf("https://github.com/pattycorp/PattyCode/releases/download/%s/", tag),
+		fmt.Sprintf("https://github.com/pattycorp/PattyCode/releases/download/%s/", version),
 	}
 }
 
@@ -535,7 +535,7 @@ func defaultUpdateCacheBaseDir() (string, error) {
 	if err != nil {
 		base = os.TempDir()
 	}
-	return filepath.Join(base, "Reasonix", "updates"), nil
+	return filepath.Join(base, "Patty Code", "updates"), nil
 }
 
 func updateCacheDir() (string, error) {
@@ -564,7 +564,7 @@ func assetFileName(asset update.Asset, version string) string {
 		}
 	}
 	clean := strings.NewReplacer("/", "-", "\\", "-", ":", "-", " ", "-").Replace(version)
-	return "Reasonix-" + clean + "-" + update.CurrentPlatform() + ".update"
+	return "Patty Code-" + clean + "-" + update.CurrentPlatform() + ".update"
 }
 
 func writeAtomic(path string, data []byte, mode os.FileMode) error {
@@ -1033,9 +1033,9 @@ func extractBinary(targz []byte, name string) ([]byte, error) {
 
 func extractLinuxReleaseUnit(targz []byte) (map[string][]byte, error) {
 	const (
-		desktop = "reasonix-desktop"
-		guard   = "reasonix-guard"
-		cli     = "reasonix"
+		desktop = "patty-desktop"
+		guard   = "patty-guard"
+		cli     = "patty"
 	)
 	want := map[string]struct{}{desktop: {}, guard: {}, cli: {}}
 	found := make(map[string][]byte, len(want))
@@ -1086,9 +1086,9 @@ func applyLinux(targz []byte, prepared *repair.UpdateTransaction) error {
 	if err != nil {
 		return err
 	}
-	bin := release["reasonix-desktop"]
-	guard := release["reasonix-guard"]
-	cli := release["reasonix"]
+	bin := release["patty-desktop"]
+	guard := release["patty-guard"]
+	cli := release["patty"]
 	exe := currentExecutablePathForLinux()
 	if exe == "" {
 		return fmt.Errorf("update: current executable path is unavailable")
@@ -1128,7 +1128,7 @@ func applyLinux(targz []byte, prepared *repair.UpdateTransaction) error {
 
 // applyLinuxVersioned publishes a verified compatibility tarball into a new
 // version directory and swaps current.json last. The tar still contains the
-// one-shot reasonix-guard member for v1.18-v1.19 updaters, but v1.20+ ignores
+// one-shot patty-guard member for v1.18-v1.19 updaters, but v1.20+ ignores
 // that member and never persists it again.
 func applyLinuxVersioned(targz []byte, targetVersion string) error {
 	release, err := extractLinuxReleaseUnit(targz)
@@ -1146,17 +1146,17 @@ func applyLinuxVersioned(targz []byte, targetVersion string) error {
 	if err := installlayout.ValidateVersionName(targetVersion); err != nil {
 		return err
 	}
-	staging, err := os.MkdirTemp(root, ".reasonix-linux-update-*")
+	staging, err := os.MkdirTemp(root, ".patty-linux-update-*")
 	if err != nil {
 		return fmt.Errorf("update: create Linux version staging: %w", err)
 	}
 	defer os.RemoveAll(staging)
 	desktopPath := filepath.Join(staging, installlayout.DesktopBinaryName())
 	cliPath := filepath.Join(staging, installlayout.CLIBinaryName())
-	if err := os.WriteFile(desktopPath, release["reasonix-desktop"], 0o700); err != nil {
+	if err := os.WriteFile(desktopPath, release["patty-desktop"], 0o700); err != nil {
 		return fmt.Errorf("update: stage Linux desktop: %w", err)
 	}
-	if err := os.WriteFile(cliPath, release["reasonix"], 0o700); err != nil {
+	if err := os.WriteFile(cliPath, release["patty"], 0o700); err != nil {
 		return fmt.Errorf("update: stage Linux CLI: %w", err)
 	}
 	if err := installlayout.ActivateVersion(installlayout.ActivationRequest{
@@ -1184,12 +1184,12 @@ var applyLinuxReleaseUnit = func(
 	bin, guard, cli []byte,
 ) ([]repair.FileUpdateInstallReceipt, error) {
 	receipts := make([]repair.FileUpdateInstallReceipt, 0, 3)
-	receipt, err := repair.PublishClaimedFileUpdateMemberExact(claimed, filepath.Join(filepath.Dir(exe), "reasonix"), cli, 0o700)
+	receipt, err := repair.PublishClaimedFileUpdateMemberExact(claimed, filepath.Join(filepath.Dir(exe), "patty"), cli, 0o700)
 	if err != nil {
 		return receipts, fmt.Errorf("update CLI sidecar: %w", err)
 	}
 	receipts = append(receipts, receipt)
-	receipt, err = repair.PublishClaimedFileUpdateMemberExact(claimed, filepath.Join(filepath.Dir(exe), "reasonix-guard"), guard, 0o700)
+	receipt, err = repair.PublishClaimedFileUpdateMemberExact(claimed, filepath.Join(filepath.Dir(exe), "patty-guard"), guard, 0o700)
 	if err != nil {
 		return receipts, fmt.Errorf("update Guard: %w", err)
 	}
@@ -1333,7 +1333,7 @@ func releaseUnitPathsFor(dir, goos string) []string {
 		if desktop, err := installlayout.ActiveDesktopPath(dir); err == nil {
 			paths = append(paths, desktop)
 		} else {
-			paths = append(paths, filepath.Join(dir, "reasonix-desktop.exe"))
+			paths = append(paths, filepath.Join(dir, "patty-desktop.exe"))
 		}
 		if helper, err := installlayout.ActiveUpdateHelperPath(dir); err == nil {
 			paths = append(paths, helper)
@@ -1341,7 +1341,8 @@ func releaseUnitPathsFor(dir, goos string) []string {
 		if cli, err := installlayout.ActiveCLIPath(dir); err == nil {
 			paths = append(paths, cli)
 		}
-		for _, name := range []string{"reasonix-launcher.exe", "reasonix-cli.exe", "Reasonix.exe"} {
+		for _, name := range []string{"patty-code-launcher.exe", "PatCode.exe", "patcode-cli.exe", "patty-launcher.exe", "Patty Code.exe", "patty-cli.exe"} {
+			// The legacy names are migration fallbacks for pre-rename installs.
 			paths = append(paths, filepath.Join(dir, name))
 		}
 		return paths
@@ -1350,9 +1351,9 @@ func releaseUnitPathsFor(dir, goos string) []string {
 	paths := make([]string, 0, len(names)+1)
 	switch goos {
 	case "linux":
-		paths = append(paths, filepath.Join(dir, "reasonix-desktop"))
+		paths = append(paths, filepath.Join(dir, "patty-desktop"))
 	case "windows":
-		paths = append(paths, filepath.Join(dir, "reasonix-desktop.exe"))
+		paths = append(paths, filepath.Join(dir, "patty-desktop.exe"))
 	}
 	if len(names) == 0 {
 		return paths
@@ -1366,11 +1367,11 @@ func releaseUnitPathsFor(dir, goos string) []string {
 func updateSiblingNames(goos string) []string {
 	switch goos {
 	case "windows":
-		// Legacy flat release unit. reasonix-guard.exe may still exist on disk
+		// Legacy flat release unit. patty-guard.exe may still exist on disk
 		// during migration from 1.18–1.19.1; the new layout omits it.
-		return []string{"reasonix-guard.exe", "reasonix-launcher.exe", "reasonix-update-helper.exe", "reasonix-cli.exe", "Reasonix.exe"}
+		return []string{"patty-guard.exe", "patty-launcher.exe", "patty-update-helper.exe", "patty-cli.exe", "Patty Code.exe"}
 	case "linux":
-		return []string{"reasonix-guard", "reasonix"}
+		return []string{"patty-guard", "patty"}
 	default:
 		return nil
 	}
@@ -1389,13 +1390,18 @@ func relaunchThroughLauncher() error {
 		root = resolved
 	}
 	candidates := []string{
-		filepath.Join(root, "reasonix-launcher"),
-		filepath.Join(root, "Reasonix.exe"),
-		filepath.Join(root, "reasonix-guard"), // migration window only
+		filepath.Join(root, "patty-code-launcher"),
+		filepath.Join(root, "PatCode.exe"),
+		filepath.Join(root, "patty-code-guard"), // migration window only
+		filepath.Join(root, "patty-launcher"),   // legacy pre-rename installs
+		filepath.Join(root, "Patty Code.exe"),   // legacy portable alias
 	}
 	if runtime.GOOS == "windows" {
-		candidates[0] += ".exe"
-		candidates[2] += ".exe"
+		for i := range candidates {
+			if !strings.HasSuffix(candidates[i], ".exe") {
+				candidates[i] += ".exe"
+			}
+		}
 	}
 	launcher := exe
 	for _, path := range candidates {
@@ -1423,11 +1429,11 @@ func currentLauncherPath() string {
 	if resolved, err := installlayout.ResolveInstallRoot(exe); err == nil && resolved != "" {
 		root = resolved
 	}
-	for _, name := range []string{"reasonix-launcher.exe", "Reasonix.exe", "reasonix-launcher", "reasonix-guard.exe", "reasonix-guard"} {
+	for _, name := range []string{"patty-code-launcher.exe", "PatCode.exe", "patty-code-launcher", "patty-code-guard.exe", "patty-code-guard", "patty-launcher.exe", "Patty Code.exe", "patty-launcher", "patty-guard.exe", "patty-guard"} {
 		if runtime.GOOS != "windows" && strings.HasSuffix(name, ".exe") {
 			continue
 		}
-		if runtime.GOOS == "windows" && !strings.HasSuffix(name, ".exe") && name != "Reasonix.exe" {
+		if runtime.GOOS == "windows" && !strings.HasSuffix(name, ".exe") && name != "Patty Code.exe" {
 			// Unix names on Windows are unused.
 			if !strings.HasSuffix(name, ".exe") {
 				continue
@@ -1440,7 +1446,7 @@ func currentLauncherPath() string {
 	}
 	// Fall through to previous flat-dir behavior for incomplete installs.
 	if runtime.GOOS == "windows" {
-		guard := filepath.Join(filepath.Dir(exe), "reasonix-guard.exe")
+		guard := filepath.Join(filepath.Dir(exe), "patty-guard.exe")
 		if _, err := os.Stat(guard); err == nil {
 			return guard
 		}

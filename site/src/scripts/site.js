@@ -9,7 +9,7 @@ import {
 } from "./release-channels.js";
 import { initTheme } from "./theme.js";
 
-// Reasonix site — vanilla interactions
+// Patty Code site  vanilla interactions
 (function () {
   initTheme();
   const motionOK = () =>
@@ -115,7 +115,7 @@ import { initTheme } from "./theme.js";
     osCard.classList.add("detected");
     const chip = document.createElement("span");
     chip.className = "os-chip";
-    chip.innerHTML = '<span class="l-en">your OS</span><span class="l-zh">当前系统</span>';
+    chip.textContent = "your OS";
     osCard.appendChild(chip);
   }
 
@@ -154,39 +154,15 @@ import { initTheme } from "./theme.js";
     });
   });
 
-  /* language switch */
-  const LANG_KEY = "reasonix-lang";
-  const langBtns = Array.from(document.querySelectorAll(".lang-switch button"));
-  const setLang = (l, alignHash) => {
-    document.body.dataset.lang = l;
-    document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
-    const t = document.body.dataset[l === "zh" ? "titleZh" : "titleEn"];
-    if (t) document.title = t;
-    langBtns.forEach((b) => b.classList.toggle("active", b.dataset.lang === l));
-    try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
-    if (alignHash && window.location.hash) {
-      const target = document.getElementById(window.location.hash.slice(1));
-      if (target) requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
-    }
-  };
-  langBtns.forEach((b) => b.addEventListener("click", () => setLang(b.dataset.lang)));
-  let savedLang = "";
-  try { savedLang = localStorage.getItem(LANG_KEY) || ""; } catch (e) {}
-  const requestedLang = new URLSearchParams(window.location.search).get("lang");
-  const initialLang = requestedLang === "zh" || requestedLang === "en"
-    ? requestedLang
-    : savedLang || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en");
-  setLang(initialLang, true);
-
   /* docs scrollspy */
   const sideLinks = Array.from(document.querySelectorAll(".docs-side a[href^='#']"));
   if (sideLinks.length) {
     const targets = sideLinks
       .map((a) => document.getElementById(a.getAttribute("href").slice(1)))
       .filter(Boolean)
-      // Sidebar links are grouped editorially, so their order differs from the
-      // page order. The spy below picks the last section past the 140px line,
-      // which is only correct when targets are sorted in document order.
+// Sidebar links are grouped editorially, so their order differs from the
+// page order. The spy below picks the last section past the 140px line,
+// which is only correct when targets are sorted in document order.
       .sort((a, b) =>
         a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
     const setActive = (id) =>
@@ -196,11 +172,11 @@ import { initTheme } from "./theme.js";
         if (on) a.setAttribute("aria-current", "true");
         else a.removeAttribute("aria-current");
       });
-    // While a click smooth-scrolls to a section, pin the highlight to it so it
-    // doesn't sweep through every section scrolled past on the way. scrollend
-    // releases the pin when the scroll settles — on arrival or when the user
-    // takes over (wheel, touch, keyboard, scrollbar). Browsers without
-    // scrollend just skip pinning: correct destination, no sweep suppression.
+// While a click smooth-scrolls to a section, pin the highlight to it so it
+// doesnt sweep through every section scrolled past on the way. scrollend
+// releases the pin when the scroll settles  on arrival or when the user
+// takes over (wheel, touch, keyboard, scrollbar). Browsers without
+// scrollend just skip pinning: correct destination, no sweep suppression.
     let pinned = null;
     const spy = () => {
       if (pinned) return;
@@ -238,15 +214,15 @@ import { initTheme } from "./theme.js";
 
   /* public official releases */
   const releaseModels = { desktop: null, cli: null };
-  const releasesPage = "https://github.com/esengine/DeepSeek-Reasonix/releases";
+  const releasesPage = "https://github.com/patty-io/patty-code/releases";
   const reflectPaneURL = (surface) => {
     const nextURL = downloadURLForPane(window.location.href, surface, "");
     if (nextURL) window.history.replaceState(null, "", nextURL);
   };
 
-  // npm / Homebrew / generic product chips track the CLI stable line only.
-  // Desktop and CLI download panes render their own versions via
-  // [data-release-version="<surface>"]; never let Desktop and CLI race on .rxv.
+// npm / Homebrew / generic product chips track the CLI stable line only.
+// Desktop and CLI download panes render their own versions via
+// [data-release-version="<surface>"]; never let Desktop and CLI race on .rxv.
   const updateCLIPackageVersion = (model) => {
     if (!model) return;
     document.querySelectorAll(".rxv").forEach((element) => { element.textContent = releaseVersionLabel(model); });
@@ -255,9 +231,9 @@ import { initTheme } from "./theme.js";
     });
   };
 
-  // Never synthesize public artifact URLs. If every required asset is not
-  // attested by live release data, fall back to the release list instead of a
-  // plausible-looking URL that may 404.
+// Never synthesize public artifact URLs. If every required asset is not
+// attested by live release data, fall back to the release list instead of a
+// plausible-looking URL that may 404.
   const fallbackReleaseURL = () => releasesPage;
 
   const renderReleaseSurface = (surface) => {
@@ -291,12 +267,12 @@ import { initTheme } from "./theme.js";
   if (requestedPane) reflectPaneURL(requestedPane);
 
   fetchFirstJSON([
-    "https://dl.reasonix.io/latest/latest.json",
-    "https://crash.reasonix.io/v1/desktop/releases/stable/latest.json",
+    "https://dl.patty.io/latest/latest.json",
+    "https://crash.patty.io/v1/desktop/releases/stable/latest.json",
   ], fetch, (manifest) => Boolean(desktopReleaseModel(manifest)))
     .then((manifest) => desktopReleaseModel(manifest))
     .catch(() => fetchFirstJSON(
-      ["https://api.github.com/repos/esengine/DeepSeek-Reasonix/releases/latest"],
+      ["https://api.github.com/repos/patty-io/patty-code/releases/latest"],
       fetch,
       (release) => Boolean(desktopGitHubReleaseModel(release)),
     ).then(desktopGitHubReleaseModel))
@@ -310,12 +286,12 @@ import { initTheme } from "./theme.js";
   let githubCLIReleases;
   const fallbackCLIReleases = () => {
     githubCLIReleases ??= fetchFirstJSON([
-      "https://api.github.com/repos/esengine/DeepSeek-Reasonix/releases?per_page=100",
+      "https://api.github.com/repos/patty-io/patty-code/releases?per_page=100",
     ]).catch(() => null);
     return githubCLIReleases;
   };
   fetchFirstJSON(
-    ["https://crash.reasonix.io/v1/cli/releases/stable/latest.json"],
+    ["https://crash.patty.io/v1/cli/releases/stable/latest.json"],
     fetch,
     (payload) => Boolean(cliReleaseModel(Array.isArray(payload) ? payload : [payload])),
   )

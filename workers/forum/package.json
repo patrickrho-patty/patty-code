@@ -1,5 +1,5 @@
 {
-  "name": "reasonix-forum",
+  "name": "patty-code-forum",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,8 +7,8 @@
     "deploy": "wrangler deploy",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "db:apply:local": "wrangler d1 execute reasonix-forum --local --file=schema.sql",
-    "db:apply:remote": "wrangler d1 execute reasonix-forum --remote --file=schema.sql"
+    "db:apply:local": "wrangler d1 execute patty-code-forum --local --file=schema.sql",
+    "db:apply:remote": "wrangler d1 execute patty-code-forum --remote --file=schema.sql"
   },
   "dependencies": {
     "hono": "^4.12.34",

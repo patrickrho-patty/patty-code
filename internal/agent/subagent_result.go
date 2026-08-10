@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 const (

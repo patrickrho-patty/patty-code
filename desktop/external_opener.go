@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 const (

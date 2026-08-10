@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/crashreport"
-	"reasonix/internal/i18n"
-	"reasonix/internal/netclient"
+	"patty/internal/crashreport"
+	"patty/internal/i18n"
+	"patty/internal/netclient"
 )
 
 func isolateCLIReports(t *testing.T) string {
@@ -17,15 +17,15 @@ func isolateCLIReports(t *testing.T) string {
 	i18n.DetectLanguage("en")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
-	t.Setenv("REASONIX_SAFE_MODE", "")
+	t.Setenv("PATTY_HOME", home)
+	t.Setenv("PATTY_SAFE_MODE", "")
 	t.Chdir(t.TempDir())
 	return home
 }
 
 func captureCLIReport(t *testing.T, home string) crashreport.Pending {
 	t.Helper()
-	if err := crashreport.CapturePanic(home, "v1.20.0", "private panic value", []byte("goroutine 1 [running]:\nreasonix.run()\n\t/Users/alice/reasonix/main.go:12")); err != nil {
+	if err := crashreport.CapturePanic(home, "v1.20.0", "private panic value", []byte("goroutine 1 [running]:\npatty.run()\n\t/Users/alice/patty/main.go:12")); err != nil {
 		t.Fatal(err)
 	}
 	pending, err := crashreport.Load(home, "")
@@ -107,7 +107,7 @@ func TestReportCommandFailedSendKeepsReport(t *testing.T) {
 func TestLegacySafeModeEnvDoesNotBlockReportSendOrDelete(t *testing.T) {
 	home := isolateCLIReports(t)
 	pending := captureCLIReport(t, home)
-	t.Setenv("REASONIX_SAFE_MODE", "1")
+	t.Setenv("PATTY_SAFE_MODE", "1")
 	previous := sendCLIReport
 	t.Cleanup(func() { sendCLIReport = previous })
 	calls := 0

@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to the Go line (Reasonix 1.0+) are recorded here. The legacy
-`0.x` TypeScript history lives on the [`v1`](https://github.com/esengine/DeepSeek-Reasonix/tree/v1)
+All notable changes to the Go line (Patty Code 1.0+) are recorded here. The legacy
+`0.x` TypeScript history lives on the [`v1`](https://github.com/pattycorp/DeepSeek-PattyCode/tree/v1)
 branch.
 
 ## Unreleased
@@ -67,7 +67,7 @@ multiple Desktop stability improvements.
   plugin paths consistently, stabilize parallel-task cancellation, and restore
   reliable Windows validation for Task Monitor and remote provider setup.
 - **MiMo and DashScope Responses Wire Alignment**: Fix multi-turn tool loops,
-  reasoning round-trip, JSON output for MiMo; fix DashScope second-turn 400
+  patty_code round-trip, JSON output for MiMo; fix DashScope second-turn 400
   error, all-zero usage suppression, and vendor-aware cache TTL.
 - **Desktop Stability Fixes**: Recover stuck updates and legacy WebKit, contain
   macOS alias repair startup crashes, keep composer overflow stacks readable,
@@ -115,20 +115,20 @@ multiple Desktop stability improvements.
   turn's prompt. Historical `[goal:*]` footers are stripped from old transcripts
   for display only and never participate in state decisions.
 - Added a **Remote SSH** module (VS Code Remote-SSH style): a user-global
-  `[remote]` host config, `reasonix remote` CLI (add/list/remove/import/test/
+  `[remote]` host config, `patty code remote` CLI (add/list/remove/import/test/
   connect/status/forward/serve/fs) and `/remote` slash command, an SSH transport
   with trust-on-first-use host-key verification, keepalive + exponential-backoff
   reconnect, `-L`/`-R` port forwarding, and SFTP file access. `connect`
-  bootstraps a persistent `reasonix serve` on the remote host and tunnels its
+  bootstraps a persistent `patty code serve` on the remote host and tunnels its
   loopback port so the full agent runs remotely. The desktop app adds a
   **Settings -> Remote SSH** host manager, a remote file browser/editor, a
   port-forwarding panel, and a status-bar connection chip. Linux/macOS remotes.
-- Added `reasonix serve --port-file/--token-file/--pid-file` so a supervised
+- Added `patty code serve --port-file/--token-file/--pid-file` so a supervised
   headless serve can bind an ephemeral port and read its auth token from a file
   (keeping it out of `ps`).
-- Added an authenticated, loopback-only Provider setup page for `reasonix
+- Added an authenticated, loopback-only Provider setup page for `patty
   serve`. A Serve whose selected Provider is missing its API key now remains
-  reachable, stores the submitted key in that host's Reasonix credential file,
+  reachable, stores the submitted key in that host's Patty Code credential file,
   and rebuilds the active controller in place without restarting Serve.
 - Added Claude Code-style searchable CLI pickers for models, providers, and
   sessions, with arrow, Vim, and `Ctrl+P` / `Ctrl+N` navigation.
@@ -141,7 +141,7 @@ multiple Desktop stability improvements.
   background jobs, work profile, and provider balance where available.
 - Remote SSH workspaces now open as a standalone remote web window again.
   Opening a workspace from the status bar or the Remote Server tab starts or
-  reuses the remote `reasonix serve`, tunnels its loopback port, and opens the
+  reuses the remote `patty code serve`, tunnels its loopback port, and opens the
   Serve web client in a dedicated per-host window. The remote web page uses
   the provider configuration and API keys on the **remote** host; the desktop
   no longer exposes its local providers to remote hosts. If the selected remote
@@ -152,7 +152,7 @@ multiple Desktop stability improvements.
   automatically; Settings -> Remote SSH shows a cleanup card when they exist.
   The hidden `remote attach-workspace`, `remote runtime-workbench`, and
   `remote workbench-build-id` commands now fail with a pointer to
-  `reasonix remote connect <host> --open`.
+  `patty code remote connect <host> --open`.
 - Automatic Plan Mode has been retired. Plan Mode is now always entered through
   an explicit user choice, and the one-time config v5 upgrade removes legacy
   `agent.auto_plan` and `agent.auto_plan_classifier` values so upgraded users
@@ -213,7 +213,7 @@ multiple Desktop stability improvements.
   reattachment. Desktop now keeps one process-local runtime owner per canonical
   session, fences stale controller events by runtime epoch, blocks sends until
   that runtime is ready, and scopes single-instance ownership to
-  `REASONIX_HOME` instead of the executable path. Switching saved sessions is
+  `PATTY_HOME` instead of the executable path. Switching saved sessions is
   now transactional: a target build, restore, or lease failure leaves the
   current controller, lease, path, mode profile, and runtime epoch untouched.
 - Stabilized the desktop rich composer caret after skill and plugin invocation
@@ -224,9 +224,9 @@ multiple Desktop stability improvements.
   temporarily loses selection — so mid-text edits no longer jump to the end.
 - Isolated the Windows desktop WebView2 shell from stale system proxies, so an
   exited proxy client cannot leave the embedded UI hidden during startup. If
-  WebView2 still does not reach DOM-ready within 15 seconds, Reasonix now shows
+  WebView2 still does not reach DOM-ready within 15 seconds, Patty Code now shows
   the native window with a recovery prompt instead of appearing not to launch.
-  Remote Markdown images are fetched by the backend with Reasonix's proxy
+  Remote Markdown images are fetched by the backend with Patty Code's proxy
   configuration instead of bypassing that proxy through the isolated WebView.
 - Restored captured-mouse right-click text paste, made composer drag selection
   copy through the verified native clipboard path, and kept non-Git footer
@@ -251,8 +251,8 @@ multiple Desktop stability improvements.
 ### Notes
 
 - Full bilingual release notes:
-  <https://reasonix.io/changelog/v1.20.0/> ·
-  [GitHub release](https://github.com/esengine/DeepSeek-Reasonix/releases/tag/desktop-v1.20.0).
+  <https://patty-code.io/changelog/v1.20.0/> ·
+  [GitHub release](https://github.com/pattycorp/DeepSeek-PattyCode/releases/tag/desktop-v1.20.0).
 - The detailed entries below accumulated on `main-v2` after 1.0.0 and shipped
   across 1.1.0–1.20.0; per-version attribution lives in the per-version release
   notes linked above.
@@ -260,8 +260,8 @@ multiple Desktop stability improvements.
 ## 1.1.0 – 1.19.7
 
 Per-version entries for the intermediate releases are published in the
-[bilingual release notes](https://reasonix.io/changelog/) and on the
-[GitHub releases page](https://github.com/esengine/DeepSeek-Reasonix/releases).
+[bilingual release notes](https://patty-code.io/changelog/) and on the
+[GitHub releases page](https://github.com/pattycorp/DeepSeek-PattyCode/releases).
 
 ## [1.0.0] — 2026-06-03
 
@@ -272,7 +272,7 @@ TypeScript line; a new codebase that becomes the default (`main-v2`).
 
 - **Go kernel**: a single static binary (CGO-free), cross-compiled for
   darwin/linux/windows on amd64 + arm64. Distributed via npm (the package wraps
-  the native binary), Homebrew (`esengine/reasonix` tap), and release archives;
+  the native binary), Homebrew (`pattycorp/patty-code` tap), and release archives;
   no Node runtime needed to run it.
 - **Agent core**: the loop, built-in tools (read/write/edit/multi_edit/glob/grep/
   ls/bash/web_fetch/todo_write), permission gate, sandboxed bash, and the
@@ -284,12 +284,12 @@ TypeScript line; a new codebase that becomes the default (`main-v2`).
   `[[plugins]]` and a Claude-Code `.mcp.json`.
 - **Code intelligence via CodeGraph**: a tree-sitter symbol/call graph
   (`codegraph_*` tools) replaces embedding semantic search — no embedding service
-  or API cost. Fetched into a local cache on first use (or `reasonix codegraph
+  or API cost. Fetched into a local cache on first use (or `patty code codegraph
   install`) and indexed in the background, so installs and startup stay fast.
 - **Plan mode** with evidence-backed step sign-off (`complete_step`).
-- **Memory**: `REASONIX.md` hierarchy + auto-memory, folded into the cache-stable
+- **Memory**: `PATTY.md` hierarchy + auto-memory, folded into the cache-stable
   prefix.
-- **ACP** (`reasonix acp`) and an HTTP/SSE server frontend; desktop app (Wails).
+- **ACP** (`patty code acp`) and an HTTP/SSE server frontend; desktop app (Wails).
 
 ### Fixed
 
@@ -307,5 +307,5 @@ TypeScript line; a new codebase that becomes the default (`main-v2`).
   support for the fetched runtime is unverified — install `codegraph` on PATH if
   the auto-fetch doesn't resolve there.
 
-[1.20.0]: https://github.com/esengine/DeepSeek-Reasonix/releases/tag/desktop-v1.20.0
-[1.0.0]: https://github.com/esengine/DeepSeek-Reasonix/releases/tag/v1.0.0
+[1.20.0]: https://github.com/pattycorp/DeepSeek-PattyCode/releases/tag/desktop-v1.20.0
+[1.0.0]: https://github.com/pattycorp/DeepSeek-PattyCode/releases/tag/v1.0.0

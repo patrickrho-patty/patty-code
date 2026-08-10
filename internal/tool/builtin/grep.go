@@ -17,12 +17,12 @@ import (
 
 	"golang.org/x/text/transform"
 
-	fileenc "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/proc"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/secrets"
-	"reasonix/internal/sessiontemp"
-	"reasonix/internal/tool"
+	fileenc "patty/internal/fileutil/encoding"
+	"patty/internal/proc"
+	"patty/internal/sandbox"
+	"patty/internal/secrets"
+	"patty/internal/sessiontemp"
+	"patty/internal/tool"
 )
 
 const (

@@ -1,8 +1,8 @@
 package control
 
 import (
-	"reasonix/internal/event"
-	"reasonix/internal/extension"
+	"patty/internal/event"
+	"patty/internal/extension"
 )
 
 // RuntimePhase is the observable publish/drain phase for this controller.

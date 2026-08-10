@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"strings"
 
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/secrets"
+	"patty/internal/extension"
+	"patty/internal/extension/protocol"
+	"patty/internal/pluginpkg"
+	"patty/internal/secrets"
 )
 
 // PluginComponentID returns the dependency-graph component ID for an installed

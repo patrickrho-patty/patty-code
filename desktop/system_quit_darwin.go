@@ -4,7 +4,7 @@ package main
 
 /*
 #cgo darwin LDFLAGS: -framework Cocoa
-void installReasonixSystemQuitHook(void);
+void installPattyCodeSystemQuitHook(void);
 */
 import "C"
 
@@ -14,11 +14,11 @@ var installSystemQuitHookOnce sync.Once
 
 func installSystemQuitHook() {
 	installSystemQuitHookOnce.Do(func() {
-		C.installReasonixSystemQuitHook()
+		C.installPattyCodeSystemQuitHook()
 	})
 }
 
-//export ReasonixMarkSystemQuit
-func ReasonixMarkSystemQuit() {
+//export PattyCodeMarkSystemQuit
+func PattyCodeMarkSystemQuit() {
 	markSystemQuitRequested()
 }

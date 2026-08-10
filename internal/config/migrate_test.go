@@ -15,11 +15,11 @@ func legacyHome(t *testing.T) (src, dest, home string) {
 	t.Helper()
 	home = t.TempDir()
 	t.Setenv("HOME", home)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	t.Setenv("USERPROFILE", home)                               // os.UserHomeDir on Windows
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config")) // os.UserConfigDir on Linux
 	t.Setenv("AppData", filepath.Join(home, "AppData"))         // os.UserConfigDir on Windows
-	return filepath.Join(home, ".reasonix", "config.json"), userConfigPath(), home
+	return filepath.Join(home, ".patty", "config.json"), userConfigPath(), home
 }
 
 func writeLegacy(t *testing.T, src, body string) {
@@ -36,7 +36,7 @@ func TestMigrateImportsKeyPluginsAndLang(t *testing.T) {
 	writeLegacy(t, src, `{
 		"apiKey": "sk-legacy-123",
 		"model": "deepseek-v4-pro",
-		"lang": "zh",
+		"lang": "ko-KR",
 		"mcpServers": {
 			"fs": {"command": "npx", "args": ["-y", "server-fs"], "type": "stdio"},
 			"stripe": {"type": "http", "url": "https://mcp.stripe.com", "disabled": true}
@@ -70,7 +70,7 @@ func TestMigrateImportsKeyPluginsAndLang(t *testing.T) {
 		t.Fatalf("read dest config: %v", err)
 	}
 	toml := string(got)
-	for _, want := range []string{`language      = "zh"`, `[desktop]`, `language = "zh"`, `name    = "fs"`, `name    = "stripe"`, `type    = "http"`, `auto_start = false`} {
+	for _, want := range []string{`language      = "ko-KR"`, `[desktop]`, `language = "ko-KR"`, `name    = "fs"`, `name    = "stripe"`, `type    = "http"`, `auto_start = false`} {
 		if !strings.Contains(toml, want) {
 			t.Errorf("dest config missing %q:\n%s", want, toml)
 		}
@@ -89,55 +89,6 @@ func TestMigrateImportsKeyPluginsAndLang(t *testing.T) {
 
 	if _, err := os.Stat(src); err != nil {
 		t.Errorf("legacy file must be left untouched: %v", err)
-	}
-}
-
-func TestMigrateImportsLegacyQQConfig(t *testing.T) {
-	src, dest, _ := legacyHome(t)
-	writeLegacy(t, src, `{
-		"qq": {
-			"enabled": true,
-			"appId": "qq-app-id",
-			"appSecret": "qq-secret",
-			"sandbox": true,
-			"ownerOpenId": " owner-openid ",
-			"allowlist": ["owner-openid", " member-openid ", "member-openid", ""]
-		}
-	}`)
-
-	res, err := MigrateLegacyIfNeeded()
-	if err != nil {
-		t.Fatalf("migrate: %v", err)
-	}
-	if res == nil {
-		t.Fatal("expected migration result")
-	}
-	envData, err := os.ReadFile(UserCredentialsPath())
-	if err != nil {
-		t.Fatalf("read credentials: %v", err)
-	}
-	if !strings.Contains(string(envData), "QQ_BOT_APP_SECRET=qq-secret") {
-		t.Fatalf("credentials missing QQ secret: %q", envData)
-	}
-	tomlData, err := os.ReadFile(dest)
-	if err != nil {
-		t.Fatalf("read dest: %v", err)
-	}
-	toml := string(tomlData)
-	for _, want := range []string{
-		`[bot.qq]`,
-		`enabled = true`,
-		`app_id = "qq-app-id"`,
-		`app_secret_env = "QQ_BOT_APP_SECRET"`,
-		`sandbox = true`,
-		`qq_users = ["owner-openid", "member-openid"]`,
-	} {
-		if !strings.Contains(toml, want) {
-			t.Fatalf("migrated config missing %q:\n%s", want, toml)
-		}
-	}
-	if strings.Contains(toml, "qq-secret") {
-		t.Fatalf("migrated TOML must not contain QQ secret:\n%s", toml)
 	}
 }
 
@@ -242,7 +193,7 @@ func TestMigrateMCPToUserConfigOnUpgradeCollectsKnownSources(t *testing.T) {
 			"global": {"command": "legacy-should-not-win"}
 		}
 	}`)
-	writeLegacy(t, filepath.Join(filepath.Dir(dest), "reasonix.toml"), `
+	writeLegacy(t, filepath.Join(filepath.Dir(dest), "patty.toml"), `
 [[plugins]]
 name = "legacy-toml"
 command = "legacy-toml-bin"
@@ -258,7 +209,7 @@ command = "global-bin"
 		t.Fatal(err)
 	}
 	projectTOML := t.TempDir()
-	if err := os.WriteFile(filepath.Join(projectTOML, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(projectTOML, "patty.toml"), []byte(`
 [[plugins]]
 name = "project-toml"
 command = "project-toml-bin"
@@ -310,7 +261,7 @@ command = "project-should-not-win"
 	}
 
 	lateProject := t.TempDir()
-	if err := os.WriteFile(filepath.Join(lateProject, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(lateProject, "patty.toml"), []byte(`
 [[plugins]]
 name = "late"
 command = "late-bin"
@@ -435,7 +386,7 @@ func TestMigrateMCPToUserConfigOnUpgradePreservesConfigVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 	project := t.TempDir()
-	if err := os.WriteFile(filepath.Join(project, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(project, "patty.toml"), []byte(`
 [[plugins]]
 name = "project"
 command = "project-bin"
@@ -461,7 +412,7 @@ command = "project-bin"
 
 func TestMigrateImportsLegacyV1TOMLBeforeJSON(t *testing.T) {
 	srcJSON, dest, _ := legacyHome(t)
-	legacyTOML := filepath.Join(filepath.Dir(dest), "reasonix.toml")
+	legacyTOML := filepath.Join(filepath.Dir(dest), "patty.toml")
 	if err := os.MkdirAll(filepath.Dir(legacyTOML), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -507,7 +458,7 @@ command = "legacy-bin"
 
 func TestMigrateImportsLegacyV1HomeTOMLBeforeJSON(t *testing.T) {
 	srcJSON, dest, home := legacyHome(t)
-	legacyTOML := filepath.Join(home, ".reasonix", "reasonix.toml")
+	legacyTOML := filepath.Join(home, ".patty", "patty.toml")
 	if err := os.MkdirAll(filepath.Dir(legacyTOML), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -645,7 +596,7 @@ func TestMigrateImportsLegacyXDGConfigToPrimaryConfig(t *testing.T) {
 		t.Skip("legacy XDG paths are Unix-only")
 	}
 	_, dest, home := legacyHome(t)
-	legacy := filepath.Join(home, ".config", "reasonix", "config.toml")
+	legacy := filepath.Join(home, ".config", "patty", "config.toml")
 	if samePath(legacy, dest) {
 		t.Skip("legacy XDG config path matches primary path on this platform")
 	}
@@ -750,7 +701,7 @@ func TestMigrateLegacyCredentialsUsesWorkspaceRootForKeyring(t *testing.T) {
 	if err := os.WriteFile(dest, []byte(`default_model = "deepseek-flash/deepseek-chat"`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(project, "reasonix.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(project, "patty.toml"), []byte(`
 default_model = "custom/m"
 [[providers]]
 name = "custom"
@@ -789,8 +740,8 @@ func TestMigrateLegacyCredentialsSkipsKeyringWhenIsolated(t *testing.T) {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
-	t.Setenv("REASONIX_HOME", isolated)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_HOME", isolated)
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 
 	old := legacyKeyringProbeLookup
 	legacyKeyringProbeLookup = func(_ context.Context, key string) legacyKeyringOutcome {
@@ -852,7 +803,7 @@ func TestMigrateLegacyCredentialsDoesNotReimportClearedKey(t *testing.T) {
 
 func TestMigrateSkipsLegacyCredentialsAlreadyInCurrentAutoStore(t *testing.T) {
 	_, dest, _ := legacyHome(t)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "")
+	t.Setenv("PATTY_CREDENTIALS_STORE", "")
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -898,9 +849,9 @@ func TestMigrateSkipsLegacyCredentialsAlreadyInCurrentAutoStore(t *testing.T) {
 func TestMigrateImportsLegacyStateHomeDotEnvCredentials(t *testing.T) {
 	_, dest, _ := legacyHome(t)
 	state := t.TempDir()
-	t.Setenv("REASONIX_STATE_HOME", state)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "")
-	os.Unsetenv("REASONIX_CREDENTIALS_STORE")
+	t.Setenv("PATTY_STATE_HOME", state)
+	t.Setenv("PATTY_CREDENTIALS_STORE", "")
+	os.Unsetenv("PATTY_CREDENTIALS_STORE")
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -913,7 +864,7 @@ func TestMigrateImportsLegacyStateHomeDotEnvCredentials(t *testing.T) {
 
 	currentCred := UserCredentialsPath()
 	if strings.HasPrefix(currentCred, state) {
-		t.Fatalf("current credentials path should not be under REASONIX_STATE_HOME: %q", currentCred)
+		t.Fatalf("current credentials path should not be under PATTY_STATE_HOME: %q", currentCred)
 	}
 	res, err := MigrateLegacyIfNeeded()
 	if err != nil {
@@ -979,11 +930,11 @@ func TestMigrateCustomBaseURLWarns(t *testing.T) {
 
 func TestMigrateSupportData(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("skipping since legacyOSSupportDir equals current reasonixHomeDir on Windows")
+		t.Skip("skipping since legacyOSSupportDir equals current pattyHomeDir on Windows")
 	}
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 

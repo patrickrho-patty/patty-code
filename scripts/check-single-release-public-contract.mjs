@@ -10,11 +10,11 @@ const migrationReferences = new Set([
   "docs/RELEASING.md",
   "docs/SIGNPATH_WINDOWS_ADMIN_SOP.md",
   "docs/CLI.md",
-  "docs/CLI.zh-CN.md",
+  "docs/CLI.ko-KR.md",
 ]);
 const rules = [
   [/release-channel-switch/, "public release channel selector"],
-  [/reasonix upgrade (?:preview|stable)\b/i, "deprecated channel install command"],
+  [/patcode upgrade (?:preview|stable)\b/i, "deprecated channel install command"],
   [/[?&]channel=(?:preview|canary)\b/i, "public channel deep link"],
   [/npm (?:i|install).*(?:@canary|@next)\b/i, "public prerelease npm install"],
   [/\bStable 1\.x\b|· stable\b|current 1\.x stable\b/i, "public Stable channel label"],

@@ -1,12 +1,12 @@
-# Reasonix Theme Pack V2
+# Patty Code Theme Pack V2
 
-Native theme packs for the Reasonix desktop app. Packs are controlled skins:
+Native theme packs for the Patty Code desktop app. Packs are controlled skins:
 semantic color tokens, density/corner recipes, and optional local images for
 the home and task/workspace scenes. They **cannot** run CSS, JavaScript, fonts,
 remote URLs, or SVG scripts. V1 packs remain valid and use the home image in
 both scenes.
 
-> Chinese: [THEME_PACK.zh-CN.md](./THEME_PACK.zh-CN.md)
+> Chinese: [THEME_PACK.ko-KR.md](./THEME_PACK.ko-KR.md)
 
 ## Goals (first release)
 
@@ -46,8 +46,8 @@ The gallery has four groups:
 | --- | --- | --- | --- | --- |
 | **Base styles** | Six visual directions (Graphite, Aurora, Slate, Carbon, Nocturne, Amber), token-less | no (duplicate first) | no | no |
 | **Official themes** | Eight read-only packs embedded in the installer (manifest + original background + thumbnail, MIT) | no (duplicate first) | no | no |
-| **User themes** | Created in the editor, duplicated, or imported as `.reasonix-theme` | yes | yes | yes |
-| **Plugin themes** | `.reasonix-theme` packs contributed by enabled plugins (Manifest v2 `contributes.themes`), read straight from the plugin root — never copied into the user library | no | no (disable/uninstall the plugin) | no |
+| **User themes** | Created in the editor, duplicated, or imported as `.patty-theme` | yes | yes | yes |
+| **Plugin themes** | `.patty-theme` packs contributed by enabled plugins (Manifest v2 `contributes.themes`), read straight from the plugin root — never copied into the user library | no | no (disable/uninstall the plugin) | no |
 
 - All 14 built-in ids (6 base + 8 official) are **reserved**: save, import, copy-over
   and delete all refuse collisions.
@@ -70,24 +70,24 @@ The gallery has four groups:
 
 | ID | Name | Base style | Artwork |
 | --- | --- | --- | --- |
-| `official-rose-dawn` | Rose Dawn / 玫瑰晨光 | graphite | Ivory dawn, soft roses, original illustrated muse |
-| `official-fortune-forge` | Fortune Forge / 鸿运工坊 | amber | Vermilion/gold/jade workshop, original lucky programmer |
-| `official-crimson-horizon` | Crimson Horizon / 赤曜新城 | graphite | Coral-red future city skyline, no people |
-| `official-sage-breeze` | Sage Breeze / 鼠尾草清风 | slate | Cream paper, sage sprigs, original reader |
-| `official-spark-notebook` | Spark Notebook / 灵感手账 | aurora | Notebook grid with stationery, original anime adult |
-| `official-violet-starlight` | Violet Starlight / 紫曜星夜 | nocturne | Blue-violet starfield, butterflies, silhouette muse |
-| `official-cyan-stage` | Cyan Stage / 青岚舞台 | carbon | Cyan stage, light rings, original digital performer |
-| `official-noir-gold` | Noir Gold / 黑金序曲 | carbon | Black velvet, gold spotlights, original gentleman |
+| `official-rose-dawn` | Rose Dawn / 장미 여명 | graphite | Ivory dawn, soft roses, original illustrated muse |
+| `official-fortune-forge` | Fortune Forge / 행운 공방 | amber | Vermilion/gold/jade workshop, original lucky programmer |
+| `official-crimson-horizon` | Crimson Horizon / 진홍 신도시 | graphite | Coral-red future city skyline, no people |
+| `official-sage-breeze` | Sage Breeze / 세이지 산들바람 | slate | Cream paper, sage sprigs, original reader |
+| `official-spark-notebook` | Spark Notebook / 영감 수첩 | aurora | Notebook grid with stationery, original anime adult |
+| `official-violet-starlight` | Violet Starlight / 보랏빛 별밤 | nocturne | Blue-violet starfield, butterflies, silhouette muse |
+| `official-cyan-stage` | Cyan Stage / 청람 무대 | carbon | Cyan stage, light rings, original digital performer |
+| `official-noir-gold` | Noir Gold / 흑금 서곡 | carbon | Black velvet, gold spotlights, original gentleman |
 
 Previews are shown inside the app's theme library (Settings → Appearance) from
-real Reasonix builds. **Screenshots of the app must not be imported as theme
+real Patty Code builds. **Screenshots of the app must not be imported as theme
 backgrounds.** Asset provenance, hashes and licence ledger:
 [THEME_ASSETS.md](./THEME_ASSETS.md) · generator scripts in
 `scripts/official-theme-art/` (procedural, fixed seeds, reproducible).
 
 ## Package format
 
-Distribute as a `.reasonix-theme` ZIP. The archive root may contain **only**:
+Distribute as a `.patty-theme` ZIP. The archive root may contain **only**:
 
 | File | Required | Notes |
 | --- | --- | --- |
@@ -187,7 +187,7 @@ Colors must **not** include `url()`, gradients, or arbitrary CSS.
 
 ## Storage
 
-| Path under Reasonix home | Purpose |
+| Path under Patty Code home | Purpose |
 | --- | --- |
 | `desktop-theme-state.json` | Versioned active theme pointer (not `config.toml`) |
 | `themes/<id>/` | User theme library (`theme.json` + up to two optional scene images) |
@@ -197,7 +197,7 @@ Legacy installs without theme state keep the previous appearance. Old app versio
 ## Desktop bridge (frontend)
 
 List / activate / reset / save / delete / copy / import / export / pick background.
-The UI only receives temporary asset URLs (`/__reasonix_theme_asset/...`) or data URLs — never absolute host paths.
+The UI only receives temporary asset URLs (`/__patty_theme_asset/...`) or data URLs — never absolute host paths.
 
 Import: same id is rejected until the user confirms atomic replace. Built-ins cannot be overwritten or deleted. Corrupt / missing packs fall back to the Graphite path. `/theme reset` and the command palette restore entry clear the pack.
 
@@ -217,7 +217,7 @@ A minimal, royalty-free starter (no portrait photos):
   "schemaVersion": 1,
   "id": "paper-dawn",
   "name": "Paper Dawn",
-  "author": "Reasonix",
+  "author": "Patty Code",
   "description": "Template theme — solid tokens only, no background image.",
   "license": "CC0-1.0",
   "baseStyle": "graphite",
@@ -260,4 +260,4 @@ A minimal, royalty-free starter (no portrait photos):
 }
 ```
 
-Zip as `paper-dawn.reasonix-theme` with only `theme.json` at the root.
+Zip as `paper-dawn.patty-theme` with only `theme.json` at the root.

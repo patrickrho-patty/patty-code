@@ -1,4 +1,4 @@
--- Apply: wrangler d1 execute reasonix-crash --remote --file=migrate-window-index-fix.sql
+-- Apply: wrangler d1 execute patty-crash --remote --file=migrate-window-index-fix.sql
 --
 -- Every dashboard aggregate is `WHERE date >= ... GROUP BY <other columns>`, and
 -- each table's primary key already starts with `date`. Offering SQLite a second

@@ -2,12 +2,12 @@
 
 <a href="./GUIDE.md">Guide</a>
 &nbsp;·&nbsp;
-<a href="./TASK_CONTRACT.zh-CN.md">Simplified Chinese</a>
+<a href="./TASK_CONTRACT.ko-KR.md">Simplified Chinese</a>
 
-Reasonix works best when nontrivial work is described as a **task contract**:
+Patty Code works best when nontrivial work is described as a **task contract**:
 what the work is for, what action is requested, how the result should be
 delivered, what boundaries must be preserved, and when the agent should pause.
-Some prompt templates call the last section "Checkpoint"; Reasonix documents it
+Some prompt templates call the last section "Checkpoint"; Patty Code documents it
 as "Pause policy" to avoid confusion with Checkpoints/Rewind snapshots.
 
 This is intentionally not a larger role prompt. Strong coding agents usually do
@@ -42,7 +42,7 @@ a scope change, or information only I can provide, keep working and report back
 after the task is complete.
 ```
 
-## How Reasonix Uses It
+## How Patty Code Uses It
 
 - **Normal chat** can use the template directly for one-off work.
 - **Goal mode** treats the goal as a task contract and keeps working until the

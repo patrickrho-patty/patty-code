@@ -32,7 +32,7 @@ eq(defaults.code.fontSize, TYPOGRAPHY_REGION_META.code.baseSize, "code uses its 
 eq(defaults.metadata.fontSize, 12, "metadata defaults to the existing 12px supporting-text size");
 
 const normalized = normalizeTypographyPreferences({
-  conversation: { followGlobal: false, fontFamily: "pingfang", fontSize: 99 },
+  conversation: { followGlobal: false, fontFamily: "applesdgothic", fontSize: 99 },
   metadata: { followGlobal: false, fontFamily: "custom", customFontName: "  IBM   Plex Sans  ", fontSize: 8 },
 });
 eq(normalized.conversation.fontSize, TYPOGRAPHY_REGION_META.conversation.max, "oversized values clamp to the region maximum");
@@ -43,7 +43,7 @@ eq(normalized.interface.followGlobal, true, "missing regions retain backward-com
 eq(sanitizeCustomFontName("Bad; font"), "", "unsafe CSS delimiters are rejected");
 eq(isSafeCustomFontNameInput("IBM Plex Sans"), true, "safe custom font input remains editable");
 eq(isSafeCustomFontNameInput("Bad; font"), false, "unsafe custom font input is blocked before state changes");
-eq(fontStackForPreference(normalized.conversation).includes("PingFang SC"), true, "preset resolves to a usable font stack");
+eq(fontStackForPreference(normalized.conversation).includes("Apple SD Gothic Neo"), true, "preset resolves to a usable font stack");
 
 const applied = new Map<string, string>([["--typography-interface-size", "20px"]]);
 const stored = new Map<string, string>();
@@ -64,7 +64,7 @@ Object.defineProperty(globalThis, "localStorage", {
 });
 
 const custom = createDefaultTypographyPreferences();
-custom.conversation = { followGlobal: false, fontFamily: "pingfang", customFontName: "", fontSize: 24 };
+custom.conversation = { followGlobal: false, fontFamily: "applesdgothic", customFontName: "", fontSize: 24 };
 custom.code = { followGlobal: false, fontFamily: "jetbrains", customFontName: "", fontSize: 15 };
 custom.metadata = { followGlobal: false, fontFamily: "inherit", customFontName: "", fontSize: defaults.metadata.fontSize };
 applyTypographyPreferences(custom);

@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/proc"
-	"reasonix/internal/secrets"
+	"patty/internal/pluginpkg"
+	"patty/internal/proc"
+	"patty/internal/secrets"
 )
 
 // Bounded-close budgets, mirrored from internal/plugin's stdio transport: a
@@ -29,9 +29,9 @@ const (
 
 // pluginEnvVarPrefix is the well-known environment block every sidecar sees.
 const (
-	envPluginRoot    = "REASONIX_PLUGIN_ROOT"
-	envPluginName    = "REASONIX_PLUGIN_NAME"
-	envPluginVersion = "REASONIX_PLUGIN_VERSION"
+	envPluginRoot    = "PATTY_PLUGIN_ROOT"
+	envPluginName    = "PATTY_PLUGIN_NAME"
+	envPluginVersion = "PATTY_PLUGIN_VERSION"
 )
 
 // shellExecutables are interpreter names a runtime command may not resolve
@@ -141,7 +141,7 @@ type process struct {
 	jobOnce  sync.Once
 }
 
-// resolveRuntimeCommand expands ${REASONIX_PLUGIN_ROOT} and enforces the exec
+// resolveRuntimeCommand expands ${PATTY_PLUGIN_ROOT} and enforces the exec
 // contract: the resolved command must be an absolute path to the extension
 // executable itself, never a relative name (no PATH lookup — the package must
 // know exactly what it runs) and never a shell.

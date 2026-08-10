@@ -10,7 +10,7 @@ import (
 
 func TestRepairExistingWindowsShortcutsRepairsOnlyExistingFiles(t *testing.T) {
 	root := t.TempDir()
-	existing := filepath.Join(root, "Reasonix.lnk")
+	existing := filepath.Join(root, "Patty Code.lnk")
 	custom := filepath.Join(root, "Custom.lnk")
 	missing := filepath.Join(root, "Missing.lnk")
 	if err := os.WriteFile(existing, []byte("old shortcut"), 0o600); err != nil {
@@ -19,7 +19,7 @@ func TestRepairExistingWindowsShortcutsRepairsOnlyExistingFiles(t *testing.T) {
 	if err := os.WriteFile(custom, []byte("custom shortcut"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	launcher := filepath.Join(root, "reasonix-launcher.exe")
+	launcher := filepath.Join(root, "patty-launcher.exe")
 	var wrote, notified []string
 	originalNotify := windowsNotifyShortcutChange
 	windowsNotifyShortcutChange = func(path string) { notified = append(notified, path) }
@@ -47,87 +47,87 @@ func TestRepairExistingWindowsShortcutsRepairsOnlyExistingFiles(t *testing.T) {
 	}
 }
 
-func TestReasonixWindowsShortcutTargetRequiresCurrentInstall(t *testing.T) {
-	root := filepath.Join(`C:\Program Files`, "Reasonix")
-	launcher := filepath.Join(root, "reasonix-launcher.exe")
+func TestPattyCodeWindowsShortcutTargetRequiresCurrentInstall(t *testing.T) {
+	root := filepath.Join(`C:\Program Files`, "Patty Code")
+	launcher := filepath.Join(root, "patty-launcher.exe")
 	tests := []struct {
 		name   string
 		target string
 		want   bool
 	}{
 		{name: "launcher", target: launcher, want: true},
-		{name: "flat desktop", target: filepath.Join(root, "reasonix-desktop.exe"), want: true},
-		{name: "launcher alias", target: filepath.Join(root, "Reasonix.exe"), want: true},
-		{name: "versioned desktop", target: filepath.Join(root, "versions", "v1.19.3", "reasonix-desktop.exe"), want: true},
-		{name: "other install", target: filepath.Join(`D:\Apps`, "Reasonix", "reasonix-launcher.exe"), want: false},
-		{name: "separate 0.53 install", target: filepath.Join(`D:\Legacy`, "Reasonix", "reasonix-desktop.exe"), want: false},
+		{name: "flat desktop", target: filepath.Join(root, "patty-desktop.exe"), want: true},
+		{name: "launcher alias", target: filepath.Join(root, "PatCode.exe"), want: true},
+		{name: "versioned desktop", target: filepath.Join(root, "versions", "v1.19.3", "patty-desktop.exe"), want: true},
+		{name: "other install", target: filepath.Join(`D:\Apps`, "Patty Code", "patty-launcher.exe"), want: false},
+		{name: "separate 0.53 install", target: filepath.Join(`D:\Legacy`, "Patty Code", "patty-desktop.exe"), want: false},
 		{name: "unrelated app", target: filepath.Join(root, "other.exe"), want: false},
 		{name: "empty", target: "", want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := reasonixWindowsShortcutTarget(tt.target, launcher); got != tt.want {
-				t.Fatalf("reasonixWindowsShortcutTarget(%q, %q) = %v, want %v", tt.target, launcher, got, tt.want)
+			if got := pattyWindowsShortcutTarget(tt.target, launcher); got != tt.want {
+				t.Fatalf("pattyWindowsShortcutTarget(%q, %q) = %v, want %v", tt.target, launcher, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestReasonixWindowsStaleIconOnlyMatchesVersionedDesktop(t *testing.T) {
-	root := filepath.Join(`C:\Program Files, Inc`, "Reasonix")
-	launcher := filepath.Join(root, "reasonix-launcher.exe")
+func TestPattyCodeWindowsStaleIconOnlyMatchesVersionedDesktop(t *testing.T) {
+	root := filepath.Join(`C:\Program Files, Inc`, "Patty Code")
+	launcher := filepath.Join(root, "patty-launcher.exe")
 	tests := []struct {
 		name string
 		icon string
 		want bool
 	}{
-		{name: "versioned", icon: filepath.Join(root, "versions", "v1.19.3", "reasonix-desktop.exe") + ",0", want: true},
-		{name: "quoted versioned", icon: `"` + filepath.Join(root, "versions", "v1.19.3", "reasonix-desktop.exe") + `", 0`, want: true},
+		{name: "versioned", icon: filepath.Join(root, "versions", "v1.19.3", "patty-desktop.exe") + ",0", want: true},
+		{name: "quoted versioned", icon: `"` + filepath.Join(root, "versions", "v1.19.3", "patty-desktop.exe") + `", 0`, want: true},
 		{name: "stable launcher", icon: launcher + ",0", want: false},
 		{name: "custom icon", icon: filepath.Join(root, "custom.ico") + ",0", want: false},
-		{name: "other install", icon: filepath.Join(`D:\Apps`, "Reasonix", "versions", "v1.19.3", "reasonix-desktop.exe") + ",0", want: false},
+		{name: "other install", icon: filepath.Join(`D:\Apps`, "Patty Code", "versions", "v1.19.3", "patty-desktop.exe") + ",0", want: false},
 		{name: "empty", icon: "", want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := reasonixWindowsStaleIcon(tt.icon, launcher); got != tt.want {
-				t.Fatalf("reasonixWindowsStaleIcon(%q, %q) = %v, want %v", tt.icon, launcher, got, tt.want)
+			if got := pattyWindowsStaleIcon(tt.icon, launcher); got != tt.want {
+				t.Fatalf("pattyWindowsStaleIcon(%q, %q) = %v, want %v", tt.icon, launcher, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestReasonixWindowsVersionedTarget(t *testing.T) {
-	root := filepath.Join(`C:\Program Files`, "Reasonix")
-	launcher := filepath.Join(root, "reasonix-launcher.exe")
+func TestPattyCodeWindowsVersionedTarget(t *testing.T) {
+	root := filepath.Join(`C:\Program Files`, "Patty Code")
+	launcher := filepath.Join(root, "patty-launcher.exe")
 	tests := []struct {
 		name   string
 		target string
 		want   bool
 	}{
-		{name: "versioned desktop", target: filepath.Join(root, "versions", "v1.19.3", "reasonix-desktop.exe"), want: true},
-		{name: "case-insensitive", target: filepath.Join(root, "Versions", "V1.19.3", "Reasonix-Desktop.exe"), want: true},
+		{name: "versioned desktop", target: filepath.Join(root, "versions", "v1.19.3", "patty-desktop.exe"), want: true},
+		{name: "case-insensitive", target: filepath.Join(root, "Versions", "V1.19.3", "Patty Code-Desktop.exe"), want: true},
 		{name: "launcher", target: launcher, want: false},
-		{name: "launcher alias", target: filepath.Join(root, "Reasonix.exe"), want: false},
-		{name: "flat desktop", target: filepath.Join(root, "reasonix-desktop.exe"), want: false},
-		{name: "deeper versioned path", target: filepath.Join(root, "versions", "v1.19.3", "sub", "reasonix-desktop.exe"), want: false},
-		{name: "wrong binary in versions", target: filepath.Join(root, "versions", "v1.19.3", "reasonix-cli.exe"), want: false},
-		{name: "other install", target: filepath.Join(`D:\Apps`, "Reasonix", "versions", "v1.19.3", "reasonix-desktop.exe"), want: false},
+		{name: "launcher alias", target: filepath.Join(root, "PatCode.exe"), want: false},
+		{name: "flat desktop", target: filepath.Join(root, "patty-desktop.exe"), want: false},
+		{name: "deeper versioned path", target: filepath.Join(root, "versions", "v1.19.3", "sub", "patty-desktop.exe"), want: false},
+		{name: "wrong binary in versions", target: filepath.Join(root, "versions", "v1.19.3", "patty-cli.exe"), want: false},
+		{name: "other install", target: filepath.Join(`D:\Apps`, "Patty Code", "versions", "v1.19.3", "patty-desktop.exe"), want: false},
 		{name: "empty", target: "", want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := reasonixWindowsVersionedTarget(tt.target, launcher); got != tt.want {
-				t.Fatalf("reasonixWindowsVersionedTarget(%q, %q) = %v, want %v", tt.target, launcher, got, tt.want)
+			if got := pattyWindowsVersionedTarget(tt.target, launcher); got != tt.want {
+				t.Fatalf("pattyWindowsVersionedTarget(%q, %q) = %v, want %v", tt.target, launcher, got, tt.want)
 			}
 		})
 	}
 }
 
 func TestRepairWindowsShortcutPlan(t *testing.T) {
-	root := filepath.Join(`C:\Program Files`, "Reasonix")
-	launcher := filepath.Join(root, "reasonix-launcher.exe")
-	versioned := filepath.Join(root, "versions", "v1.19.3", "reasonix-desktop.exe")
+	root := filepath.Join(`C:\Program Files`, "Patty Code")
+	launcher := filepath.Join(root, "patty-launcher.exe")
+	versioned := filepath.Join(root, "versions", "v1.19.3", "patty-desktop.exe")
 	tests := []struct {
 		name        string
 		target      string

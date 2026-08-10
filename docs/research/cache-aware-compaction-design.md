@@ -23,7 +23,7 @@ canonical transcript (Session.Messages，普通压缩永不改写)
     +-- cache state (warm/cold/unknown，仅参与成本与观测)
 ```
 
-## 二、持久化边界
+## 二、저장(persistent storage)边界
 
 ### Canonical transcript
 
@@ -42,7 +42,7 @@ canonical transcript (Session.Messages，普通压缩永不改写)
 
 ### Resume 只记录缓存状态
 
-恢复会话时，根据 provider TTL 和最后活动时间记录 `warm`、`cold` 或 `unknown`。Resume 路径不会调用 `Compact`、`SnapshotRewrite` 或 `PruneStaleToolResults`，也不会修改 canonical transcript。
+恢复会话时，根据 provider TTL 和最后活动时间记录 `warm`、`cold` 或 `unknown`。Resume 路径不会호출(call) `Compact`、`SnapshotRewrite` 或 `PruneStaleToolResults`，也不会修改 canonical transcript。
 
 ### Preflight 惰性生成 projection
 
@@ -50,9 +50,9 @@ canonical transcript (Session.Messages，普通压缩永不改写)
 
 - 未达到压力阈值：继续发送 append-only canonical view；
 - 达到压缩阈值：尝试生成并安装 projection；
-- 达到 force 阈值但没有可折叠内容：在非 tool loop 中返回可重试的 `ErrCompactionRequired`；
+- 达到 force 阈值但没有可折叠内容：在非 tool loop 中반환(return)可重试的 `ErrCompactionRequired`；
 - 摘要失败：不写 mechanical marker，不安装半成品，也不改写 canonical；
-- tool loop 进行中：只发 notice，由后续 preflight/stuck guard 处理，避免中断工具调用配对。
+- tool loop 进行中：只发 notice，由后续 preflight/stuck guard 处理，避免中断工具호출(call)配对。
 
 ### Provider-visible 顺序
 
@@ -74,7 +74,7 @@ system
 
 projection 采用 fail-closed 校验：
 
-- `CoveredPrefixHash` 对 `ModelMessages(canonical[:CoveredCount])` 的完整 provider-visible 内容生成稳定 fingerprint，覆盖图片、reasoning 元数据、Responses items、tool call ID/name/arguments/thought signature；
+- `CoveredPrefixHash` 对 `ModelMessages(canonical[:CoveredCount])` 的完整 provider-visible 内容生成稳定 fingerprint，覆盖图片、patty code 元数据、Responses items、tool call ID/name/arguments/thought signature；
 - `PromptCacheKey` 必须存在，并严格匹配 `workspace|session lineage|model`；
 - 缺少 fingerprint、前缀被 edit/rewrite、切换模型或 lineage 时，内存 projection 立即失效；
 - rewind、fork、branch、snip/prune 和显式范围摘要会使相关 projection 失效或隔离。
@@ -90,7 +90,7 @@ Provider 接口已定义：
 - `CompactionCapabilities`；
 - `ErrCompactionUnsupported`。
 
-当前 Responses vendor 明确返回 unsupported，并回退到 Reasonix 的摘要路径。摘要首次失败后的重试会聚合两次 attempt 的 usage 与 request count，供成本和 telemetry 使用。
+当前 Responses vendor 明确반환(return) unsupported，并回退到 Patty Code 的摘要路径。摘要首次失败后的重试会聚合两次 attempt 的 usage 与 request count，供成本和 telemetry 使用。
 
 Anthropic、DeepSeek 等原生 compaction endpoint 尚未接入；能力接口不代表这些 endpoint 已经可用。
 
@@ -106,9 +106,9 @@ Anthropic、DeepSeek 等原生 compaction endpoint 尚未接入；能力接口�
 以下能力不属于当前阶段，不能按已落地行为依赖：
 
 1. Anthropic/DeepSeek 原生 compaction endpoint；
-2. compaction 后调用 `SaveKnowledge` 或写入 EventChain；
+2. compaction 后호출(call) `SaveKnowledge` 或写入 EventChain；
 3. 依靠 EventChain 完成跨 session 的 L2 自动恢复；
 4. feature flag 观测期、旧兼容路径的最终清理；
 5. 完整 break-even 成本 dashboard 聚合。
 
-这些后续必须分别设计失败原子性、持久化兼容、缓存影响和 provider 能力探测，不能重新把 cache TTL 与 canonical transcript 改写绑定。
+这些后续必须分别设计失败原子性、저장(persistent storage)兼容、缓存影响和 provider 能力探测，不能重新把 cache TTL 与 canonical transcript 改写绑定。

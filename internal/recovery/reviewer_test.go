@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
 type captureProvider struct {
@@ -209,7 +209,6 @@ func TestReviewerParseVariants(t *testing.T) {
 				t.Fatalf("parse: %v", err)
 			}
 			if ReviewOutcome(strings.ToLower(string(v.Outcome))) != tt.outcome && v.Outcome != tt.outcome {
-				// allow raw illegal enum through parse
 				if string(v.Outcome) != string(tt.outcome) {
 					t.Fatalf("outcome = %q want %q", v.Outcome, tt.outcome)
 				}
@@ -227,7 +226,6 @@ func TestReviewerOutputBudgetAborts(t *testing.T) {
 			ch := make(chan provider.Chunk, 8)
 			go func() {
 				defer close(ch)
-				// Stream more than 4 KiB of text.
 				for range 20 {
 					select {
 					case <-ctx.Done():
@@ -265,7 +263,6 @@ func TestReviewerConcurrentTasksDoNotCross(t *testing.T) {
 			ch := make(chan provider.Chunk, 2)
 			go func() {
 				defer close(ch)
-				// Unique body per concurrent call based on user content.
 				user := req.Messages[1].Content
 				tag := "A"
 				if strings.Contains(user, "task-b") {
@@ -361,8 +358,7 @@ func TestPolicyPromptBudget(t *testing.T) {
 }
 
 func TestReviewerEvidenceBudgetKeepsValidJSON(t *testing.T) {
-	// Extreme combination that would exceed 6 KiB if only clipped after marshal.
-	huge := strings.Repeat("中", 4000) // multi-byte runes stress UTF-8 clipping
+	huge := strings.Repeat("한", 4000) // multi-byte runes stress UTF-8 clipping
 	failure := &FailureEvent{
 		Tool: "bash", ErrSummary: huge, OutputExcerpt: huge, ArgsSummary: huge,
 		Verification: true, RepeatCount: 2,
@@ -382,7 +378,6 @@ func TestReviewerEvidenceBudgetKeepsValidJSON(t *testing.T) {
 	if len(s) > reviewerMaxEvidenceBytes {
 		t.Fatalf("evidence len = %d, want <= %d", len(s), reviewerMaxEvidenceBytes)
 	}
-	// Still structured JSON with required proposal key.
 	var payload map[string]any
 	if err := json.Unmarshal([]byte(s), &payload); err != nil {
 		t.Fatalf("unmarshal: %v", err)

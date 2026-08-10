@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/control"
-	"reasonix/internal/workspacelease"
+	"patty/internal/control"
+	"patty/internal/workspacelease"
 )
 
 // ActiveWorkView is the structured Desktop contract for work that prevents a
@@ -285,7 +285,7 @@ func (a *App) WorkspaceConflictForTab(tabID string) WorkspaceConflictView {
 func (a *App) RevealWorkspaceWriterForTab(tabID string) (TabMeta, error) {
 	conflict := a.WorkspaceConflictForTab(tabID)
 	if conflict.State != "local" || conflict.OwnerTabID == "" {
-		return TabMeta{}, fmt.Errorf("the workspace writer is not available in this Reasonix window")
+		return TabMeta{}, fmt.Errorf("the workspace writer is not available in this Patty Code window")
 	}
 	return a.RevealBackgroundRuntime(conflict.OwnerTabID)
 }

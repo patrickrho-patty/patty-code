@@ -7,7 +7,7 @@ import (
 	"maps"
 	"sort"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // RuntimeSnapshot is the frozen, effective runtime configuration produced by

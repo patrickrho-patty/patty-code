@@ -12,7 +12,6 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
-// Detect
 
 func TestDetectUTF8Plain(t *testing.T) {
 	enc, _ := Detect([]byte("hello world\n"))
@@ -54,7 +53,7 @@ func TestDetectUTF16BE(t *testing.T) {
 }
 
 func TestDetectGB18030(t *testing.T) {
-	gb, err := simplifiedchinese.GB18030.NewEncoder().String("你好世界")
+	gb, err := simplifiedchinese.GB18030.NewEncoder().String("안녕 세계")
 	if err != nil {
 		t.Fatalf("encode: %v", err)
 	}
@@ -71,26 +70,25 @@ func TestDetectEmpty(t *testing.T) {
 	}
 }
 
-// Decode
 
 func TestDecodeUTF8(t *testing.T) {
-	in := []byte("hello\n世界")
+	in := []byte("hello\n세계")
 	out := Decode(in, UTF8)
-	if string(out) != "hello\n世界" {
+	if string(out) != "hello\n세계" {
 		t.Errorf("got %q", out)
 	}
 }
 
 func TestReadFileUTF8DecodesGB18030(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "settings.json")
-	if err := os.WriteFile(path, Encode(`{"label":"中文"}`, GB18030), 0o644); err != nil {
+	if err := os.WriteFile(path, Encode(`{"label":"중국어"}`, GB18030), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	got, err := ReadFileUTF8(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(got) != `{"label":"中文"}` {
+	if string(got) != `{"label":"중국어"}` {
 		t.Fatalf("ReadFileUTF8 = %q", got)
 	}
 }
@@ -131,9 +129,9 @@ func TestDecodeUTF16BE(t *testing.T) {
 }
 
 func TestDecodeGB18030(t *testing.T) {
-	gb, _ := simplifiedchinese.GB18030.NewEncoder().String("你好世界\n第二行")
+	gb, _ := simplifiedchinese.GB18030.NewEncoder().String("안녕 세계\n둘째 줄")
 	out := Decode([]byte(gb), GB18030)
-	if string(out) != "你好世界\n第二行" {
+	if string(out) != "안녕 세계\n둘째 줄" {
 		t.Errorf("got %q", out)
 	}
 }
@@ -146,7 +144,6 @@ func TestDecodeLossyUTF8(t *testing.T) {
 	}
 }
 
-// Encode
 
 func TestEncodeUTF8(t *testing.T) {
 	out := Encode("hello", UTF8)
@@ -188,17 +185,16 @@ func TestEncodeUTF16BE(t *testing.T) {
 }
 
 func TestEncodeGB18030(t *testing.T) {
-	out := Encode("你好", GB18030)
+	out := Encode("안녕", GB18030)
 	dec, _ := simplifiedchinese.GB18030.NewDecoder().Bytes(out)
-	if string(dec) != "你好" {
+	if string(dec) != "안녕" {
 		t.Errorf("round-trip failed: got %q", dec)
 	}
 }
 
-// Round-trip
 
 func TestRoundTripGB18030(t *testing.T) {
-	original := "你好世界\n第二行\n"
+	original := "안녕 세계\n둘째 줄\n"
 	gb, _ := simplifiedchinese.GB18030.NewEncoder().String(original)
 
 	enc, _ := Detect([]byte(gb))
@@ -207,7 +203,7 @@ func TestRoundTripGB18030(t *testing.T) {
 		t.Fatalf("decode mismatch: %q", decoded)
 	}
 
-	edited := strings.Replace(decoded, "第二行", "新的行", 1)
+	edited := strings.Replace(decoded, "둘째 줄", "새로운 줄", 1)
 	reencoded := Encode(edited, enc)
 	redecoded := string(Decode(reencoded, enc))
 	if redecoded != edited {
@@ -235,7 +231,6 @@ func TestRoundTripUTF8BOM(t *testing.T) {
 	}
 }
 
-// BOM-less UTF-16
 
 func utf16NoBOM(t *testing.T, s string, order binary.ByteOrder) []byte {
 	t.Helper()
@@ -306,7 +301,6 @@ func TestRoundTripUTF16LENoBOM(t *testing.T) {
 	}
 }
 
-// UTF-16 supplementary plane (surrogate pairs)
 
 func TestSurrogatePairRoundTrip(t *testing.T) {
 	// U+1F600 (😀) is in the supplementary plane and requires a surrogate pair.

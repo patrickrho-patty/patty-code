@@ -28,8 +28,6 @@ const appSource = readFileSync(resolve(here, "../App.tsx"), "utf8");
 const bridgeSource = readFileSync(resolve(here, "../lib/bridge.ts"), "utf8");
 const settingsSource = readFileSync(resolve(here, "../components/SettingsPanel.tsx"), "utf8");
 const enLocaleSource = readFileSync(resolve(here, "../locales/en.ts"), "utf8");
-const zhLocaleSource = readFileSync(resolve(here, "../locales/zh.ts"), "utf8");
-const zhTWLocaleSource = readFileSync(resolve(here, "../locales/zh-TW.ts"), "utf8");
 
 console.log("\nstartup settings contract");
 
@@ -80,25 +78,19 @@ ok(
   "Token Rhythm preset localizes the English and Chinese brand names",
 );
 ok(
-  [enLocaleSource, zhLocaleSource, zhTWLocaleSource].every((source) =>
-    source.includes('"settings.addProvider.preset.deepseekResponsesDesc"') &&
-    source.includes('"settings.addProvider.preset.deepseekAnthropicDesc"') &&
-    source.includes('"settings.addProvider.preset.tokenRhythmLabel"') &&
-    source.includes('"settings.addProvider.preset.tokenRhythmDesc"'),
-  ),
-  "provider preset localization is present in every supported locale",
+  enLocaleSource.includes('"settings.addProvider.preset.deepseekResponsesDesc"') &&
+    enLocaleSource.includes('"settings.addProvider.preset.deepseekAnthropicDesc"') &&
+    enLocaleSource.includes('"settings.addProvider.preset.tokenRhythmLabel"') &&
+    enLocaleSource.includes('"settings.addProvider.preset.tokenRhythmDesc"'),
+  "provider preset localization is present in the English locale",
 );
 ok(
-  enLocaleSource.includes('"settings.addProvider.preset.tokenRhythmLabel": "Token Rhythm"') &&
-    zhLocaleSource.includes('"settings.addProvider.preset.tokenRhythmLabel": "基元律动"') &&
-    zhTWLocaleSource.includes('"settings.addProvider.preset.tokenRhythmLabel": "基元律动"'),
-  "Token Rhythm preset uses the official English and Chinese brand names",
+  enLocaleSource.includes('"settings.addProvider.preset.tokenRhythmLabel": "Token Rhythm"'),
+  "Token Rhythm preset uses the official English brand name",
 );
 ok(
-  [enLocaleSource, zhLocaleSource, zhTWLocaleSource].every((source) =>
-    source.includes('"settings.reasoningProtocol.glm"'),
-  ),
-  "GLM reasoning protocol is localized in every supported locale",
+  enLocaleSource.includes('"settings.reasoningProtocol.glm"'),
+  "GLM reasoning protocol is localized in the English locale",
 );
 ok(
   /mockPreset\("deepseek-anthropic",\s*"DeepSeek Anthropic"/.test(bridgeSource),

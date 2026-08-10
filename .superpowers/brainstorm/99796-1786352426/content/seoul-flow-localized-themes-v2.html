@@ -1,0 +1,168 @@
+<style>
+  .revision-stack { display:flex; flex-direction:column; gap:34px; margin-top:24px; }
+  .terminal-card { border:1px solid #334155; border-radius:16px; overflow:hidden; background:#07121a; }
+  .terminal { font:13px/1.42 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; background:var(--bg); color:var(--text); }
+  .screen { min-height:690px; display:flex; flex-direction:column; }
+  .terminal-top { padding:22px 26px 0; background:var(--panel); border-bottom:1px solid var(--line); }
+  .masthead { display:flex; align-items:flex-start; gap:18px; }
+  .marks { display:flex; gap:10px; align-items:flex-start; flex:none; }
+  .mark { white-space:pre; font-size:8px; line-height:1.04; font-weight:700; color:var(--ink); }
+  .flag-red,.logo-red { color:var(--primary); }
+  .flag-blue { color:var(--secondary); }
+  .brand-copy { min-width:0; padding-top:2px; }
+  .brand-name { color:var(--strong); font-size:17px; font-weight:800; letter-spacing:.08em; }
+  .brand-sub { margin-top:4px; color:var(--muted); font-size:11px; }
+  .facts { display:grid; grid-template-columns:repeat(4,minmax(0,max-content)); gap:8px 25px; margin:20px -26px 0; padding:12px 26px 13px; background:var(--subpanel); border-top:1px solid var(--line); }
+  .fact { white-space:nowrap; }
+  .fact-key { margin-right:8px; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.08em; }
+  .fact-value { color:var(--text); font-size:11px; }
+  .fact-value.primary { color:var(--primary); }.fact-value.secondary { color:var(--secondary); }
+  .conversation { flex:1; padding:27px 26px 18px; }
+  .turn { position:relative; display:grid; grid-template-columns:58px minmax(0,1fr); gap:14px; margin-bottom:26px; }
+  .turn:before { content:""; position:absolute; left:22px; top:22px; bottom:-27px; width:1px; background:var(--line); }
+  .turn:last-child:before { display:none; }
+  .turn-id { padding-top:1px; color:var(--secondary); font-size:11px; font-weight:800; }
+  .turn.assistant .turn-id { color:var(--primary); }
+  .turn-body { max-width:930px; }
+  .turn-body p { margin:0 0 7px; }
+  .activity { margin-top:13px; padding:10px 13px; background:var(--activity); border-left:3px solid var(--signal); color:var(--muted-strong); font-size:12px; }
+  .activity-row { display:grid; grid-template-columns:24px minmax(0,1fr); gap:8px; margin:3px 0; }
+  .activity-index { color:var(--signal); }
+  .composer { margin-top:auto; padding:13px 26px 20px; background:var(--composer); border-top:1px solid var(--line); }
+  .write-label { display:flex; align-items:center; gap:12px; color:var(--signal); font-size:10px; font-weight:800; letter-spacing:.14em; }
+  .write-label:after { content:""; height:1px; flex:1; background:var(--signal); opacity:.32; }
+  .input-line { min-height:46px; padding:12px 0 5px; color:var(--strong); font-size:15px; }
+  .caret { display:inline-block; width:8px; height:16px; margin-left:2px; vertical-align:-2px; background:var(--signal); }
+  .composer-hints { display:flex; flex-wrap:wrap; gap:8px 20px; color:var(--muted); font-size:10px; }
+  .explanation { padding:20px 23px 22px; background:#fff; color:#172033; }
+  .explanation h3 { margin:0 0 7px; font-size:18px; }
+  .explanation p { margin:0; color:#64748b; font-size:13px; line-height:1.55; }
+  .verified { display:inline-block; margin-top:12px; padding:5px 9px; border-radius:999px; background:#e0f2fe; color:#075985; font-size:10px; font-weight:800; }
+
+  .seoul-night { --bg:#07121a; --panel:#091923; --subpanel:#07151e; --composer:#061019; --activity:#0a1b24; --line:#17333e; --text:#d8e6e8; --strong:#edf6f7; --muted:#789aa1; --muted-strong:#a8bec2; --ink:#d8e6e8; --primary:#e16162; --secondary:#5cb2c0; --signal:#d1a653; }
+  .ink-night { --bg:#11110f; --panel:#181713; --subpanel:#14130f; --composer:#0d0d0b; --activity:#1b1914; --line:#353229; --text:#e6e0d4; --strong:#f3eee5; --muted:#938c7e; --muted-strong:#c3bbad; --ink:#d8d1c4; --primary:#cd5257; --secondary:#7295ad; --signal:#bc9450; }
+  .hanji-light { --bg:#eee9dc; --panel:#e4ddcf; --subpanel:#ddd5c4; --composer:#f6f2e9; --activity:#e3dccd; --line:#c8beaa; --text:#2c2c26; --strong:#1f211c; --muted:#756f64; --muted-strong:#59554c; --ink:#34342e; --primary:#a83e42; --secondary:#285f85; --signal:#986b2d; }
+  .jade-night { --bg:#071510; --panel:#0a1f17; --subpanel:#081a14; --composer:#06110d; --activity:#0c211a; --line:#1b3a2f; --text:#d9ebe4; --strong:#edfaf5; --muted:#76998b; --muted-strong:#acc7bc; --ink:#d9ebe4; --primary:#dc5b5e; --secondary:#55bca3; --signal:#d5ad5d; }
+
+  .locale-map { border:1px solid #cbd5e1; border-radius:14px; overflow:hidden; background:#fff; }
+  .locale-map h3 { margin:0; padding:17px 20px 7px; color:#172033; font-size:17px; }
+  .locale-map p { margin:0; padding:0 20px 15px; color:#64748b; font-size:12px; }
+  .map-grid { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #e2e8f0; }
+  .map-col { padding:16px 20px 18px; }
+  .map-col + .map-col { border-left:1px solid #e2e8f0; }
+  .map-col strong { display:block; margin-bottom:9px; color:#334155; font-size:12px; }
+  .mapping { color:#475569; font:12px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace; }
+
+  .theme-section h3 { margin:0 0 7px; font-size:20px; }
+  .theme-section > p { margin:0 0 18px; color:#64748b; }
+  .theme-stack { display:flex; flex-direction:column; gap:18px; }
+  .theme-preview { border:1px solid #334155; border-radius:14px; overflow:hidden; cursor:pointer; transition:.16s ease; }
+  .theme-preview:hover { transform:translateY(-2px); border-color:#94a3b8; }
+  .theme-preview.selected { outline:3px solid #38bdf8; outline-offset:2px; }
+  .mini-screen { min-height:250px; padding:20px 23px; background:var(--bg); color:var(--text); font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .mini-head { display:flex; justify-content:space-between; gap:20px; padding-bottom:11px; border-bottom:1px solid var(--line); color:var(--strong); font-weight:800; }
+  .mini-facts { display:flex; flex-wrap:wrap; gap:8px 22px; padding:11px 0; color:var(--muted); font-size:10px; }
+  .mini-facts b { color:var(--secondary); }
+  .mini-turn { margin:15px 0 24px; padding-left:13px; border-left:2px solid var(--primary); }
+  .mini-input-label { display:flex; align-items:center; gap:10px; color:var(--signal); font-size:9px; font-weight:800; letter-spacing:.12em; }
+  .mini-input-label:after { content:""; height:1px; flex:1; background:var(--signal); opacity:.35; }
+  .mini-input { padding-top:10px; color:var(--strong); font-size:13px; }
+  .theme-meta { padding:15px 18px 17px; background:#fff; color:#172033; }
+  .theme-meta h4 { margin:0 0 4px; font-size:15px; }.theme-meta p { margin:0; color:#64748b; font-size:12px; }
+
+  @media (max-width:900px) {
+    .masthead { flex-direction:column; }.brand-copy { padding-top:0; }
+    .facts { grid-template-columns:repeat(2,minmax(0,max-content)); }
+  }
+  @media (max-width:680px) {
+    .terminal-top,.conversation,.composer { padding-left:15px; padding-right:15px; }
+    .marks { flex-direction:column; }.mark { font-size:7px; }
+    .facts { margin-left:-15px; margin-right:-15px; padding-left:15px; grid-template-columns:1fr 1fr; gap:7px 10px; }
+    .turn { grid-template-columns:48px minmax(0,1fr); gap:8px; }
+    .map-grid { grid-template-columns:1fr; }.map-col + .map-col { border-left:0; border-top:1px solid #e2e8f0; }
+  }
+</style>
+
+<h2>서울 흐름판 · localized and theme-ready</h2>
+<p class="subtitle">This revision keeps the structure you selected, makes Korean the default presentation, corrects the flag’s four trigrams, and separates structure from color so themes can change without moving anything.</p>
+
+<div class="revision-stack">
+  <div class="terminal-card seoul-night">
+    <div class="terminal">
+      <div class="screen">
+        <div class="terminal-top">
+          <div class="masthead">
+            <div class="marks">
+              <div class="mark">+-----------------------------+
+|  =======        ==   ==     |
+|  =======        =======     |
+|  =======        ==   ==     |
+|                             |
+|          <span class="flag-red">@@@@@@@</span>            |
+|        <span class="flag-red">@@@@@@@@</span><span class="flag-blue">@@@</span>          |
+|       <span class="flag-red">@@@@@@</span><span class="flag-blue">@@@@@@@</span>         |
+|       <span class="flag-red">@@@</span><span class="flag-blue">@@@@@@@@@@</span>         |
+|        <span class="flag-blue">@@@@@@@@@@@</span>          |
+|          <span class="flag-blue">@@@@@@@</span>            |
+|                             |
+|  =======        ==   ==     |
+|  ==   ==        ==   ==     |
+|  =======        ==   ==     |
++-----------------------------+</div>
+              <div class="mark">+-----------------------------+
+|                             |
+|    <span class="logo-red">/===================\</span>    |
+|    <span class="logo-red">\===================/</span>    |
+|                             |
+|    <span class="logo-red">/===================\</span>    |
+|    <span class="logo-red">\===================/</span>    |
+|                             |
+|    <span class="logo-red">/===================\</span>    |
+|    <span class="logo-red">\===================/</span>    |
+|                             |
+|                             |
+|                             |
+|                             |
+|                             |
++-----------------------------+</div>
+            </div>
+            <div class="brand-copy"><div class="brand-name">PATTY / 작업 흐름 07</div><div class="brand-sub">보안 연결됨 · feature/session-fix</div></div>
+          </div>
+          <div class="facts">
+            <span class="fact"><b class="fact-key">작업</b><b class="fact-value primary">자동</b></span>
+            <span class="fact"><b class="fact-key">모델</b><b class="fact-value secondary">deepseek-v4</b></span>
+            <span class="fact"><b class="fact-key">추론</b><b class="fact-value">보통</b></span>
+            <span class="fact"><b class="fact-key">여유</b><b class="fact-value">82%</b></span>
+          </div>
+        </div>
+        <div class="conversation">
+          <div class="turn user"><div class="turn-id">01 ●</div><div class="turn-body"><p>로그인 흐름에서 세션이 간헐적으로 사라지는 이유를 찾아 주세요.</p></div></div>
+          <div class="turn assistant"><div class="turn-id">02 ◆</div><div class="turn-body"><p>세션 생성 → 쿠키 기록 → 리다이렉트 순서에서 경쟁 조건을 확인하고 있습니다.</p><div class="activity"><div class="activity-row"><span class="activity-index">01</span><span>탐색 완료 · session.Store / middleware.Auth</span></div><div class="activity-row"><span class="activity-index">02</span><span>실행 중 · 만료 경계 테스트</span></div><div class="activity-row"><span class="activity-index">03</span><span>대기 · 최소 수정안 검증</span></div></div></div></div>
+        </div>
+        <div class="composer"><div class="write-label">명령 / 메시지</div><div class="input-line">명령 또는 질문을 입력하세요<span class="caret"></span></div><div class="composer-hints"><span>/ 명령어</span><span>@ 파일</span><span>! 셸</span><span>? 단축키</span></div></div>
+      </div>
+    </div>
+    <div class="explanation"><h3>Selected frame · Korean-default chrome</h3><p>The composer remains borderless. Model, mode, reasoning effort, and remaining headroom live together in the top instrument strip—not at opposite edges below the input. The larger flag now preserves 건·감·이·곤 as four distinct trigrams; the Patty mark mirrors the SVG’s three rounded red bars.</p><span class="verified">Official flag construction checked</span></div>
+  </div>
+
+  <div class="locale-map">
+    <h3>Locale contract</h3><p>Layout, spacing, and semantic color stay identical. Only localized labels and copy change; model IDs and stable command aliases do not.</p>
+    <div class="map-grid">
+      <div class="map-col"><strong>한국어 · 기본값</strong><div class="mapping">작업 · 모델 · 추론 · 여유<br>명령 / 메시지<br>/ 명령어 · @ 파일 · ! 셸 · ? 단축키</div></div>
+      <div class="map-col"><strong>English · selectable locale</strong><div class="mapping">MODE · MODEL · EFFORT · HEADROOM<br>COMMAND / MESSAGE<br>/ commands · @ files · ! shell · ? shortcuts</div></div>
+    </div>
+  </div>
+
+  <div class="theme-section">
+    <h3>One frame, four selectable theme templates</h3>
+    <p>These are semantic token sets, not separate layouts. Click any palette you like; the first remains the proposed Korean-default theme.</p>
+    <div class="theme-stack">
+      <div class="theme-preview seoul-night" data-choice="theme-seoul-night" onclick="toggleSelect(this)"><div class="mini-screen"><div class="mini-head"><span>PATTY / 작업 흐름 07</span><span>서울 밤</span></div><div class="mini-facts"><span>작업 <b>자동</b></span><span>모델 <b>deepseek-v4</b></span><span>추론 보통</span><span>여유 82%</span></div><div class="mini-turn">02 ◆ 세션 저장 순서를 확인하고 있습니다.<br><span style="color:var(--muted)">02 실행 중 · 만료 경계 테스트</span></div><div class="mini-input-label">명령 / 메시지</div><div class="mini-input">명령 또는 질문을 입력하세요</div></div><div class="theme-meta"><h4>서울 밤 · seoul-night</h4><p>Deep navy, cool jade information, brand red identity, warm-gold interaction signal.</p></div></div>
+      <div class="theme-preview ink-night" data-choice="theme-ink-night" onclick="toggleSelect(this)"><div class="mini-screen"><div class="mini-head"><span>PATTY / 작업 흐름 07</span><span>먹빛</span></div><div class="mini-facts"><span>작업 <b>자동</b></span><span>모델 <b>deepseek-v4</b></span><span>추론 보통</span><span>여유 82%</span></div><div class="mini-turn">02 ◆ 세션 저장 순서를 확인하고 있습니다.<br><span style="color:var(--muted)">02 실행 중 · 만료 경계 테스트</span></div><div class="mini-input-label">명령 / 메시지</div><div class="mini-input">명령 또는 질문을 입력하세요</div></div><div class="theme-meta"><h4>먹빛 · ink-night</h4><p>Warm near-black and paper-white with restrained crimson, slate-blue, and brass.</p></div></div>
+      <div class="theme-preview hanji-light" data-choice="theme-hanji-light" onclick="toggleSelect(this)"><div class="mini-screen"><div class="mini-head"><span>PATTY / 작업 흐름 07</span><span>한지</span></div><div class="mini-facts"><span>작업 <b>자동</b></span><span>모델 <b>deepseek-v4</b></span><span>추론 보통</span><span>여유 82%</span></div><div class="mini-turn">02 ◆ 세션 저장 순서를 확인하고 있습니다.<br><span style="color:var(--muted)">02 실행 중 · 만료 경계 테스트</span></div><div class="mini-input-label">명령 / 메시지</div><div class="mini-input">명령 또는 질문을 입력하세요</div></div><div class="theme-meta"><h4>한지 · hanji-light</h4><p>Light paper field with ink text, muted national red/blue, and ochre interaction signal.</p></div></div>
+      <div class="theme-preview jade-night" data-choice="theme-jade-night" onclick="toggleSelect(this)"><div class="mini-screen"><div class="mini-head"><span>PATTY / 작업 흐름 07</span><span>옥빛</span></div><div class="mini-facts"><span>작업 <b>자동</b></span><span>모델 <b>deepseek-v4</b></span><span>추론 보통</span><span>여유 82%</span></div><div class="mini-turn">02 ◆ 세션 저장 순서를 확인하고 있습니다.<br><span style="color:var(--muted)">02 실행 중 · 만료 경계 테스트</span></div><div class="mini-input-label">명령 / 메시지</div><div class="mini-input">명령 또는 질문을 입력하세요</div></div><div class="theme-meta"><h4>옥빛 · jade-night</h4><p>Green-black surface with jade information, vivid red identity, and gold interaction signal.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:22px">Please review the revised frame first. Theme selection is independent: Seoul Night can remain the default while users choose any template through the localized theme picker or its English alias.</p>

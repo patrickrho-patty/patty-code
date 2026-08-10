@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"reasonix/internal/event"
-	"reasonix/internal/shellrun"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/shellrun"
+	"patty/internal/tool"
 )
 
 // connector is the Claude-style "⎿" gutter that ties a continuation block (tool

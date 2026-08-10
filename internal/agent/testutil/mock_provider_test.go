@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func TestMockProviderStreamHonorsCanceledContext(t *testing.T) {

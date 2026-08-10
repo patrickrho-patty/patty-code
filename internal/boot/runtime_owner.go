@@ -3,7 +3,7 @@ package boot
 import (
 	"context"
 
-	"reasonix/internal/extension"
+	"patty/internal/extension"
 )
 
 func bindRuntimeOwner(ctx context.Context, opts Options) (context.Context, Options, *extension.RuntimeOwner, func(string, bool, []byte)) {

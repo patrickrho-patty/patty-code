@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/evidence"
-	"reasonix/internal/instruction"
-	"reasonix/internal/provider"
+	"patty/internal/evidence"
+	"patty/internal/instruction"
+	"patty/internal/provider"
 )
 
 func TestTodoInventoryListsTurnTodos(t *testing.T) {
@@ -16,10 +16,10 @@ func TestTodoInventoryListsTurnTodos(t *testing.T) {
 	ledger.Record(evidence.Receipt{
 		ToolName: "todo_write",
 		Success:  true,
-		Todos:    []evidence.TodoItem{{Content: "Phase 5：脚本编辑与执行代码"}, {Content: "Review notes"}},
+		Todos:    []evidence.TodoItem{{Content: "Phase 5: 스크립트 편집 및 코드 실행"}, {Content: "Review notes"}},
 	})
 	got := todoInventory(ledger)
-	if !strings.Contains(got, `1) "Phase 5：脚本编辑与执行代码"`) || !strings.Contains(got, `2) "Review notes"`) {
+	if !strings.Contains(got, `1) "Phase 5: 스크립트 편집 및 코드 실행"`) || !strings.Contains(got, `2) "Review notes"`) {
 		t.Fatalf("inventory should list both todos, got %s", got)
 	}
 	if got := todoInventory(evidence.NewLedger()); !strings.Contains(got, "no todos") {
@@ -488,7 +488,7 @@ func TestCompleteStepReadOnlyForPermissionLayer(t *testing.T) {
 	}
 }
 
-// Replays of real complete_step rejections captured from local sessions (2026-06-02) and issue #2917.
+// Replays of real complete_step rejections captured from local sessions (2026-06-02) and issue 2917.
 func TestCompleteStepMatchesParaphrasedCommands(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -663,8 +663,7 @@ func TestCompleteStepSessionFallbackSkipsFailedCalls(t *testing.T) {
 	}
 }
 
-// Replay from the 2026-06-11 e2e run: a file created via bash redirection has
-// no reader/writer receipt, but the command text names the path.
+// no readerwriter receipt, but the command text names the path.
 func TestCompleteStepFilesEvidenceAcceptsBashCreatedFile(t *testing.T) {
 	ledger := evidence.NewLedger()
 	ledger.Record(evidence.Receipt{

@@ -4,7 +4,7 @@ import (
 	"context"
 	"path/filepath"
 
-	fileenc "reasonix/internal/fileutil/encoding"
+	fileenc "patty/internal/fileutil/encoding"
 )
 
 // editSource is the file state a read-modify-write tool works against, plus the

@@ -3,9 +3,9 @@ package agent
 import (
 	"fmt"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/provider"
 )
 
 // The no-progress ladder is adaptive, not a fixed round count: rounds are

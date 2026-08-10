@@ -1,4 +1,4 @@
-// Package docs exposes the product documentation bundled with each Reasonix
+// Package docs exposes the product documentation bundled with each Patty Code
 // build. Runtime consumers should retrieve focused sections instead of adding
 // the full corpus to the provider-visible prompt.
 package docs

@@ -22,8 +22,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"reasonix/internal/fileutil"
-	"reasonix/internal/netclient"
+	"patty/internal/fileutil"
+	"patty/internal/netclient"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 	maxFieldBytes        = 4 << 10
 )
 
-var reportEndpoint = "https://crash.reasonix.io/v1/report"
+var reportEndpoint = "https://crash.patty.io/v1/report"
 
 var queueMu sync.Mutex
 
@@ -84,7 +84,7 @@ var ErrNoReports = errors.New("no pending CLI crash reports")
 // paths, or provider response content.
 func CapturePanic(home, version string, recovered any, stack []byte) error {
 	if strings.TrimSpace(home) == "" {
-		return errors.New("crash report: empty Reasonix home")
+		return errors.New("crash report: empty patty home")
 	}
 	cleanStack := sanitizeStack(string(stack))
 	report := Report{

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Reasonix</title>
+<title>Patty Code</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -365,7 +365,7 @@ input,textarea{font:inherit;color:inherit}
 <div class="app">
   <aside class="sidebar">
     <div class="sidebar__brand">
-      <img src="/assets/logo-wordmark.svg" alt="Reasonix" class="brand-wordmark brand-wordmark--sidebar" draggable="false">
+      <img src="/assets/logo-wordmark.svg" alt="Patty Code" class="brand-wordmark brand-wordmark--sidebar" draggable="false">
     </div>
 <nav class="sidebar__nav" style="border-top:none;padding-top:0">
       <div class="sidebar__item sidebar__item--accent" id="btn-new">
@@ -420,7 +420,7 @@ input,textarea{font:inherit;color:inherit}
 
   <section class="transcript" id="log">
     <div class="welcome" id="welcome">
-      <div class="welcome__brand"><img src="/assets/logo-wordmark.svg" alt="Reasonix" class="brand-wordmark brand-wordmark--welcome" draggable="false"></div>
+      <div class="welcome__brand"><img src="/assets/logo-wordmark.svg" alt="Patty Code" class="brand-wordmark brand-wordmark--welcome" draggable="false"></div>
       <div class="welcome__tag">__('welcome_tag')</div>
       <div class="welcome__meta">
         <div class="welcome__pill"><strong>__('model')</strong><span id="welcome-model">-</span></div>
@@ -608,7 +608,7 @@ const __T = {
     'ready': 'Ready',
     'thinking': 'Thinking...',
     'retrying_status': 'Retrying ({attempt}/{max})...',
-    'recovery_paused': 'Automatic retries paused. Reasonix stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.',
+    'recovery_paused': 'Automatic retries paused. Patty Code stopped repeated attempts and kept completed work. Send “Continue” to start a fresh attempt, or add instructions to change direction.',
     'stats': 'Stats',
     'statistics': 'Statistics',
     'model': 'Model',
@@ -621,7 +621,7 @@ const __T = {
     'connected': 'Connected',
     'reconnecting': 'Reconnecting...',
     'disconnected': 'Disconnected',
-    'placeholder': 'Message Reasonix...  / for commands',
+    'placeholder': 'Message Patty Code...  / for commands',
     'cmd_compact': 'Compact conversation',
     'cmd_new': 'New session',
     'cmd_resume': 'Resume session',
@@ -748,8 +748,8 @@ const __T = {
     'balance': '余额',
     'ready': '就绪',
     'thinking': '思考中...',
-    'retrying_status': '正在重试 ({attempt}/{max})...',
-    'recovery_paused': '已暂停自动重试。Reasonix 已停止重复尝试，并保留已完成的工作。发送“继续”即可开始新一轮，也可以补充要求来调整方向。',
+    'retrying_status': '재시도 중 ({attempt}/{max})...',
+    'recovery_paused': '자동 재시도가 일시중지되었습니다. Patty Code가 반복 시도를 중단하고 완료된 작업을 보존했습니다. “계속”을 보내 새 시도를 시작하거나 요구사항을 추가해 방향을 조정하세요.',
     'stats': '统计',
     'statistics': '统计',
     'model': '模型',
@@ -762,7 +762,7 @@ const __T = {
     'connected': '已连接',
     'reconnecting': '重新连接...',
     'disconnected': '已断开',
-    'placeholder': '给 Reasonix 发消息...  / 查看命令',
+    'placeholder': '给 Patty Code 发消息...  / 查看命令',
     'cmd_compact': '压缩对话',
     'cmd_new': '新建会话',
     'cmd_resume': '恢复会话',
@@ -835,8 +835,8 @@ const __T = {
     'cancel_plain': '取消',
     'delete': '删除',
     'delete_session': '删除会话',
-    'cannot_delete_active': '无法删除当前会话',
-    'delete_failed': '无法删除会话，请检查连接后重试',
+    'cannot_delete_active': '현재 세션을 삭제할 수 없습니다',
+    'delete_failed': '세션을 삭제할 수 없습니다. 연결을 확인하고 다시 시도하세요',
     'search_sessions': '搜索会话',
     'active': '当前',
     'use_model': '使用',
@@ -1166,9 +1166,9 @@ function renderToolResult(tool) {
   scrollDown();
 }
 function renderToolProgress(tool) {
-  // Reserved sub-agent progress channels (reasonix.subagent.*) are an internal
+  // Reserved sub-agent progress channels (patty.subagent.*) are an internal
   // local-frontend contract; they must never land in ordinary tool output.
-  if (tool.name && tool.name.indexOf('reasonix.subagent.') === 0) return;
+  if (tool.name && tool.name.indexOf('patty.subagent.') === 0) return;
   const card=toolCards[tool.id]; if(!card)return;
   const body=card.querySelector('.card-body'); if(!body)return;
   body.style.display=''; card.dataset.open='true';

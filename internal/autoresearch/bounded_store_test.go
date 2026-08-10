@@ -10,9 +10,6 @@ import (
 	"time"
 )
 
-// TestDirectionFingerprintDistinguishesLongPrefixes: two directions sharing a
-// >56-char slug prefix used to collapse to one fingerprint, wrongly counting
-// the second as a repeat and inflating StaleCount toward a forced pivot.
 func TestDirectionFingerprintDistinguishesLongPrefixes(t *testing.T) {
 	root := t.TempDir()
 	store := NewStore(root)
@@ -42,13 +39,10 @@ func TestDirectionFingerprintDistinguishesLongPrefixes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RecordDirection second: %v", err)
 	}
-	// A genuinely different direction with accepted evidence must not be
-	// counted as a repeat.
 	if progress.StaleCount != 0 {
 		t.Fatalf("distinct long-prefix direction treated as repeat: stale = %d, want 0", progress.StaleCount)
 	}
 
-	// An exact repeat must still be detected.
 	progress, err = store.RecordDirection(task.ID, Direction{
 		Summary:             prefix + "code blocks",
 		AcceptedEvidenceIDs: []string{"f3"},
@@ -62,21 +56,18 @@ func TestDirectionFingerprintDistinguishesLongPrefixes(t *testing.T) {
 	}
 }
 
-// TestDirectionFingerprintDistinguishesCJK: directions differing only in CJK
 // text slugify to the same string ("task") and used to collide.
 func TestDirectionFingerprintDistinguishesCJK(t *testing.T) {
-	a := directionFingerprint("评测甲方案的渲染性能")
-	b := directionFingerprint("评测乙方案的渲染性能")
+	a := directionFingerprint("갑 방안의 렌더링 성능 평가")
+	b := directionFingerprint("을 방안의 렌더링 성능 평가")
 	if a == b {
 		t.Fatalf("CJK-only-diff directions share a fingerprint: %q", a)
 	}
-	if directionFingerprint("评测甲方案的渲染性能") != a {
+	if directionFingerprint("갑 방안의 렌더링 성능 평가") != a {
 		t.Fatal("fingerprint is not deterministic")
 	}
 }
 
-// TestDirectionFingerprintBackwardCompatShortASCII: short ASCII summaries keep
-// the bare slug so fingerprints recorded by older versions still match.
 func TestDirectionFingerprintBackwardCompatShortASCII(t *testing.T) {
 	got := directionFingerprint("Profile markdown rendering")
 	want := slugify("Profile markdown rendering")
@@ -85,9 +76,6 @@ func TestDirectionFingerprintBackwardCompatShortASCII(t *testing.T) {
 	}
 }
 
-// TestRecordDirectionMigratesLegacyFingerprint: a directions_tried.json entry
-// written by an older version (bare truncated slug) must still match its own
-// summary on repeat, not be double-counted as a new direction.
 func TestRecordDirectionMigratesLegacyFingerprint(t *testing.T) {
 	root := t.TempDir()
 	store := NewStore(root)
@@ -97,7 +85,6 @@ func TestRecordDirectionMigratesLegacyFingerprint(t *testing.T) {
 	}
 	summary := "Benchmark the desktop frontend markdown rendering pipeline for large tables"
 
-	// Simulate a legacy entry: fingerprint from the old bare slugify.
 	dirPath := filepath.Join(task.Root, "state", "directions_tried.json")
 	legacy := []DirectionTried{{
 		Fingerprint:        slugify(summary),
@@ -121,8 +108,6 @@ func TestRecordDirectionMigratesLegacyFingerprint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RecordDirection: %v", err)
 	}
-	// Repeat of the legacy direction: stale should increment (repeat + no
-	// accepted evidence), and the entry should be migrated, not duplicated.
 	if progress.StaleCount != 1 {
 		t.Fatalf("legacy repeat not detected: stale = %d, want 1", progress.StaleCount)
 	}
@@ -145,9 +130,6 @@ func TestRecordDirectionMigratesLegacyFingerprint(t *testing.T) {
 	}
 }
 
-// TestTailJSONLLinesMatchesFullScan: the tail reader must return exactly the
-// same entries as a full scan for every limit, including limits larger than
-// the file and files bigger than one read chunk.
 func TestTailJSONLLinesMatchesFullScan(t *testing.T) {
 	root := t.TempDir()
 	store := NewStore(root)
@@ -155,7 +137,6 @@ func TestTailJSONLLinesMatchesFullScan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateTask: %v", err)
 	}
-	// Write enough heartbeats that the log exceeds one 64KiB chunk.
 	long := strings.Repeat("x", 700)
 	for i := range 150 {
 		if err := store.AppendHeartbeat(task.ID, Heartbeat{
@@ -192,7 +173,6 @@ func TestTailJSONLLinesMatchesFullScan(t *testing.T) {
 			}
 		}
 	}
-	// LastHeartbeat must be the newest entry.
 	last, ok, err := store.LastHeartbeat(task.ID)
 	if err != nil || !ok {
 		t.Fatalf("LastHeartbeat: ok=%v err=%v", ok, err)
@@ -202,8 +182,6 @@ func TestTailJSONLLinesMatchesFullScan(t *testing.T) {
 	}
 }
 
-// TestFindingsBoundedTailMatchesFullScan mirrors the heartbeat check for the
-// findings log, which desktop views read with a limit.
 func TestFindingsBoundedTailMatchesFullScan(t *testing.T) {
 	root := t.TempDir()
 	store := NewStore(root)

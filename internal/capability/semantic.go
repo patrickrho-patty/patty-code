@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
 const (
@@ -104,7 +104,7 @@ func semanticPool(text string, entries []Entry) []Entry {
 		}
 		// Prefer a cheap lexical match. For Han-script tasks, also admit the
 		// bounded built-in/high-policy Skill set so English metadata does not make
-		// the semantic router blind to Chinese requests.
+		// the semantic router blind to Korean requests.
 		matched := false
 		for tok := range strings.FieldsSeq(text) {
 			if len(tok) < 3 {

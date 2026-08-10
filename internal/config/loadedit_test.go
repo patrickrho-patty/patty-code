@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 func TestLoadForEdit(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "reasonix.toml")
+	path := filepath.Join(dir, "patty.toml")
 	custom := `default_model = "custom"
 [[providers]]
 name = "custom"
@@ -33,7 +33,6 @@ api_key_env = "X_KEY"
 		t.Errorf("providers = %v, want a single custom provider", cfg.Providers)
 	}
 
-	// Missing file: falls back to the built-in defaults.
 	if cfg := LoadForEdit(filepath.Join(dir, "absent.toml")); cfg.DefaultModel != Default().DefaultModel {
 		t.Errorf("missing-file default = %q, want %q", cfg.DefaultModel, Default().DefaultModel)
 	}
@@ -63,7 +62,7 @@ func TestMergeTOMLProviderAccessIgnoresProjectOnlyList(t *testing.T) {
 	if err := os.WriteFile(userPath, []byte("default_model = \"deepseek/deepseek-v4-flash\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	projectPath := filepath.Join(t.TempDir(), "reasonix.toml")
+	projectPath := filepath.Join(t.TempDir(), "patty.toml")
 	if err := os.WriteFile(projectPath, []byte("[desktop]\nprovider_access = [\"deepseek\"]\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +78,7 @@ func TestMergeTOMLProviderAccessIgnoresProjectOnlyList(t *testing.T) {
 
 func TestMergeTOMLProviderAccessUnionsWhenUserDeclares(t *testing.T) {
 	userPath := writeUserProviderAccess(t, "[desktop]\nprovider_access = [\"deepseek\"]\n")
-	projectPath := filepath.Join(t.TempDir(), "reasonix.toml")
+	projectPath := filepath.Join(t.TempDir(), "patty.toml")
 	if err := os.WriteFile(projectPath, []byte("[desktop]\nprovider_access = [\"project-b\"]\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -109,13 +108,13 @@ func writeUserProviderAccess(t *testing.T, body string) string {
 func TestLoadForEditDecodesGB18030TOML(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
-	body := `default_model = "local/中文模型"
+	body := `default_model = "local/중국어 모델"
 
 [[providers]]
 name = "local"
 kind = "openai"
 base_url = "https://example.com/v1"
-model = "中文模型"
+model = "중국어 모델"
 api_key_env = "LOCAL_KEY"
 `
 	if err := os.WriteFile(path, fileencoding.Encode(body, fileencoding.GB18030), 0o644); err != nil {
@@ -123,17 +122,17 @@ api_key_env = "LOCAL_KEY"
 	}
 
 	cfg := LoadForEdit(path)
-	if cfg.DefaultModel != "local/中文模型" {
+	if cfg.DefaultModel != "local/중국어 모델" {
 		t.Fatalf("default_model = %q", cfg.DefaultModel)
 	}
-	if len(cfg.Providers) != 1 || cfg.Providers[0].Model != "中文模型" {
-		t.Fatalf("providers = %+v, want decoded Chinese model", cfg.Providers)
+	if len(cfg.Providers) != 1 || cfg.Providers[0].Model != "중국어 모델" {
+		t.Fatalf("providers = %+v, want decoded Korean model", cfg.Providers)
 	}
 }
 
 func TestLoadForEditNormalizesLegacyMCPTiersWithoutWriting(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "reasonix.toml")
+	path := filepath.Join(dir, "patty.toml")
 	body := `
 [[plugins]]
 name = "playwright"
@@ -164,7 +163,7 @@ model = "m"
 }
 
 func TestLoadForEditReadOnlyStrictDoesNotMigrateDisk(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "reasonix.toml")
+	path := filepath.Join(t.TempDir(), "patty.toml")
 	body := []byte(`
 [[plugins]]
 name = "playwright"
@@ -194,7 +193,7 @@ func TestLoadForEditIgnoresProjectDotEnvForProviderCredentials(t *testing.T) {
 	project := t.TempDir()
 	launch := t.TempDir()
 	home := t.TempDir()
-	path := filepath.Join(project, "reasonix.toml")
+	path := filepath.Join(project, "patty.toml")
 	body := `default_model = "custom/m"
 [[providers]]
 name = "custom"

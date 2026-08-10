@@ -7,9 +7,7 @@ import (
 	"testing"
 )
 
-// SanitizeToolPairing
 
-// toolIDsAnswered reports whether every assistant tool_call id has a following
 // tool message answering it — the contract the OpenAI/DeepSeek API enforces.
 func toolIDsAnswered(msgs []Message) bool {
 	answered := map[string]bool{}
@@ -38,7 +36,6 @@ func TestSanitizeToolPairingBackfillsDanglingCall(t *testing.T) {
 	if !toolIDsAnswered(out) {
 		t.Fatalf("dangling tool_call left unanswered: %+v", out)
 	}
-	// The backfilled result sits right after the assistant turn, keyed to its id.
 	if out[2].Role != RoleTool || out[2].ToolCallID != "c1" {
 		t.Fatalf("expected a backfilled tool result for c1 at index 2, got %+v", out[2])
 	}
@@ -164,9 +161,7 @@ func TestAttachedDecisionReceiptPreservesCurrentAndLegacyToolPairing(t *testing.
 		t.Fatalf("provider-visible message leaked local decision metadata: %+v", current[1])
 	}
 
-	// Older binaries ignore the new metadata field. The remaining legacy view
-	// must still contain the same adjacent assistant/result pair, including the
-	// positional pairing used by providers that omit tool-call IDs.
+// must still contain the same adjacent assistantresult pair, including the
 	legacy := append([]Message(nil), stored...)
 	legacy[1].DecisionReceipts = nil
 	legacy = SanitizeToolPairing(legacy)
@@ -239,8 +234,7 @@ func TestLocalOnlySentinelIsSafeWhenNewFieldsAreIgnoredByLegacyReader(t *testing
 		{Role: RoleUser, Content: "task"},
 		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}}},
 		{Role: RoleTool, ToolCallID: "c1", Name: "read_file", Content: "ok"},
-		// Simulate an older binary: unknown local_only/interrupted_turn JSON fields
-		// were ignored, leaving only the orphan tool sentinel and partial content.
+// Simulate an older binary: unknown local_onlyinterrupted_turn JSON fields
 		{Role: RoleTool, ToolCallID: LocalOnlyToolID, Name: LocalOnlyToolName, Content: "partial reasoning that must not leak"},
 		{Role: RoleUser, Content: "continue"},
 	}
@@ -339,7 +333,6 @@ func TestBackfillToolCallNamesByID(t *testing.T) {
 }
 
 func TestBackfillToolCallNamesPositional(t *testing.T) {
-	// Empty ids defeat idDistinct, so names pair by position instead.
 	calls := []ToolCall{{}, {}}
 	results := []Message{{Role: RoleTool, Name: "ls"}, {Role: RoleTool, Name: "cat"}}
 	out := backfillToolCallNames(calls, results)
@@ -391,7 +384,6 @@ func TestSanitizeToolPairingBackfillsMissingToolResultName(t *testing.T) {
 	}
 }
 
-// Pricing.Cost
 
 func TestPricingCostNil(t *testing.T) {
 	var p *Pricing
@@ -425,8 +417,7 @@ func TestPricingCostCalculation(t *testing.T) {
 		CacheMissTokens:  500_000,
 		CompletionTokens: 200_000,
 	}
-	// Expected: (1M * 0.5 + 500K * 2.0 + 200K * 10.0) / 1M
-	//         = (0.5 + 1.0 + 2.0) = 3.5
+// Expected: (1M * 0.5 + 500K * 2.0 + 200K * 10.0) / 1M
 	got := p.Cost(u)
 	if got != 3.5 {
 		t.Errorf("Cost = %f, want 3.5", got)
@@ -440,7 +431,6 @@ func TestPricingCostUsesCacheWriteBillingTier(t *testing.T) {
 		CacheWriteTokens:       100_000,
 		CacheWriteBilledTokens: 200_000, // 1h write at 2x input
 	}
-	// 400K ordinary misses + 100K cache writes billed as 200K input units.
 	if got := p.Cost(u); got != 1.2 {
 		t.Errorf("Cost = %f, want 1.2", got)
 	}
@@ -449,13 +439,9 @@ func TestPricingCostUsesCacheWriteBillingTier(t *testing.T) {
 func TestPricingCostCacheWriteFieldsAreBackwardCompatible(t *testing.T) {
 	p := &Pricing{Input: 2.0}
 
-	// Old usage records have neither cache-write field and retain the original
-	// one-input-rate calculation.
 	if got := p.Cost(&Usage{CacheMissTokens: 500_000}); got != 1.0 {
 		t.Errorf("legacy Cost = %f, want 1.0", got)
 	}
-	// A producer that reports raw write tokens without a billing tier also
-	// falls back to the ordinary input rate instead of making writes free.
 	if got := p.Cost(&Usage{CacheMissTokens: 500_000, CacheWriteTokens: 100_000}); got != 1.0 {
 		t.Errorf("unpriced write Cost = %f, want 1.0", got)
 	}
@@ -477,7 +463,6 @@ func TestPricingCostZeroTokens(t *testing.T) {
 	}
 }
 
-// Pricing.Symbol
 
 func TestPricingSymbolDefault(t *testing.T) {
 	p := &Pricing{}
@@ -514,7 +499,7 @@ func TestPricingSymbolNormalizesCurrencyCodes(t *testing.T) {
 		{currency: "aud", want: "AUD "},
 		{currency: "A$", want: "A$"},
 		{currency: "HK$", want: "HK$"},
-		{currency: "楼", want: "¥"},
+		{currency: "건물", want: "¥"},
 	}
 	for _, tc := range cases {
 		p := &Pricing{Currency: tc.currency}
@@ -524,7 +509,6 @@ func TestPricingSymbolNormalizesCurrencyCodes(t *testing.T) {
 	}
 }
 
-// AuthError
 
 func TestAuthErrorWithKeyEnv(t *testing.T) {
 	e := &AuthError{Provider: "deepseek", KeyEnv: "DEEPSEEK_API_KEY", Status: 401}
@@ -537,9 +521,7 @@ func TestAuthErrorWithKeyEnv(t *testing.T) {
 }
 
 func TestAuthErrorBodyStaysOutOfError(t *testing.T) {
-	// Body carries the server's reason for display layers to extract, but it
-	// must never leak into Error(): servers echo masked key fragments in auth
-	// bodies, and the ambient string flows into logs and traces.
+// Body carries the servers reason for display layers to extract, but it
 	e := &AuthError{Provider: "relay", Status: 401, Body: `{"error":{"message":"Your api key: ****ae54 has expired"}}`}
 	if e.Body == "" {
 		t.Fatal("Body should carry the server's reason")
@@ -567,11 +549,9 @@ func TestAuthErrorImplementsError(t *testing.T) {
 	}
 }
 
-// Registry
 
 func TestRegistryKindsSorted(t *testing.T) {
-	// The openai package self-registers via init(); we can't control that here
-	// but we can verify Kinds() returns a sorted list.
+// The openai package self-registers via init(); we cant control that here
 	kinds := Kinds()
 	for i := 1; i < len(kinds); i++ {
 		if kinds[i-1] >= kinds[i] {
@@ -592,11 +572,10 @@ func TestNewUnknownKind(t *testing.T) {
 }
 
 func TestNewWithRegisteredKind(t *testing.T) {
-	// Register a mock factory.
 	Register("test-mock-__"+t.Name(), func(cfg Config) (Provider, error) {
 		return nil, nil
 	})
-	// We can't easily unregister, but we can test it doesn't panic.
+// We can't easily unregister, but we can test it doesn't panic.
 }
 
 func TestNewRejectsTypedNilProvider(t *testing.T) {
@@ -615,7 +594,6 @@ func TestNewRejectsTypedNilProvider(t *testing.T) {
 	}
 }
 
-// Role constants
 
 func TestRoleConstants(t *testing.T) {
 	if RoleSystem != "system" {
@@ -663,7 +641,6 @@ func TestMessageResponsesItemsRemainBackwardCompatible(t *testing.T) {
 	}
 }
 
-// ChunkType constants
 
 func TestChunkTypeConstants(t *testing.T) {
 	types := []ChunkType{ChunkText, ChunkReasoning, ChunkToolCallStart, ChunkToolCallArgsDelta, ChunkToolCall, ChunkUsage, ChunkDone, ChunkError, ChunkResponsesItem}
@@ -674,7 +651,6 @@ func TestChunkTypeConstants(t *testing.T) {
 	}
 }
 
-// ToolSchema
 
 func TestToolSchemaJSON(t *testing.T) {
 	ts := ToolSchema{
@@ -691,7 +667,6 @@ func TestToolSchemaJSON(t *testing.T) {
 	}
 }
 
-// helper
 func contains(s, sub string) bool {
 	return len(s) >= len(sub) && (s == sub || len(s) > 0 && containsStr(s, sub))
 }
@@ -705,7 +680,6 @@ func containsStr(s, sub string) bool {
 	return false
 }
 
-// Ensure the Provider interface is satisfied by a minimal mock (compile-time check).
 var _ Provider = (*mockProvider)(nil)
 
 type mockProvider struct{}

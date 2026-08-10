@@ -1,4 +1,4 @@
-module reasonix
+module patty
 
 go 1.25.0
 

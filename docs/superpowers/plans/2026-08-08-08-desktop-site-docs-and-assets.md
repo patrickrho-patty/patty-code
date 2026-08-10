@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-Replace all Reasonix-specific UI text, assets, build metadata, and website content with Patty Code equivalents. Generate new icons/artwork from profile coordinates.
+Replace all Patty Code-specific UI text, assets, build metadata, and website content with Patty Code equivalents. Generate new icons/artwork from profile coordinates.
 
 ## 2. Scope
 
@@ -24,50 +24,50 @@ Replace all Reasonix-specific UI text, assets, build metadata, and website conte
 
 ## 3. Task List
 
-### T1: Rename `reasonix-example.toml` → `patty.example.toml`
+### T1: Rename `patty-code-example.toml` → `patty.example.toml`
 - Update all example values to patty coordinates
 - Remove Chinese locale examples
 
-### T2: Rename `.reasonix/commands/review.md` → `.patty/commands/review.md`
+### T2: Rename `.patty/commands/review.md` → `.patty/commands/review.md`
 - Update command-root discovery code to look in `.patty/commands/`
 
-### T3: Update `REASONIX.md` → `PATTY.md`
+### T3: Update `PATTY.md` → `PATTY.md`
 - Rewrite as Patty project instructions
 - Update CLAUDE.md cross-references if needed
 
 ### T4: Replace skill guide identity
-- Move `internal/skill/builtincontent/reasonix-guide/` → `patty-guide/`
-- Rewrite SKILL.md to reflect Patty, not Reasonix
+- Move `internal/skill/builtincontent/patty-guide/` → `patty-guide/`
+- Rewrite SKILL.md to reflect Patty, not Patty Code
 - Update `patty_guide_test.go` expectations
 
 ### T5: Desktop frontend text replacement
-- Replace Reasonix logo references with patty wordmark
+- Replace Patty Code logo references with patty wordmark
 - Update window/app title strings via Profile.DisplayName
 - Replace language picker options (ko/en only)
 
 ### T6: Replace NPM package
-- Move `npm/reasonix/` → `npm/patty/`
+- Move `npm/patty/` → `npm/patty/`
 - Update `package.json` names, scopes, bin entries
-- Update `bin/reasonix.js` → `bin/patty.js`
+- Update `bin/patty.js` → `bin/patty.js`
 
 ### T7: SDK examples
-- Rename `sdk/go/examples/fullsidecar/reasonix-plugin.json` → `patty-plugin.json`
+- Rename `sdk/go/examples/fullsidecar/patty-plugin.json` → `patty-plugin.json`
 - Update SDK documentation references
 
 ### T8: Website overhaul
-- Page titles: "Reasonix" → "Patty Code"
+- Page titles: "Patty Code" → "Patty Code"
 - Download links point to patty-artifact URLs
-- Remove zh-CN SEO routing / sitemap entries
+- Remove ko-KR SEO routing / sitemap entries
 - Social card images regenerated
 
 ### T9: Accessibility audit
 - All ARIA labels in Korean by default, English secondary
-- No orphaned Reasonix strings in accessible text
+- No orphaned Patty Code strings in accessible text
 
 ## 4. Definition of Done
 
-- [ ] `patty.example.toml` replaces reasonix.example.toml
-- [ ] `PATTY.md` replaces REASONIX.md
+- [ ] `patty.example.toml` replaces patty.example.toml
+- [ ] `PATTY.md` replaces PATTY.md
 - [ ] Skill guide renamed and rewritten
 - [ ] NPM package uses patty coordinates
 - [ ] SDK manifests updated

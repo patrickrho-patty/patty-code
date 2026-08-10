@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-Replace all hosted-service endpoints, domains, bindings, cookies, OAuth clients, database deployments, and operational identities used by Reasonix workers with Patty-owned or release-blocked coordinates.
+Replace all hosted-service endpoints, domains, bindings, cookies, OAuth clients, database deployments, and operational identities used by Patty Code workers with Patty-owned or release-blocked coordinates.
 
 ## 2. Scope
 
@@ -21,12 +21,12 @@ Replace all hosted-service endpoints, domains, bindings, cookies, OAuth clients,
 
 ### Exclusions
 - Actual production domain provisioning (requires owned domain input)
-- Third-party vendor integrations that are not first-party Reasonix
+- Third-party vendor integrations that are not first-party Patty Code
 
 ## 3. Task List
 
 ### T1: Inventory all external endpoint references
-- Scan: `rg 'reasonix\.io|esengine\.' --include '*.go' --include '*.ts' --include '*.astro'`
+- Scan: `rg 'patty\.io|pattycorp\.' --include '*.go' --include '*.ts' --include '*.astro'`
 - Classify each as replaceable, profile-derived, removable, or block-release
 
 ### T2: Replace worker config/bindings
@@ -41,12 +41,12 @@ Replace all hosted-service endpoints, domains, bindings, cookies, OAuth clients,
 - robots.txt, sitemap.xml update
 
 ### T4: Update Go-side HTTP client defaults
-- User-Agent string: `reasonix/{version}` → `patty-code/{version}`
+- User-Agent string: `patty/{version}` → `patty-code/{version}`
 - Internal telemetry/reporting endpoint default: empty or placeholder
 - Crash reporting: removed from patty base; becomes optional module
 
 ### T5: Cookie and session storage naming
-- Session cookie name: `reasonix_session` → `patty_session`
+- Session cookie name: `patty_session` → `patty_session`
 - CSRF token names updated if applicable
 - CORS origin policies derived from Profile.WebsiteURL
 
@@ -57,7 +57,7 @@ Replace all hosted-service endpoints, domains, bindings, cookies, OAuth clients,
 
 ## 4. Definition of Done
 
-- [ ] Zero hard-coded reasonix.io / esengine domain references remain
+- [ ] Zero hard-coded patty code.io / pattycorp domain references remain
 - [ ] All network endpoints either derived from Profile or blocked
 - [ ] Worker configs updated for patty identifiers
 - [ ] Site pages reflect new product names

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/tool"
 )
 
 type typedNilAgentSink struct{}

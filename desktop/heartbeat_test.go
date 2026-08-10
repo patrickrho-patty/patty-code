@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	fileencoding "reasonix/internal/fileutil/encoding"
+	"patty/internal/config"
+	"patty/internal/control"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
-func TestHeartbeatConfigPathUsesReasonixUserStateDir(t *testing.T) {
+func TestHeartbeatConfigPathUsesPattyCodeUserStateDir(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	engine := &HeartbeatEngine{}
 	want := filepath.Join(config.MemoryUserDir(), "heartbeat-tasks.json")
@@ -25,7 +25,7 @@ func TestHeartbeatConfigPathUsesReasonixUserStateDir(t *testing.T) {
 func TestHeartbeatLoadTasksDecodesGB18030Config(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	engine := &HeartbeatEngine{}
-	body := `{"tasks":[{"id":"daily","title":"每日检查","prompt":"总结中文状态","interval":"1h","enabled":true}]}`
+	body := `{"tasks":[{"id":"daily","title":"매일 점검","prompt":"機能整理檢討 상태 요약","interval":"1h","enabled":true}]}`
 	if err := os.MkdirAll(filepath.Dir(engine.configPath()), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestHeartbeatLoadTasksDecodesGB18030Config(t *testing.T) {
 	}
 
 	tasks := engine.loadTasks()
-	if len(tasks) != 1 || tasks[0].Title != "每日检查" || tasks[0].Prompt != "总结中文状态" {
+	if len(tasks) != 1 || tasks[0].Title != "매일 점검" || tasks[0].Prompt != "機能整理檢討 상태 요약" {
 		t.Fatalf("loadTasks = %+v, want decoded Chinese task", tasks)
 	}
 }
@@ -489,7 +489,6 @@ func TestHeartbeatMergeRunUpdatesAdoptsExternalFileEdits(t *testing.T) {
 	if got.TopicID != "topic-a" || got.LastRunAt != 4242 {
 		t.Fatalf("run state was not merged onto the disk copy: %+v", got)
 	}
-	// The full-list save must have preserved the externally added task on disk.
 	onDisk := engine.loadTasks()
 	if len(onDisk) != 2 || onDisk[1].ID != "b" || onDisk[1].Title != "added externally" {
 		t.Fatalf("externally added task was lost on save: %+v", onDisk)
@@ -507,8 +506,6 @@ func TestHeartbeatTickAdoptsExternalFileEdits(t *testing.T) {
 	engine.noteConfigModLocked()
 	engine.mu.Unlock()
 
-	// External edit lands after the engine last touched the file. Force the
-	// mtime forward so coarse filesystem timestamps cannot make this flaky.
 	if err := engine.saveTasks([]HeartbeatTask{
 		{ID: "a", Title: "A", Interval: "1h", Enabled: false},
 		{ID: "b", Title: "added externally", Interval: "1h", Enabled: false},

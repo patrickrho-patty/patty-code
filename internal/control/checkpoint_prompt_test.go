@@ -6,15 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
+	"patty/internal/agent"
+	"patty/internal/event"
 )
 
-// A checkpoint opens with the composed turn, so its stored prompt carries the
-// plan-mode marker and transient blocks. Every consumer treats Prompt as a
 // label — and the rewind picker restores it into the composer — so Checkpoints
-// must hand back what the user typed. Leaving it composed put
-// "必须使用简体中文…" in the rewind list (#6903).
+// "한국어로 작성해야 합니다…" in the rewind list (#6903).
 func TestCheckpointsReturnUserPromptWithoutComposedPrefixes(t *testing.T) {
 	dir := t.TempDir()
 	sess := agent.NewSession("sys")
@@ -28,8 +25,8 @@ func TestCheckpointsReturnUserPromptWithoutComposedPrefixes(t *testing.T) {
 		Label:       "test",
 	})
 
-	const typed = "修复登录逻辑"
-	composed := agent.ReasoningLanguageBlock("zh") + "\n\n" +
+	const typed = "로그인 로직 수정"
+	composed := agent.ReasoningLanguageBlock("ko-KR") + "\n\n" +
 		PlanModeMarker + "\n\n" +
 		typed
 	o := newTurnOrchestrator(c)

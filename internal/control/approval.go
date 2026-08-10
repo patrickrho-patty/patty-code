@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
-	"reasonix/internal/permission"
+	"patty/internal/event"
+	"patty/internal/i18n"
+	"patty/internal/permission"
 )
 
 // approvalManager owns the approval/ask prompt bookkeeping and the runtime

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/proc"
-	"reasonix/internal/sandbox"
-	"reasonix/internal/tool"
+	"patty/internal/proc"
+	"patty/internal/sandbox"
+	"patty/internal/tool"
 )
 
 func TestDescriptorFromShell(t *testing.T) {
@@ -145,7 +145,7 @@ func TestRunForegroundTimeout(t *testing.T) {
 
 func TestRunForegroundLaunchFailure(t *testing.T) {
 	res := RunForeground(context.Background(), Request{
-		Argv:  []string{"/nonexistent/reasonix-shell-binary-xyz", "-c", "echo hi"},
+		Argv:  []string{"/nonexistent/patty-shell-binary-xyz", "-c", "echo hi"},
 		Track: false,
 		Run: func(ctx context.Context, cmd *exec.Cmd, opts proc.RunOptions) (*proc.TrackedCommand, error) {
 			return nil, errors.New("exec: no such file")
@@ -160,7 +160,7 @@ func TestRunForegroundLaunchFailure(t *testing.T) {
 }
 
 func TestRunForegroundOutputTailBounded(t *testing.T) {
-	payload := strings.Repeat("中文", 3000)
+	payload := strings.Repeat("機能整理檢討", 3000)
 	// Keep the command under typical argv length limits.
 	if len(payload) > 4000 {
 		payload = payload[:4000]
@@ -182,8 +182,8 @@ func TestRunForegroundOutputTailBounded(t *testing.T) {
 	if len(res.OutputTail) > tool.OutputTailMaxBytes {
 		t.Fatalf("output tail %d > %d", len(res.OutputTail), tool.OutputTailMaxBytes)
 	}
-	if !strings.Contains(res.Combined, "中文") && !strings.Contains(res.OutputTail, "中文") {
-		t.Fatalf("UTF-8 Chinese lost: combined=%q tail=%q", trim(res.Combined, 80), trim(res.OutputTail, 80))
+	if !strings.Contains(res.Combined, "機能整理檢討") && !strings.Contains(res.OutputTail, "機能整理檢討") {
+		t.Fatalf("UTF-8 Korean lost: combined=%q tail=%q", trim(res.Combined, 80), trim(res.OutputTail, 80))
 	}
 }
 

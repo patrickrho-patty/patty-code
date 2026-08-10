@@ -1,8 +1,8 @@
-# Reasonix CLI Reference
+# Patty Code CLI Reference
 
 <a href="../README.md">README</a>
 &nbsp;·&nbsp;
-<a href="./CLI.zh-CN.md">简体中文</a>
+<a href="./CLI.ko-KR.md">(Korean)</a>
 &nbsp;·&nbsp;
 <a href="./GUIDE.md">Guide</a>
 
@@ -13,14 +13,14 @@ configuration, plugins, and sandbox policy, see the [Guide](./GUIDE.md).
 ## Start a session
 
 ```sh
-reasonix
-reasonix --model deepseek-pro
-reasonix --profile delivery --effort high
-reasonix --dir /path/to/project
+patty
+patcode --model deepseek-pro
+patcode --profile delivery --effort high
+patcode --dir /path/to/project
 ```
 
-Running `reasonix` without a subcommand starts the interactive terminal UI. Use
-`reasonix setup` first when no provider is configured.
+Running `patty` without a subcommand starts the interactive terminal UI. Use
+`patcode setup` first when no provider is configured.
 
 | Flag | Purpose |
 | --- | --- |
@@ -42,27 +42,27 @@ Flags may appear before or after the prompt where applicable.
 ## Update the native CLI
 
 ```sh
-reasonix upgrade                  # install the latest official release
-reasonix upgrade --check          # report the target without installing
-reasonix upgrade --force          # reinstall the current official release
+patcode upgrade                  # install the latest official release
+patcode upgrade --check          # report the target without installing
+patcode upgrade --force          # reinstall the current official release
 ```
 
 The updater selects only strict `vX.Y.Z` non-prerelease GitHub Releases. During
 the 1.x compatibility period, old channel arguments and `--channel` are still
 accepted, but resolve to the same official release and print a deprecation
 notice. Legacy `[cli].update_channel` values are ignored and removed the next
-time Reasonix saves the configuration. The `reasonix update` alias behaves the
+time Patty Code saves the configuration. The `patcode update` alias behaves the
 same way.
 
 ## Configure providers
 
 ```sh
-reasonix setup                    # manage the user-global config
-reasonix setup --local            # manage ./reasonix.toml
-reasonix setup /path/to/config.toml
+patcode setup                    # manage the user-global config
+patcode setup --local            # manage ./patty.toml
+patcode setup /path/to/config.toml
 ```
 
-In an interactive terminal, `reasonix setup` is a staged provider manager. It
+In an interactive terminal, `patcode setup` is a staged provider manager. It
 lists configured providers and lets you:
 
 - add OpenAI-compatible or Anthropic-compatible providers;
@@ -77,7 +77,7 @@ or CLI changes are retained, while an overlapping change is reported as a
 conflict instead of being overwritten.
 
 Provider definitions contain only the `api_key_env` variable name. Key values
-are stored in the shared Reasonix home `.env`, even with `--local`. When a
+are stored in the shared Patty Code home `.env`, even with `--local`. When a
 variable name is already used by another provider, setup asks whether to share
 that credential; choose a different variable name when the providers use
 different keys. Providers added or removed through setup are also added to or
@@ -90,16 +90,16 @@ Use the user-global currency command to inspect or select the official DeepSeek
 regional price table:
 
 ```sh
-reasonix config currency             # show the saved and resolved currency
-reasonix config currency auto        # follow the resolved locale
-reasonix config currency CNY
-reasonix config currency USD
+patcode config currency             # show the saved and resolved currency
+patcode config currency auto        # follow the resolved locale
+patcode config currency CNY
+patcode config currency USD
 ```
 
 `auto` resolves Simplified or Traditional Chinese locales to CNY and English or
 other locales to USD. An explicit `CNY` or `USD` selection remains independent
 from the UI language. This preference is stored in the user config and cannot
-be overridden by project `reasonix.toml`; `--local` is therefore not supported.
+be overridden by project `patty.toml`; `--local` is therefore not supported.
 Custom provider prices are preserved.
 
 In an interactive session, `/currency` shows the saved and resolved values, and
@@ -113,14 +113,14 @@ Inspect the effective percentage and its source, set the global default, or add
 a project override:
 
 ```sh
-reasonix config compact-ratio              # show effective value and source
-reasonix config compact-ratio 75           # set the user-global default
-reasonix config compact-ratio --local 75   # override in ./reasonix.toml
+patcode config compact-ratio              # show effective value and source
+patcode config compact-ratio 75           # set the user-global default
+patcode config compact-ratio --local 75   # override in ./patty.toml
 ```
 
 The editable range is 65–85%, with 80% as the built-in default. Lower values
 compact earlier and may reduce prompt-prefix cache reuse; higher values retain
-more context before compaction. Project `reasonix.toml` takes precedence over
+more context before compaction. Project `patty.toml` takes precedence over
 the user config. Changes apply to new CLI sessions; an already-running session
 keeps the threshold it loaded at startup.
 
@@ -129,14 +129,14 @@ keeps the threshold it loaded at startup.
 Use `-p` / `--print` when a script needs only the final answer:
 
 ```sh
-reasonix -p "summarize this repository"
-reasonix -p "summarize this repository" --output-format json
-reasonix run "implement the TODOs in main.go"
-reasonix run --auto "implement the TODOs in main.go"
-echo "explain this code" | reasonix run
+patcode -p "summarize this repository"
+patcode -p "summarize this repository" --output-format json
+patcode run "implement the TODOs in main.go"
+patcode run --auto "implement the TODOs in main.go"
+echo "explain this code" | patcode run
 ```
 
-`reasonix run` keeps the normal streamed terminal presentation unless `-p` or a
+`patcode run` keeps the normal streamed terminal presentation unless `-p` or a
 structured output format is selected. It also accepts `--model`, `--profile`,
 `--max-steps`, `--effort`, `--dir`, `--add-dir`, `--continue`, `--resume QUERY`,
 `--copy`, `--allowed-tools`, `--permission-mode`, and `--auto` / `-y` (an alias
@@ -151,11 +151,11 @@ everything on) and `all`. Sub-agents inherit the parent's arm, and the arm name
 is written to the `--metrics` file so a recorded run is self-describing.
 
 ```sh
-reasonix run --ablate evidence,planner --metrics run.json "fix the failing test"
+patcode run --ablate evidence,planner --metrics run.json "fix the failing test"
 ```
 
 This is a measurement tool, not a tuning knob: switching a subsystem off makes
-Reasonix worse at the work it was added for.
+Patty Code worse at the work it was added for.
 
 ### Trajectory recording
 
@@ -170,7 +170,7 @@ the file contains prompts, tool arguments, and reasoning: treat it with the
 same care as a session transcript.
 
 ```sh
-reasonix run --metrics run.json --trajectory run.trajectory.jsonl "fix the failing test"
+patcode run --metrics run.json --trajectory run.trajectory.jsonl "fix the failing test"
 ```
 
 ### Output formats
@@ -182,9 +182,9 @@ reasonix run --metrics run.json --trajectory run.trajectory.jsonl "fix the faili
 | `stream-json` | Emits one shared `eventwire` JSON object per line, followed by the final result object. |
 
 ```sh
-reasonix -p "list the risky changes" --output-format text
-reasonix -p "summarize the diff" --output-format json
-reasonix run "run the tests" --output-format stream-json
+patcode -p "list the risky changes" --output-format text
+patcode -p "summarize the diff" --output-format json
+patcode run "run the tests" --output-format stream-json
 ```
 
 The final structured object has this shape:
@@ -228,7 +228,7 @@ must not receive prompts, reasoning, tool arguments, tool output, or approval
 text:
 
 ```sh
-reasonix run --events-jsonl "run the focused tests"
+patcode run --events-jsonl "run the focused tests"
 ```
 
 Every line has `schema_version`, `sequence`, and `kind`; the final line is
@@ -240,25 +240,25 @@ The following read-only commands expose persisted state without transcript,
 label, command, output, path, PID, or host-name content. Here, read-only means
 the commands do not mutate transcript, runtime, recovery, or query state. The
 first redacted-machine invocation may initialize a private identity key in the
-Reasonix user-state directory:
+Patty Code user-state directory:
 
 ```sh
-reasonix session list --json [--dir SESSION_DIR | --project-root PATH]
-reasonix session show <machine-session-id> --json [--dir SESSION_DIR | --project-root PATH]
-reasonix session status <machine-session-id> --json [--dir SESSION_DIR | --project-root PATH]
-reasonix session recovery [<machine-session-id>] --json [--dir SESSION_DIR | --project-root PATH]
-reasonix task list --json [--dir SESSION_DIR | --project-root PATH] [--session MACHINE_SESSION_ID]
-reasonix task show <task-id> --json [--dir SESSION_DIR | --project-root PATH] [--session MACHINE_SESSION_ID]
-reasonix task monitor list --json [--dir PROJECT_DIR]
-reasonix task monitor status <task-id> --json [--dir PROJECT_DIR]
-reasonix task monitor events <task-id> --json|--jsonl [--dir PROJECT_DIR] [--after N] [--follow]
-reasonix hook list --json [--project-root PATH] [--home-dir PATH]
-reasonix hook status --json [--project-root PATH] [--home-dir PATH]
+patcode session list --json [--dir SESSION_DIR | --project-root PATH]
+patcode session show <machine-session-id> --json [--dir SESSION_DIR | --project-root PATH]
+patcode session status <machine-session-id> --json [--dir SESSION_DIR | --project-root PATH]
+patcode session recovery [<machine-session-id>] --json [--dir SESSION_DIR | --project-root PATH]
+patcode task list --json [--dir SESSION_DIR | --project-root PATH] [--session MACHINE_SESSION_ID]
+patcode task show <task-id> --json [--dir SESSION_DIR | --project-root PATH] [--session MACHINE_SESSION_ID]
+patcode task monitor list --json [--dir PROJECT_DIR]
+patcode task monitor status <task-id> --json [--dir PROJECT_DIR]
+patcode task monitor events <task-id> --json|--jsonl [--dir PROJECT_DIR] [--after N] [--follow]
+patcode hook list --json [--project-root PATH] [--home-dir PATH]
+patcode hook status --json [--project-root PATH] [--home-dir PATH]
 ```
 
 For `session` and `task`, `--dir` explicitly selects the session storage
 directory, while `--project-root` resolves the selected project's session
-store. The two options cannot be combined. Without either option, Reasonix
+store. The two options cannot be combined. Without either option, Patty Code
 selects the current project's session store.
 For `hook`, `--dir` is an alias for `--project-root`.
 `hook list` reports `active` or `invalid`; `invalid` means the
@@ -266,10 +266,10 @@ configured event cannot execute because its event, command/context source, or
 tool-event matcher is unusable. Matchers on non-tool events are ignored.
 
 Machine session IDs are keyed opaque hashes, not transcript file names. They
-remain stable for the same session and Reasonix user-state directory, while a
+remain stable for the same session and Patty Code user-state directory, while a
 different installation key produces unrelated IDs and prevents offline guesses
 from timestamps or model labels. Preserve the private identity key when moving
-the Reasonix state directory if automation depends on existing machine IDs.
+the Patty Code state directory if automation depends on existing machine IDs.
 Task `finished_at` is empty while a task is running, and
 `artifact_complete=true` is emitted only for a terminal task whose persisted
 artifact exists. A `running` record without a live session lease is reported as
@@ -286,11 +286,11 @@ Schema compatibility rules for version 1:
 ## Resume sessions
 
 ```sh
-reasonix --continue
-reasonix --resume
-reasonix --resume provider-config
-reasonix --resume <session-id>
-reasonix --resume provider-config --copy
+patcode --continue
+patcode --resume
+patcode --resume provider-config
+patcode --resume <session-id>
+patcode --resume provider-config --copy
 ```
 
 - `--continue` resumes the newest saved session immediately.
@@ -300,22 +300,22 @@ reasonix --resume provider-config --copy
   error.
 - `--resume=true` and `--resume=false` remain accepted for compatibility.
 - `--copy` leaves the original transcript untouched and continues in a new
-  writable session. Use it when another Reasonix process owns the original.
+  writable session. Use it when another Patty Code process owns the original.
 
-For one-shot runs, `reasonix run --resume QUERY "task"` accepts a session file
+For one-shot runs, `patcode run --resume QUERY "task"` accepts a session file
 path, a session ID, or an opaque machine session ID from `--events-jsonl` /
-`reasonix session show --json`. Session leases prevent the desktop app and CLI
+`patcode session show --json`. Session leases prevent the desktop app and CLI
 from writing the same transcript concurrently.
 
 ## Permissions
 
 ```sh
-reasonix --permission-mode plan
-reasonix --permission-mode acceptEdits
-reasonix run -y "apply the requested changes"
-reasonix -p "run the focused tests" --allowed-tools "Bash(go test ./...)"
-reasonix --allowed-tools "Bash(git *) Edit"
-reasonix --allowed-tools "Bash(go test ./...)" --allowed-tools read_file
+patcode --permission-mode plan
+patcode --permission-mode acceptEdits
+patcode run -y "apply the requested changes"
+patcode -p "run the focused tests" --allowed-tools "Bash(go test ./...)"
+patcode --allowed-tools "Bash(git *) Edit"
+patcode --allowed-tools "Bash(go test ./...)" --allowed-tools read_file
 ```
 
 | Mode | Behavior |
@@ -328,7 +328,7 @@ reasonix --allowed-tools "Bash(go test ./...)" --allowed-tools read_file
 | `bypassPermissions` | Bypass approval prompts; equivalent to YOLO. |
 
 For unattended execution with ordinary writer fallback enabled, use
-`reasonix run --auto ...` (or `-y`). The alias cannot be combined with an
+`patcode run --auto ...` (or `-y`). The alias cannot be combined with an
 explicit `--permission-mode` value.
 
 `[permissions] allow_dynamic_bash = true` is an advanced opt-in that lets an
@@ -340,7 +340,7 @@ command names, shell `-c`, and other nested/indirect Bash forms. The default is
 filter. Rules may be comma- or space-separated, and the flag is repeatable.
 Configured deny rules always win over command-line allow rules.
 
-In non-interactive runs (`reasonix run` / `-p`) there is no prompt to answer, so
+In non-interactive runs (`patcode run` / `-p`) there is no prompt to answer, so
 approval modes resolve without blocking. The default `ask` / `manual` posture
 fails closed for explicit Ask decisions and ordinary writer fallback; readers
 still run. `acceptEdits` allows its named file-edit tools, while other Ask
@@ -357,14 +357,14 @@ mutations remain denied without a human.
 ## Additional directories
 
 ```sh
-reasonix --add-dir ../shared
-reasonix -p "update both projects" \
+patcode --add-dir ../shared
+patcode -p "update both projects" \
   --add-dir ../frontend \
   --add-dir ../backend
 ```
 
 Relative paths resolve from the workspace root and must already exist as
-directories. Reasonix resolves symlinks, removes duplicates, and extends the
+directories. Patty Code resolves symlinks, removes duplicates, and extends the
 file-writer and sandboxed Bash write boundaries for the session. These additions
 are runtime-only and are not written to configuration.
 
@@ -404,7 +404,7 @@ Clipboard actions are deliberately split by content type. Local transcript
 and composer selections use the native system clipboard and report success only
 after that write completes; SSH falls back to an explicitly labelled OSC 52
 request. Text paste remains the terminal's bracketed-paste action (`Cmd+V` on
-macOS and the terminal's configured shortcut elsewhere). While Reasonix owns the
+macOS and the terminal's configured shortcut elsewhere). While Patty Code owns the
 mouse in a local session, right-click with no selection reads clipboard text
 through the same paste path; right-click with a selection copies it. Over SSH,
 use the terminal paste shortcut because the remote process cannot read the local
@@ -440,7 +440,7 @@ the displayed list matches the commands the TUI accepts.
 | `/goal resume` | Resume a paused or blocked goal (budget pauses add one more budget slice). |
 | `/goal clear` | End goal mode permanently. |
 | `/docs [question]` | Show the embedded corpus identity, or search it locally and ask the configured AI to answer from version-matched evidence. |
-| `/reasonix:docs [question]` | Preferred built-in fallback when an existing custom command or compatible plugin/skill alias owns `/docs`; if this spelling is also owned, the menu selects the next free `reasonix:`-qualified name without displacing it. |
+| `/patty:docs [question]` | Preferred built-in fallback when an existing custom command or compatible plugin/skill alias owns `/docs`; if this spelling is also owned, the menu selects the next free `patty:`-qualified name without displacing it. |
 | `/mcp`, `/skills`, `/hooks` | Inspect and manage extensions. |
 | `/remember <note>` | Append a standing note to the project instruction document; `# <note>` is a shortcut. |
 | `/memory [subcommand]` | Inspect instructions, memory provenance, recall, revisions, and recovery. |
@@ -469,7 +469,7 @@ names, and owned archive paths.
 | `/memory recover <archive-path>` | Recover an archive as a new revision without overwriting active data. |
 
 These commands run against the active session controller. When the session
-lives on a remote host (`reasonix remote connect` / a desktop remote web
+lives on a remote host (`patcode remote connect` / a desktop remote web
 window), they use the remote memory catalog and never fall back to local
 desktop memory. See [Context Engine v2](./SESSION_MEMORY_RETRIEVAL.md) for
 authority, automatic recall, write confirmation, and migration behavior.

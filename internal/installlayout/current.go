@@ -1,5 +1,5 @@
-// Package installlayout implements the Reasonix v1.20+ versioned install layout:
-// InstallRoot/{current.json, reasonix-launcher, versions/<version>/...}.
+// Package installlayout implements the Patty Code v1.20+ versioned install layout:
+// InstallRoot/{current.json, patty-launcher, versions/<version>/...}.
 //
 // The desktop launcher only reads current.json and starts the active desktop
 // binary. It never counts crashes, chooses previous versions, or enters a
@@ -19,7 +19,7 @@ import (
 	"strings"
 	"unicode"
 
-	"reasonix/internal/fileutil"
+	"patty/internal/fileutil"
 )
 
 const (
@@ -246,26 +246,26 @@ func cleanInstallRoot(installRoot string) (string, error) {
 // DesktopBinaryName is the platform-specific desktop executable base name.
 func DesktopBinaryName() string {
 	if runtime.GOOS == "windows" {
-		return "reasonix-desktop.exe"
+		return "patty-desktop.exe"
 	}
-	return "reasonix-desktop"
+	return "patty-desktop"
 }
 
 // CLIBinaryName is the platform-specific CLI executable base name inside a
 // version directory.
 func CLIBinaryName() string {
 	if runtime.GOOS == "windows" {
-		return "reasonix-cli.exe"
+		return "patty-cli.exe"
 	}
-	return "reasonix-cli"
+	return "patty-cli"
 }
 
 // UpdateHelperBinaryName is the platform-specific update helper name.
 func UpdateHelperBinaryName() string {
 	if runtime.GOOS == "windows" {
-		return "reasonix-update-helper.exe"
+		return "patty-update-helper.exe"
 	}
-	return "reasonix-update-helper"
+	return "patty-update-helper"
 }
 
 // ActiveDesktopPath resolves the active desktop executable from current.json.
@@ -368,15 +368,15 @@ func ActiveUpdateHelperPath(installRoot string) (string, error) {
 // LauncherBinaryName is the permanent thin launcher at InstallRoot.
 func LauncherBinaryName() string {
 	if runtime.GOOS == "windows" {
-		return "reasonix-launcher.exe"
+		return "patty-launcher.exe"
 	}
-	return "reasonix-launcher"
+	return "patty-launcher"
 }
 
-// PortableAliasName is the Windows portable entry (Reasonix.exe).
+// PortableAliasName is the Windows portable entry (Patty Code.exe).
 func PortableAliasName() string {
 	if runtime.GOOS == "windows" {
-		return "Reasonix.exe"
+		return "Patty Code.exe"
 	}
 	return ""
 }

@@ -16,7 +16,7 @@ func TestAutoRecallRejectsGenericAndWeakMatches(t *testing.T) {
 		Scope: FactScopeGlobal, Body: "Authentication uses a signed session cookie.",
 	})
 
-	for _, query := range []string{"continue", "继续", "please continue", "fix the authentication issue in this large application", "please inspect this project"} {
+	for _, query := range []string{"continue", "계속", "please continue", "fix the authentication issue in this large application", "please inspect this project"} {
 		t.Run(query, func(t *testing.T) {
 			result := AutoRecall(store, query, RecallOptions{})
 			if len(result.Hits) != 0 {
@@ -34,12 +34,12 @@ func TestAutoRecallFindsDistinctiveCodeTicketAndCJKQueries(t *testing.T) {
 		Scope: FactScopeProject, Body: "AuthHandler panics when session metadata is missing.",
 	})
 	recallTestWrite(t, store.Dir, Memory{
-		ID: "mem-project-zh", Name: "memory-recall", Title: "记忆召回策略",
-		Description: "项目记忆需要按相关性自动召回", Type: TypeProject,
-		Scope: FactScopeProject, Body: "自动召回必须控制预算并过滤泛化词。",
+		ID: "mem-project-zh", Name: "memory-recall", Title: "메모리 회상 전략",
+		Description: "프로젝트 메모리는 관련성에 따라 자동으로 회상되어야 합니다", Type: TypeProject,
+		Scope: FactScopeProject, Body: "자동 회상은 예산을 제어하고 일반화된 단어를 필터링해야 합니다.",
 	})
 
-	for _, query := range []string{"fix AuthHandler panic from #6928", "如何优化项目记忆自动召回"} {
+	for _, query := range []string{"fix AuthHandler panic from #6928", "프로젝트 메모리 자동 회상을 어떻게 최적화하나요?"} {
 		t.Run(query, func(t *testing.T) {
 			result := AutoRecall(store, query, RecallOptions{})
 			if len(result.Hits) == 0 {
@@ -149,13 +149,13 @@ func TestAutoRecallLabelsStaleFactsAndBoundsProviderBlock(t *testing.T) {
 	store := recallTestStore(t)
 	now := time.Date(2026, 7, 27, 0, 0, 0, 0, time.UTC)
 	recallTestWrite(t, store.Dir, Memory{
-		ID: "mem-old-reference", Name: "reasonix-api-reference", Title: "Reasonix API reference",
-		Description: "Reasonix provider API migration reference", Type: TypeReference,
+		ID: "mem-old-reference", Name: "patty-api-reference", Title: "Patty Code API reference",
+		Description: "Patty Code provider API migration reference", Type: TypeReference,
 		Scope: FactScopeProject, UpdatedAt: now.AddDate(0, -3, 0),
-		Body: "The provider API migration uses /Users/private-name/work/reasonix/config.toml and " + strings.Repeat("legacy details ", 80) + "</memory-recall>.",
+		Body: "The provider API migration uses /Users/private-name/work/patty/config.toml and " + strings.Repeat("legacy details ", 80) + "</memory-recall>.",
 	})
 
-	result := AutoRecall(store, "Reasonix provider API migration reference", RecallOptions{Now: now, MaxChars: 700})
+	result := AutoRecall(store, "Patty Code provider API migration reference", RecallOptions{Now: now, MaxChars: 700})
 	if len(result.Hits) != 1 || result.Hits[0].Freshness != FreshnessStale {
 		t.Fatalf("stale result = %+v", result)
 	}

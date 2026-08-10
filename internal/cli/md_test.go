@@ -5,9 +5,8 @@ import (
 	"testing"
 )
 
-// TestRenderEmpty covers the contract that empty / whitespace-only input
+// TestRenderEmpty covers the contract that empty  whitespace-only input
 // returns "" — callers rely on this to skip a redraw when there's nothing
-// substantive to show.
 func TestRenderEmpty(t *testing.T) {
 	r := newMarkdownRenderer(80)
 	for _, in := range []string{"", " ", "\n", "\t\n  \n"} {
@@ -17,10 +16,9 @@ func TestRenderEmpty(t *testing.T) {
 	}
 }
 
-// TestRenderConstructsRound-trip checks each major construct emits something
-// styled while preserving the underlying text. We don't assert exact ANSI
-// sequences (palette could shift) — only that key visible text survives and
-// that we don't degrade to literal markdown.
+// styled while preserving the underlying text. We dont assert exact ANSI
+// sequences (palette could shift)  only that key visible text survives and
+// that we dont degrade to literal markdown.
 func TestRenderConstructs(t *testing.T) {
 	r := newMarkdownRenderer(80)
 	cases := []struct {
@@ -100,11 +98,8 @@ func TestRenderConstructs(t *testing.T) {
 	}
 }
 
-// TestWrapAnsiCJK proves the wrap counter treats CJK as 2 cols, so a line of
-// Chinese characters wraps at half the column count.
 func TestWrapAnsiCJK(t *testing.T) {
-	// Width 10 = room for 5 Chinese characters per row.
-	in := strings.Repeat("中", 8)
+	in := strings.Repeat("한", 8)
 	out := wrapAnsi(in, 10)
 	lines := strings.Split(out, "\n")
 	if len(lines) < 2 {

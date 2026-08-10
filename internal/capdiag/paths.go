@@ -9,10 +9,10 @@ import (
 
 // displayPath rewrites absolute paths for safe reports:
 //   - under workspace → <workspace>/...
-//   - under Reasonix home → <reasonix-home>/...
+//   - under patty home → <patty-home>/...
 //   - under OS home → ~/...
 //   - elsewhere → <external>/basename (no full external path, no username)
-func displayPath(p, workspace, home, reasonixHome string) string {
+func displayPath(p, workspace, home, pattyHome string) string {
 	p = strings.TrimSpace(p)
 	if p == "" {
 		return ""
@@ -37,16 +37,16 @@ func displayPath(p, workspace, home, reasonixHome string) string {
 			return "<workspace>/" + filepath.ToSlash(rel)
 		}
 	}
-	if rh := strings.TrimSpace(reasonixHome); rh != "" {
+	if rh := strings.TrimSpace(pattyHome); rh != "" {
 		if abs, err := filepath.Abs(rh); err == nil {
 			rh = abs
 		}
 		rh = filepath.Clean(rh)
 		if clean == rh {
-			return "<reasonix-home>"
+			return "<patty-home>"
 		}
 		if rel, err := filepath.Rel(rh, clean); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
-			return "<reasonix-home>/" + filepath.ToSlash(rel)
+			return "<patty-home>/" + filepath.ToSlash(rel)
 		}
 	}
 	if home == "" {

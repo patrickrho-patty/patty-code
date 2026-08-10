@@ -3,7 +3,7 @@ package openai
 import (
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func TestExplicitKimiK3GatewayRequestContract(t *testing.T) {

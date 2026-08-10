@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
+	"patty/internal/agent"
+	"patty/internal/event"
 )
 
 func TestIsNonTurnHTTPInput(t *testing.T) {
@@ -97,10 +97,8 @@ func waitForFormatTestSignal(t *testing.T, signal <-chan struct{}, message strin
 	}
 }
 
-// TestSubmitHTTPFormatBindsToTurn holds the first turn's finishing window open,
-// submits a second turn with a different format, and proves the parked closure
-// preserves each accepted turn's format. This deterministically exercises the
-// interleaving that a controller-global one-shot slot could cross-wire.
+// TestSubmitHTTPFormatBindsToTurn holds the first turns finishing window open,
+// preserves each accepted turns format. This deterministically exercises the
 func TestSubmitHTTPFormatBindsToTurn(t *testing.T) {
 	observed := make(chan observedTurnFormat, 2)
 	gate := &formatTurnDoneGate{
@@ -127,8 +125,8 @@ func TestSubmitHTTPFormatBindsToTurn(t *testing.T) {
 	}
 }
 
-// TestWithTurnFormatInjectsFormatIntoContext：format 绑定 turn 的实际效果
-// ——withTurnFormat 注入后 agent 请求路径能读到（不是全局槽）。
+// TestWithTurnFormatInjectsFormatIntoContext: format이 turn에 바인딩되는 실제 효과
+// ——withTurnFormat 주입 후 agent 요청 경로에서 읽을 수 있음(전역 슬롯이 아님).
 func TestWithTurnFormatInjectsFormatIntoContext(t *testing.T) {
 	c := New(Options{})
 	ctx := context.Background()
@@ -140,17 +138,17 @@ func TestWithTurnFormatInjectsFormatIntoContext(t *testing.T) {
 	}
 }
 
-// TestRefTurnFormatBound：@reference turn 同样绑定 format（统一架构——
-// format 是每个被接纳 turn 的属性，非 runGoalLoop 特例）。
+// TestRefTurnFormatBound: @reference turn도 format에 바인딩됨(통일된 아키텍처——
+// format은 수락된 모든 turn의 속성이며 runGoalLoop 특례가 아님).
 func TestRefTurnFormatBound(t *testing.T) {
 	c := New(Options{})
 	ctx := context.Background()
-	// runRefTurnWithFormat 注入后 agent 请求路径读到 json_object
+// runRefTurnWithFormat 주입 후 agent 요청 경로가 json_object를 읽음
 	if got := agent.ResponseFormatFromRequest(c.withTurnFormat(ctx, "json_object")); got == nil || got.Type != "json_object" {
 		t.Fatalf("ref-turn format must bind to ctx, got %+v", got)
 	}
-	// isRefTurnInput 识别 @引用 turn（format 经 wrapper 绑定，不再丢弃）
-	// ref-turn 输入识别（SlashCodeCommentLine 不依赖文件系统）
+// isRefTurnInput이 @참조 turn을 인식(format이 wrapper를 통해 바인딩되어 더 이상 버려지지 않음)
+// ref-turn 입력 인식(SlashCodeCommentLine은 파일 시스템에 의존하지 않음)
 	for _, input := range []string{"// comment line", "//src/main.go:12"} {
 		if !SlashCodeCommentLine(input) {
 			t.Errorf("SlashCodeCommentLine(%q) = false, want true", input)

@@ -1,39 +1,39 @@
-# Account service for reasonix.io — email/password auth, sessions, profiles.
+# Account service for patty-code.io — email/password auth, sessions, profiles.
 # First deploy:
-#   wrangler d1 create reasonix-accounts        # paste database_id below
-#   wrangler d1 migrations apply reasonix-accounts --remote
+#   wrangler d1 create patty-code-accounts        # paste database_id below
+#   wrangler d1 migrations apply patty-code-accounts --remote
 #   wrangler secret put SESSION_PEPPER          # any long random string
 #   wrangler secret put RESEND_API_KEY          # only if EMAIL_PROVIDER=resend
 #   wrangler deploy
-name = "reasonix-accounts"
+name = "patty-code-accounts"
 main = "src/index.ts"
 compatibility_date = "2026-06-01"
 
-routes = [{ pattern = "id.reasonix.io", custom_domain = true }]
+routes = [{ pattern = "id.patty.io", custom_domain = true }]
 
 [vars]
 # Where the web frontend lives — used for pages and post-action redirects.
-APP_ORIGIN = "https://reasonix.io"
+APP_ORIGIN = "https://patty-code.io"
 # Canonical public origin of this Worker — used for backend email actions.
 # Override with http://localhost:8787 in .dev.vars when exercising email flows locally.
-ACCOUNT_ORIGIN = "https://id.reasonix.io"
+ACCOUNT_ORIGIN = "https://id.patty.io"
 # Browsers that may call this API with credentials (comma-separated).
-ALLOWED_ORIGINS = "https://reasonix.io,https://www.reasonix.io"
-# Cookie scope. ".reasonix.io" lets the apex + any subdomain (and the future CLI)
+ALLOWED_ORIGINS = "https://patty-code.io,https://www.patty.io"
+# Cookie scope. ".patty.io" lets the apex + any subdomain (and the future CLI)
 # share the session. Leave empty for host-only (local dev).
-COOKIE_DOMAIN = ".reasonix.io"
+COOKIE_DOMAIN = ".patty.io"
 # "stub" logs email links to the worker console (local dev); "resend" sends real
 # mail via RESEND_API_KEY.
 EMAIL_PROVIDER = "resend"
-# From-domain must match a verified Resend domain — send.reasonix.io is verified
+# From-domain must match a verified Resend domain — send.patty.io is verified
 # (DKIM), the apex is not, and Resend rejects sends from an unverified domain.
-MAIL_FROM = "Reasonix <no-reply@send.reasonix.io>"
+MAIL_FROM = "Patty Code <no-reply@send.patty.io>"
 # Comma-separated emails minted as admins on first sign-up.
 ADMIN_EMAILS = ""
 
 [[d1_databases]]
 binding = "DB"
-database_name = "reasonix-accounts"
+database_name = "patty-code-accounts"
 database_id = "bae20011-a6fe-4fad-ae61-a3aaac605e0c"
 migrations_dir = "migrations"
 

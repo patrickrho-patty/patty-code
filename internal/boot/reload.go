@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/extension"
-	"reasonix/internal/provider"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/extension"
+	"patty/internal/provider"
 )
 
 // RebuildFrom is Rebuild using previous BuildResult for incremental sidecars
@@ -102,7 +102,7 @@ func rebuildWithPrevious(ctx context.Context, old *control.Controller, previous 
 		opts.SessionTemp = old.SessionTemp()
 	}
 
-	home := config.ReasonixHomeDir()
+	home := config.PattyHomeDir()
 	// fromGraph must be the PREVIOUS generation's graph when available.
 	// Building "current disk" for both from and to collapses every plan to no-op.
 	var fromGraph *extension.DependencyGraph

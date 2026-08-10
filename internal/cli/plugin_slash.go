@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"reasonix/internal/config"
-	"reasonix/internal/pluginpkg"
+	"patty/internal/config"
+	"patty/internal/pluginpkg"
 )
 
 func pluginArgNames() []string {
-	names, err := pluginpkg.InstalledNames(config.ReasonixHomeDir())
+	names, err := pluginpkg.InstalledNames(config.PattyHomeDir())
 	if err != nil {
 		return nil
 	}
@@ -24,7 +24,7 @@ func (m *chatTUI) runPluginSubcommand(input string) {
 	}
 	switch sub {
 	case "", "list", "ls":
-		text, err := pluginpkg.InstalledListText(config.ReasonixHomeDir())
+		text, err := pluginpkg.InstalledListText(config.PattyHomeDir())
 		if err != nil {
 			m.notice("plugins: " + err.Error())
 			return
@@ -35,7 +35,7 @@ func (m *chatTUI) runPluginSubcommand(input string) {
 			m.notice("usage: /plugins show <name>")
 			return
 		}
-		text, err := pluginpkg.InstalledShowText(config.ReasonixHomeDir(), args[2])
+		text, err := pluginpkg.InstalledShowText(config.PattyHomeDir(), args[2])
 		if err != nil {
 			m.notice("plugins: " + err.Error())
 			return

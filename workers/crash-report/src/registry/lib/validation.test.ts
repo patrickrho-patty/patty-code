@@ -6,7 +6,7 @@ const parse = (overrides: Record<string, unknown>) => PublishSchema.safeParse({ 
 
 describe("PublishSchema source", () => {
   it("accepts URLs, git: shorthands, and package names install_source can resolve", () => {
-    // kind=mcp so the skill-only whole-repo guard never masks a shape accept.
+// [[[[[[kind=mcp so the skill-only whole-repo guard never masks a shape accept.]]]]]]
     for (const source of [
       "https://github.com/o/r/blob/main/SKILL.md",
       "http://example.com/x/.mcp.json",
@@ -21,7 +21,7 @@ describe("PublishSchema source", () => {
 
   it("rejects free text, bare local paths, and scheme-less hosts", () => {
     for (const source of [
-      "这个来源是自己制作的",
+      "not a valid source",
       "just some words",
       "./skills/foo",
       "/home/me/skill",
@@ -77,7 +77,7 @@ describe("PublishSchema source", () => {
   });
 
   it("rejects non-GitHub sources for kind=plugin", () => {
-    for (const source of ["123", "my-plugin", "@scope/pkg", "https://example.com/reasonix-plugin.json"]) {
+    for (const source of ["123", "my-plugin", "@scope/pkg", "https://example.com/patty-plugin.json"]) {
       expect(parse({ kind: "plugin", installKind: "plugin", source }).success, source).toBe(false);
     }
   });
@@ -97,7 +97,7 @@ describe("PublishSchema source", () => {
   it("rejects GitHub pages and unsafe repository paths for kind=plugin", () => {
     for (const source of [
       "https://github.com/o/r/issues/1",
-      "https://github.com/o/r/blob/main/reasonix-plugin.json",
+      "https://github.com/o/r/blob/main/patty-plugin.json",
       "https://github.com/o/r/pull/1",
       "https://github.com/o/r/tree/main/../evil",
       "https://github.com/o/r/tree/main/%2e%2e/evil",
@@ -122,7 +122,7 @@ describe("PublishSchema source", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       const sourceIssue = result.error.issues.find((issue) => issue.path[0] === "source");
-      expect(sourceIssue?.message).toContain("reasonix-plugin.json");
+      expect(sourceIssue?.message).toContain("patty-plugin.json");
       expect(sourceIssue?.message).toContain(".codex-plugin/plugin.json");
       expect(sourceIssue?.message).toContain(".claude-plugin/plugin.json");
       expect(sourceIssue?.message).toContain(".claude-plugin/marketplace.json");

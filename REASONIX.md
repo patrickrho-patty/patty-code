@@ -1,8 +1,8 @@
-# Reasonix project memory
+# Patty Code project memory
 
 This file is loaded into every session's system prompt (the cache-stable prefix),
 so keep it concise and durable — it is the project's standing instructions to the
-agent. It is the Reasonix analog of Claude Code's CLAUDE.md.
+agent. It is the Patty Code analog of Claude Code's CLAUDE.md.
 
 ## Conventions
 
@@ -11,7 +11,7 @@ agent. It is the Reasonix analog of Claude Code's CLAUDE.md.
 - One transport-agnostic `control.Controller` sits behind every frontend (chat
   TUI, HTTP/SSE serve, Wails desktop). Add behavior to the controller, not a
   frontend, so all three inherit it.
-- Layering (enforced): utility packages import nothing under `reasonix/`; only
+- Layering (enforced): utility packages import nothing under `patty/`; only
   the frontends `cli`, `serve`, `acp`, `bot`, `botruntime`, `boot` and the hosts
   `cmd/`, `desktop/` may import `control`; nothing below a frontend may import
   one. The declared sets live in `tools/repolint/layers.go`.
@@ -43,11 +43,11 @@ extraction, and that diff must be justified in the PR.
 
 ## Memory
 
-- Standing instructions are hierarchical: committed/shared `REASONIX.md`,
+- Standing instructions are hierarchical: committed/shared `PATTY.md`,
   `AGENTS.md`, and `CLAUDE.md`; personal `*.local.md` variants; matching files in
   ancestor directories; and user-global files under the memory state root
-  (`REASONIX_STATE_HOME`, otherwise `REASONIX_HOME`, otherwise `~/.reasonix` on
-  macOS/Linux or `%APPDATA%\reasonix` on Windows). All distinct supported files
+  (`PATTY_STATE_HOME`, otherwise `PATTY_HOME`, otherwise `~/.patty` on
+  macOS/Linux or `%APPDATA%\patty` on Windows). All distinct supported files
   in a directory load; `AGENTS.md` is not merely a fallback.
 - `@path` on its own line imports another file's contents.
 - `#<note>` in chat quick-adds an always-on instruction. The `remember` tool
@@ -109,7 +109,7 @@ also touches `internal/config/`, `internal/memory/`, `internal/outputstyle/`,
 `internal/skill/`, or `internal/boot/`, add `System-prompt-review: <note>` —
 that field additionally rejects `none` and `n/a`, so it must name a reviewer.
 
-User-visible diffs (`cmd/reasonix/`, `desktop/`, `npm/`, and most of
+User-visible diffs (`cmd/patty/`, `desktop/`, `npm/`, and most of
 `internal/`; tests and lockfiles are exempt) require one of these, chosen by
 whether the same PR edited `docs/*.md`:
 

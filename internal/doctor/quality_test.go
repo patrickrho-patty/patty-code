@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/agent"
+	"patty/internal/agent"
 )
 
 func TestCollectQualityProducesPublicSafeSummary(t *testing.T) {

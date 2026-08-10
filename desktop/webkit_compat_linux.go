@@ -1,4 +1,4 @@
-// Package main provides the Wails desktop shell around the Reasonix kernel.
+// Package main provides the Wails desktop shell around the patty kernel.
 //
 // webkit_compat_linux.go applies WebKit2GTK compatibility workarounds around
 // Wails startup and JavaScriptCore initialization.
@@ -17,7 +17,7 @@ package main
 
 #include <glib.h>
 
-static void reasonix_fix_signal(int signum)
+static void patty_fix_signal(int signum)
 {
 	struct sigaction st;
 
@@ -31,65 +31,65 @@ static void reasonix_fix_signal(int signum)
 	return;
 
 fix_signal_error:
-	fprintf(stderr, "reasonix: error fixing handler for signal %d: %s\n",
+	fprintf(stderr, "patty: error fixing handler for signal %d: %s\n",
 		signum, strerror(errno));
 }
 
-static void reasonix_install_signal_handlers(void)
+static void patty_install_signal_handlers(void)
 {
 #if defined(SIGCHLD)
-	reasonix_fix_signal(SIGCHLD);
+	patty_fix_signal(SIGCHLD);
 #endif
 #if defined(SIGHUP)
-	reasonix_fix_signal(SIGHUP);
+	patty_fix_signal(SIGHUP);
 #endif
 #if defined(SIGINT)
-	reasonix_fix_signal(SIGINT);
+	patty_fix_signal(SIGINT);
 #endif
 #if defined(SIGQUIT)
-	reasonix_fix_signal(SIGQUIT);
+	patty_fix_signal(SIGQUIT);
 #endif
 #if defined(SIGABRT)
-	reasonix_fix_signal(SIGABRT);
+	patty_fix_signal(SIGABRT);
 #endif
 #if defined(SIGFPE)
-	reasonix_fix_signal(SIGFPE);
+	patty_fix_signal(SIGFPE);
 #endif
 #if defined(SIGTERM)
-	reasonix_fix_signal(SIGTERM);
+	patty_fix_signal(SIGTERM);
 #endif
 #if defined(SIGBUS)
-	reasonix_fix_signal(SIGBUS);
+	patty_fix_signal(SIGBUS);
 #endif
 #if defined(SIGSEGV)
-	reasonix_fix_signal(SIGSEGV);
+	patty_fix_signal(SIGSEGV);
 #endif
 	// Do not modify SIGUSR1. JavaScriptCore owns it for conservative GC
 	// stack scanning after installing its handler.
 #if defined(SIGXCPU)
-	reasonix_fix_signal(SIGXCPU);
+	patty_fix_signal(SIGXCPU);
 #endif
 #if defined(SIGXFSZ)
-	reasonix_fix_signal(SIGXFSZ);
+	patty_fix_signal(SIGXFSZ);
 #endif
 }
 
-static gboolean reasonix_install_signal_handlers_timeout(gpointer data)
+static gboolean patty_install_signal_handlers_timeout(gpointer data)
 {
-	reasonix_install_signal_handlers();
+	patty_install_signal_handlers();
 	int *remaining = (int *)data;
 	(*remaining)--;
 	return *remaining > 0 ? G_SOURCE_CONTINUE : G_SOURCE_REMOVE;
 }
 
-static void reasonix_schedule_signal_handler_fix(void)
+static void patty_schedule_signal_handler_fix(void)
 {
 	int *remaining = (int *)g_malloc(sizeof(int));
 	*remaining = 100;
 	g_timeout_add_full(
 		G_PRIORITY_DEFAULT,
 		50,
-		reasonix_install_signal_handlers_timeout,
+		patty_install_signal_handlers_timeout,
 		remaining,
 		g_free
 	);
@@ -113,11 +113,11 @@ import "C"
 // loop, which anchors the five-second repair window to WebKit startup instead
 // of package initialization.
 func scheduleWebKitSignalHandlerRepair() {
-	C.reasonix_schedule_signal_handler_fix()
+	C.patty_schedule_signal_handler_fix()
 }
 
 // repairWebKitSignalHandlers runs once after the DOM is ready, when JSC has
 // installed its lazy signal handlers.
 func repairWebKitSignalHandlers() {
-	C.reasonix_install_signal_handlers()
+	C.patty_install_signal_handlers()
 }

@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/store"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/store"
 )
 
 func newGoalDeliveryYoloTestApp(t *testing.T, goalStatus string) (*App, *WorkspaceTab, control.SessionAPI, string) {

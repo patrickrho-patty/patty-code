@@ -8,15 +8,15 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"reasonix/internal/i18n"
-	"reasonix/internal/skill"
+	"patty/internal/i18n"
+	"patty/internal/skill"
 )
 
 func makeTestSkills() []skill.Skill {
 	return []skill.Skill{
-		{Name: "review", Description: "Review code changes for correctness", Scope: skill.ScopeProject, Path: "/fake/proj/.reasonix/skills/review/SKILL.md", RunAs: skill.RunSubagent, Body: "# Review\n\nReview code."},
+		{Name: "review", Description: "Review code changes for correctness", Scope: skill.ScopeProject, Path: "/fake/proj/.patty/skills/review/SKILL.md", RunAs: skill.RunSubagent, Body: "# Review\n\nReview code."},
 		{Name: "explore", Description: "Fast read-only search agent", Scope: skill.ScopeBuiltin, Path: "(builtin)", RunAs: skill.RunSubagent, Body: "# Explore\n\nSearch the codebase."},
-		{Name: "test", Description: "Run tests and validate behavior", Scope: skill.ScopeProject, Path: "/fake/proj/.reasonix/skills/test.md", RunAs: skill.RunInline, Body: "# Test\n\nRun the tests."},
+		{Name: "test", Description: "Run tests and validate behavior", Scope: skill.ScopeProject, Path: "/fake/proj/.patty/skills/test.md", RunAs: skill.RunInline, Body: "# Test\n\nRun the tests."},
 	}
 }
 
@@ -186,7 +186,7 @@ func TestSkillPickerSearch(t *testing.T) {
 	if !strings.Contains(out, "rev") {
 		t.Fatalf("search mode missing query:\n%s", out)
 	}
-	if footer := m.renderMainManagerFooter(); !strings.Contains(footer, "search") && !strings.Contains(footer, "搜索") {
+	if footer := m.renderMainManagerFooter(); !strings.Contains(footer, "search") && !strings.Contains(footer, "검색") {
 		t.Fatalf("search mode missing footer hint:\n%s", footer)
 	}
 	if !strings.Contains(out, "review") {
@@ -251,7 +251,7 @@ func TestSkillPickerSearchEmptyResult(t *testing.T) {
 	}
 
 	out := m.renderSkillPicker()
-	if !strings.Contains(out, "match") && !strings.Contains(out, "匹配") {
+	if !strings.Contains(out, "match") && !strings.Contains(out, "일치") {
 		t.Fatalf("empty search should show empty state:\n%s", out)
 	}
 }
@@ -273,7 +273,7 @@ func TestSkillPickerDetail(t *testing.T) {
 	if !strings.Contains(out, "subagent") {
 		t.Fatalf("detail should show subagent tag:\n%s", out)
 	}
-	if !strings.Contains(out, "Scope") && !strings.Contains(out, "范围") {
+	if !strings.Contains(out, "Scope") && !strings.Contains(out, "범위") {
 		t.Fatalf("detail should show scope:\n%s", out)
 	}
 }
@@ -281,7 +281,7 @@ func TestSkillPickerDetail(t *testing.T) {
 func TestSkillPickerSourceView(t *testing.T) {
 	skills := makeTestSkills()
 	roots := []skillRootLine{
-		{dir: "/fake/proj/.reasonix/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 2, diagnostic: true},
+		{dir: "/fake/proj/.patty/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 2, diagnostic: true},
 		{dir: i18nSkillPickerBuiltinSource(), scope: skill.ScopeBuiltin, status: skill.StatusOK, skills: 1, diagnostic: true},
 	}
 	m := chatTUI{
@@ -296,16 +296,14 @@ func TestSkillPickerSourceView(t *testing.T) {
 	}
 
 	out := m.renderSkillPicker()
-	if !strings.Contains(out, "Sources") && !strings.Contains(out, "来源") {
+	if !strings.Contains(out, "Sources") && !strings.Contains(out, "출처") {
 		t.Fatalf("source view missing title:\n%s", out)
 	}
-	if !strings.Contains(out, ".reasonix") {
+	if !strings.Contains(out, ".patty") {
 		t.Fatalf("source view should show root path:\n%s", out)
 	}
 }
 
-// i18nSkillPickerBuiltinSource returns SkillPickerBuiltinSource regardless of locale.
-// In tests the i18n package is initialized to English by default.
 func i18nSkillPickerBuiltinSource() string {
 	return "builtin"
 }
@@ -313,20 +311,18 @@ func i18nSkillPickerBuiltinSource() string {
 func TestSkillPickerDiagnostics(t *testing.T) {
 	roots := []skillRootLine{
 		{dir: "/conf", scope: skill.ScopeCustom, status: skill.StatusOK, skills: 0, configured: true},
-		{dir: "/proj/.reasonix/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 1, diagnostic: true},
+		{dir: "/proj/.patty/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 1, diagnostic: true},
 		{dir: "/proj/.agents/skills", scope: skill.ScopeProject, status: skill.StatusMissing, skills: 0, diagnostic: true},
 		{dir: "/proj/.agent/skills", scope: skill.ScopeProject, status: skill.StatusMissing, skills: 0, diagnostic: true},
 	}
 
 	p := &skillPicker{mode: pickerSources, roots: roots}
 
-	// Default: diagnostics hidden.
 	visible := p.visibleRoots()
 	if len(visible) != 2 {
 		t.Fatalf("default visibleRoots got %d, want 2 (configured custom + active project): %v", len(visible), visible)
 	}
 
-	// Show diagnostics.
 	p.showDiagnostics = true
 	visible = p.visibleRoots()
 	if len(visible) != 4 {
@@ -365,13 +361,13 @@ func TestSkillPickerSummaryDefault(t *testing.T) {
 	skills := makeTestSkills()
 	p := &skillPicker{skills: skills}
 	s := skillPickerSummary(p)
-	if !strings.Contains(s, "available") && !strings.Contains(s, "可用") {
+	if !strings.Contains(s, "available") && !strings.Contains(s, "사용 가능") {
 		t.Fatalf("summary missing 'available': %q", s)
 	}
-	if !strings.Contains(s, "project") && !strings.Contains(s, "项目") {
+	if !strings.Contains(s, "project") && !strings.Contains(s, "프로젝트") {
 		t.Fatalf("summary missing project count: %q", s)
 	}
-	if !strings.Contains(s, "builtin") && !strings.Contains(s, "内置") {
+	if !strings.Contains(s, "builtin") && !strings.Contains(s, "내장") {
 		t.Fatalf("summary missing builtin count: %q", s)
 	}
 }
@@ -380,10 +376,9 @@ func TestSkillPickerSummarySearch(t *testing.T) {
 	skills := makeTestSkills()
 	p := &skillPicker{skills: skills, searchActive: true, query: "rev"}
 	s := skillPickerSummary(p)
-	if !strings.Contains(s, "matching") && !strings.Contains(s, "匹配") {
+	if !strings.Contains(s, "matching") && !strings.Contains(s, "일치") {
 		t.Fatalf("search summary missing 'matching': %q", s)
 	}
-	// Should mention total count.
 	if !strings.Contains(s, "3") {
 		t.Fatalf("search summary missing total count: %q", s)
 	}
@@ -396,7 +391,7 @@ func TestSkillSourceSummary(t *testing.T) {
 		{dir: "/c", skills: 0},
 	}
 	s := skillSourceSummary(roots)
-	if !strings.Contains(s, "active") && !strings.Contains(s, "有效") {
+	if !strings.Contains(s, "active") && !strings.Contains(s, "활성") {
 		t.Fatalf("source summary missing 'active': %q", s)
 	}
 
@@ -474,7 +469,7 @@ func TestSkillPickerSourceEnterShowsRootSkills(t *testing.T) {
 			mode:   pickerSources,
 			skills: skills,
 			roots: []skillRootLine{
-				{dir: "/fake/proj/.reasonix/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 2, diagnostic: true},
+				{dir: "/fake/proj/.patty/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 2, diagnostic: true},
 			},
 		},
 	}
@@ -507,14 +502,12 @@ func TestSkillPickerSpaceTogglesEnabled(t *testing.T) {
 		},
 	}
 
-	// Space toggles the selected skill off.
 	next, _ := m.handleSkillPickerKey(tea.KeyPressMsg{Code: ' '})
 	cm := next.(chatTUI)
 	if cm.skillPick.skillEnabled("review") {
 		t.Fatal("Space did not disable the selected skill")
 	}
 
-	// Space toggles it back on.
 	next2, _ := cm.handleSkillPickerKey(tea.KeyPressMsg{Code: ' '})
 	cm2 := next2.(chatTUI)
 	if !cm2.skillPick.skillEnabled("review") {
@@ -558,7 +551,7 @@ func TestSkillPickerDetailShowsActionsBeforeBodyPreview(t *testing.T) {
 		Name:        "review",
 		Description: "Review code",
 		Scope:       skill.ScopeProject,
-		Path:        "/proj/.reasonix/skills/review/SKILL.md",
+		Path:        "/proj/.patty/skills/review/SKILL.md",
 		RunAs:       skill.RunSubagent,
 		Body:        "# Review\n\n" + strings.Repeat("BODY_LINE\n", 40),
 	}
@@ -675,7 +668,7 @@ func TestClampSel(t *testing.T) {
 func TestSkillRowLabelHasSubagentTag(t *testing.T) {
 	s := skill.Skill{Name: "review", Description: "Review code", Scope: skill.ScopeProject, RunAs: skill.RunSubagent}
 	row := renderSkillRow(1, false, s, true, 80)
-	if !strings.Contains(row, "subagent") && !strings.Contains(row, "子代理") {
+	if !strings.Contains(row, "subagent") && !strings.Contains(row, "하위 에이전트") {
 		t.Fatalf("subagent skill missing tag: %q", row)
 	}
 	if !strings.Contains(row, "review") {
@@ -689,7 +682,6 @@ func TestRenderSkillRowSelected(t *testing.T) {
 	if !strings.Contains(row, "›") {
 		t.Fatalf("selected row missing arrow: %q", row)
 	}
-	// Selected row differs from unselected: has arrow, no dim prefix.
 	unsel := renderSkillRow(5, false, s, true, 80)
 	if row == unsel {
 		t.Fatal("selected and unselected rows should differ")
@@ -699,7 +691,7 @@ func TestRenderSkillRowSelected(t *testing.T) {
 func TestRenderSkillRowScopeMeta(t *testing.T) {
 	s := skill.Skill{Name: "example", Description: "desc", Scope: skill.ScopeGlobal, RunAs: skill.RunInline}
 	row := renderSkillRow(1, false, s, true, 80)
-	if !strings.Contains(row, "global") && !strings.Contains(row, "全局") {
+	if !strings.Contains(row, "global") && !strings.Contains(row, "전역") {
 		t.Fatalf("row missing scope label: %q", row)
 	}
 	if !strings.Contains(row, "tok") {
@@ -720,7 +712,7 @@ func TestRenderSkillRowLongNameTruncated(t *testing.T) {
 }
 
 func TestRenderSkillRowChineseBadgeFitsWidth(t *testing.T) {
-	i18n.DetectLanguage("zh")
+	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	s := skill.Skill{
@@ -747,7 +739,6 @@ func TestSortedSkills(t *testing.T) {
 		{Name: "d-custom", Scope: skill.ScopeCustom},
 	}
 	sorted := sortedSkills(skills)
-	// Project first, then custom, global, builtin; alphabetical within.
 	want := []string{"a-project", "b-project", "d-custom", "c-global", "z-builtin"}
 	for i, s := range sorted {
 		if i >= len(want) || s.Name != want[i] {
@@ -792,7 +783,6 @@ func TestBottomRowsIncludesResumePicker(t *testing.T) {
 		active:   -1,
 	}
 
-	// Not testing exact row count (resumePicker needs sessions for rendering),
 	// just verifying that bottomRows doesn't panic and returns a non-zero value.
 	rows := m.bottomRows()
 	if rows < 3 {
@@ -815,7 +805,6 @@ func TestRescanInSearchModeClampsToFiltered(t *testing.T) {
 	}
 	p.sel = clampSel(p.sel, skills) // simulating old behavior
 
-	// Fix: clamp to filtered when search is active.
 	if p.searchActive && p.query != "" {
 		p.sel = clampSel(p.sel, p.filteredSkills())
 	}
@@ -826,15 +815,14 @@ func TestRescanInSearchModeClampsToFiltered(t *testing.T) {
 
 func TestPathBoundaryMatching(t *testing.T) {
 	skills := []skill.Skill{
-		{Name: "alpha", Scope: skill.ScopeProject, Path: "/proj/.reasonix/skills/alpha/SKILL.md"},
-		{Name: "beta", Scope: skill.ScopeProject, Path: "/proj/.reasonix/skills-extra/beta/SKILL.md"},
+		{Name: "alpha", Scope: skill.ScopeProject, Path: "/proj/.patty/skills/alpha/SKILL.md"},
+		{Name: "beta", Scope: skill.ScopeProject, Path: "/proj/.patty/skills-extra/beta/SKILL.md"},
 	}
 	lines := []skillRootLine{
-		{dir: "/proj/.reasonix/skills", scope: skill.ScopeProject, status: skill.StatusOK},
-		{dir: "/proj/.reasonix/skills-extra", scope: skill.ScopeProject, status: skill.StatusOK},
+		{dir: "/proj/.patty/skills", scope: skill.ScopeProject, status: skill.StatusOK},
+		{dir: "/proj/.patty/skills-extra", scope: skill.ScopeProject, status: skill.StatusOK},
 	}
 
-	// Count skills per root with directory-boundary match.
 	for _, s := range skills {
 		if s.Scope == skill.ScopeBuiltin {
 			continue
@@ -861,21 +849,20 @@ func TestPathBoundaryMatching(t *testing.T) {
 }
 
 func TestSourceRowLabelUsesI18n(t *testing.T) {
-	i18n.DetectLanguage("zh")
+	i18n.DetectLanguage("ko-KR")
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	r := skillRootLine{
-		dir:    "/proj/.reasonix/skills",
+		dir:    "/proj/.patty/skills",
 		scope:  skill.ScopeProject,
 		status: skill.StatusOK,
 		skills: 3,
 	}
 	label := sourceRowLabel(r, 80)
-	if !strings.Contains(label, "项目") || strings.Contains(label, "project") {
-		t.Fatalf("source row should use localized scope label, got %q", label)
+	if !strings.Contains(label, "프로젝트") {
+		t.Fatalf("source row should include the scope label, got %q", label)
 	}
-	// Check that skills unit is used
-	if !strings.Contains(label, "skills") && !strings.Contains(label, "skill") {
+	if !strings.Contains(label, "스킬") {
 		t.Fatalf("source row missing skills unit: %q", label)
 	}
 }
@@ -893,7 +880,6 @@ func TestStatusLabelI18n(t *testing.T) {
 	if l := statusLabel(skill.StatusUnreadable); l == "" {
 		t.Fatal("statusLabel(unreadable) empty")
 	}
-	// Unknown status falls back to raw string.
 	if l := statusLabel(skill.PathStatus("custom-status")); l != "custom-status" {
 		t.Fatalf("statusLabel(unknown) = %q, want 'custom-status'", l)
 	}
@@ -904,16 +890,16 @@ func TestRenderSkillDetailUsesI18nMeta(t *testing.T) {
 		Name:        "review",
 		Description: "Review code",
 		Scope:       skill.ScopeProject,
-		Path:        "/proj/.reasonix/skills/review/SKILL.md",
+		Path:        "/proj/.patty/skills/review/SKILL.md",
 		RunAs:       skill.RunSubagent,
 		Body:        "# Review\n\nLine 1\nLine 2",
 	}
 	out := renderSkillDetail(s, 80)
-	// Detail should use i18n meta format (not raw "Scope:" when in Chinese).
-	if !strings.Contains(out, "Scope") && !strings.Contains(out, "范围") {
+	// Detail should use i18n meta format (not raw "Scope:" when in Korean).
+	if !strings.Contains(out, "Scope") && !strings.Contains(out, "범위") {
 		t.Fatalf("detail missing scope label:\n%s", out)
 	}
-	if !strings.Contains(out, "Run as") && !strings.Contains(out, "运行") {
+	if !strings.Contains(out, "Run as") && !strings.Contains(out, "실행") {
 		t.Fatalf("detail missing run-as label:\n%s", out)
 	}
 }
@@ -923,7 +909,7 @@ func TestLegacySkillShowUnchanged(t *testing.T) {
 		Name:        "my-skill",
 		Description: "A test skill",
 		Scope:       skill.ScopeProject,
-		Path:        "/fake/proj/.reasonix/skills/my-skill.md",
+		Path:        "/fake/proj/.patty/skills/my-skill.md",
 		Body:        "# My Skill\n\nSome body text.",
 	}
 	out := renderSkillShow(80, s, false)
@@ -934,7 +920,7 @@ func TestLegacySkillShowUnchanged(t *testing.T) {
 
 func TestLegacySkillPathsUnchanged(t *testing.T) {
 	roots := []skill.Root{
-		{Dir: "/proj/.reasonix/skills", Scope: skill.ScopeProject, Priority: 0, Status: skill.StatusOK},
+		{Dir: "/proj/.patty/skills", Scope: skill.ScopeProject, Priority: 0, Status: skill.StatusOK},
 	}
 	out := renderSkillPaths(80, roots)
 	if !strings.Contains(out, "skill paths") {

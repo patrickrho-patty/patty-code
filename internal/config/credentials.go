@@ -12,8 +12,8 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"reasonix/internal/fileutil"
-	fileencoding "reasonix/internal/fileutil/encoding"
+	"patty/internal/fileutil"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 const (
@@ -21,8 +21,8 @@ const (
 	CredentialsStoreKeyring = "keyring"
 	CredentialsStoreFile    = "file"
 
-	credentialsKeyringService = "reasonix"
-	credentialClearedPrefix   = "# reasonix-cleared "
+	credentialsKeyringService = "patty"
+	credentialClearedPrefix   = "# patty-cleared "
 )
 
 const (
@@ -57,7 +57,7 @@ var credentialSourceTracker = struct {
 	byKey map[string]trackedCredentialSource
 }{byKey: map[string]trackedCredentialSource{}}
 
-// userCredentialEditMu serializes Reasonix-owned credential-store writes.
+// userCredentialEditMu serializes Patty Code-owned credential-store writes.
 // LockUserCredentialEdits also takes a path-derived advisory file lock so a
 // Desktop window, CLI process, or background catalog save can share one
 // compare-and-apply boundary with credential rotation.
@@ -87,7 +87,7 @@ func NewCredentialResolverForRoot(root string) *CredentialResolver {
 	return &CredentialResolver{root: resolveRoot(root)}
 }
 
-// ResolveGlobalFirst resolves key from Reasonix's global .env only. Repeated
+// ResolveGlobalFirst resolves key from patty's global .env only. Repeated
 // calls for the same key reuse the first result so UI views with multiple
 // provider entries sharing api_key_env stay consistent.
 func (r *CredentialResolver) ResolveGlobalFirst(key string) CredentialResolution {
@@ -131,7 +131,7 @@ func normalizeCredentialsStore(mode string) string {
 }
 
 func credentialsStoreMode() string {
-	if mode := strings.TrimSpace(os.Getenv("REASONIX_CREDENTIALS_STORE")); mode != "" {
+	if mode := strings.TrimSpace(os.Getenv("PATTY_CREDENTIALS_STORE")); mode != "" {
 		return normalizeCredentialsStore(mode)
 	}
 	var partial struct {
@@ -147,9 +147,9 @@ func credentialEnvNamesForRoot(root string) []string {
 	root = resolveRoot(root)
 	cfg := Default()
 
-	projectTOML := "reasonix.toml"
+	projectTOML := "patty.toml"
 	if root != "." {
-		projectTOML = filepath.Join(root, "reasonix.toml")
+		projectTOML = filepath.Join(root, "patty.toml")
 	}
 	if uc := userConfigLoadPath(); uc != "" {
 		_ = mergeFile(cfg, uc)
@@ -181,9 +181,6 @@ func credentialEnvNamesFromConfig(cfg *Config) []string {
 	for _, p := range cfg.Providers {
 		add(p.APIKeyEnv)
 	}
-	add(cfg.Bot.QQ.AppSecretEnv)
-	add(cfg.Bot.Feishu.AppSecretEnv)
-	add(cfg.Bot.Weixin.TokenEnv)
 	for _, conn := range cfg.Bot.Connections {
 		add(conn.Credential.AppSecretEnv)
 		add(conn.Credential.TokenEnv)
@@ -197,7 +194,7 @@ func credentialEnvNamesFromConfig(cfg *Config) []string {
 }
 
 // CredentialEnvNames returns every environment-variable name whose value can
-// be loaded from Reasonix's global credential store. This includes configured
+// be loaded from patty's global credential store. This includes configured
 // provider/bot keys and stored keys that are no longer referenced by the
 // current config: loadCredentialStoreForRoot loads the whole credential file,
 // so stale entries must remain outside child-process environments too.
@@ -264,11 +261,11 @@ func loadCredentialStoreForRoot(root string) {
 		return
 	}
 	if p := UserCredentialsPath(); p != "" {
-		loadDotEnvFileAs(p, CredentialSource{Kind: CredentialSourceCredentials, Path: p, Label: "Reasonix credentials (.env)"})
+		loadDotEnvFileAs(p, CredentialSource{Kind: CredentialSourceCredentials, Path: p, Label: "Patty Code credentials (.env)"})
 	}
 }
 
-// StoreCredentialLines stores KEY=value assignments in Reasonix's global .env
+// StoreCredentialLines stores KEY=value assignments in patty's global .env
 // and pins them into the current process environment.
 func StoreCredentialLines(lines []string) (string, error) {
 	assignments := parseCredentialLines(lines)
@@ -333,7 +330,7 @@ func SetCredential(key, value string) (string, error) {
 // SetCredentialIfRevision stores one credential only when the global
 // credential file still has expectedRevision. The comparison and write share
 // the same process and advisory file lock, preventing a stale setup page in one
-// Reasonix process from overwriting a credential saved by another process.
+// Patty Code process from overwriting a credential saved by another process.
 func SetCredentialIfRevision(key, value, expectedRevision string) (string, bool, error) {
 	key = strings.TrimSpace(key)
 	if !isCredentialKey(key) {
@@ -362,7 +359,7 @@ func SetCredentialIfRevision(key, value, expectedRevision string) (string, bool,
 	return path, true, nil
 }
 
-// IsValidCredentialKey reports whether key can be stored in Reasonix's dotenv
+// IsValidCredentialKey reports whether key can be stored in patty's dotenv
 // credential file and exposed as an environment variable.
 func IsValidCredentialKey(key string) bool {
 	return isCredentialKey(strings.TrimSpace(key))
@@ -387,7 +384,7 @@ func RemoveCredential(key string) error {
 }
 
 // LockUserCredentialEdits serializes credential-store compare/write
-// transactions in this process and across Reasonix processes. When both the
+// transactions in this process and across Patty Code processes. When both the
 // user config and credential store are needed, acquire LockUserConfigEdits
 // first, then this lock.
 func LockUserCredentialEdits() (func(), error) {
@@ -412,7 +409,7 @@ func LockUserCredentialEdits() (func(), error) {
 }
 
 // CredentialStoreRevision returns a content-derived revision for the current
-// Reasonix credential store. Callers performing compare-and-apply must hold
+// Patty Code credential store. Callers performing compare-and-apply must hold
 // LockUserCredentialEdits from this read through their commit.
 func CredentialStoreRevision() string {
 	path := UserCredentialsPath()
@@ -490,7 +487,7 @@ func parseCredentialLines(lines []string) map[string]string {
 func pinCredentialAssignments(assignments map[string]string) {
 	for key, value := range assignments {
 		_ = os.Setenv(key, value)
-		recordCredentialSource(key, value, CredentialSource{Kind: CredentialSourceCredentials, Path: UserCredentialsPath(), Label: "Reasonix credentials (.env)"})
+		recordCredentialSource(key, value, CredentialSource{Kind: CredentialSourceCredentials, Path: UserCredentialsPath(), Label: "Patty Code credentials (.env)"})
 	}
 }
 
@@ -543,11 +540,11 @@ func credentialSourceLabel(source CredentialSource) string {
 	case CredentialSourceProjectEnv:
 		return "project .env"
 	case CredentialSourceCredentials:
-		return "Reasonix credentials"
+		return "Patty Code credentials"
 	case CredentialSourceHomeEnv:
 		return "home .env"
 	case CredentialSourceLegacy:
-		return "legacy Reasonix credentials"
+		return "legacy Patty Code credentials"
 	case CredentialSourceEnvironment:
 		return "environment variable"
 	default:
@@ -608,7 +605,7 @@ func resolveCredentialForRootGlobalFirst(root, key string) CredentialResolution 
 func storedCredentialValue(key string) (string, CredentialSource, bool) {
 	if p := UserCredentialsPath(); p != "" {
 		if value, ok := envFileValue(p, key); ok && value != "" {
-			return value, CredentialSource{Kind: CredentialSourceCredentials, Path: p, Label: "Reasonix credentials (.env)"}, true
+			return value, CredentialSource{Kind: CredentialSourceCredentials, Path: p, Label: "Patty Code credentials (.env)"}, true
 		}
 	}
 	return "", CredentialSource{}, false

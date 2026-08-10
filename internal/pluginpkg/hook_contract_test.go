@@ -115,7 +115,7 @@ func TestNativeManifestRejectsUnsupportedHookShell(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, NativeManifest)
 	writeTestFile(t, path, `{
-  "apiVersion":"reasonix.io/plugin/v2",
+  "apiVersion":"patty.io/plugin/v2",
   "name":"bad-shell",
   "hooks":{"SessionStart":[{"command":"echo ok","shell":"fish"}]}
 }`)
@@ -125,7 +125,7 @@ func TestNativeManifestRejectsUnsupportedHookShell(t *testing.T) {
 }
 
 func FuzzHookJSONExecFormRoundTrip(f *testing.F) {
-	for _, seed := range []string{"", " spaced ", "$HOME", `%PATH%`, `a && b | c`, `quote"'`, "中文🧪"} {
+	for _, seed := range []string{"", " spaced ", "$HOME", `%PATH%`, `a && b | c`, `quote"'`, "機能整理檢討🧪"} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, arg string) {

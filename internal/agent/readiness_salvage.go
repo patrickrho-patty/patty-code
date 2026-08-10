@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // currentFinalAssistantAnswer returns visible Content from the current turn.

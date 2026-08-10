@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/remote/sshtest"
+	"patty/internal/remote/sshtest"
 )
 
 // managedOnlyPolicy points the host-key policy at an isolated managed file and

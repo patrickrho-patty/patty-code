@@ -9,14 +9,14 @@
 
 ## 1. Purpose
 
-This specification defines how to turn the current MIT-licensed Reasonix codebase into Patty Code as a clean hard fork, make Korean the primary product language, redesign the terminal experience, and establish a secure profile-and-module architecture from which GongCode and future harnesses can be produced.
+This specification defines how to turn the current MIT-licensed Patty Code codebase into Patty Code as a clean hard fork, make Korean the primary product language, redesign the terminal experience, and establish a secure profile-and-module architecture from which GongCode and future harnesses can be produced.
 
 This document defines the target design. It does not authorize a bulk search-and-replace. Implementation must be divided into independently verifiable plans and must preserve existing functionality except where this specification explicitly removes or changes behavior.
 
 ## 2. Confirmed Decisions
 
 1. Patty Code is a new product and a hard fork. Upstream changes may be merged manually, but upstream compatibility is not a product requirement.
-2. The product will not read or migrate Reasonix configuration, sessions, databases, paths, environment variables, or packages.
+2. The product will not read or migrate Patty Code configuration, sessions, databases, paths, environment variables, or packages.
 3. Patty Code is the base harness. GongCode and future public-sector or enterprise products derive from it through product profiles and modules, not repository forks.
 4. Product profiles are resolved at build time. A shipped artifact has one immutable product identity and cannot switch brands at runtime.
 5. Optional modules are easy to install and remove. Harness-enforced modules are signed, required, and non-disableable through supported runtime controls.
@@ -25,7 +25,7 @@ This document defines the target design. It does not authorize a bulk search-and
 8. Korean is the default and completeness baseline. English is optional. Chinese support is removed completely.
 9. Built-in slash commands use Korean canonical names, full 초성 aliases, and searchable English keywords. Skills and user commands retain their declared names.
 10. The TUI is conversation-first. It has no permanent file browser, change inspector, governance inspector, or shortcut rail.
-11. The selected visual direction is “한지 작업대”: terminal-native, restrained, Korean, and structurally distinct from Reasonix.
+11. The selected visual direction is “한지 작업대”: terminal-native, restrained, Korean, and structurally distinct from Patty Code.
 12. Literal Korean flag imagery is permitted in harness artwork. Official seals and claims of government endorsement remain prohibited.
 13. Launch artwork appears only for interactive TUI startup and supports color, monochrome, narrow-terminal, `NO_COLOR`, quiet, and non-interactive modes.
 14. Harness storage and identity are isolated intrinsically through signed identities and cryptographic binding, not only through different directories.
@@ -35,7 +35,7 @@ This document defines the target design. It does not authorize a bulk search-and
 
 ### 3.1 Product goals
 
-- Remove Reasonix identity from every current product and engineering surface except the legally required upstream notice.
+- Remove Patty Code identity from every current product and engineering surface except the legally required upstream notice.
 - Preserve mature coding-agent behavior while changing identity, language, presentation, packaging, and extension composition.
 - Make Korean complete across CLI, TUI, desktop, documentation, errors, help, onboarding, notifications, and built-in command descriptions.
 - Permit a complete English interface for foreign workers without exposing Chinese resources or behavior.
@@ -61,8 +61,8 @@ This document defines the target design. It does not authorize a bulk search-and
 
 ## 4. Non-Goals
 
-- Maintaining automatic compatibility with Reasonix releases, data, configuration, or installation paths.
-- Rewriting Git history to remove historical Reasonix references.
+- Maintaining automatic compatibility with Patty Code releases, data, configuration, or installation paths.
+- Rewriting Git history to remove historical Patty Code references.
 - Building all production GongCode government controls during the Patty Code rebrand.
 - Claiming legal compliance, certification, or government endorsement from product controls alone.
 - Exposing GongCode Control data, raw governance streams, or administrative audit exploration inside the engineer TUI.
@@ -378,7 +378,7 @@ The TUI uses the approved “한지 작업대” direction:
 - Conversation and active work are the primary surface.
 - Restrained ink-like base palette with limited 청·홍 accents.
 - Korean spacing and hierarchy rather than decorative imitation.
-- Structurally distinct from the current Reasonix presentation.
+- Structurally distinct from the current Patty Code presentation.
 
 ### 12.2 Removed concepts
 
@@ -500,14 +500,14 @@ Required inventory commands begin with:
 
 ```bash
 git ls-files -z |
-  xargs -0 rg -i --count-matches --no-messages --text 'reasonix'
+  xargs -0 rg -i --count-matches --no-messages --text 'patty'
 
 git ls-files |
-  rg -i 'reasonix|esengine|(^|[._/-])(zh|zh-cn|zh-tw|chinese)([._/-]|$)'
+  rg -i 'patty|pattycorp|(^|[._/-])(zh|zh-cn|zh-tw|chinese)([._/-]|$)'
 
 rg -i --hidden --no-ignore \
   --glob '!.git/**' \
-  'reasonix|esengine|reasonix\.io|urn:reasonix|@reasonix|REASONIX_'
+  'patty|pattycorp|patty\.io|urn:patty|@patty|PATTY_'
 ```
 
 The detailed inventory plan must add product-specific URL, package, signing, app-ID, cookie, keyring, registry, database-binding, user-agent, protocol, and asset scans. Inventory is complete only when:
@@ -523,40 +523,40 @@ The initial scan found 28 tracked paths containing the old product identity. The
 
 | Current path | Disposition |
 |---|---|
-| `.reasonix/commands/review.md` | Move to `.patty/commands/review.md`; update command-root discovery and tests |
-| `REASONIX.md` | Rename to `PATTY.md`; rewrite as Patty instructions |
-| `cmd/reasonix/main.go` | Move to `cmd/patty/main.go`; preserve CLI entry behavior |
-| `cmd/reasonix/main_test.go` | Move with the entry point and update identity assertions |
-| `cmd/reasonix-launcher/main.go` | Move to `cmd/patty-launcher/main.go`; source names from the profile |
-| `cmd/reasonix-launcher/main_test.go` | Move with the launcher and verify profile-generated names |
-| `cmd/reasonix-legacy-migrator/main.go` | Delete; Patty performs no upstream-data migration |
-| `cmd/reasonix-legacy-migrator/main_test.go` | Delete or replace with clean-install/no-legacy tests |
-| `cmd/reasonix-plugin-example/main.go` | Move to `cmd/patty-plugin-example/main.go` and update manifests |
-| `desktop/build/linux/icons/hicolor/16x16/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
-| `desktop/build/linux/icons/hicolor/24x24/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
-| `desktop/build/linux/icons/hicolor/32x32/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
-| `desktop/build/linux/icons/hicolor/48x48/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
-| `desktop/build/linux/icons/hicolor/64x64/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
-| `desktop/build/linux/icons/hicolor/128x128/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
-| `desktop/build/linux/icons/hicolor/256x256/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
-| `desktop/build/linux/icons/hicolor/512x512/apps/reasonix-desktop.png` | Regenerate from the Patty profile and new artwork |
-| `desktop/build/linux/icons/hicolor/scalable/apps/reasonix-desktop.svg` | Regenerate from the Patty profile and inspect SVG text/metadata |
-| `desktop/build/linux/io.reasonix.desktop.update.policy` | Replace with the final owned-domain PolicyKit ID; release-blocked until selected |
-| `desktop/build/linux/reasonix.desktop` | Generate a Patty desktop entry from the compiled profile |
-| `desktop/frontend/src/components/rehypeReasonixKatex.ts` | Rename semantically to `rehypeSafeKatex.ts`; update imports and tests |
-| `internal/skill/builtincontent/reasonix-guide/SKILL.md` | Replace with `patty-guide/SKILL.md`; rewrite product instructions |
-| `internal/skill/reasonix_guide_test.go` | Rename to `patty_guide_test.go`; update expected skill identity |
-| `npm/reasonix/package.json` | Replace with the Patty package directory and package coordinate |
-| `npm/reasonix/bin/reasonix.js` | Replace with the `patty` launcher and platform-package resolver |
-| `reasonix.example.toml` | Rename to `patty.example.toml`; remove legacy keys and examples |
-| `sdk/go/examples/fullsidecar/reasonix-plugin.json` | Rename to a Patty plugin manifest and update SDK docs/tests |
-| `sdk/go/examples/starterextension/reasonix-plugin.json` | Rename to a Patty plugin manifest and update SDK docs/tests |
+| `.patty/commands/review.md` | Move to `.patty/commands/review.md`; update command-root discovery and tests |
+| `PATTY.md` | Rename to `PATTY.md`; rewrite as Patty instructions |
+| `cmd/patty/main.go` | Move to `cmd/patty/main.go`; preserve CLI entry behavior |
+| `cmd/patty/main_test.go` | Move with the entry point and update identity assertions |
+| `cmd/patty-launcher/main.go` | Move to `cmd/patty-launcher/main.go`; source names from the profile |
+| `cmd/patty-launcher/main_test.go` | Move with the launcher and verify profile-generated names |
+| `cmd/patty-legacy-migrator/main.go` | Delete; Patty performs no upstream-data migration |
+| `cmd/patty-legacy-migrator/main_test.go` | Delete or replace with clean-install/no-legacy tests |
+| `cmd/patty-plugin-example/main.go` | Move to `cmd/patty-plugin-example/main.go` and update manifests |
+| `desktop/build/linux/icons/hicolor/16x16/apps/patty-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/24x24/apps/patty-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/32x32/apps/patty-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/48x48/apps/patty-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/64x64/apps/patty-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/128x128/apps/patty-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/256x256/apps/patty-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/512x512/apps/patty-desktop.png` | Regenerate from the Patty profile and new artwork |
+| `desktop/build/linux/icons/hicolor/scalable/apps/patty-desktop.svg` | Regenerate from the Patty profile and inspect SVG text/metadata |
+| `desktop/build/linux/io.patty.desktop.update.policy` | Replace with the final owned-domain PolicyKit ID; release-blocked until selected |
+| `desktop/build/linux/patty-code.desktop` | Generate a Patty desktop entry from the compiled profile |
+| `desktop/frontend/src/components/rehypeSafeKatex.ts` | Rename semantically to `rehypeSafeKatex.ts`; update imports and tests |
+| `internal/skill/builtincontent/patty-guide/SKILL.md` | Replace with `patty-guide/SKILL.md`; rewrite product instructions |
+| `internal/skill/patty_guide_test.go` | Rename to `patty_guide_test.go`; update expected skill identity |
+| `npm/patty/package.json` | Replace with the Patty package directory and package coordinate |
+| `npm/patty/bin/patty.js` | Replace with the `patty` launcher and platform-package resolver |
+| `patty.example.toml` | Rename to `patty.example.toml`; remove legacy keys and examples |
+| `sdk/go/examples/fullsidecar/patty-plugin.json` | Rename to a Patty plugin manifest and update SDK docs/tests |
+| `sdk/go/examples/starterextension/patty-plugin.json` | Rename to a Patty plugin manifest and update SDK docs/tests |
 
 No file move is complete until imports, build scripts, packaging manifests, embedded paths, documentation links, tests, and generated archives use the new path.
 
 ### 13.4 Inventory categories
 
-Before editing, inventory every Reasonix reference and classify it as:
+Before editing, inventory every Patty Code reference and classify it as:
 
 1. Go module and import path.
 2. Shared source symbol.
@@ -579,7 +579,7 @@ Inventory tools may enumerate strings mechanically. Engineers must edit each sem
 
 ### 13.5 Upstream organization markers
 
-The initial scan found 426 `esengine` occurrences across 68 tracked files. They include:
+The initial scan found 426 `pattycorp` occurrences across 68 tracked files. They include:
 
 - GitHub CODEOWNERS, issue templates, workflow repositories, acknowledgements, and stale-report automation.
 - GoReleaser, SignPath contracts, signing commands, and release workflows.
@@ -616,11 +616,11 @@ The plan may not mark a platform complete based only on a successful source buil
 
 The persistence plan must inventory and decide:
 
-- `.reasonix` project and user directories, OS application-support directories, config filenames, attachment paths, session paths, memory paths, plugin state, hook roots, cache roots, logs, crash data, update state, and recovery debris.
-- `REASONIX_*` variables, dotenv behavior, child-process environments, shell integration, test environments, and provider isolation.
+- `.patty` project and user directories, OS application-support directories, config filenames, attachment paths, session paths, memory paths, plugin state, hook roots, cache roots, logs, crash data, update state, and recovery debris.
+- `PATTY_*` variables, dotenv behavior, child-process environments, shell integration, test environments, and provider isolation.
 - Keyring service/account names, key migration markers, credential-helper protocol, and remote credential storage.
 - JSON, JSONL, TOML, SQL, event-wire, extension-protocol, ACP, telemetry, evidence, and provider schema identities.
-- Database names, D1 bindings, tables, columns such as `enabled_reasonix`, indexes, migration comments, registry metadata, deployment commands, and dashboard queries.
+- Database names, D1 bindings, tables, columns such as `enabled_patty`, indexes, migration comments, registry metadata, deployment commands, and dashboard queries.
 - Metrics, tracing resources, log attributes, user agents, HTTP headers, cookies, cache keys, URNs, URL schemes, and correlation IDs.
 - Update manifests, version pointers, release unit layouts, signature payloads, checksum/provenance fields, and rollback state.
 
@@ -678,11 +678,11 @@ No artifact is released merely because its source directory passed a text scan.
 
 The initial scan found 35 explicitly Chinese-named tracked files:
 
-- `README.zh-CN.md`.
-- `desktop/frontend/src/locales/zh.ts` and `zh-TW.ts`.
+- `README.ko-KR.md`.
+- `desktop/frontend/src/locales/zh.ts` and `en-US.ts`.
 - Thirty Chinese documentation translations under `docs/`.
-- `internal/i18n/messages_zh.go` and `messages_zh_tw.go`.
-- `sdk/go/examples/starterextension/README.zh-CN.md`.
+- `internal/i18n/messages_ko.go` and `messages_ko_tw.go`.
+- `sdk/go/examples/starterextension/README.ko-KR.md`.
 
 Removal also covers non-filename surfaces:
 
@@ -732,12 +732,12 @@ Each numbered boundary is a checkpoint. The repository must compile and its prop
 
 The final product contains:
 
-- No Reasonix legacy migrator.
-- No Reasonix path fallback.
-- No `REASONIX_*` environment alias.
+- No Patty Code legacy migrator.
+- No Patty Code path fallback.
+- No `PATTY_*` environment alias.
 - No old command namespace.
 - No old package, installer, update, or data compatibility.
-- No current schema fields named for Reasonix.
+- No current schema fields named for Patty Code.
 
 Clean installation tests must begin with empty temporary user and application roots.
 
@@ -747,7 +747,7 @@ The rebrand is not complete when a search command returns zero in source. It is 
 
 - The current-tree ledger has zero unresolved rows.
 - The 28 branded paths have their recorded disposition.
-- Operational `esengine` coordinates are gone or profile-controlled; legal authorship is in notices.
+- Operational `pattycorp` coordinates are gone or profile-controlled; legal authorship is in notices.
 - Korean and English parity pass and all Chinese surfaces are removed.
 - Root, desktop, and SDK modules build with Patty coordinates.
 - macOS, Windows, and Linux packaged identities pass platform inspection.
@@ -763,7 +763,7 @@ The rebrand is not complete when a search command returns zero in source. It is 
 - Patty Code receives its own root `LICENSE`.
 - The complete upstream MIT copyright and permission notice moves to `THIRD_PARTY_NOTICES.md` or an equivalently named legal-notices file.
 - New Patty Code copyright may be added for original modifications.
-- Runtime UI and marketing do not display the Reasonix brand merely because the legal notice exists.
+- Runtime UI and marketing do not display the Patty Code brand merely because the legal notice exists.
 - Git history is retained.
 
 Legal review must confirm the final notice placement before distribution.
@@ -776,15 +776,15 @@ The scanner treats the following first-party identity families as forbidden unle
 
 | Identity family | Examples the implementation scanner must cover |
 |---|---|
-| Product spelling and casing | `Reasonix`, `reasonix`, uppercase forms, joined/split display variants |
-| Filesystem and configuration | `.reasonix`, `reasonix.toml`, `REASONIX_*`, application-support roots, cache and lock names |
+| Product spelling and casing | `Patty Code`, `patty`, uppercase forms, joined/split display variants |
+| Filesystem and configuration | `.patty`, `patty.toml`, `PATTY_*`, application-support roots, cache and lock names |
 | Code and package coordinates | old Go modules/imports, NPM names/scopes, binary names, command packages, SDK examples |
-| Network and protocol | `reasonix.io`, old subdomains, `urn:reasonix`, URL schemes, user agents, headers, cookies, OAuth IDs |
-| OS integration | `io.reasonix.*`, bundle/app IDs, desktop entries, PolicyKit actions, registry keys, services, keyring names |
-| Operational organization | `esengine` repositories, owners, signers, publishers, downloads, support links, hosted bindings |
+| Network and protocol | `patty-code.io`, old subdomains, `urn:patty`, URL schemes, user agents, headers, cookies, OAuth IDs |
+| OS integration | `io.patty.*`, bundle/app IDs, desktop entries, PolicyKit actions, registry keys, services, keyring names |
+| Operational organization | `pattycorp` repositories, owners, signers, publishers, downloads, support links, hosted bindings |
 | Generated and visual identity | archive members, binary strings, metadata, icons, screenshots, banners, installer art |
 
-The inventory plan must expand each family into exact case-sensitive and case-insensitive patterns after inspecting the repository’s real forms. A zero result for only the word `reasonix` is not a passing brand gate.
+The inventory plan must expand each family into exact case-sensitive and case-insensitive patterns after inspecting the repository’s real forms. A zero result for only the word `patty` is not a passing brand gate.
 
 CI and release verification scan:
 
@@ -861,7 +861,7 @@ This file is the architecture specification and umbrella execution plan. It is n
 | 02 | `02-product-profile-and-module-foundation.md` | New product-profile schema/API/generator, Patty profile, inheritance, validation, capability registration, optional/required module contracts |
 | 03 | `03-go-module-and-core-semantic-rebrand.md` | Root/desktop/SDK modules, imports, `cmd/`, neutral shared symbols, URNs, schemas, built-ins, examples, compile checkpoints |
 | 04 | `04-storage-config-schema-and-isolation.md` | `internal/config`, credentials/keyring, sessions, memory, hooks, plugins, caches, locks, telemetry, SQL, workers’ schemas, signed harness envelopes |
-| 05 | `05-korean-localization-and-chinese-removal.md` | Go and frontend i18n, product docs, response/reasoning policy, formatting, Korean parity, English parity, all Chinese resources and branches |
+| 05 | `05-korean-localization-and-chinese-removal.md` | Go and frontend i18n, product docs, response/patty code policy, formatting, Korean parity, English parity, all Chinese resources and branches |
 | 06 | `06-korean-slash-command-system.md` | Stable command IDs, Korean names, 초성 generation, Korean/English keywords, aliases, collision resolution, CLI/desktop completion/help, all built-ins |
 | 07 | `07-tui-redesign-and-launch-art.md` | Bubble Tea TUI layout, transcript, contextual pickers, inline approvals/diffs, Korean IME/width, selected visual direction, profile banner renderer |
 | 08 | `08-desktop-site-docs-and-assets.md` | Wails desktop identity/UI, frontend, public site, docs, embedded docs, release notes, accessibility, logos/icons/media/theme assets |

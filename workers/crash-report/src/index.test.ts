@@ -405,8 +405,8 @@ describe("opaque crash fingerprints", () => {
   };
 
   it("splits locationless Script error reports by safe context hint", () => {
-    const startup = normalizeForFingerprint({ ...opaque, fingerprintHint: "build:abc|view:app://reasonix/|cats:startup>tabs" });
-    const markdown = normalizeForFingerprint({ ...opaque, fingerprintHint: "build:abc|view:app://reasonix/|cats:render>markdown" });
+    const startup = normalizeForFingerprint({ ...opaque, fingerprintHint: "build:abc|view:app://patty/|cats:startup>tabs" });
+    const markdown = normalizeForFingerprint({ ...opaque, fingerprintHint: "build:abc|view:app://patty/|cats:render>markdown" });
     expect(startup).not.toBe(markdown);
   });
 

@@ -14,9 +14,9 @@ package event
 import (
 	"encoding/json"
 
-	"reasonix/internal/evidence"
-	"reasonix/internal/nilutil"
-	"reasonix/internal/provider"
+	"patty/internal/evidence"
+	"patty/internal/nilutil"
+	"patty/internal/provider"
 )
 
 // Kind tags an Event. Read the field(s) documented for that kind.

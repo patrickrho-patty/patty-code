@@ -4,7 +4,7 @@ package profile_test
 import (
 	"testing"
 
-	"reasonix/internal/profile"
+	"patty/internal/profile"
 )
 
 func TestProfileValidate_Valid(t *testing.T) {

@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
+	"patty/internal/config"
+	"patty/internal/control"
 )
 
-const providerSetupTestKeyEnv = "REASONIX_REMOTE_SETUP_TEST_KEY"
+const providerSetupTestKeyEnv = "PATTY_REMOTE_SETUP_TEST_KEY"
 
 func TestProviderSetupStoresRemoteCredentialAndRebuildsController(t *testing.T) {
 	s, secret := newProviderSetupTestServer(t)
@@ -45,7 +45,7 @@ func TestProviderSetupStoresRemoteCredentialAndRebuildsController(t *testing.T) 
 	defer httpServer.Close()
 
 	index := getProviderSetupBody(t, httpServer.URL+"/")
-	if !strings.Contains(index, "Reasonix Provider Setup") {
+	if !strings.Contains(index, "Patty Code Provider Setup") {
 		t.Fatalf("missing-key index did not serve Provider setup page:\n%s", index)
 	}
 	if strings.Contains(index, secret) {
@@ -119,7 +119,7 @@ func TestProviderSetupStoresRemoteCredentialAndRebuildsController(t *testing.T) 
 		t.Fatalf("setup still required after save: %+v", state)
 	}
 	index = getProviderSetupBody(t, httpServer.URL+"/")
-	if strings.Contains(index, "Reasonix Provider Setup") {
+	if strings.Contains(index, "Patty Code Provider Setup") {
 		t.Fatal("normal Serve UI did not replace setup page after controller rebuild")
 	}
 }
@@ -353,8 +353,8 @@ func TestProviderSetupRejectsUnsafeOrAmbiguousRequests(t *testing.T) {
 func newProviderSetupTestServer(t *testing.T) (*Server, string) {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_HOME", home)
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	t.Setenv(providerSetupTestKeyEnv, "")
 	configPath := config.UserConfigPath()
 	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {

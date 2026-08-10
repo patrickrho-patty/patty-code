@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   sweep:
-    if: github.repository == 'esengine/DeepSeek-Reasonix'
+    if: github.repository == 'pattycorp/DeepSeek-Patty Code'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

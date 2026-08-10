@@ -1,6 +1,6 @@
 # Context Engine v2: Instructions, Memory, and Retrieval
 
-Context Engine v2 gives Reasonix two durable context layers with different
+Context Engine v2 gives Patty Code two durable context layers with different
 authority:
 
 - **Standing instructions** define how the agent must work.
@@ -14,7 +14,7 @@ finding it at the right moment.
 
 | Put this in | Use it for | Examples |
 | --- | --- | --- |
-| `AGENTS.md`, `REASONIX.md`, or `CLAUDE.md` | Rules that must be present on every relevant turn | required test commands, repository boundaries, review conventions |
+| `AGENTS.md`, `PATTY.md`, or `CLAUDE.md` | Rules that must be present on every relevant turn | required test commands, repository boundaries, review conventions |
 | Project memory | Durable facts that apply only to this workspace | release branch, non-obvious service constraint, project ticket URL |
 | Global memory | A fact that should be available in every workspace | a user preference explicitly chosen as global |
 | Session history | Original wording, tool output, or a decision that is not yet a stable fact | an error from yesterday, an abandoned approach |
@@ -39,9 +39,9 @@ agent's background-fact `remember` tool.
 
 ## Instruction resolution
 
-Reasonix recognizes `REASONIX.md`, `AGENTS.md`, and `CLAUDE.md`, plus matching
+Patty Code recognizes `PATTY.md`, `AGENTS.md`, and `CLAUDE.md`, plus matching
 `.local.md` variants. It first loads user-global instruction files from the
-Reasonix home directory. It then walks from the workspace root to the target
+Patty Code home directory. It then walks from the workspace root to the target
 path; at each directory it loads the normal files followed by that directory's
 `.local.md` files.
 
@@ -110,7 +110,7 @@ retrieval-only until relevant.
 
 ## Automatic recall
 
-Before each real user turn, Reasonix searches active facts using the raw user
+Before each real user turn, Patty Code searches active facts using the raw user
 message. Host-added provider context is not fed back into the query. The selected
 facts are appended to that user turn as a bounded, low-authority suffix; they do
 not mutate the system prompt or tool schema.
@@ -155,7 +155,7 @@ output matters.
 
 ## Safe writes and confirmation
 
-The ordinary path is zero-configuration. Reasonix may automatically create a
+The ordinary path is zero-configuration. Patty Code may automatically create a
 new memory only when all of these conditions hold:
 
 - the owning controller has the current project store (interactive or top-level
@@ -194,7 +194,7 @@ approval prompt.
 Updating a fact creates an immutable snapshot of the previous revision. A stale
 `expected_revision` is rejected instead of overwriting a newer edit.
 
-Restoring an old revision does not rewind storage in place. Reasonix copies the
+Restoring an old revision does not rewind storage in place. Patty Code copies the
 chosen content into a new, higher revision, preserving a monotonic audit trail:
 
 ```text
@@ -227,7 +227,7 @@ There is no setup toggle. It proposes:
 Scanning uses original user content, deduplicates against facts from both scopes
 and loaded instruction bodies, and never writes by itself. Every candidate shows
 evidence and must be explicitly accepted. Remote workspaces fail closed:
-Reasonix does not fall back to local sessions or local memory when the remote
+Patty Code does not fall back to local sessions or local memory when the remote
 surface cannot provide the feature.
 
 ## Management surfaces

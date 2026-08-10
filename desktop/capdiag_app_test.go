@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/control"
-	"reasonix/internal/plugin"
+	"patty/internal/control"
+	"patty/internal/plugin"
 )
 
 func TestCapabilityDiagnosticsStaticUsesWorkspaceRoot(t *testing.T) {

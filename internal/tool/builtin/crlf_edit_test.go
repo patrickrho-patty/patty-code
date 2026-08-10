@@ -39,20 +39,20 @@ func runEdit(t *testing.T, dir, name, oldS, newS string) {
 
 func TestEditFileCRLFGBKPreservesEncodingAndEndings(t *testing.T) {
 	dir := t.TempDir()
-	src := "第一行 hello\r\n第二行 world\r\n第三行 done\r\n"
+	src := "첫째 줄 hello\r\n둘째 줄 world\r\n셋째 줄 done\r\n"
 	if err := os.WriteFile(filepath.Join(dir, "f.cs"), encGBK(t, src), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// old/new arrive LF-only, as the model copies them out of read_file output.
-	runEdit(t, dir, "f.cs", "第一行 hello\n第二行 world", "第一行 HELLO\n第二行 WORLD")
+	runEdit(t, dir, "f.cs", "첫째 줄 hello\n둘째 줄 world", "첫째 줄 HELLO\n둘째 줄 WORLD")
 
 	raw, err := os.ReadFile(filepath.Join(dir, "f.cs"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := decGBK(t, raw)
-	want := "第一行 HELLO\r\n第二行 WORLD\r\n第三行 done\r\n"
+	want := "첫째 줄 HELLO\r\n둘째 줄 WORLD\r\n셋째 줄 done\r\n"
 	if got != want {
 		t.Fatalf("content/endings not preserved:\n got %q\nwant %q", got, want)
 	}

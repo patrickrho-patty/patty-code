@@ -11,10 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"reasonix/internal/bot"
-	"reasonix/internal/bot/weixin"
-	"reasonix/internal/botruntime"
-	"reasonix/internal/config"
+	"patty/internal/bot"
+	"patty/internal/botruntime"
+	"patty/internal/config"
 )
 
 func botCommand(args []string, version string) int {
@@ -33,8 +32,6 @@ func botCommand(args []string, version string) int {
 		return botDoctor(rest)
 	case "pairing":
 		return botPairing(rest)
-	case "weixin-login":
-		return botWeixinLogin(rest)
 	case "help", "--help", "-h":
 		botUsage()
 		return 0
@@ -47,9 +44,9 @@ func botCommand(args []string, version string) int {
 
 func botStart(args []string, version string) int {
 	fs := flag.NewFlagSet("bot start", flag.ContinueOnError)
-	channels := fs.String("channels", "", "启用的平台，逗号分隔：qq,feishu,lark,weixin")
-	dir := fs.String("dir", "", "工作目录")
-	model := fs.String("model", "", "模型名（空则用 default_model）")
+	channels := fs.String("channels", "", "활성화할 채널 (연결 provider 이름, 쉼표 구분)")
+	dir := fs.String("dir", "", "작업 디렉터리")
+	model := fs.String("model", "", "모델 이름 (비어 있으면 default_model 사용)")
 
 	if code, ok := parseCommandFlags(fs, args); !ok {
 		return code
@@ -95,7 +92,6 @@ func botStart(args []string, version string) int {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	rememberInboundRemote := botruntime.NewRemoteRememberer(logger)
 
-	// 构建网关配置
 	gwCfg := bot.GatewayConfig{
 		Model:              modelName,
 		ToolApprovalMode:   cfg.Bot.ToolApprovalMode,
@@ -108,9 +104,7 @@ func botStart(args []string, version string) int {
 		PairingMaxPending:  cfg.Bot.Pairing.MaxPendingPerPlatform,
 		IgnoreSelfMessages: cfg.Bot.IgnoreSelfMessages,
 		SelfUserIDs: map[bot.Platform][]string{
-			bot.PlatformQQ:     cfg.Bot.SelfUserIDs.QQ,
-			bot.PlatformFeishu: cfg.Bot.SelfUserIDs.Feishu,
-			bot.PlatformWeixin: cfg.Bot.SelfUserIDs.Weixin,
+			bot.Platform("desktop"): cfg.Bot.SelfUserIDs.Desktop,
 		},
 		ControlEnabled:     cfg.Bot.Control.Enabled,
 		ControlAddr:        cfg.Bot.Control.Addr,
@@ -125,24 +119,16 @@ func botStart(args []string, version string) int {
 			Enabled:  cfg.Bot.Allowlist.Enabled,
 			AllowAll: cfg.Bot.Allowlist.AllowAll,
 			Users: map[bot.Platform][]string{
-				bot.PlatformQQ:     cfg.Bot.Allowlist.QQUsers,
-				bot.PlatformFeishu: cfg.Bot.Allowlist.FeishuUsers,
-				bot.PlatformWeixin: cfg.Bot.Allowlist.WeixinUsers,
+				bot.Platform("default"): cfg.Bot.Allowlist.Users,
 			},
 			Approvers: map[bot.Platform][]string{
-				bot.PlatformQQ:     cfg.Bot.Allowlist.QQApprovers,
-				bot.PlatformFeishu: cfg.Bot.Allowlist.FeishuApprovers,
-				bot.PlatformWeixin: cfg.Bot.Allowlist.WeixinApprovers,
+				bot.Platform("default"): cfg.Bot.Allowlist.Approvers,
 			},
 			Admins: map[bot.Platform][]string{
-				bot.PlatformQQ:     cfg.Bot.Allowlist.QQAdmins,
-				bot.PlatformFeishu: cfg.Bot.Allowlist.FeishuAdmins,
-				bot.PlatformWeixin: cfg.Bot.Allowlist.WeixinAdmins,
+				bot.Platform("default"): cfg.Bot.Allowlist.Admins,
 			},
 			Groups: map[bot.Platform][]string{
-				bot.PlatformQQ:     cfg.Bot.Allowlist.QQGroups,
-				bot.PlatformFeishu: cfg.Bot.Allowlist.FeishuGroups,
-				bot.PlatformWeixin: cfg.Bot.Allowlist.WeixinGroups,
+				bot.Platform("default"): cfg.Bot.Allowlist.Groups,
 			},
 		},
 		Debounce:       time.Duration(cfg.Bot.DebounceMs) * time.Millisecond,
@@ -150,10 +136,8 @@ func botStart(args []string, version string) int {
 		OnSessionReady: botruntime.NewSessionRemembererWithWorkspace(logger, workspaceRoot),
 	}
 
-	feishuDomains := botruntime.RequestedFeishuDomains(requestedChannels)
-	gw := bot.NewGatewayWithAdapterBindings(gwCfg, botruntime.AdapterBindings(cfg, enabledPlatforms, feishuDomains, logger), logger)
+	gw := bot.NewGatewayWithAdapterBindings(gwCfg, botruntime.AdapterBindings(cfg, enabledPlatforms, logger), logger)
 
-	// 信号处理
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
@@ -163,7 +147,7 @@ func botStart(args []string, version string) int {
 		cancel()
 	}()
 
-	fmt.Fprintf(os.Stderr, "reasonix bot starting (model: %s, channels: %s)...\n", modelName, *channels)
+	fmt.Fprintf(os.Stderr, "patcode bot starting (model: %s, channels: %s)...\n", modelName, *channels)
 	fmt.Fprintf(os.Stderr, "version: %s\n", version)
 
 	if err := gw.Start(ctx); err != nil {
@@ -173,7 +157,6 @@ func botStart(args []string, version string) int {
 	}
 	defer gw.Stop()
 
-	// 等待信号或 context 取消
 	<-ctx.Done()
 	return 0
 }
@@ -188,8 +171,8 @@ func splitBotChannels(raw string) []string {
 
 func botDoctor(args []string) int {
 	fs := flag.NewFlagSet("bot doctor", flag.ContinueOnError)
-	jsonOut := fs.Bool("json", false, "JSON 格式输出")
-	deep := fs.Bool("deep", false, "执行更详细的本机诊断")
+	jsonOut := fs.Bool("json", false, "JSON 형식으로 출력")
+	deep := fs.Bool("deep", false, "더 자세한 로컬 진단 실행")
 
 	if code, ok := parseCommandFlags(fs, args); !ok {
 		return code
@@ -215,7 +198,6 @@ func botDoctor(args []string) int {
 		results = append(results, checkResult{Name: name, Status: status, Detail: detail})
 	}
 
-	// 基础检查
 	if bc.Enabled {
 		addCheck("bot.enabled", "ok", "")
 	} else {
@@ -265,7 +247,7 @@ func botDoctor(args []string) int {
 			selfStatus = "enabled"
 		}
 		addCheck("bot.self_protection", selfStatus,
-			fmt.Sprintf("self_ids=%d", len(bc.SelfUserIDs.QQ)+len(bc.SelfUserIDs.Feishu)+len(bc.SelfUserIDs.Weixin)))
+			fmt.Sprintf("self_ids=%d", len(bc.SelfUserIDs.Desktop)))
 		controlStatus := "disabled"
 		controlDetail := ""
 		if bc.Control.Enabled {
@@ -284,62 +266,6 @@ func botDoctor(args []string) int {
 		addCheck("bot.routes", "ok", fmt.Sprintf("%d routes", len(bc.Routes)))
 	}
 
-	// QQ 检查
-	if bc.QQ.Enabled {
-		addCheck("bot.qq.enabled", "ok", "")
-		secret := os.Getenv(bc.QQ.AppSecretEnv)
-		if secret == "" {
-			addCheck("bot.qq.app_secret", "missing", bc.QQ.AppSecretEnv+" is not set")
-		} else {
-			addCheck("bot.qq.app_secret", "ok", bc.QQ.AppSecretEnv+" is set")
-		}
-		if bc.QQ.AppID == "" {
-			addCheck("bot.qq.app_id", "missing", "app_id is empty")
-		} else {
-			addCheck("bot.qq.app_id", "ok", "app_id configured")
-		}
-	} else {
-		addCheck("bot.qq", "disabled", "")
-	}
-
-	// 飞书检查
-	if bc.Feishu.Enabled {
-		addCheck("bot.feishu.enabled", "ok", "")
-		secret := os.Getenv(bc.Feishu.AppSecretEnv)
-		if secret == "" {
-			addCheck("bot.feishu.app_secret", "missing", bc.Feishu.AppSecretEnv+" is not set")
-		} else {
-			addCheck("bot.feishu.app_secret", "ok", bc.Feishu.AppSecretEnv+" is set")
-		}
-		if bc.Feishu.AppID == "" {
-			addCheck("bot.feishu.app_id", "missing", "app_id is empty")
-		} else {
-			addCheck("bot.feishu.app_id", "ok", "app_id configured")
-		}
-		mode := bc.Feishu.Mode
-		if mode == "" {
-			mode = "webhook"
-		}
-		addCheck("bot.feishu.mode", "ok", mode)
-	} else {
-		addCheck("bot.feishu", "disabled", "")
-	}
-
-	// 微信检查
-	if bc.Weixin.Enabled {
-		addCheck("bot.weixin.enabled", "ok", "")
-		token := os.Getenv(bc.Weixin.TokenEnv)
-		if token != "" {
-			addCheck("bot.weixin.token", "ok", bc.Weixin.TokenEnv+" is set")
-		} else if weixin.HasSavedAccount(bc.Weixin.AccountID) {
-			addCheck("bot.weixin.token", "ok", "saved iLink account is available")
-		} else {
-			addCheck("bot.weixin.token", "missing", bc.Weixin.TokenEnv+" is not set; run `reasonix bot weixin-login` to save an iLink account")
-		}
-	} else {
-		addCheck("bot.weixin", "disabled", "")
-	}
-
 	enabledConnections := 0
 	for _, conn := range bc.Connections {
 		if conn.Enabled {
@@ -355,32 +281,27 @@ func botDoctor(args []string) int {
 		status := "ok"
 		if !conn.Enabled {
 			status = "disabled"
-		} else if len(conn.SessionMappings) == 0 && (conn.Provider == string(bot.PlatformFeishu) || conn.Provider == string(bot.PlatformWeixin)) {
-			status = "missing"
 		}
 		addCheck("bot.connection."+id+".session_mappings", status,
 			fmt.Sprintf("provider=%s mappings=%d", conn.Provider, len(conn.SessionMappings)))
 	}
 
-	// Allowlist 检查
 	if bc.Allowlist.AllowAll {
 		addCheck("bot.allowlist", "open", "allow_all=true — every reachable user can trigger local tools")
 	} else if bc.Allowlist.Enabled {
 		addCheck("bot.allowlist", "enabled",
-			fmt.Sprintf("qq=%d feishu=%d weixin=%d users approvers=%d admins=%d",
-				len(bc.Allowlist.QQUsers),
-				len(bc.Allowlist.FeishuUsers),
-				len(bc.Allowlist.WeixinUsers),
-				len(bc.Allowlist.QQApprovers)+len(bc.Allowlist.FeishuApprovers)+len(bc.Allowlist.WeixinApprovers),
-				len(bc.Allowlist.QQAdmins)+len(bc.Allowlist.FeishuAdmins)+len(bc.Allowlist.WeixinAdmins)))
+			fmt.Sprintf("users=%d approvers=%d admins=%d",
+				len(bc.Allowlist.Users),
+				len(bc.Allowlist.Approvers),
+				len(bc.Allowlist.Admins)))
 	} else {
 		addCheck("bot.allowlist", "missing", "bot start will refuse without allowlist or allow_all=true")
 	}
 	if *deep {
 		addCheck("bot.roles", "ok",
 			fmt.Sprintf("approvers=%d admins=%d",
-				len(bc.Allowlist.QQApprovers)+len(bc.Allowlist.FeishuApprovers)+len(bc.Allowlist.WeixinApprovers),
-				len(bc.Allowlist.QQAdmins)+len(bc.Allowlist.FeishuAdmins)+len(bc.Allowlist.WeixinAdmins)))
+				len(bc.Allowlist.Approvers),
+				len(bc.Allowlist.Admins)))
 	}
 
 	if *jsonOut {
@@ -469,44 +390,13 @@ func botPairing(args []string) int {
 }
 
 func botPairingUsage() {
-	fmt.Print(`reasonix bot pairing — approve pending bot DM pairings
+	fmt.Print(`patcode bot pairing — approve pending bot DM pairings
 
 Usage:
-  reasonix bot pairing list
-  reasonix bot pairing approve CODE
-  reasonix bot pairing reject CODE
+  patcode bot pairing list
+  patcode bot pairing approve CODE
+  patcode bot pairing reject CODE
 `)
-}
-
-func botWeixinLogin(args []string) int {
-	fs := flag.NewFlagSet("bot weixin-login", flag.ContinueOnError)
-	timeoutSeconds := fs.Int("timeout", 480, "登录超时时间（秒）")
-	if code, ok := parseCommandFlags(fs, args); !ok {
-		return code
-	}
-
-	cfg, err := loadBotCommandConfig()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: load config: %v\n", err)
-		return 1
-	}
-
-	if !cfg.Bot.Weixin.Enabled {
-		fmt.Fprintln(os.Stderr, "error: weixin bot is not enabled in config")
-		return 1
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*timeoutSeconds)*time.Second)
-	defer cancel()
-	result, err := weixin.Login(ctx, os.Stdout, time.Duration(*timeoutSeconds)*time.Second)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: weixin login failed: %v\n", err)
-		return 1
-	}
-	fmt.Printf("\n微信登录成功: account_id=%s user_id=%s base_url=%s\n", result.AccountID, result.UserID, result.BaseURL)
-	fmt.Println("凭据已保存到 Reasonix 用户配置目录；也可以把 [bot.weixin] account_id 设置为该 account_id。")
-
-	return 0
 }
 
 func loadBotCommandConfig() (*config.Config, error) {
@@ -529,13 +419,10 @@ func loadBotCommandConfig() (*config.Config, error) {
 }
 
 func botConfigIsUserOwned(bc config.BotConfig) bool {
-	if bc.Enabled || len(bc.Connections) > 0 || bc.QQ.Enabled || bc.Feishu.Enabled || bc.Weixin.Enabled {
+	if bc.Enabled || len(bc.Connections) > 0 {
 		return true
 	}
 	if bc.Allowlist.AllowAll || botruntime.AllowlistUserCount(bc.Allowlist) > 0 {
-		return true
-	}
-	if botruntime.BotAccessActive(bc.QQ.Access) {
 		return true
 	}
 	for _, conn := range bc.Connections {
@@ -543,40 +430,33 @@ func botConfigIsUserOwned(bc config.BotConfig) bool {
 			return true
 		}
 	}
-	return len(bc.Allowlist.QQGroups)+len(bc.Allowlist.FeishuGroups)+len(bc.Allowlist.WeixinGroups)+
-		len(bc.Allowlist.QQApprovers)+len(bc.Allowlist.FeishuApprovers)+len(bc.Allowlist.WeixinApprovers)+
-		len(bc.Allowlist.QQAdmins)+len(bc.Allowlist.FeishuAdmins)+len(bc.Allowlist.WeixinAdmins) > 0
+	return len(bc.Allowlist.Groups)+len(bc.Allowlist.Approvers)+len(bc.Allowlist.Admins) > 0
 }
 
 func botUsage() {
-	fmt.Print(`reasonix bot — multi-channel IM bot gateway (QQ / Feishu / WeChat)
+	fmt.Print(`patcode bot — multi-channel IM bot gateway
 
 Usage:
-  reasonix bot start   [--channels qq,feishu,lark,weixin] [--dir PATH] [--model NAME]
-  reasonix bot doctor  [--json] [--deep]
-  reasonix bot pairing list|approve|reject
-  reasonix bot weixin-login [--timeout SECONDS]
+  patcode bot start   [--channels NAME,...] [--dir PATH] [--model NAME]
+  patcode bot doctor  [--json] [--deep]
+  patcode bot pairing list|approve|reject
 
 Subcommands:
-  start         启动 bot 网关
-  doctor        诊断 bot 配置和连通性
-  pairing       查看或批准 IM 私聊配对
-  weixin-login  微信 iLink 二维码登录
+  start          bot 게이트웨이 시작
+  doctor         bot 구성과 연결성 진단
+  pairing        IM 개인 채팅 페어링 조회/승인
 
 Examples:
-  reasonix bot start --channels qq,feishu
-  reasonix bot start --dir /path/to/project --model deepseek-pro
-  reasonix bot doctor --json
+  patcode bot start --channels my-channel
+  patcode bot start --dir /path/to/project --model deepseek-pro
+  patcode bot doctor --json
 
 Configuration:
-  Edit reasonix.toml:
+  Edit patty.toml:
     [bot]           enabled / model / max_steps
     [bot]           queue_mode / queue_cap / queue_drop
     [bot.pairing]   enabled / request_ttl_minutes / max_pending_per_platform
     [bot.allowlist]  enabled / users / approvers / admins / groups
-    [bot.qq]         enabled / app_id / app_secret_env
-    [bot.feishu]     enabled / app_id / app_secret_env / verification_token / mode
-    [bot.weixin]     enabled / account_id / token_env / api_base
 
   All secrets are read from environment variables; never put keys in config files.
 `)

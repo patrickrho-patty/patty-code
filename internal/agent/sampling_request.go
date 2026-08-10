@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // samplingRequest is a once-prepared, frozen provider request for one model

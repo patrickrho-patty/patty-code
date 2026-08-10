@@ -1,8 +1,8 @@
 import { safeNext } from "./safe-next.js";
 
-// Client for the reasonix-accounts API (id.reasonix.io). Cookie-based session,
+// Client for the patty-accounts API (id.patty.io). Cookie-based session,
 // so every call sends credentials; the API base is build-time configurable.
-const API = (import.meta.env.PUBLIC_ACCOUNTS_API || "https://id.reasonix.io").replace(/\/$/, "");
+const API = (import.meta.env.PUBLIC_ACCOUNTS_API || "https://id.patty.io").replace(/\/$/, "");
 
 async function api(path, { method = "GET", body } = {}) {
   const res = await fetch(API + path, {

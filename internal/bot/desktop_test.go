@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
+	"patty/internal/event"
 )
 
 type fakeDesktopBridge struct {
@@ -41,14 +41,14 @@ func (f *fakeDesktopBridge) Watching(route DesktopWatchRoute) bool {
 }
 func (f *fakeDesktopBridge) Approve(id string, allow bool) (string, error) {
 	if id == "gone" {
-		return "", fmt.Errorf("未找到待处理的审批 %s", id)
+		return "", fmt.Errorf("처리 대기 중인 승인을 찾을 수 없음: %s", id)
 	}
 	if allow {
 		f.approved = append(f.approved, id)
 	} else {
 		f.denied = append(f.denied, id)
 	}
-	return "已提交", nil
+	return "제출됨", nil
 }
 func (f *fakeDesktopBridge) AskQuestions(id string) ([]event.AskQuestion, bool) {
 	qs, ok := f.questions[id]
@@ -56,25 +56,25 @@ func (f *fakeDesktopBridge) AskQuestions(id string) ([]event.AskQuestion, bool) 
 }
 func (f *fakeDesktopBridge) Answer(id string, answers []event.AskAnswer) (string, error) {
 	f.answered[id] = answers
-	return "已提交回答", nil
+	return "답변 제출됨", nil
 }
 
 func (f *fakeDesktopBridge) Takeover(route DesktopWatchRoute, tabID string) (string, error) {
 	for _, s := range f.sessions {
 		if s.TabID == tabID {
 			f.takeovers[route.Key()] = tabID
-			return "已接管", nil
+			return "인수 완료", nil
 		}
 	}
-	return "", fmt.Errorf("未找到会话 %s", tabID)
+	return "", fmt.Errorf("세션을 찾을 수 없음: %s", tabID)
 }
 
 func (f *fakeDesktopBridge) Release(route DesktopWatchRoute) (string, error) {
 	if _, ok := f.takeovers[route.Key()]; !ok {
-		return "", fmt.Errorf("本聊天当前没有接管任何桌面会话。")
+		return "", fmt.Errorf("이 채팅은 현재 데스크톱 세션을 인수하지 않았습니다.")
 	}
 	delete(f.takeovers, route.Key())
-	return "已解除接管", nil
+	return "인수 해제 완료", nil
 }
 
 func (f *fakeDesktopBridge) TakeoverTab(route DesktopWatchRoute) string {
@@ -91,7 +91,7 @@ func (f *fakeDesktopBridge) DriveInput(route DesktopWatchRoute, text string) (st
 
 func desktopTestMessage(text string) InboundMessage {
 	return InboundMessage{
-		Platform:     PlatformFeishu,
+		Platform:     Platform("feishu"),
 		ConnectionID: "feishu-main",
 		Domain:       "feishu",
 		ChatType:     ChatDM,
@@ -104,7 +104,7 @@ func desktopTestMessage(text string) InboundMessage {
 func TestHandleDesktopCommandWithoutBridge(t *testing.T) {
 	gw := &BotGateway{cfg: GatewayConfig{}}
 	got := gw.handleDesktopCommand(desktopTestMessage("/desktop status"))
-	if !strings.Contains(got, "未运行在桌面端进程内") {
+	if !strings.Contains(got, "데스크톱 프로세스에서 실행되지 않음") {
 		t.Fatalf("reply = %q, want standalone-mode notice", got)
 	}
 }
@@ -112,13 +112,13 @@ func TestHandleDesktopCommandWithoutBridge(t *testing.T) {
 func TestHandleDesktopCommandStatusListsSessions(t *testing.T) {
 	bridge := newFakeDesktopBridge()
 	bridge.sessions = []DesktopSessionInfo{
-		{TabID: "tab-1", Label: "修复登录", Workspace: "blade", Running: true, Ready: true},
-		{TabID: "tab-2", Label: "", Topic: "周报", Ready: true, PendingPrompt: true},
+		{TabID: "tab-1", Label: "로그인 수정", Workspace: "blade", Running: true, Ready: true},
+		{TabID: "tab-2", Label: "", Topic: "주간 보고", Ready: true, PendingPrompt: true},
 	}
 	gw := &BotGateway{cfg: GatewayConfig{Desktop: bridge}}
 
 	got := gw.handleDesktopCommand(desktopTestMessage("/desktop status"))
-	for _, want := range []string{"2 个", "修复登录", "▶️ 执行中", "周报", "⚠️ 等待审批/回答", "tab-1", "blade"} {
+	for _, want := range []string{"2 개", "로그인 수정", "▶️ 실행 중", "주간 보고", "⚠️ 승인/답변 대기", "tab-1", "blade"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("status reply = %q, want it to contain %q", got, want)
 		}
@@ -128,12 +128,11 @@ func TestHandleDesktopCommandStatusListsSessions(t *testing.T) {
 func TestHandleDesktopCommandStatusListsPendingIDs(t *testing.T) {
 	bridge := newFakeDesktopBridge()
 	bridge.sessions = []DesktopSessionInfo{{
-		TabID: "tab-1", Label: "修复登录", Ready: true, PendingPrompt: true,
+		TabID: "tab-1", Label: "로그인 수정", Ready: true, PendingPrompt: true,
 		Pending: []DesktopPendingInfo{{ID: "appr-9", Kind: "approval", Tool: "bash"}},
 	}}
 	gw := &BotGateway{cfg: GatewayConfig{Desktop: bridge}}
 	got := gw.handleDesktopCommand(desktopTestMessage("/desktop status"))
-	// The pending id must be visible so a user whose push was dropped can still
 	// run /desktop approve <id>.
 	if !strings.Contains(got, "appr-9") {
 		t.Fatalf("status = %q, want it to list the pending approval id", got)
@@ -143,7 +142,7 @@ func TestHandleDesktopCommandStatusListsPendingIDs(t *testing.T) {
 func TestHandleDesktopCommandStatusEmpty(t *testing.T) {
 	gw := &BotGateway{cfg: GatewayConfig{Desktop: newFakeDesktopBridge()}}
 	got := gw.handleDesktopCommand(desktopTestMessage("/desktop"))
-	if !strings.Contains(got, "没有 live 会话") {
+	if !strings.Contains(got, "live 세션 없음") {
 		t.Fatalf("reply = %q, want empty-sessions notice", got)
 	}
 }
@@ -154,7 +153,7 @@ func TestHandleDesktopCommandWatchLifecycle(t *testing.T) {
 	msg := desktopTestMessage("/desktop watch on")
 
 	got := gw.handleDesktopCommand(msg)
-	if !strings.Contains(got, "已订阅") {
+	if !strings.Contains(got, "구독했습니다") {
 		t.Fatalf("watch on reply = %q", got)
 	}
 	route := desktopRouteFromMessage(msg)
@@ -164,7 +163,7 @@ func TestHandleDesktopCommandWatchLifecycle(t *testing.T) {
 
 	msg.Text = "/desktop watch off"
 	got = gw.handleDesktopCommand(msg)
-	if !strings.Contains(got, "已退订") {
+	if !strings.Contains(got, "구독 해지됨") {
 		t.Fatalf("watch off reply = %q", got)
 	}
 	if bridge.watching[route.Key()] {
@@ -179,7 +178,7 @@ func TestHandleDesktopCommandWatchReportsPersistenceFailure(t *testing.T) {
 	msg := desktopTestMessage("/desktop watch on")
 
 	got := gw.handleDesktopCommand(msg)
-	if !strings.Contains(got, "本次运行中订阅") || !strings.Contains(got, "保存订阅失败") {
+	if !strings.Contains(got, "이번 실행 중") || !strings.Contains(got, "저장 실패") {
 		t.Fatalf("watch persistence failure reply = %q", got)
 	}
 	if !bridge.Watching(desktopRouteFromMessage(msg)) {
@@ -191,10 +190,10 @@ func TestHandleDesktopCommandApproveAndDeny(t *testing.T) {
 	bridge := newFakeDesktopBridge()
 	gw := &BotGateway{cfg: GatewayConfig{Desktop: bridge}}
 
-	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop approve appr-1")); !strings.Contains(got, "已提交") {
+	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop approve appr-1")); !strings.Contains(got, "제출됨") {
 		t.Fatalf("approve reply = %q", got)
 	}
-	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop deny appr-2")); !strings.Contains(got, "已提交") {
+	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop deny appr-2")); !strings.Contains(got, "제출됨") {
 		t.Fatalf("deny reply = %q", got)
 	}
 	if len(bridge.approved) != 1 || bridge.approved[0] != "appr-1" {
@@ -204,7 +203,7 @@ func TestHandleDesktopCommandApproveAndDeny(t *testing.T) {
 		t.Fatalf("denied = %v, want [appr-2]", bridge.denied)
 	}
 
-	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop approve gone")); !strings.Contains(got, "未找到") {
+	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop approve gone")); !strings.Contains(got, "찾을 수 없음") {
 		t.Fatalf("missing-approval reply = %q", got)
 	}
 	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop approve")); got != desktopCommandUsage {
@@ -216,35 +215,35 @@ func TestHandleDesktopCommandAnswerParsesSelection(t *testing.T) {
 	bridge := newFakeDesktopBridge()
 	bridge.questions["ask-1"] = []event.AskQuestion{{
 		ID:      "q1",
-		Prompt:  "选一个",
-		Options: []event.AskOption{{Label: "方案 A"}, {Label: "方案 B"}},
+		Prompt:  "하나를 선택하세요",
+		Options: []event.AskOption{{Label: "옵션 A"}, {Label: "옵션 B"}},
 	}}
 	gw := &BotGateway{cfg: GatewayConfig{Desktop: bridge}}
 
 	got := gw.handleDesktopCommand(desktopTestMessage("/desktop answer ask-1 2"))
-	if !strings.Contains(got, "已提交回答") {
+	if !strings.Contains(got, "답변 제출됨") {
 		t.Fatalf("answer reply = %q", got)
 	}
 	answers := bridge.answered["ask-1"]
 	if len(answers) != 1 || answers[0].QuestionID != "q1" {
 		t.Fatalf("answers = %+v, want one answer for q1", answers)
 	}
-	if len(answers[0].Selected) != 1 || answers[0].Selected[0] != "方案 B" {
-		t.Fatalf("selected = %v, want numeric index resolved to 方案 B", answers[0].Selected)
+	if len(answers[0].Selected) != 1 || answers[0].Selected[0] != "옵션 B" {
+		t.Fatalf("selected = %v, want numeric index resolved to 옵션 B", answers[0].Selected)
 	}
 
-	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop answer ask-gone 1")); !strings.Contains(got, "未找到") {
+	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop answer ask-gone 1")); !strings.Contains(got, "없음") {
 		t.Fatalf("missing-ask reply = %q", got)
 	}
 }
 
 func TestHandleDesktopCommandTakeoverAndRelease(t *testing.T) {
 	bridge := newFakeDesktopBridge()
-	bridge.sessions = []DesktopSessionInfo{{TabID: "tab-1", Label: "会话一"}}
+	bridge.sessions = []DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1"}}
 	gw := &BotGateway{cfg: GatewayConfig{Desktop: bridge}}
 	msg := desktopTestMessage("/desktop takeover tab-1")
 
-	if got := gw.handleDesktopCommand(msg); !strings.Contains(got, "已接管") {
+	if got := gw.handleDesktopCommand(msg); !strings.Contains(got, "인수 완료") {
 		t.Fatalf("takeover reply = %q", got)
 	}
 	route := desktopRouteFromMessage(msg)
@@ -253,26 +252,26 @@ func TestHandleDesktopCommandTakeoverAndRelease(t *testing.T) {
 	}
 
 	msg.Text = "/desktop release"
-	if got := gw.handleDesktopCommand(msg); !strings.Contains(got, "已解除") {
+	if got := gw.handleDesktopCommand(msg); !strings.Contains(got, "인수 해제") {
 		t.Fatalf("release reply = %q", got)
 	}
-	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop takeover missing")); !strings.Contains(got, "未找到") {
+	if got := gw.handleDesktopCommand(desktopTestMessage("/desktop takeover missing")); !strings.Contains(got, "찾을 수 없음") {
 		t.Fatalf("missing-tab reply = %q", got)
 	}
 }
 
 func TestDivertToDesktopTakeover(t *testing.T) {
 	bridge := newFakeDesktopBridge()
-	bridge.sessions = []DesktopSessionInfo{{TabID: "tab-1", Label: "会话一"}}
+	bridge.sessions = []DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1"}}
 	gw := &BotGateway{
 		cfg:           GatewayConfig{Desktop: bridge},
 		logger:        discardLogger(),
 		adapterHealth: map[string]*AdapterHealthSnapshot{},
 	}
-	adapter := newFakeAdapter(PlatformFeishu, "fake-feishu")
-	msg := desktopTestMessage("帮我跑一下测试")
+	adapter := newFakeAdapter(Platform("feishu"), "fake-feishu")
+	msg := desktopTestMessage("테스트 좀 실행해 줘")
 
-	// 未接管:不分流。
+	// 미인수: 분기하지 않음。
 	if gw.divertToDesktopTakeover(context.Background(), adapter, msg) {
 		t.Fatal("message should not divert without a takeover binding")
 	}
@@ -283,39 +282,39 @@ func TestDivertToDesktopTakeover(t *testing.T) {
 	if gw.divertToDesktopTakeover(context.Background(), adapter, msg) {
 		t.Fatal("slash commands must remain in the bot command path during takeover")
 	}
-	msg.Text = "帮我跑一下测试"
+	msg.Text = "테스트 좀 실행해 줘"
 	if !gw.divertToDesktopTakeover(context.Background(), adapter, msg) {
 		t.Fatal("message should divert to the taken-over session")
 	}
-	if len(bridge.driven) != 1 || bridge.driven[0] != "帮我跑一下测试" {
+	if len(bridge.driven) != 1 || bridge.driven[0] != "테스트 좀 실행해 줘" {
 		t.Fatalf("driven = %v, want the plain message text", bridge.driven)
 	}
 
-	// 驱动失败:错误文案回给用户。
-	bridge.driveErr = fmt.Errorf("会话正在执行中")
+	// 드라이브 실패: 오류 메시지를 사용자에게 전달합니다。
+	bridge.driveErr = fmt.Errorf("세션이 실행 중")
 	if !gw.divertToDesktopTakeover(context.Background(), adapter, msg) {
 		t.Fatal("drive failure should still consume the message")
 	}
 	sent := adapter.sentMessages()
-	if len(sent) == 0 || !strings.Contains(sent[len(sent)-1].Text, "正在执行中") {
+	if len(sent) == 0 || !strings.Contains(sent[len(sent)-1].Text, "실행 중") {
 		t.Fatalf("sent = %+v, want drive error relayed to the chat", sent)
 	}
 }
 
 func TestDivertToDesktopTakeoverRevokesFormerAdmin(t *testing.T) {
 	bridge := newFakeDesktopBridge()
-	bridge.sessions = []DesktopSessionInfo{{TabID: "tab-1", Label: "会话一"}}
+	bridge.sessions = []DesktopSessionInfo{{TabID: "tab-1", Label: "세션 1"}}
 	gw := &BotGateway{
 		cfg: GatewayConfig{
 			Desktop: bridge,
 			Allowlist: AllowlistConfig{Admins: map[Platform][]string{
-				PlatformFeishu: {"current-admin"},
+				Platform("feishu"): {"current-admin"},
 			}},
 		},
 		logger:        discardLogger(),
 		adapterHealth: map[string]*AdapterHealthSnapshot{},
 	}
-	adapter := newFakeAdapter(PlatformFeishu, "fake-feishu")
+	adapter := newFakeAdapter(Platform("feishu"), "fake-feishu")
 	msg := desktopTestMessage("run tests")
 	route := desktopRouteFromMessage(msg)
 	bridge.takeovers[route.Key()] = "tab-1"
@@ -327,7 +326,7 @@ func TestDivertToDesktopTakeoverRevokesFormerAdmin(t *testing.T) {
 		t.Fatalf("revoked takeover remained active or drove input: tab=%q driven=%v", bridge.TakeoverTab(route), bridge.driven)
 	}
 	sent := adapter.sentMessages()
-	if len(sent) == 0 || !strings.Contains(sent[len(sent)-1].Text, "不再具有") {
+	if len(sent) == 0 || !strings.Contains(sent[len(sent)-1].Text, "권한 없음") {
 		t.Fatalf("sent = %+v, want admin-revocation explanation", sent)
 	}
 }

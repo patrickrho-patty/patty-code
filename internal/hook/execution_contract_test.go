@@ -15,11 +15,11 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"reasonix/internal/sandbox"
+	"patty/internal/sandbox"
 )
 
 func TestHookExecHelperProcess(t *testing.T) {
-	if os.Getenv("REASONIX_HOOK_EXEC_HELPER") != "1" {
+	if os.Getenv("PATTY_HOOK_EXEC_HELPER") != "1" {
 		return
 	}
 	for i, arg := range os.Args {
@@ -48,8 +48,8 @@ func TestExecFormPreservesLiteralArgumentsEndToEnd(t *testing.T) {
 		`a && b | c > out`,
 		`double"quote`,
 		"single'quote",
-		`C:\Program Files\Reasonix\hook.cmd`,
-		"第一行\n第二行",
+		`C:\Program Files\Patty Code\hook.cmd`,
+		"첫 번째 줄\n두 번째 줄",
 		"emoji-🧪",
 	}
 	args := append([]string{"-test.run=^TestHookExecHelperProcess$", "--"}, want...)
@@ -57,7 +57,7 @@ func TestExecFormPreservesLiteralArgumentsEndToEnd(t *testing.T) {
 		Command: executable,
 		Args:    args,
 		Mode:    ExecutionExec,
-		Env:     map[string]string{"REASONIX_HOOK_EXEC_HELPER": "1"},
+		Env:     map[string]string{"PATTY_HOOK_EXEC_HELPER": "1"},
 		Timeout: realSpawnTimeout,
 	})
 	if result.ExitCode != 0 || result.SpawnErr != nil {
@@ -174,7 +174,7 @@ func TestResolvedHookShellPathAcceptsExecutableAndRejectsMissing(t *testing.T) {
 	if err != nil || got != "/bin/sh" {
 		t.Fatalf("resolved /bin/sh = %q, %v", got, err)
 	}
-	if _, err := resolvedHookShellPath(sandbox.Shell{Kind: sandbox.ShellBash, Path: "/definitely/missing/reasonix-hook-shell"}); err == nil {
+	if _, err := resolvedHookShellPath(sandbox.Shell{Kind: sandbox.ShellBash, Path: "/definitely/missing/patty-hook-shell"}); err == nil {
 		t.Fatal("missing absolute shell unexpectedly resolved")
 	}
 }
@@ -292,8 +292,8 @@ func FuzzPowerShellCommandEncodingRoundTrip(f *testing.F) {
 	for _, seed := range []string{
 		"",
 		`Write-Output "a && 'b'"`,
-		`$value = "C:\Program Files\Reasonix"; $value`,
-		"第一行\n第二行",
+		`$value = "C:\Program Files\Patty Code"; $value`,
+		"첫 번째 줄\n두 번째 줄",
 		"Write-Output '🧪'",
 		"`$literal; $(Write-Output nested)",
 	} {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/event"
-	"reasonix/internal/i18n"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/i18n"
+	"patty/internal/provider"
 )
 
 const (
@@ -41,6 +41,26 @@ func footerMetric(label, value string) string {
 		return ""
 	}
 	return footerLabel(label) + " " + value
+}
+
+func renderNoticeLine(glyph, text string) string {
+	label := footerLabel("notice")
+	if glyph == "!" {
+		label = themeFg(activeCLITheme.warn, "setup")
+	}
+	return statusFooterIndent + themeFg(activeCLITheme.accent, "◆") + " " + label + "  " + themeFg(activeCLITheme.strong, text)
+}
+
+func isStartupDiagnosticNotice(text string) bool {
+	switch strings.TrimSpace(text) {
+	case "Selected model is missing its API key.",
+		"Config migration did not complete.",
+		"An MCP server failed to start.",
+		"Some MCP servers failed to start; run /mcp for details.":
+		return true
+	default:
+		return false
+	}
 }
 
 // renderTurnReceipt attaches the completed turn's token and cost breakdown to
@@ -96,103 +116,54 @@ func renderTurnReceipt(u *provider.Usage, p *provider.Pricing, d *event.CacheDia
 	return receipt
 }
 
-// primaryStatusLine renders the interaction half of the first footer row. The
-// model/profile group is laid out separately so it can stay right-anchored on
-// wide terminals and move as one unit on narrow terminals.
-func (m chatTUI) primaryStatusLine(modeTag string, shellMode, cancelRequested bool) string {
-	status := statusFooterIndent + modeTag
+// primaryStatusLine renders only live interaction state. Stable session facts
+// (mode, model, effort, and context headroom) stay co-located in the persistent
+// top instrument strip instead of recreating the reference harness's split footer.
+func (m chatTUI) primaryStatusLine(shellMode, cancelRequested bool) string {
+	var status string
 	switch {
 	case m.rewind != nil:
-		status += " · ⟲ rewind"
+		status = "⟲ rewind"
 	case m.mcpImport != nil:
-		status += " · MCP import"
+		status = "MCP import"
 	case m.resumePick != nil:
-		status += " · " + i18n.M.StatusResumePicker
+		status = i18n.M.StatusResumePicker
 	case m.quickPick != nil:
-		status += " · " + m.quickPick.title
+		status = m.quickPick.title
 	case m.mcp != nil:
-		status += " · MCP"
+		status = "MCP"
 	case m.skillPick != nil:
-		status += " · " + i18n.M.SkillPickerStatusLabel
+		status = i18n.M.SkillPickerStatusLabel
 	case m.chooser != nil:
-		status += " · " + i18n.M.ChatStatusQuestion
+		status = i18n.M.ChatStatusQuestion
 	case m.pendingApproval != nil && m.pendingApproval.Tool == planApprovalTool:
-		status += " · " + i18n.M.ChatStatusPlanApproval
+		status = i18n.M.ChatStatusPlanApproval
 	case m.pendingApproval != nil:
-		status += " · " + i18n.M.ChatStatusToolApproval
+		status = i18n.M.ChatStatusToolApproval
 	case m.clipboardImagePending:
-		status += " · " + yellow(i18n.M.ClipboardImagePastingHint)
+		status = yellow(i18n.M.ClipboardImagePastingHint)
 	case m.copyNoticeText != "":
-		status += " · " + green(m.copyNoticeText)
+		status = green(m.copyNoticeText)
 	case cancelRequested:
-		status += " · " + i18n.M.CtrlCQuitHint
+		status = i18n.M.CtrlCQuitHint
 	case shellMode:
-		status += " · " + i18n.M.ShellModeHint
+		status = i18n.M.ShellModeHint
 	case m.ctrl != nil && m.ctrl.AutoApproveTools():
-		status += " · " + footerValue(i18n.M.ChatStatusYoloIdle) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
+		status = footerValue(i18n.M.ChatStatusYoloIdle) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
 	default:
-		status += " · " + footerValue(i18n.M.ChatStatusIdle) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
+		status = footerValue(i18n.M.ChatStatusIdle) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
 	}
 	if mt := m.mouseTag(); mt != "" {
-		status += " · " + mt
-	}
-	return status
-}
-
-// statusModelWorkGroup is the bounded, session-level group placed at the right
-// edge of the first footer row. A custom statusline still replaces every
-// built-in data field, matching its existing configuration contract.
-func (m chatTUI) statusModelWorkGroup(maxWidth int) string {
-	if m.statuslineCmd != "" && m.statuslineOut != "" {
-		return ""
-	}
-	model := strings.TrimSpace(m.label)
-	work := ""
-	if m.runtimeProfile != "" {
-		work = runtimeProfileDisplay(m.runtimeProfile)
-	}
-	if maxWidth <= 0 {
-		maxWidth = 1
-	}
-
-	const separator = "   "
-	tail := make([]string, 0, 2)
-	if effort := m.effortTag(); effort != "" {
-		tail = append(tail, effort)
-	}
-	if work != "" {
-		tail = append(tail, footerMetric(i18n.M.ChatStatusWorkLabel, footerSecondary(work)))
-	}
-	if model == "" && len(tail) == 0 {
-		return ""
-	}
-
-	fields := append([]string(nil), tail...)
-	if model != "" {
-		fields = append([]string{footerMetric(i18n.M.ChatStatusModelLabel, footerInfo(model))}, fields...)
-	}
-	full := strings.Join(fields, separator)
-	if visibleWidth(full) <= maxWidth {
-		return full
-	}
-
-	// Model names own the flexible slot. Keep effort and work intact while they
-	// fit, and compact only the model before falling back to a bounded plain group.
-	if model != "" {
-		tailWidth := visibleWidth(strings.Join(tail, separator))
-		if len(tail) > 0 {
-			tailWidth += visibleWidth(separator)
-		}
-		modelBudget := maxWidth - tailWidth - visibleWidth(i18n.M.ChatStatusModelLabel+" ")
-		if modelBudget >= 4 {
-			modelField := footerMetric(i18n.M.ChatStatusModelLabel, footerInfo(compactMiddle(model, modelBudget)))
-			if len(tail) == 0 {
-				return modelField
-			}
-			return modelField + separator + strings.Join(tail, separator)
+		if status == "" {
+			status = mt
+		} else {
+			status += " · " + mt
 		}
 	}
-	return footerHint(compactMiddle(ansi.Strip(full), maxWidth))
+	if status == "" {
+		return ""
+	}
+	return statusFooterIndent + status
 }
 
 func cacheStatusColor(rate float64) cliColor {
@@ -269,21 +240,37 @@ func (m chatTUI) statusTelemetryGroups() []string {
 	return data
 }
 
-// renderStatusBlock owns the complete persistent footer layout. The optional
-// data band is separated from interaction state when Git or telemetry exists;
-// narrow screens add deliberate left-aligned rows only between semantic groups.
+// renderStatusBlock owns the complete persistent runtime footer. The optional
+// Git/telemetry band is separated from transient interaction state; stable
+// session identity is intentionally absent because the masthead owns it.
 func (m chatTUI) renderStatusBlock(primary string, width int) string {
 	if width <= 0 {
 		width = 1
 	}
 	primary = hideStatusHintWhenKeyNamesCannotFit(primary, width)
-	modelWork := m.statusModelWorkGroup(max(width-visibleWidth(statusFooterIndent), 1))
-	first := layoutStatusSides(primary, modelWork, width)
+	first := wrapStatusGroups(primary, width)
 	second := m.layoutGitTelemetry(width)
+	if first == "" {
+		return second
+	}
 	if second == "" {
 		return first
 	}
 	return first + "\n" + statusFooterDivider(width) + "\n" + second
+}
+
+// renderFrameStatusBlock keeps the short terminal frame legible. At six rows
+// there is no room for a second Git/telemetry band, so the live operational line
+// stays visible and stable facts remain in the compact masthead. At the most
+// constrained sizes the composer and masthead take precedence over the footer.
+func (m chatTUI) renderFrameStatusBlock(primary string, width int) string {
+	if !m.isCompactTerminal() {
+		return m.renderStatusBlock(primary, width)
+	}
+	if m.isMinimalTerminal() {
+		return ""
+	}
+	return wrapStatusGroups(hideStatusHintWhenKeyNamesCannotFit(primary, width), width)
 }
 
 // hideStatusHintWhenKeyNamesCannotFit keeps the readable Shift+Tab/Ctrl+Y
@@ -303,29 +290,10 @@ func hideStatusHintWhenKeyNamesCannotFit(primary string, width int) string {
 func statusFooterDivider(width int) string {
 	width = max(width, 1)
 	if width <= visibleWidth(statusFooterIndent) {
-		return themeFg(activeCLITheme.border, strings.Repeat("─", width))
+		return themedRule(width, activeCLITheme.border)
 	}
 	ruleWidth := width - visibleWidth(statusFooterIndent)
-	return statusFooterIndent + themeFg(activeCLITheme.border, strings.Repeat("─", ruleWidth))
-}
-
-func layoutStatusSides(left, right string, width int) string {
-	switch {
-	case right == "":
-		return wrapStatusGroups(left, width)
-	case left == "":
-		return rightAlignStatusGroup(right, width)
-	}
-	leftWidth := visibleWidth(left)
-	rightWidth := visibleWidth(right)
-	if leftWidth+statusFooterGroupGap+rightWidth <= width {
-		return left + strings.Repeat(" ", width-leftWidth-rightWidth) + right
-	}
-	// Once the two semantic halves no longer fit, switch layout deliberately:
-	// interaction groups wrap only at their separators, while model/work owns a
-	// new left-aligned row. This avoids the floating right-side orphan seen when
-	// a terminal crosses the medium-width breakpoint.
-	return wrapStatusGroups(left, width) + "\n" + statusFooterIndent + right
+	return statusFooterIndent + themedRule(ruleWidth, activeCLITheme.border)
 }
 
 func wrapStatusGroups(line string, width int) string {
@@ -350,16 +318,6 @@ func wrapStatusGroups(line string, width int) string {
 	}
 	rows = append(rows, wrapStatusLine(current, width))
 	return strings.Join(rows, "\n")
-}
-
-func rightAlignStatusGroup(group string, width int) string {
-	if group == "" {
-		return ""
-	}
-	if visibleWidth(group) <= width {
-		return strings.Repeat(" ", width-visibleWidth(group)) + group
-	}
-	return wrapStatusLine(group, width)
 }
 
 func (m chatTUI) layoutGitTelemetry(width int) string {

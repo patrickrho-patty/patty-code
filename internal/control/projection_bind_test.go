@@ -3,9 +3,9 @@ package control
 import (
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
 func TestNewSessionRebindsProjectionSidecarPath(t *testing.T) {

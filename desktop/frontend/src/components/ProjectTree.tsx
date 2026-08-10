@@ -11,7 +11,7 @@ import { useToast } from "../lib/toast";
 import { app } from "../lib/bridge";
 import type { ProjectNode, ProjectTopicStatus } from "../lib/types";
 import { topicActivityTime } from "../lib/session";
-import { getLocale, useT, type DictKey, type Translator } from "../lib/i18n";
+import { useT, type DictKey, type Translator } from "../lib/i18n";
 import { PROJECT_COLOR_OPTIONS, projectColorValue } from "../lib/projectColors";
 import { topicShortcutLabel, type TopicShortcutEntry } from "../lib/topicShortcuts";
 import type { ShortcutPlatform } from "../lib/keyboardShortcuts";
@@ -253,7 +253,6 @@ export function projectTreeTopicMenuOffersPin(variant: ProjectTreeVariant): bool
 function topicActivityLabel(ms: number, t: Translator, compact = false): string {
   if (ms <= 0) return "";
   const delta = Date.now() - ms;
-  const locale = getLocale();
   const minute = 60_000;
   const hour = 60 * minute;
   const day = 24 * hour;
@@ -261,8 +260,7 @@ function topicActivityLabel(ms: number, t: Translator, compact = false): string 
   const year = 365 * day;
   if (delta < minute) return t("projectTree.justNow");
   if (!compact) {
-    const rtfLocale = locale === "zh" ? "zh-CN" : locale === "zh-TW" ? "zh-TW" : "en";
-    const rtf = new Intl.RelativeTimeFormat(rtfLocale, { numeric: "auto" });
+    const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
     if (delta < hour) return rtf.format(-Math.max(1, Math.round(delta / minute)), "minute");
     if (delta < day) return rtf.format(-Math.round(delta / hour), "hour");
     if (delta < 7 * day) return rtf.format(-Math.round(delta / day), "day");
@@ -270,33 +268,31 @@ function topicActivityLabel(ms: number, t: Translator, compact = false): string 
   }
   if (delta < hour) {
     const value = Math.max(1, Math.round(delta / minute));
-    return locale === "zh" || locale === "zh-TW" ? `${value} 分钟` : `${value}m`;
+    return `${value}m`;
   }
   if (delta < day) {
     const value = Math.round(delta / hour);
-    return locale === "zh" || locale === "zh-TW" ? `${value} 小时` : `${value}h`;
+    return `${value}h`;
   }
   if (delta < 7 * day) {
     const value = Math.round(delta / day);
-    return locale === "zh" || locale === "zh-TW" ? `${value} 天` : `${value}d`;
+    return `${value}d`;
   }
   if (delta < month) {
     const value = Math.round(delta / day);
-    return locale === "zh" || locale === "zh-TW" ? `${value} 天` : `${value}d`;
+    return `${value}d`;
   }
   if (delta < year) {
     const value = Math.max(1, Math.round(delta / month));
-    return locale === "zh" || locale === "zh-TW" ? `${value} 个月` : `${value}mo`;
+    return `${value}mo`;
   }
   const value = Math.max(1, Math.round(delta / year));
-  return locale === "zh" || locale === "zh-TW" ? `${value} 年` : `${value}y`;
+  return `${value}y`;
 }
 
 function topicActivityDateLabel(ms: number): string {
   if (ms <= 0) return "";
-  const locale = getLocale();
-  const dateLocale = locale === "zh" ? "zh-CN" : locale === "zh-TW" ? "zh-TW" : "en";
-  return new Date(ms).toLocaleDateString(dateLocale);
+  return new Date(ms).toLocaleDateString("en");
 }
 
 type ProjectDropPosition = "before" | "after";
@@ -1315,7 +1311,7 @@ export function ProjectTree({
       const statusLabel = topicStatusLabel(node, t);
       const archiveBlocked = projectTreeTopicArchiveBlocked(node);
       const waitingConfirmation = status === "waiting_confirmation";
-      // Compact workbench: waiting shows an amber "待确认" pill instead of a
+      // Compact workbench: waiting shows an amber "awaiting confirmation" pill instead of a
       // spinning orange dot, and that pill replaces the relative time so the
       // paused-for-user state is scannable in the background tab list.
       const showStatusInSide = status === "thinking" || status === "streaming" || status === "waiting_confirmation" || status === "background_job";

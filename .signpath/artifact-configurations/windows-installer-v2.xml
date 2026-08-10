@@ -8,22 +8,22 @@
     <pe-file path="*installer*.exe">
       <authenticode-sign />
     </pe-file>
-    <pe-file path="reasonix-desktop.exe">
+    <pe-file path="patty-desktop.exe">
       <authenticode-verify />
     </pe-file>
-    <pe-file path="reasonix-guard.exe">
+    <pe-file path="patty-code-guard.exe">
       <authenticode-verify />
     </pe-file>
-    <pe-file path="reasonix-launcher.exe">
+    <pe-file path="patty-code-launcher.exe">
       <authenticode-verify />
     </pe-file>
-    <pe-file path="reasonix-update-helper.exe">
+    <pe-file path="patty-code-update-helper.exe">
       <authenticode-verify />
     </pe-file>
-    <pe-file path="reasonix-cli.exe">
+    <pe-file path="patty-code-cli.exe">
       <authenticode-verify />
     </pe-file>
-    <pe-file path="reasonix-uninstall.exe">
+    <pe-file path="patty-code-uninstall.exe">
       <authenticode-verify />
     </pe-file>
   </zip-file>

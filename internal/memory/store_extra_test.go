@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-// splitFrontmatter
 
 func TestSplitFrontmatterNoFence(t *testing.T) {
 	fm, body := splitFrontmatter("just plain text\nno frontmatter")
@@ -22,7 +21,6 @@ func TestSplitFrontmatterNoFence(t *testing.T) {
 func TestSplitFrontmatterUnclosedFence(t *testing.T) {
 	input := "---\nname: test\ndescription: desc\n\nsome body without closing fence"
 	fm, body := splitFrontmatter(input)
-	// Unclosed fence: treat all as body.
 	if len(fm) != 0 {
 		t.Errorf("unclosed fence should return empty fm, got %v", fm)
 	}
@@ -79,7 +77,6 @@ func TestSplitFrontmatterQuotedValues(t *testing.T) {
 	}
 }
 
-// slug
 
 func TestSlug(t *testing.T) {
 	cases := []struct {
@@ -93,7 +90,7 @@ func TestSlug(t *testing.T) {
 		{"", ""},
 		{"---", ""},
 		{"hello_world", "hello-world"},
-		{"中文标题", "中文标题"},
+		{"중국어제목", "중국어제목"},
 		{"HÉLLO", "héllo"},
 		{"日本語123", "日本語123"},
 	}
@@ -107,11 +104,11 @@ func TestSlug(t *testing.T) {
 
 func TestStoreSaveUnicodeAndRejectsEmptySlug(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
-	path, err := s.Save(Memory{Name: "中文标题", Description: "d", Type: TypeProject, Body: "body"})
+	path, err := s.Save(Memory{Name: "중국어제목", Description: "d", Type: TypeProject, Body: "body"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.Base(path) != "中文标题.md" {
+	if filepath.Base(path) != "중국어제목.md" {
 		t.Fatalf("unicode name path = %q", path)
 	}
 	if _, err := s.Save(Memory{Name: "---", Description: "d", Type: TypeProject, Body: "body"}); err == nil {
@@ -119,7 +116,6 @@ func TestStoreSaveUnicodeAndRejectsEmptySlug(t *testing.T) {
 	}
 }
 
-// oneLine
 
 func TestOneLine(t *testing.T) {
 	cases := []struct {
@@ -140,7 +136,6 @@ func TestOneLine(t *testing.T) {
 	}
 }
 
-// render
 
 func TestRenderRoundTrip(t *testing.T) {
 	m := Memory{
@@ -174,7 +169,6 @@ func TestRenderNormalizesType(t *testing.T) {
 	}
 }
 
-// loadMemory
 
 func TestLoadMemoryNoFrontmatter(t *testing.T) {
 	dir := t.TempDir()
@@ -184,7 +178,6 @@ func TestLoadMemoryNoFrontmatter(t *testing.T) {
 	if !ok {
 		t.Fatal("loadMemory should succeed for files without frontmatter")
 	}
-	// Name should be derived from filename.
 	if m.Name != "no-fm" {
 		t.Errorf("name = %q, want no-fm", m.Name)
 	}
@@ -213,7 +206,6 @@ func TestLoadMemoryEmptyFile(t *testing.T) {
 	}
 }
 
-// Store.List edge cases
 
 func TestListSkipsNonMdFiles(t *testing.T) {
 	dir := t.TempDir()
@@ -252,7 +244,6 @@ func TestListSortedByName(t *testing.T) {
 	}
 }
 
-// Store.Save edge cases
 
 func TestSaveEmptyName(t *testing.T) {
 	s := Store{Dir: t.TempDir()}
@@ -274,7 +265,6 @@ func TestSaveCreatesDir(t *testing.T) {
 	}
 }
 
-// Store.Path
 
 func TestStorePath(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "memory")

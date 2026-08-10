@@ -18,10 +18,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"reasonix/internal/fileutil"
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/provider"
-	"reasonix/internal/store"
+	"patty/internal/fileutil"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/provider"
+	"patty/internal/store"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 	sessionLeaseInfoSidecarSuffix = ".jsonl.lease.json"
 	guardianSidecarSuffix         = ".guardian.jsonl"
 	// nameMaxBytes is the single-component filename limit shared by the
-	// filesystems Reasonix targets (APFS, ext4, NTFS all cap at 255).
+	// filesystems Patty Code targets (APFS, ext4, NTFS all cap at 255).
 	nameMaxBytes = 255
 	// maxSessionBasenameBytes bounds transcript basenames that reconciliation
 	// leaves in place. Sidecars append up to ~16 bytes to the transcript name

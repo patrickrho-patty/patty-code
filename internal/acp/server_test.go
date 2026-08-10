@@ -13,16 +13,16 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/agent/testutil"
-	"reasonix/internal/command"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/hook"
-	"reasonix/internal/jobs"
-	"reasonix/internal/provider"
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/agent/testutil"
+	"patty/internal/command"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/hook"
+	"patty/internal/jobs"
+	"patty/internal/provider"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 // fakes: a Factory wrapping a behavior-driven runner in a real Controller
@@ -402,7 +402,7 @@ func startServer(t *testing.T, factory Factory) (*rpcClient, func()) {
 	outR, outW := io.Pipe()
 	done := make(chan struct{})
 	go func() {
-		_ = Serve(context.Background(), inR, outW, factory, AgentInfo{Name: "reasonix-test", Version: "0"})
+		_ = Serve(context.Background(), inR, outW, factory, AgentInfo{Name: "patty-test", Version: "0"})
 		close(done)
 	}()
 	client := newRPCClient(inW, outR)
@@ -461,7 +461,7 @@ func startOrderedServer(t *testing.T, factory Factory) (*orderedRPCClient, func(
 	outR, outW := io.Pipe()
 	done := make(chan struct{})
 	go func() {
-		_ = Serve(context.Background(), inR, outW, factory, AgentInfo{Name: "reasonix-test", Version: "0"})
+		_ = Serve(context.Background(), inR, outW, factory, AgentInfo{Name: "patty-test", Version: "0"})
 		close(done)
 	}()
 	client := newOrderedRPCClient(inW, outR)
@@ -618,30 +618,30 @@ func TestServeLifecycle(t *testing.T) {
 	}
 	var extensions struct {
 		AgentCapabilities struct {
-			Meta map[string]ReasonixExtensionCapabilities `json:"_meta"`
+			Meta map[string]PattyCodeExtensionCapabilities `json:"_meta"`
 		} `json:"agentCapabilities"`
 	}
 	if err := json.Unmarshal(initResp.Result, &extensions); err != nil {
 		t.Fatalf("initialize extensions: %v", err)
 	}
-	steer := extensions.AgentCapabilities.Meta["reasonix.io"].SessionSteer
+	steer := extensions.AgentCapabilities.Meta["patty.io"].SessionSteer
 	if steer == nil || steer.Method != sessionSteerMethod {
 		t.Errorf("sessionSteer capability = %+v, want method %q", steer, sessionSteerMethod)
 	}
 	for _, method := range []string{sessionStatusMethod, sessionStatusUpdateMethod} {
 		capability, ok := ir.AgentCapabilities.Meta[method].(map[string]any)
-		if !ok || capability["schemaVersion"] != float64(reasonixStatusSchemaVersion) {
-			t.Errorf("%s capability = %#v, want schemaVersion %d", method, ir.AgentCapabilities.Meta[method], reasonixStatusSchemaVersion)
+		if !ok || capability["schemaVersion"] != float64(pattyStatusSchemaVersion) {
+			t.Errorf("%s capability = %#v, want schemaVersion %d", method, ir.AgentCapabilities.Meta[method], pattyStatusSchemaVersion)
 		}
 	}
-	if len(ir.AuthMethods) != 1 || ir.AuthMethods[0].ID != "reasonix-setup" || ir.AuthMethods[0].Type != "terminal" {
-		t.Fatalf("authMethods = %+v, want terminal reasonix setup", ir.AuthMethods)
+	if len(ir.AuthMethods) != 1 || ir.AuthMethods[0].ID != "patty-setup" || ir.AuthMethods[0].Type != "terminal" {
+		t.Fatalf("authMethods = %+v, want terminal patcode setup", ir.AuthMethods)
 	}
 	if len(ir.AuthMethods[0].Args) != 1 || ir.AuthMethods[0].Args[0] != "setup" {
 		t.Fatalf("auth args = %+v, want [setup]", ir.AuthMethods[0].Args)
 	}
 
-	authResp := client.call(t, "authenticate", AuthenticateParams{MethodID: "reasonix-setup"})
+	authResp := client.call(t, "authenticate", AuthenticateParams{MethodID: "patty-setup"})
 	if authResp.Error != nil {
 		t.Fatalf("authenticate errored: %+v", authResp.Error)
 	}

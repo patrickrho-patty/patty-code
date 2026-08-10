@@ -1795,7 +1795,7 @@ export interface AgentView {
   maxParallelWriters: number;
   systemPrompt: string;
   coldResumePrune: boolean;
-  reasoningLanguage: string; // "auto" | "zh" | "en"
+  reasoningLanguage: string; // "auto" | "ko-KR" | "en"
   compactRatio?: number; // Advanced global default; older backends omit it.
   effectiveCompactRatio?: number; // Active local session after project overrides.
   compactRatioOverridden?: boolean;
@@ -1804,18 +1804,10 @@ export interface AgentView {
 export interface BotAllowlistView {
   enabled: boolean;
   allowAll: boolean;
-  qqUsers: string[];
-  feishuUsers: string[];
-  weixinUsers: string[];
-  qqApprovers: string[];
-  feishuApprovers: string[];
-  weixinApprovers: string[];
-  qqAdmins: string[];
-  feishuAdmins: string[];
-  weixinAdmins: string[];
-  qqGroups: string[];
-  feishuGroups: string[];
-  weixinGroups: string[];
+  users: string[];
+  approvers: string[];
+  admins: string[];
+  groups: string[];
 }
 
 export interface BotAccessView {
@@ -1829,9 +1821,7 @@ export interface BotAccessView {
 }
 
 export interface BotSelfUserIDsView {
-  qq: string[];
-  feishu: string[];
-  weixin: string[];
+  desktop: string[];
 }
 
 export interface BotPairingView {
@@ -1858,38 +1848,6 @@ export interface BotRouteView {
   workspaceRoot: string;
 }
 
-export interface QQBotView {
-  enabled: boolean;
-  appId: string;
-  appSecretEnv: string;
-  secretSet: boolean;
-  sandbox: boolean;
-  model: string;
-  toolApprovalMode: ToolApprovalMode | "" | string;
-  workspaceRoot: string;
-  access: BotAccessView;
-}
-
-export interface FeishuBotView {
-  enabled: boolean;
-  domain: string;
-  appId: string;
-  appSecretEnv: string;
-  secretSet: boolean;
-  verificationToken: string;
-  mode: string;
-  webhookPort: number;
-  requireMention: boolean;
-}
-
-export interface WeixinBotView {
-  enabled: boolean;
-  accountId: string;
-  tokenEnv: string;
-  tokenSet: boolean;
-  apiBase: string;
-}
-
 export interface BotConnectionCredentialView {
   appId: string;
   appSecretEnv: string;
@@ -1912,8 +1870,8 @@ export interface BotConnectionSessionMappingView {
 
 export interface BotConnectionView {
   id: string;
-  provider: "qq" | "feishu" | "weixin" | string;
-  domain: "qq" | "feishu" | "lark" | "weixin" | string;
+  provider: string;
+  domain: string;
   label: string;
   enabled: boolean;
   status: "disconnected" | "pending" | "connected" | "error" | string;
@@ -1943,9 +1901,6 @@ export interface BotSettingsView {
   pairing: BotPairingView;
   routes: BotRouteView[];
   allowlist: BotAllowlistView;
-  qq: QQBotView;
-  feishu: FeishuBotView;
-  weixin: WeixinBotView;
   connections: BotConnectionView[];
 }
 
@@ -1955,27 +1910,6 @@ export interface BotRuntimeStatusView {
   message: string;
   connections: number;
   startedAt: string;
-}
-
-export interface BotInstallStartResult {
-  ok: boolean;
-  provider: string;
-  domain: string;
-  installId: string;
-  url: string;
-  deviceCode: string;
-  userCode: string;
-  interval: number;
-  expireIn: number;
-  message: string;
-}
-
-export interface BotInstallPollResult {
-  done: boolean;
-  connection: BotConnectionView;
-  status: string;
-  message: string;
-  error: string;
 }
 
 export interface HookConfigView {
@@ -2023,8 +1957,8 @@ export interface SettingsView {
   network: NetworkView;
   agent: AgentView;
   bot: BotSettingsView;
-  desktopLanguage: string; // "" | "en" | "zh"; empty = auto
-  desktopCurrency?: string; // "" | "CNY" | "USD"; absent/empty = follow language
+  desktopLanguage: string; // "" | "en"; empty = auto
+  desktopCurrency?: string; // "" | "USD"; absent/empty = follow language
   desktopLayoutStyle: string; // "classic" | "workbench" | "creation"
   desktopTheme: string; // "auto" | "dark" | "light"
   desktopThemeStyle: string;
@@ -2039,7 +1973,7 @@ export interface SettingsView {
   telemetry: boolean; // anonymous launch ping + scrubbed next-launch native crash diagnostics
   metrics: boolean; // aggregate quality/lifecycle metrics (anonymous signal/bucket counts)
   configPath: string;
-  shadowedByPath?: string; // workspace reasonix.toml that outranks configPath, when one exists
+  shadowedByPath?: string; // workspace patty.toml that outranks configPath, when one exists
   providerKinds: string[]; // provider implementations the kernel registered (for the kind picker)
   autoApproveTools: boolean;
   bypass: boolean; // legacy JSON key for live YOLO/full-access tool auto-approval
@@ -2048,7 +1982,7 @@ export interface SettingsView {
 
 export interface DesktopStartupSettingsView {
   bot: BotSettingsView;
-  desktopLanguage: string; // "" | "en" | "zh"; empty = auto
+  desktopLanguage: string; // "" | "en"; empty = auto
   desktopLayoutStyle: string; // "classic" | "workbench"
   desktopTheme: string; // "auto" | "dark" | "light"
   desktopThemeStyle: string;

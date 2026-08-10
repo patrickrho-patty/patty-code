@@ -8,12 +8,10 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/event"
+	"patty/internal/event"
 )
 
-// TestDiffTabExpansion proves tab-indented code (Go) renders with no literal tabs
-// and a bar that runs exactly to width — a tab has zero StringWidth but the
-// terminal expands it, which would otherwise overflow the background bar.
+// and a bar that runs exactly to width  a tab has zero StringWidth but the
 func TestDiffTabExpansion(t *testing.T) {
 	defer func(prev colorprofile.Profile) { activeColorProfile = prev }(activeColorProfile)
 	activeColorProfile = colorprofile.ANSI256
@@ -29,14 +27,13 @@ func TestDiffTabExpansion(t *testing.T) {
 	}
 }
 
-// TestRenderNarrowNoPanic guards the width math against tiny terminals.
 func TestRenderNarrowNoPanic(t *testing.T) {
 	defer func(prev colorprofile.Profile) { activeColorProfile = prev }(activeColorProfile)
 	activeColorProfile = colorprofile.ANSI256
-	d := event.FileDiff{Diff: "@@ -1 +1 @@\n-\told 你好\n+\tnew 世界\n", Added: 1, Removed: 1}
+	d := event.FileDiff{Diff: "@@ -1 +1 @@\n-\told 안녕\n+\tnew 세계\n", Added: 1, Removed: 1}
 	for _, w := range []int{1, 2, 3, 5, 8, 20} {
 		_ = diffBody(d, "x.go", w, 40)
-		_ = toolCard("bash", `{"command":"go test ./... 你好 long command"}`, w)
+		_ = toolCard("bash", `{"command":"go test ./... 안녕 long command"}`, w)
 	}
 }
 

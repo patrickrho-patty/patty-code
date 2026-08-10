@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-Redesign the Bubble Tea TUI from Reasonix to the "한지 작업대" aesthetic: terminal-native, Korean-first, restrained ink palette with 청·홍 accents. Add profile-sourced launch artwork renderer.
+Redesign the Bubble Tea TUI from Patty Code to the "한지 작업대" aesthetic: terminal-native, Korean-first, restrained ink palette with 청·홍 accents. Add profile-sourced launch artwork renderer.
 
 ## 2. Scope
 

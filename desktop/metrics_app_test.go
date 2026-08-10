@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/config"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/recovery"
+	"patty/internal/config"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/recovery"
 )
 
 type recoveryMetricsDeltaStub struct {

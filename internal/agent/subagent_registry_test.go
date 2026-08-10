@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/capability"
-	"reasonix/internal/plugin"
-	"reasonix/internal/tool"
+	"patty/internal/capability"
+	"patty/internal/plugin"
+	"patty/internal/tool"
 )
 
 type subagentRegistryTool struct {

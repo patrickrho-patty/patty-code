@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/tool"
+	"patty/internal/tool"
 )
 
 // sseTransport implements MCP's legacy HTTP+SSE transport. The client keeps a

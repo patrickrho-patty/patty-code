@@ -9,31 +9,69 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/provider"
+	"patty/internal/i18n"
+	"patty/internal/provider"
 )
 
-func TestAssistantMarkdownHasIdentityAndIndentedBody(t *testing.T) {
+func TestAssistantMarkdownUsesContinuousTimelineRail(t *testing.T) {
 	defer restoreThemeForTest(activeColorProfile, activeCLITheme)
 	activeColorProfile = colorprofile.NoTTY
 	configureCLITheme("dark")
 
 	rendered := renderAssistantMarkdown("A concise answer that wraps across the available width.", 32)
 	lines := strings.Split(ansi.Strip(rendered), "\n")
-	if len(lines) < 4 {
-		t.Fatalf("assistant block should contain a header, gap, and wrapped body:\n%s", rendered)
+	if len(lines) < 3 {
+		t.Fatalf("assistant block should contain a header and wrapped timeline body:\n%s", rendered)
 	}
-	if lines[0] != "  ◆ Reasonix" {
-		t.Fatalf("assistant header = %q, want %q", lines[0], "  ◆ Reasonix")
+	if lines[0] != "  ◆ Patty Code" {
+		t.Fatalf("assistant header = %q, want %q", lines[0], "  ◆ Patty Code")
 	}
-	if lines[1] != "" {
-		t.Fatalf("assistant header/body separator = %q, want blank row", lines[1])
-	}
-	for i, line := range lines[2:] {
-		if line != "" && !strings.HasPrefix(line, assistantTranscriptIndent) {
-			t.Fatalf("assistant body row %d lacks the two-cell gutter: %q", i+2, line)
+	for i, line := range lines[1:] {
+		if !strings.HasPrefix(line, assistantTranscriptRail) {
+			t.Fatalf("assistant body row %d lacks the timeline rail: %q", i+1, line)
 		}
 		if width := visibleWidth(line); width > 32 {
-			t.Fatalf("assistant row %d width = %d, want <= 32: %q", i+2, width, line)
+			t.Fatalf("assistant row %d width = %d, want <= 32: %q", i+1, width, line)
+		}
+	}
+}
+
+func TestUserTimelineIsLocalizedAndChevronFree(t *testing.T) {
+	defer i18n.DetectLanguage("en")
+	defer restoreThemeForTest(activeColorProfile, activeCLITheme)
+	activeColorProfile = colorprofile.NoTTY
+	configureCLITheme("dark")
+
+	for _, tt := range []struct {
+		lang, label, plan string
+	}{
+		{lang: "ko", label: "사용자", plan: "계획"},
+		{lang: "en", label: "USER", plan: "PLAN"},
+	} {
+		t.Run(tt.lang, func(t *testing.T) {
+			i18n.DetectLanguage(tt.lang)
+			plain := ansi.Strip(renderUserBubble("hello world", 32, true))
+			want := "  ● " + tt.label + " · " + tt.plan + "\n" + assistantTranscriptRail + "hello world"
+			if plain != want {
+				t.Fatalf("user timeline = %q, want %q", plain, want)
+			}
+			if strings.Contains(plain, "❯") || strings.Contains(plain, "›") || strings.Contains(plain, ">") {
+				t.Fatalf("user timeline retained a chevron: %q", plain)
+			}
+		})
+	}
+}
+
+func TestLiveUserTimelineUsesViewportContentWidth(t *testing.T) {
+	m := newTestChatTUI()
+	m.nativeScrollback = false
+	rendered := ansi.Strip(m.renderTranscriptSource(transcriptSource{
+		kind: transcriptSourceUser,
+		raw:  "가나다라마바사아자차카타파하",
+	}, 10))
+	for row, line := range strings.Split(rendered, "\n") {
+		if width := visibleWidth(line); width > transcriptContentWidth(10, false) {
+			t.Fatalf("live user row %d width = %d, want <= viewport width %d: %q", row, width, transcriptContentWidth(10, false), line)
 		}
 	}
 }
@@ -50,7 +88,7 @@ func TestReplaySectionsKeepAssistantIdentity(t *testing.T) {
 	if len(sections) != 2 {
 		t.Fatalf("replay sections = %d, want user and assistant", len(sections))
 	}
-	if plain := ansi.Strip(sections[1]); !strings.HasPrefix(plain, "  ◆ Reasonix\n\n  Version 1.2.3") {
+	if plain := ansi.Strip(sections[1]); !strings.HasPrefix(plain, "  ◆ Patty Code\n"+assistantTranscriptRail+"Version 1.2.3") {
 		t.Fatalf("replayed assistant answer lost its identity: %q", plain)
 	}
 }

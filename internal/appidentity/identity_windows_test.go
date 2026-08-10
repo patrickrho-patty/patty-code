@@ -15,17 +15,17 @@ import (
 )
 
 func TestOwnedShortcutTargetCoversStableAndVersionedEntries(t *testing.T) {
-	root := filepath.Join(`C:\Program Files`, "Reasonix")
+	root := filepath.Join(`C:\Program Files`, "Patty Code")
 	tests := []struct {
 		target string
 		want   bool
 	}{
-		{filepath.Join(root, "reasonix-launcher.exe"), true},
-		{filepath.Join(root, "Reasonix.exe"), true},
-		{filepath.Join(root, "reasonix-desktop.exe"), true},
-		{filepath.Join(root, "versions", "v1.20.0", "reasonix-desktop.exe"), true},
-		{filepath.Join(root, "versions", "v1.20.0", "reasonix-cli.exe"), false},
-		{filepath.Join(`D:\Apps`, "Reasonix", "reasonix-launcher.exe"), false},
+		{filepath.Join(root, "patty-launcher.exe"), true},
+		{filepath.Join(root, "Patty Code.exe"), true},
+		{filepath.Join(root, "patty-desktop.exe"), true},
+		{filepath.Join(root, "versions", "v1.20.0", "patty-desktop.exe"), true},
+		{filepath.Join(root, "versions", "v1.20.0", "patty-cli.exe"), false},
+		{filepath.Join(`D:\Apps`, "Patty Code", "patty-launcher.exe"), false},
 	}
 	for _, test := range tests {
 		if got := ownedShortcutTarget(test.target, root); got != test.want {
@@ -34,20 +34,20 @@ func TestOwnedShortcutTargetCoversStableAndVersionedEntries(t *testing.T) {
 	}
 }
 
-func TestReasonixShortcutName(t *testing.T) {
+func TestPattyCodeShortcutName(t *testing.T) {
 	tests := []struct {
 		name string
 		want bool
 	}{
-		{"Reasonix.lnk", true},
-		{"reasonix launcher.LNK", true},
-		{"Reasonix (2).lnk", true},
+		{"Patty Code.lnk", true},
+		{"patty launcher.LNK", true},
+		{"Patty Code (2).lnk", true},
 		{"Other.lnk", false},
-		{"Reasonix.exe", false},
+		{"Patty Code.exe", false},
 	}
 	for _, test := range tests {
-		if got := reasonixShortcutName(test.name); got != test.want {
-			t.Errorf("reasonixShortcutName(%q) = %v, want %v", test.name, got, test.want)
+		if got := pattyShortcutName(test.name); got != test.want {
+			t.Errorf("pattyShortcutName(%q) = %v, want %v", test.name, got, test.want)
 		}
 	}
 }
@@ -58,14 +58,14 @@ func TestOwnedShortcutTargetAcceptsVersionedDesktopThroughJunction(t *testing.T)
 	if err := os.MkdirAll(versionDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(versionDir, "reasonix-desktop.exe"), []byte("desktop"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(versionDir, "patty-desktop.exe"), []byte("desktop"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	junction := filepath.Join(t.TempDir(), "current")
 	if output, err := exec.Command("cmd", "/c", "mklink", "/J", junction, root).CombinedOutput(); err != nil {
 		t.Fatalf("create directory junction: %v: %s", err, output)
 	}
-	target := filepath.Join(junction, "versions", "v1.20.0", "reasonix-desktop.exe")
+	target := filepath.Join(junction, "versions", "v1.20.0", "patty-desktop.exe")
 	if !ownedShortcutTarget(target, root) {
 		t.Fatalf("junction target %q was not recognised under %q", target, root)
 	}
@@ -73,11 +73,11 @@ func TestOwnedShortcutTargetAcceptsVersionedDesktopThroughJunction(t *testing.T)
 
 func TestRepairOwnedShortcutPersistsAppUserModelID(t *testing.T) {
 	root := t.TempDir()
-	target := filepath.Join(root, "Reasonix.exe")
+	target := filepath.Join(root, "Patty Code.exe")
 	if err := os.WriteFile(target, []byte("launcher"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	shortcutPath := filepath.Join(root, "Reasonix.lnk")
+	shortcutPath := filepath.Join(root, "Patty Code.lnk")
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -116,14 +116,14 @@ func TestRepairOwnedShortcutPersistsAppUserModelID(t *testing.T) {
 	}
 }
 
-func TestRepairOwnedShortcutLeavesSeparateReasonix053InstallUntouched(t *testing.T) {
+func TestRepairOwnedShortcutLeavesSeparatePattyCode053InstallUntouched(t *testing.T) {
 	currentRoot := t.TempDir()
 	legacyRoot := t.TempDir()
-	legacyTarget := filepath.Join(legacyRoot, "reasonix-desktop.exe")
+	legacyTarget := filepath.Join(legacyRoot, "patty-desktop.exe")
 	if err := os.WriteFile(legacyTarget, []byte("legacy tauri desktop"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	shortcutPath := filepath.Join(t.TempDir(), "Reasonix.lnk")
+	shortcutPath := filepath.Join(t.TempDir(), "Patty Code.lnk")
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -149,7 +149,7 @@ func TestRepairOwnedShortcutLeavesSeparateReasonix053InstallUntouched(t *testing
 		t.Fatal(err)
 	}
 	if changed {
-		t.Fatal("current install rewrote a shortcut owned by a separate Reasonix 0.53 installation")
+		t.Fatal("current install rewrote a shortcut owned by a separate Patty Code 0.53 installation")
 	}
 
 	shortcut, err = loadShortcut(shortcutPath, stgmReadWrite)

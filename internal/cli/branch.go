@@ -6,9 +6,8 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/control"
-	"reasonix/internal/provider"
+	"patty/internal/agent"
+	"patty/internal/control"
 )
 
 func (m *chatTUI) showBranchTree() {
@@ -146,8 +145,5 @@ func (m *chatTUI) replayActiveBranch(title string) {
 	if title != "" {
 		m.commitLine(dim("  -- " + title + " --"))
 	}
-	m.commitTranscriptSource(transcriptSource{
-		kind:    transcriptSourceReplayBundle,
-		history: append([]provider.Message(nil), m.ctrl.History()...),
-	})
+	m.commitLaunchAndReplay("", m.ctrl.History())
 }

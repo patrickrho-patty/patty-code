@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 func TestParseCodexSuperpowersManifest(t *testing.T) {
@@ -49,7 +49,7 @@ func TestParseCodexSuperpowersManifest(t *testing.T) {
 
 func TestParseDirDecodesGB18030Manifest(t *testing.T) {
 	root := t.TempDir()
-	manifest := `{"apiVersion":"reasonix.io/plugin/v2","name":"cn-plugin","version":"1.0.0","description":"中文插件"}`
+	manifest := `{"apiVersion":"patty.io/plugin/v2","name":"cn-plugin","version":"1.0.0","description":"중국어 플러그인"}`
 	path := filepath.Join(root, NativeManifest)
 	if err := os.WriteFile(path, fileencoding.Encode(manifest, fileencoding.GB18030), 0o644); err != nil {
 		t.Fatal(err)
@@ -62,7 +62,7 @@ func TestParseDirDecodesGB18030Manifest(t *testing.T) {
 	if len(warnings) != 0 {
 		t.Fatalf("warnings = %v", warnings)
 	}
-	if pkg.Manifest.Description != "中文插件" {
+	if pkg.Manifest.Description != "중국어 플러그인" {
 		t.Fatalf("decoded manifest = %+v", pkg.Manifest)
 	}
 }
@@ -175,7 +175,7 @@ func TestParseCodexWithoutSessionStartHookDoesNotWarn(t *testing.T) {
 func TestRejectsEscapingSkillPath(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, NativeManifest), `{
-	  "apiVersion": "reasonix.io/plugin/v2",
+	  "apiVersion": "patty.io/plugin/v2",
 	  "name": "bad",
 	  "skills": "../skills"
 	}`)
@@ -245,10 +245,7 @@ func writeTestFile(t *testing.T, path, body string) {
 	}
 }
 
-// TestParseClaudePluginConventionSkillDirs pins the standard Claude plugin
-// shape: plugin.json carries metadata only, and skills live in the
-// conventional skills/ directory that Claude auto-discovers. Without the
-// fallback such a package installed as zero capabilities with no warning.
+// conventional skills directory that Claude auto-discovers. Without the
 func TestParseClaudePluginConventionSkillDirs(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{
@@ -292,7 +289,6 @@ func TestParseClaudePluginDotClaudeConventionDir(t *testing.T) {
 
 func TestParseClaudePluginIgnoresEmptyConventionDirAndExplicitSkillsWin(t *testing.T) {
 	root := t.TempDir()
-	// Empty conventional dir (no SKILL.md inside) must not be adopted.
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{"name": "empty-pack"}`)
 	if err := os.MkdirAll(filepath.Join(root, "skills", "stub"), 0o755); err != nil {
 		t.Fatal(err)
@@ -305,7 +301,6 @@ func TestParseClaudePluginIgnoresEmptyConventionDirAndExplicitSkillsWin(t *testi
 		t.Fatalf("SkillRoots = %#v, want none for a skill-less conventional dir", got)
 	}
 
-	// Explicit skills declaration disables the fallback entirely.
 	root2 := t.TempDir()
 	writeTestFile(t, filepath.Join(root2, ClaudeManifest), `{"name": "explicit-pack", "skills": "./custom/"}`)
 	writeTestFile(t, filepath.Join(root2, "custom", "one", "SKILL.md"), "---\ndescription: one\n---\nbody")
@@ -322,9 +317,8 @@ func TestParseClaudePluginIgnoresEmptyConventionDirAndExplicitSkillsWin(t *testi
 func TestParseClaudeHooksKeepsDistinctEnvTimeoutAsyncCwd(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{"name": "hook-pack"}`)
-	// Same event/matcher/command/args, but each block differs in exactly one
-	// of env, timeout, async, cwd — none should be dropped as a duplicate of
-	// another.
+// Same event/matcher/command/args, but each block differs in exactly one
+// of env, timeout, async, cwd  none should be dropped as a duplicate of
 	writeTestFile(t, filepath.Join(root, "hooks", "hooks.json"), `{
   "hooks": {"PreToolUse": [
     {"matcher": "bash", "hooks": [{"type":"command","command":"bin/guard","env":{"MODE":"a"}}]},
@@ -340,8 +334,6 @@ func TestParseClaudeHooksKeepsDistinctEnvTimeoutAsyncCwd(t *testing.T) {
 		t.Fatalf("ParseDir: %v", err)
 	}
 	hooks := pkg.Manifest.Hooks["PreToolUse"]
-	// Four distinct configurations; the fifth block is an exact duplicate of
-	// the fourth (same env, timeout, and async) and must still be dropped.
 	if len(hooks) != 4 {
 		t.Fatalf("hooks = %#v, want 4 distinct configurations (dedup must not collapse different env/timeout/async)", hooks)
 	}
@@ -493,8 +485,8 @@ func TestParseClaudeHooksWarnOnUnsupportedSemantics(t *testing.T) {
 			if !found {
 				t.Fatalf("warnings = %v, want one containing %q", warnings, c.wantSub)
 			}
-			// The hook is still imported best-effort — dropping it entirely
-			// could remove a plugin's only safety hook.
+// The hook is still imported best-effort  dropping it entirely
+// could remove a plugins only safety hook.
 			if pkg.Manifest.Hooks == nil {
 				t.Fatal("hook should still be imported despite the unsupported semantics")
 			}
@@ -523,10 +515,6 @@ func TestParseClaudeHooksSkipsUnsupportedShell(t *testing.T) {
 	}
 }
 
-// TestParseClaudeHooksReportsStructuralGapsOncePerFile pins the noise bound:
-// a plugin with several wildcard hooks reports each structural input gap
-// (WebFetch prompt, NotebookEdit cell_number, TaskOutput multi-job) once per
-// hooks file, not once per hook item.
 func TestParseClaudeHooksReportsStructuralGapsOncePerFile(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{"name": "hook-pack"}`)
@@ -575,19 +563,15 @@ func TestParseClaudeHooksDoesNotWarnOnMatchersThatCanFire(t *testing.T) {
 			hooksJSON: `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"bin/guard"}]}]}}`,
 		},
 		{
-			// A partly-unsupported alternation can still fire for Bash calls,
-			// so it must not be flagged as dead.
 			name:      "mixed-alternation-still-fires",
 			hooksJSON: `{"hooks":{"PreToolUse":[{"matcher":"Bash|WebSearch","hooks":[{"type":"command","command":"bin/guard"}]}]}}`,
 		},
 		{
-			// A regex beyond a plain "|" alternation isn't evaluated, to
-			// avoid guessing wrong and producing a false positive.
+// A regex beyond a plain "|" alternation isn't evaluated, to
 			name:      "complex-regex-not-evaluated",
 			hooksJSON: `{"hooks":{"PreToolUse":[{"matcher":"WebSearch.*","hooks":[{"type":"command","command":"bin/guard"}]}]}}`,
 		},
 		{
-			// A previously-unmapped Reasonix tool the fix now supports.
 			name:      "run-skill-now-mapped",
 			hooksJSON: `{"hooks":{"PreToolUse":[{"matcher":"Skill","hooks":[{"type":"command","command":"bin/guard"}]}]}}`,
 		},
@@ -660,21 +644,20 @@ func TestClaudeMCPServerIDUsesConnectionIdentityAndPreservesValidNames(t *testin
 	if got := claudeMCPServerID("yuandian", identity); got != "yuandian" {
 		t.Fatalf("valid MCP ID changed to %q", got)
 	}
-	first := claudeMCPServerID("飞书", identity)
-	second := claudeMCPServerID("飞书", identity)
+	first := claudeMCPServerID("페이수", identity)
+	second := claudeMCPServerID("페이수", identity)
 	if first != second || !IsValidName(first) {
 		t.Fatalf("stable MCP IDs = %q / %q", first, second)
 	}
-	different := claudeMCPServerID("飞书", claudeMCPIdentity{Type: "http", URL: "https://example.com/other"})
+	different := claudeMCPServerID("페이수", claudeMCPIdentity{Type: "http", URL: "https://example.com/other"})
 	if different == first {
 		t.Fatalf("different endpoints shared MCP ID %q", first)
 	}
 }
 
-// TestParseClaudePluginMapsCommandsDir pins the commands mapping: a Claude
 // plugin's conventional commands/ dir becomes a Manifest.Commands root — even
-// when the manifest declares skills explicitly — and its flat <name>.md
-// templates surface in the inventory as /<name> invocations.
+// when the manifest declares skills explicitly  and its flat <name>.md
+// templates surface in the inventory as <name> invocations.
 func TestParseClaudePluginMapsCommandsDir(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{"name": "pwf-pack"}`)
@@ -712,7 +695,6 @@ func TestParseClaudePluginMapsCommandsDir(t *testing.T) {
 		t.Fatalf("CapabilityCounts = %d skills %d commands %d hooks %d mcp, want 1/2/0/0", skills, commands, hooks, mcp)
 	}
 
-	// Explicit skills declaration must not disable command adoption.
 	root2 := t.TempDir()
 	writeTestFile(t, filepath.Join(root2, ClaudeManifest), `{"name": "explicit-pack", "skills": "./custom/"}`)
 	writeTestFile(t, filepath.Join(root2, "custom", "one", "SKILL.md"), "---\ndescription: one\n---\nbody")
@@ -725,7 +707,6 @@ func TestParseClaudePluginMapsCommandsDir(t *testing.T) {
 		t.Fatalf("CommandRoots = %#v, want commands adopted alongside explicit skills", got)
 	}
 
-	// A docs-only commands dir (no installable <name>.md) is not adopted.
 	root3 := t.TempDir()
 	writeTestFile(t, filepath.Join(root3, ClaudeManifest), `{"name": "docs-pack"}`)
 	writeTestFile(t, filepath.Join(root3, "skills", "s", "SKILL.md"), "---\ndescription: s\n---\nbody")
@@ -740,10 +721,9 @@ func TestParseClaudePluginMapsCommandsDir(t *testing.T) {
 }
 
 // TestNativeManifestCommandsField pins the explicit "commands" declaration in
-// reasonix-plugin.json, including path validation.
 func TestNativeManifestCommandsField(t *testing.T) {
 	root := t.TempDir()
-	writeTestFile(t, filepath.Join(root, NativeManifest), `{"apiVersion":"reasonix.io/plugin/v2","name": "native-pack", "commands": ["cmds"]}`)
+	writeTestFile(t, filepath.Join(root, NativeManifest), `{"apiVersion":"patty.io/plugin/v2","name": "native-pack", "commands": ["cmds"]}`)
 	writeTestFile(t, filepath.Join(root, "cmds", "ship.md"), "---\ndescription: ship it\n---\nShip $1")
 
 	pkg, _, err := ParseDir(root)
@@ -759,16 +739,13 @@ func TestNativeManifestCommandsField(t *testing.T) {
 	}
 
 	rootBad := t.TempDir()
-	writeTestFile(t, filepath.Join(rootBad, NativeManifest), `{"apiVersion":"reasonix.io/plugin/v2","name": "bad-pack", "commands": ["../escape"]}`)
+	writeTestFile(t, filepath.Join(rootBad, NativeManifest), `{"apiVersion":"patty.io/plugin/v2","name": "bad-pack", "commands": ["../escape"]}`)
 	if _, _, err := ParseDir(rootBad); err == nil {
 		t.Fatal("ParseDir must reject a commands path escaping the plugin root")
 	}
 }
 
-// TestParseClaudePluginDoesNotRegisterCodexSessionStartHook pins the security
-// boundary of the includeCodexSessionStartHook flag: a claude-kind package
-// shipping a hooks/session-start-codex file must NOT get it registered as an
-// executable SessionStart hook (that convention belongs to codex manifests).
+// shipping a hookssession-start-codex file must NOT get it registered as an
 func TestParseClaudePluginDoesNotRegisterCodexSessionStartHook(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{"name": "sneaky-pack"}`)
@@ -786,8 +763,6 @@ func TestParseClaudePluginDoesNotRegisterCodexSessionStartHook(t *testing.T) {
 	}
 }
 
-// TestParseCodexManifestNotAffectedByClaudeFallback: the convention-dir
-// fallback is claude-only; a codex manifest without a skills field keeps its
 // existing "no skills" behavior even when a skills/ directory exists.
 func TestParseCodexManifestNotAffectedByClaudeFallback(t *testing.T) {
 	root := t.TempDir()
@@ -806,9 +781,7 @@ func TestParseCodexManifestNotAffectedByClaudeFallback(t *testing.T) {
 	}
 }
 
-// TestParseClaudePluginAdoptsNestedCommands pins that namespace layouts like
 // commands/git/commit.md — which the runtime loader walks — also gate command
-// root adoption, and surface in the inventory under their namespaced name.
 func TestParseClaudePluginAdoptsNestedCommands(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{"name": "nested-pack"}`)
@@ -831,7 +804,6 @@ func TestParseClaudePluginAdoptsNestedCommands(t *testing.T) {
 	}
 }
 
-// TestInventoryTextCommandsOnly pins that a commands-only inventory does not
 // also claim "no detailed inventory available".
 func TestInventoryTextCommandsOnly(t *testing.T) {
 	var b strings.Builder
@@ -845,9 +817,7 @@ func TestInventoryTextCommandsOnly(t *testing.T) {
 	}
 }
 
-// TestParseClaudePluginAdoptsDeeplyNestedCommands pins that adoption gating
-// shares the runtime loader's discovery semantics with no depth ceiling: a
-// plugin whose only command sits six levels deep is still adopted.
+// shares the runtime loaders discovery semantics with no depth ceiling: a
 func TestParseClaudePluginAdoptsDeeplyNestedCommands(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, filepath.Join(root, ClaudeManifest), `{"name": "deep-pack"}`)

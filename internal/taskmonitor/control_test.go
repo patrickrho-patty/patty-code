@@ -375,7 +375,7 @@ func TestControlService_StopBoundsLegacyLeaseLessRuntime(t *testing.T) {
 
 func TestControlService_FileStoreClaimsIdempotencyBeforeSideEffects(t *testing.T) {
 	project := t.TempDir()
-	store := NewFileStore(".reasonix/tasks")
+	store := NewFileStore(".patty/tasks")
 	now := time.Now()
 	if err := store.SaveTask(context.Background(), project, TaskSnapshot{
 		SchemaVersion: 1, TaskID: "t1", SessionID: "s1", State: TaskStateRunning,

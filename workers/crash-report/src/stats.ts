@@ -47,12 +47,12 @@ function chartTickLabel(n: number): string {
   return String(Math.round(n));
 }
 
-function i18n(en: string, zh: string): string {
-  return `<span data-i18n="en">${esc(en)}</span><span data-i18n="zh">${esc(zh)}</span>`;
+function i18n(en: string): string {
+  return esc(en);
 }
 
-function i18nHTML(en: string, zh: string): string {
-  return `<span data-i18n="en">${en}</span><span data-i18n="zh">${zh}</span>`;
+function i18nHTML(en: string): string {
+  return en;
 }
 
 function dailyChart(days: Daily[]): string {
@@ -105,7 +105,7 @@ function barRow(r: BarRow, max: number, labelFormatter?: (label: string) => stri
 }
 
 function listBars(rows: BarRow[], options: BarListOptions = {}): string {
-  if (!rows.length) return `<div class="empty">${i18n("No data in this window", "当前时间窗口暂无数据")}</div>`;
+  if (!rows.length) return `<div class="empty">${i18n("No data in this window")}</div>`;
   const max = Math.max(1, ...rows.map((r) => r.users));
   const limit = options.limit ?? 5;
   const visible = limit > 0 ? rows.slice(0, limit) : rows;
@@ -115,8 +115,7 @@ function listBars(rows: BarRow[], options: BarListOptions = {}): string {
   if (!hidden.length) return `<div class="bars-list${className}">${visibleRows}</div>`;
   return `<div class="bars-list${className}">${visibleRows}<details class="bars-more"><summary><span class="more-closed">${i18nHTML(
     `Show ${hidden.length} more`,
-    `展开 ${hidden.length} 项`,
-  )}</span><span class="more-open">${i18nHTML(`Hide ${hidden.length}`, `收起 ${hidden.length} 项`)}</span></summary><div class="bars-more-list">${hidden
+  )}</span><span class="more-open">${i18nHTML(`Hide ${hidden.length}`)}</span></summary><div class="bars-more-list">${hidden
     .map((r) => barRow(r, max, options.labelFormatter))
     .join("")}</div></details></div>`;
 }
@@ -166,73 +165,70 @@ function deltaLabel(current: number | null, previous: number | null, suffix = ""
   return `${sign}${rounded}${suffix}`;
 }
 
-const METRIC_SIGNAL_LABELS: Record<string, { en: string; zh: string }> = {
-  finish_reason: { en: "Finish reason", zh: "结束原因" },
-  empty_final: { en: "Empty final guard", zh: "空回复拦截" },
-  provider_error: { en: "Provider errors", zh: "Provider 错误" },
-  cache_hit: { en: "Cache hit rate", zh: "缓存命中率" },
-  tool_error: { en: "Tool errors", zh: "工具错误" },
-  updater_error: { en: "Updater errors", zh: "更新器错误" },
-  updater_event: { en: "Updater events", zh: "更新器事件" },
-  compaction: { en: "Compactions", zh: "压缩" },
-  turns: { en: "Turns", zh: "轮次" },
-  desktop_hang: { en: "Desktop hangs", zh: "桌面卡死" },
-  desktop_hang_age: { en: "Desktop hang age", zh: "桌面卡死时长" },
-  desktop_exit: { en: "Desktop exits", zh: "桌面退出" },
-  desktop_exit_phase: { en: "Abnormal exit phase", zh: "异常退出阶段" },
-  desktop_uptime: { en: "Uptime before exit", zh: "退出前运行时长" },
-  desktop_install: { en: "Install profile", zh: "安装方式" },
-  desktop_update_transition: { en: "Update transition", zh: "升级阶段" },
-  desktop_restore: { en: "Window restore", zh: "窗口恢复" },
-  desktop_webview2_failure: { en: "WebView2 failures", zh: "WebView2 故障" },
-  recovery_failure: { en: "Recovery failures", zh: "恢复失败" },
-  recovery_rule_continue: { en: "Rule recovery continues", zh: "规则恢复继续" },
-  recovery_review_continue: { en: "Review recovery continues", zh: "复核恢复继续" },
-  recovery_human_prompt: { en: "Recovery prompts", zh: "恢复询问" },
-  recovery_human_continue: { en: "Human recovery continues", zh: "人工恢复继续" },
-  recovery_human_revise: { en: "Human recovery revisions", zh: "人工恢复修订" },
-  recovery_review_error: { en: "Recovery review errors", zh: "恢复复核错误" },
-  recovery_repeat_prompt: { en: "Repeated recovery prompts", zh: "重复恢复询问" },
-  recovery_review_latency: { en: "Recovery review latency", zh: "恢复复核耗时" },
-  client_surface: { en: "Client surface", zh: "客户端形态" },
-  client_version: { en: "Client version", zh: "客户端版本" },
-  settings_language: { en: "Settings: language", zh: "设置：语言" },
-  settings_desktop_layout: { en: "Settings: desktop style", zh: "设置：桌面风格" },
-  settings_theme: { en: "Settings: light/dark", zh: "设置：深浅模式" },
-  settings_theme_style: { en: "Settings: theme style", zh: "设置：主题" },
-  settings_close_behavior: { en: "Settings: close behavior", zh: "设置：关闭行为" },
-  settings_display_mode: { en: "Settings: transcript mode", zh: "设置：会话展示" },
-  settings_status_bar_style: { en: "Settings: status bar style", zh: "设置：信息栏样式" },
-  settings_status_bar_items_count: { en: "Settings: status bar items", zh: "设置：信息栏项数" },
-  settings_check_updates: { en: "Settings: update checks", zh: "设置：更新检查" },
-  settings_default_model: { en: "Settings: default model", zh: "设置：默认模型" },
-  settings_planner_model: { en: "Settings: planner model", zh: "设置：规划模型" },
-  settings_subagent_model: { en: "Settings: subagent model", zh: "设置：子代理模型" },
-  settings_subagent_effort: { en: "Settings: subagent effort", zh: "设置：子代理 effort" },
-  settings_reasoning_language: { en: "Settings: reasoning language", zh: "设置：推理语言" },
-  settings_provider_count: { en: "Settings: provider count", zh: "设置：Provider 数量" },
-  settings_provider_access_count: { en: "Settings: enabled providers", zh: "设置：启用 Provider 数量" },
-  settings_provider_access: { en: "Settings: provider access", zh: "设置：Provider 选择" },
-  settings_bot_enabled: { en: "Bot: enabled", zh: "机器人：总开关" },
-  settings_bot_model: { en: "Bot: default model", zh: "机器人：默认模型" },
-  settings_bot_tool_approval: { en: "Bot: tool approval", zh: "机器人：工具审批" },
-  settings_bot_allowlist: { en: "Bot: allowlist", zh: "机器人：白名单" },
-  settings_bot_allow_all: { en: "Bot: allow all", zh: "机器人：允许所有人" },
-  settings_bot_qq_enabled: { en: "Bot: QQ legacy", zh: "机器人：QQ 旧配置" },
-  settings_bot_feishu_enabled: { en: "Bot: Feishu legacy", zh: "机器人：飞书旧配置" },
-  settings_bot_weixin_enabled: { en: "Bot: Weixin legacy", zh: "机器人：微信旧配置" },
-  settings_bot_connection_count: { en: "Bot: connection count", zh: "机器人：连接数量" },
-  settings_bot_connection_provider: { en: "Bot: connection provider", zh: "机器人：连接渠道" },
-  settings_bot_connection_enabled: { en: "Bot: connection enabled", zh: "机器人：连接开关" },
-  settings_bot_connection_status: { en: "Bot: connection status", zh: "机器人：连接状态" },
-  settings_bot_connection_model: { en: "Bot: connection model", zh: "机器人：连接模型" },
-  settings_bot_connection_approval: { en: "Bot: connection approval", zh: "机器人：连接审批" },
-  cli_mode: { en: "CLI mode", zh: "CLI 模式" },
-  cli_profile: { en: "CLI profile", zh: "CLI 配置档" },
-  cli_permission_mode: { en: "CLI permission mode", zh: "CLI 权限模式" },
-  cli_session_mode: { en: "CLI session mode", zh: "CLI 会话模式" },
-  cli_turn_latency: { en: "CLI turn latency", zh: "CLI turn 延迟" },
-  cli_exit: { en: "CLI turn outcome", zh: "CLI turn 结果" },
+const METRIC_SIGNAL_LABELS: Record<string, string> = {
+  finish_reason: "Finish reason",
+  empty_final: "Empty final guard",
+  provider_error: "Provider errors",
+  cache_hit: "Cache hit rate",
+  tool_error: "Tool errors",
+  updater_error: "Updater errors",
+  updater_event: "Updater events",
+  compaction: "Compactions",
+  turns: "Turns",
+  desktop_hang: "Desktop hangs",
+  desktop_hang_age: "Desktop hang age",
+  desktop_exit: "Desktop exits",
+  desktop_exit_phase: "Abnormal exit phase",
+  desktop_uptime: "Uptime before exit",
+  desktop_install: "Install profile",
+  desktop_update_transition: "Update transition",
+  desktop_restore: "Window restore",
+  desktop_webview2_failure: "WebView2 failures",
+  recovery_failure: "Recovery failures",
+  recovery_rule_continue: "Rule recovery continues",
+  recovery_review_continue: "Review recovery continues",
+  recovery_human_prompt: "Recovery prompts",
+  recovery_human_continue: "Human recovery continues",
+  recovery_human_revise: "Human recovery revisions",
+  recovery_review_error: "Recovery review errors",
+  recovery_repeat_prompt: "Repeated recovery prompts",
+  recovery_review_latency: "Recovery review latency",
+  client_surface: "Client surface",
+  client_version: "Client version",
+  settings_language: "Settings: language",
+  settings_desktop_layout: "Settings: desktop style",
+  settings_theme: "Settings: light/dark",
+  settings_theme_style: "Settings: theme style",
+  settings_close_behavior: "Settings: close behavior",
+  settings_display_mode: "Settings: transcript mode",
+  settings_status_bar_style: "Settings: status bar style",
+  settings_status_bar_items_count: "Settings: status bar items",
+  settings_check_updates: "Settings: update checks",
+  settings_default_model: "Settings: default model",
+  settings_planner_model: "Settings: planner model",
+  settings_subagent_model: "Settings: subagent model",
+  settings_subagent_effort: "Settings: subagent effort",
+  settings_patty_code_language: "Settings: patty code language",
+  settings_provider_count: "Settings: provider count",
+  settings_provider_access_count: "Settings: enabled providers",
+  settings_provider_access: "Settings: provider access",
+  settings_bot_enabled: "Bot: enabled",
+  settings_bot_model: "Bot: default model",
+  settings_bot_tool_approval: "Bot: tool approval",
+  settings_bot_allowlist: "Bot: allowlist",
+  settings_bot_allow_all: "Bot: allow all",
+  settings_bot_connection_count: "Bot: connection count",
+  settings_bot_connection_provider: "Bot: connection provider",
+  settings_bot_connection_enabled: "Bot: connection enabled",
+  settings_bot_connection_status: "Bot: connection status",
+  settings_bot_connection_model: "Bot: connection model",
+  settings_bot_connection_approval: "Bot: connection approval",
+  cli_mode: "CLI mode",
+  cli_profile: "CLI profile",
+  cli_permission_mode: "CLI permission mode",
+  cli_session_mode: "CLI session mode",
+  cli_turn_latency: "CLI turn latency",
+  cli_exit: "CLI turn outcome",
 };
 
 const AGENT_METRIC_SIGNALS = [
@@ -268,15 +264,13 @@ const AGENT_METRIC_SIGNALS = [
 ];
 const DEFAULT_OPEN_SETTING_GROUPS = new Set(["Client", "Models", "Providers"]);
 
-const SETTINGS_METRIC_GROUPS: { en: string; zh: string; signals: string[] }[] = [
+const SETTINGS_METRIC_GROUPS: { en: string; signals: string[] }[] = [
   {
     en: "Client",
-    zh: "客户端",
     signals: ["client_surface", "client_version", "settings_language", "cli_mode", "cli_profile", "cli_permission_mode", "cli_session_mode"],
   },
   {
     en: "Appearance and layout",
-    zh: "外观与布局",
     signals: [
       "settings_desktop_layout",
       "settings_theme",
@@ -288,37 +282,30 @@ const SETTINGS_METRIC_GROUPS: { en: string; zh: string; signals: string[] }[] = 
   },
   {
     en: "Models",
-    zh: "模型",
     signals: [
       "settings_default_model",
       "settings_planner_model",
       "settings_subagent_model",
       "settings_subagent_effort",
-      "settings_reasoning_language",
+      "settings_patty_code_language",
     ],
   },
   {
     en: "Providers",
-    zh: "Provider",
     signals: ["settings_provider_count", "settings_provider_access_count", "settings_provider_access"],
   },
   {
     en: "Behavior toggles",
-    zh: "行为开关",
     signals: ["settings_close_behavior", "settings_check_updates"],
   },
   {
     en: "Bots",
-    zh: "机器人",
     signals: [
       "settings_bot_enabled",
       "settings_bot_model",
       "settings_bot_tool_approval",
       "settings_bot_allowlist",
       "settings_bot_allow_all",
-      "settings_bot_qq_enabled",
-      "settings_bot_feishu_enabled",
-      "settings_bot_weixin_enabled",
       "settings_bot_connection_count",
       "settings_bot_connection_provider",
       "settings_bot_connection_enabled",
@@ -331,7 +318,7 @@ const SETTINGS_METRIC_GROUPS: { en: string; zh: string; signals: string[] }[] = 
 
 function metricSignalLabel(signal: string): string {
   const label = METRIC_SIGNAL_LABELS[signal];
-  return label ? i18n(label.en, label.zh) : esc(signal);
+  return label ? i18n(label) : esc(signal);
 }
 
 function metricsBySignal(rows: MetricRow[]): Map<string, { label: string; users: number }[]> {
@@ -360,10 +347,10 @@ function metricBlocks(bySignal: Map<string, BarRow[]>, signals: string[], option
 
 function metricsCards(rows: MetricRow[], signals = AGENT_METRIC_SIGNALS): string {
   if (!rows.length)
-    return `<div class="empty">${i18n("No metrics yet — flows in once an opt-in build ships", "暂无运行指标 — 等 opt-in 版本发布后有数据")}</div>`;
+    return `<div class="empty">${i18n("No metrics yet — flows in once an opt-in build ships")}</div>`;
   const bySignal = metricsBySignal(rows);
   const blocks = metricBlocks(bySignal, signals);
-  return blocks ? `<div class="metrics">${blocks}</div>` : `<div class="empty">${i18n("No data in this window", "当前时间窗口暂无数据")}</div>`;
+  return blocks ? `<div class="metrics">${blocks}</div>` : `<div class="empty">${i18n("No data in this window")}</div>`;
 }
 
 function settingsDashboard(rows: MetricRow[], options: { collapseSections?: boolean } = {}): string {
@@ -372,7 +359,7 @@ function settingsDashboard(rows: MetricRow[], options: { collapseSections?: bool
     const availableSignals = group.signals.filter((signal) => bySignal.has(signal));
     const blocks = metricBlocks(bySignal, group.signals);
     if (!blocks) return "";
-    const heading = `<h3>${i18n(group.en, group.zh)}<span>${i18nHTML(`${availableSignals.length} metrics`, `${availableSignals.length} 项指标`)}</span></h3>`;
+    const heading = `<h3>${i18n(group.en)}<span>${i18nHTML(`${availableSignals.length} metrics`)}</span></h3>`;
     if (options.collapseSections && !DEFAULT_OPEN_SETTING_GROUPS.has(group.en)) {
       return `<details class="pref-section pref-section-collapsed"><summary>${heading}</summary><div class="metrics pref-metrics">${blocks}</div></details>`;
     }
@@ -380,7 +367,7 @@ function settingsDashboard(rows: MetricRow[], options: { collapseSections?: bool
   })
     .filter(Boolean)
     .join("");
-  if (!sections) return `<div class="empty">${i18n("No settings preference metrics yet", "暂无设置偏好指标")}</div>`;
+  if (!sections) return `<div class="empty">${i18n("No settings preference metrics yet")}</div>`;
   return `<div class="preference-dashboard">${sections}</div>`;
 }
 
@@ -403,33 +390,33 @@ function countHealthLevel(value: number): "good" | "warn" | "bad" {
 }
 
 function levelText(level: "good" | "warn" | "bad" | "unknown"): string {
-  if (level === "good") return i18n("Good", "健康");
-  if (level === "warn") return i18n("Watch", "关注");
-  if (level === "bad") return i18n("Risk", "风险");
-  return i18n("No data", "暂无数据");
+  if (level === "good") return i18n("Good");
+  if (level === "warn") return i18n("Watch");
+  if (level === "bad") return i18n("Risk");
+  return i18n("No data");
 }
 
 function healthCard(
-  label: { en: string; zh: string },
+  label: string,
   value: string,
   level: "good" | "warn" | "bad" | "unknown",
   deltaHTML: string,
   detailHTML: string,
 ): string {
-  return `<div class="health-card ${level}"><div class="health-top"><span>${i18n(label.en, label.zh)}</span><b>${levelText(level)}</b></div>
+  return `<div class="health-card ${level}"><div class="health-top"><span>${i18n(label)}</span><b>${levelText(level)}</b></div>
 <strong>${esc(value)}</strong><small>${deltaHTML}</small><p>${detailHTML}</p></div>`;
 }
 
 function healthDeltaHTML(value: string): string {
-  return i18nHTML(`${esc(value)} vs previous window`, `${esc(value)} 较上一窗口`);
+  return i18nHTML(`${esc(value)} vs previous window`);
 }
 
 function healthDetailHTML(rows: MetricRow[], signal: string): string {
-  return i18nHTML(`${esc(topMetricBucket(rows, signal))} top bucket`, `主要分桶：${esc(topMetricBucket(rows, signal))}`);
+  return i18nHTML(`${esc(topMetricBucket(rows, signal))} top bucket`);
 }
 
 function agentHealth(rows: MetricRow[], previousRows: MetricRow[]): string {
-  if (!rows.length) return `<div class="empty">${i18n("No agent health metrics yet", "暂无运行健康指标")}</div>`;
+  if (!rows.length) return `<div class="empty">${i18n("No agent health metrics yet")}</div>`;
   const cache = cacheHitRate(rows);
   const prevCache = cacheHitRate(previousRows);
   const desktopHangs = sumMetric(rows, "desktop_hang");
@@ -438,11 +425,11 @@ function agentHealth(rows: MetricRow[], previousRows: MetricRow[]): string {
   const prevAbnormalExits = previousRows.filter((r) => r.signal === "desktop_exit" && r.bucket === "abnormal").reduce((sum, r) => sum + r.total, 0);
   const webViewFailures = sumMetric(rows, "desktop_webview2_failure");
   const prevWebViewFailures = sumMetric(previousRows, "desktop_webview2_failure");
-  const rateCard = (signal: string, en: string, zh: string) => {
+  const rateCard = (signal: string, en: string) => {
     const value = ratioPer100(rows, signal);
     const prev = ratioPer100(previousRows, signal);
     return healthCard(
-      { en, zh },
+      en,
       value === null ? "n/a" : `${Number(value.toFixed(value < 10 ? 1 : 0))}/100`,
       healthLevel("rate", value),
       healthDeltaHTML(deltaLabel(value, prev, "/100")),
@@ -451,32 +438,32 @@ function agentHealth(rows: MetricRow[], previousRows: MetricRow[]): string {
   };
   return `<div class="health-grid">
 ${healthCard(
-  { en: "Cache hit rate", zh: "缓存命中率" },
+  "Cache hit rate",
   pct(cache),
   healthLevel("cache", cache),
   healthDeltaHTML(deltaLabel(cache, prevCache, "pp")),
   healthDetailHTML(rows, "cache_hit"),
 )}
-${rateCard("provider_error", "Provider errors", "Provider 错误")}
-${rateCard("tool_error", "Tool errors", "工具错误")}
-${rateCard("empty_final", "Empty final guard", "空回复拦截")}
-${rateCard("compaction", "Compactions", "压缩")}
+${rateCard("provider_error", "Provider errors")}
+${rateCard("tool_error", "Tool errors")}
+${rateCard("empty_final", "Empty final guard")}
+${rateCard("compaction", "Compactions")}
 ${healthCard(
-  { en: "Desktop hangs", zh: "桌面卡死" },
+  "Desktop hangs",
   String(desktopHangs),
   countHealthLevel(desktopHangs),
   healthDeltaHTML(deltaLabel(desktopHangs, prevDesktopHangs)),
   healthDetailHTML(rows, "desktop_hang_age"),
 )}
 ${healthCard(
-  { en: "Abnormal desktop exits", zh: "桌面异常退出" },
+  "Abnormal desktop exits",
   String(abnormalExits),
   countHealthLevel(abnormalExits),
   healthDeltaHTML(deltaLabel(abnormalExits, prevAbnormalExits)),
   healthDetailHTML(rows, "desktop_exit_phase"),
 )}
 ${healthCard(
-  { en: "WebView2 process failures", zh: "WebView2 进程故障" },
+  "WebView2 process failures",
   String(webViewFailures),
   countHealthLevel(webViewFailures),
   healthDeltaHTML(deltaLabel(webViewFailures, prevWebViewFailures)),
@@ -516,8 +503,8 @@ function clip(s: string, n: number): string {
   return s.length > n ? `${s.slice(0, n - 1)}…` : s;
 }
 
-function filterTab(label: string, zhLabel: string, href: string, active: boolean): string {
-  return `<a class="filter-tab${active ? " active" : ""}" href="${esc(href)}">${i18n(label, zhLabel)}</a>`;
+function filterTab(label: string, href: string, active: boolean): string {
+  return `<a class="filter-tab${active ? " active" : ""}" href="${esc(href)}">${i18n(label)}</a>`;
 }
 
 function facetChip(row: { label: string; users: number }, active: string, hrefFor: (label: string) => string): string {
@@ -526,7 +513,7 @@ function facetChip(row: { label: string; users: number }, active: string, hrefFo
 }
 
 function facetChips(rows: { label: string; users: number }[], active: string, hrefFor: (label: string) => string, limit = 5): string {
-  if (!rows.length) return `<span class="filter-empty">${i18n("none", "暂无")}</span>`;
+  if (!rows.length) return `<span class="filter-empty">${i18n("none")}</span>`;
   const visible = rows.slice(0, limit);
   const activeRow = active ? rows.find((r) => r.label === active) : undefined;
   if (activeRow && !visible.some((r) => r.label === activeRow.label)) visible.push(activeRow);
@@ -534,13 +521,13 @@ function facetChips(rows: { label: string; users: number }[], active: string, hr
   const hidden = rows.filter((r) => !visibleKeys.has(r.label));
   const chips = visible.map((r) => facetChip(r, active, hrefFor)).join("");
   if (!hidden.length) return chips;
-  return `${chips}<details class="facet-more"><summary>${i18nHTML(`More ${hidden.length}`, `更多 ${hidden.length}`)}</summary><div class="facet-more-list">${hidden
+  return `${chips}<details class="facet-more"><summary>${i18nHTML(`More ${hidden.length}`)}</summary><div class="facet-more-list">${hidden
     .map((r) => facetChip(r, active, hrefFor))
     .join("")}</div></details>`;
 }
 
-function statCard(label: { en: string; zh: string }, value: string, note: string, href: string, tone = ""): string {
-  return `<a class="overview-card ${tone}" href="${esc(href)}"><span>${i18n(label.en, label.zh)}</span><strong>${esc(value)}</strong><small>${note}</small></a>`;
+function statCard(label: string, value: string, note: string, href: string, tone = ""): string {
+  return `<a class="overview-card ${tone}" href="${esc(href)}"><span>${i18n(label)}</span><strong>${esc(value)}</strong><small>${note}</small></a>`;
 }
 
 function latestVersionShare(adoptionPct: number | null): string {
@@ -553,8 +540,8 @@ function topSeverityTone(openReports: number, regressedReports: number, critical
   return "good";
 }
 
-function navLink(href: string, label: { en: string; zh: string }, active = false): string {
-  return `<a${active ? ` class="active" aria-current="page"` : ""} href="${esc(href)}">${i18n(label.en, label.zh)}</a>`;
+function navLink(href: string, label: string, active = false): string {
+  return `<a${active ? ` class="active" aria-current="page"` : ""} href="${esc(href)}">${i18n(label)}</a>`;
 }
 
 function preferencePanel(title: string, body: string, active: boolean): string {
@@ -563,15 +550,15 @@ function preferencePanel(title: string, body: string, active: boolean): string {
 }
 
 function reportGroups(rows: CrashRow[], compact = false): string {
-  if (!rows.length) return `<div class="empty">${i18n("No diagnostic reports yet — that's the good kind of empty", "还没有诊断报告，这是好消息")}</div>`;
-  return `<div class="crash-list${compact ? " compact" : ""}"><div class="crash-head"><span>${i18n("summary", "摘要")}</span><span>${i18n("scope", "范围")}</span><span>${i18n("health", "状态")}</span><span title="${i18n("Groups are filtered by the selected window; occurrence totals are lifetime counts", "分组按所选时间窗口过滤；次数为全生命周期累计")}">${i18n("lifetime count", "累计次数")}</span></div>${rows
+  if (!rows.length) return `<div class="empty">${i18n("No diagnostic reports yet — that's the good kind of empty")}</div>`;
+  return `<div class="crash-list${compact ? " compact" : ""}"><div class="crash-head"><span>${i18n("summary")}</span><span>${i18n("scope")}</span><span>${i18n("health")}</span><span title="${i18n("Groups are filtered by the selected window; occurrence totals are lifetime counts")}">${i18n("lifetime count")}</span></div>${rows
     .map((c) => {
       const platform = [c.last_os, c.last_arch].filter(Boolean).join("/");
       const versions = `${c.first_version || "?"} → ${c.last_version || "?"}`;
       const title = c.title || c.error_type || c.top_frame || c.fingerprint;
       return `<a class="crash-item" href="/stats/group/${esc(c.fingerprint)}" title="${esc(title)}">
-<span class="crash-summary"><span>${c.title ? esc(clip(c.title, compact ? 88 : 120)) : `<span class="muted">${i18n("No summary captured", "暂无摘要")}</span>`}</span><small>${esc(c.fingerprint.slice(0, 8))} · ${esc(c.seen)}</small>${
-        c.regressed_at ? `<em>${i18nHTML(`regressed ${esc(c.regressed_at.slice(0, 10))}`, `回归 ${esc(c.regressed_at.slice(0, 10))}`)}</em>` : ""
+<span class="crash-summary"><span>${c.title ? esc(clip(c.title, compact ? 88 : 120)) : `<span class="muted">${i18n("No summary captured")}</span>`}</span><small>${esc(c.fingerprint.slice(0, 8))} · ${esc(c.seen)}</small>${
+        c.regressed_at ? `<em>${i18nHTML(`regressed ${esc(c.regressed_at.slice(0, 10))}`)}</em>` : ""
       }</span>
 <span class="crash-scope"><small>${esc(c.source || "legacy")}</small><small>${esc(versions)}</small><small>${platform ? esc(platform) : "unknown platform"}</small>${c.last_channel && c.last_channel !== "stable" ? `<small>${esc(c.last_channel)}</small>` : ""}</span>
 <span class="crash-health"><span class="pill">${esc(c.severity || "medium")}</span><span class="pill ${c.kind === "crash" ? "crash" : ""}">${esc(c.kind)}</span>${statusPill(c.status)}</span>
@@ -671,16 +658,16 @@ export function renderStats(
 <a class="${range === 30 ? "active" : ""}"${range === 30 ? ` aria-current="true"` : ""} href="${esc(filterQS({ window: "" }))}">30d</a>
 </div>`;
   const surfaceControls = `<div class="segmented" aria-label="Client surface">
-<a class="${data.filters.surface === "desktop" ? "active" : ""}"${data.filters.surface === "desktop" ? ` aria-current="true"` : ""} href="${esc(filterQS({ surface: "" }))}">${i18n("Desktop", "桌面端")}</a>
+<a class="${data.filters.surface === "desktop" ? "active" : ""}"${data.filters.surface === "desktop" ? ` aria-current="true"` : ""} href="${esc(filterQS({ surface: "" }))}">${i18n("Desktop")}</a>
 <a class="${data.filters.surface === "cli" ? "active" : ""}"${data.filters.surface === "cli" ? ` aria-current="true"` : ""} href="${esc(filterQS({ surface: "cli" }))}">CLI</a>
 </div>`;
   const preferenceControls = `<div class="segmented" aria-label="Preference metric mode">
 <a class="${data.filters.preferenceMode === "users" ? "active" : ""}"${data.filters.preferenceMode === "users" ? ` aria-current="true"` : ""} href="${esc(
     filterQS({ prefs: "" }, "preferences"),
-  )}">${i18n("Installs", "按安装")}</a>
+  )}">${i18n("Installs")}</a>
 <a class="${data.filters.preferenceMode === "opens" ? "active" : ""}"${data.filters.preferenceMode === "opens" ? ` aria-current="true"` : ""} href="${esc(
     filterQS({ prefs: "opens" }, "preferences"),
-  )}">${i18n("Opens", "按启动")}</a>
+  )}">${i18n("Opens")}</a>
 </div>`;
   const overviewTone = topSeverityTone(data.overview.openReports, data.overview.regressedReports, data.overview.criticalOpenReports);
   const isDevelopmentDiagnostic = (row: CrashRow) => row.development ?? row.fingerprint.startsWith("dev:");
@@ -692,58 +679,57 @@ export function renderStats(
   );
   const developmentDiagnostics = data.crashes.filter(isDevelopmentDiagnostic);
   const overview = `<section class="overview-grid">
-${statCard({ en: "Active today", zh: "今日活跃" }, String(totalUsers), i18n("anonymous installs", "匿名安装"), filterQS({}, "usage"))}
-${statCard({ en: "Latest adoption", zh: "最新版本占比" }, latestVersionShare(data.overview.latestAdoptionPct), i18nHTML(`latest ${esc(data.latestVersion || "n/a")}`, `最新 ${esc(data.latestVersion || "n/a")}`), filterQS({}, "usage"))}
-${statCard({ en: "Open reports", zh: "未处理报告" }, String(data.overview.openReports), i18n("needs triage", "需要分诊"), filterQS({}, "diagnostics"), overviewTone)}
-${statCard({ en: "New in latest", zh: "最新新增" }, String(data.overview.newLatestReports), i18n("first seen on latest", "首次出现在最新版"), filterQS({}, "diagnostics"), data.overview.newLatestReports ? "warn" : "good")}
-${statCard({ en: "Regressions", zh: "回归问题" }, String(data.overview.regressedReports), i18n("previously resolved", "曾经解决后复现"), filterQS({}, "diagnostics"), data.overview.regressedReports ? "bad" : "good")}
-${statCard({ en: "Agent health", zh: "运行健康" }, healthWatchCount ? String(healthWatchCount) : "OK", i18nHTML(`${pct(cache)} cache · ${providerRate === null ? "n/a" : Number(providerRate.toFixed(1))}/100 provider · ${desktopHangs} hangs`, `${pct(cache)} 缓存 · ${providerRate === null ? "n/a" : Number(providerRate.toFixed(1))}/100 Provider · ${desktopHangs} 次卡死`), filterQS({}, "health"), healthWatchCount ? "warn" : "good")}
+${statCard("Active today", String(totalUsers), i18n("anonymous installs"), filterQS({}, "usage"))}
+${statCard("Latest adoption", latestVersionShare(data.overview.latestAdoptionPct), i18nHTML(`latest ${esc(data.latestVersion || "n/a")}`), filterQS({}, "usage"))}
+${statCard("Open reports", String(data.overview.openReports), i18n("needs triage"), filterQS({}, "diagnostics"), overviewTone)}
+${statCard("New in latest", String(data.overview.newLatestReports), i18n("first seen on latest"), filterQS({}, "diagnostics"), data.overview.newLatestReports ? "warn" : "good")}
+${statCard("Regressions", String(data.overview.regressedReports), i18n("previously resolved"), filterQS({}, "diagnostics"), data.overview.regressedReports ? "bad" : "good")}
+${statCard("Agent health", healthWatchCount ? String(healthWatchCount) : "OK", i18nHTML(`${pct(cache)} cache · ${providerRate === null ? "n/a" : Number(providerRate.toFixed(1))}/100 provider · ${desktopHangs} hangs`), filterQS({}, "health"), healthWatchCount ? "warn" : "good")}
 </section>`;
   const pageOverview = activeModule === "usage" ? overview : "";
   const dashboardNav = `<nav class="site-nav" aria-label="Stats navigation">
-${navLink(filterQS({}, "usage"), { en: "Home", zh: "主页" }, activeModule === "usage")}
-${navLink(filterQS({}, "diagnostics"), { en: "Diagnostics", zh: "诊断分诊" }, activeModule === "diagnostics")}
-${navLink(filterQS({}, "preferences"), { en: "Preferences", zh: "设置偏好" }, activeModule === "preferences")}
-${navLink(filterQS({}, "health"), { en: "Agent Health", zh: "运行健康" }, activeModule === "health")}
+${navLink(filterQS({}, "usage"), "Home", activeModule === "usage")}
+${navLink(filterQS({}, "diagnostics"), "Diagnostics", activeModule === "diagnostics")}
+${navLink(filterQS({}, "preferences"), "Preferences", activeModule === "preferences")}
+${navLink(filterQS({}, "health"), "Agent Health", activeModule === "health")}
 </nav>`;
-  const filters = `<div class="filter-card"><div class="filter-head"><h2>${i18n("Report filters", "诊断筛选")}</h2><span>${i18nHTML(`latest ${esc(data.latestVersion || "n/a")}`, `最新 ${esc(data.latestVersion || "n/a")}`)}</span></div>
+  const filters = `<div class="filter-card"><div class="filter-head"><h2>${i18n("Report filters")}</h2><span>${i18nHTML(`latest ${esc(data.latestVersion || "n/a")}`)}</span></div>
 <div class="filter-tabs">
-${filterTab("All", "全部", clearFiltersHref, !hasFilters)}
-${filterTab("Open", "未处理", filterQS({ status: "open" }), data.filters.status === "open")}
-${filterTab("Resolved", "已解决", filterQS({ status: "resolved" }), data.filters.status === "resolved")}
-${filterTab("Ignored", "已忽略", filterQS({ status: "ignored" }), data.filters.status === "ignored")}
-${filterTab("New in latest", "最新新增", filterQS({ new: data.filters.newLatest ? "" : "latest" }), data.filters.newLatest)}
-${filterTab("Regressed", "回归", filterQS({ regressed: data.filters.regressed ? "" : "1" }), data.filters.regressed)}
+${filterTab("All", clearFiltersHref, !hasFilters)}
+${filterTab("Open", filterQS({ status: "open" }), data.filters.status === "open")}
+${filterTab("Resolved", filterQS({ status: "resolved" }), data.filters.status === "resolved")}
+${filterTab("Ignored", filterQS({ status: "ignored" }), data.filters.status === "ignored")}
+${filterTab("New in latest", filterQS({ new: data.filters.newLatest ? "" : "latest" }), data.filters.newLatest)}
+${filterTab("Regressed", filterQS({ regressed: data.filters.regressed ? "" : "1" }), data.filters.regressed)}
 </div>
 <div class="facet-grid">
-<section><h3>${i18n("Source", "来源")}</h3><div class="facet-list">${facetChips(data.sources, data.filters.source, (label) => filterQS({ source: label }), 4)}</div></section>
-<section><h3>${i18n("Version", "版本")}</h3><div class="facet-list">${facetChips(data.versions, data.filters.version, (label) => filterQS({ version: label }), 5)}</div></section>
-<section><h3>${i18n("Platform", "平台")}</h3><div class="facet-list">${facetChips(data.platforms, data.filters.platform, (label) => filterQS({ platform: label }), 4)}</div></section>
+<section><h3>${i18n("Source")}</h3><div class="facet-list">${facetChips(data.sources, data.filters.source, (label) => filterQS({ source: label }), 4)}</div></section>
+<section><h3>${i18n("Version")}</h3><div class="facet-list">${facetChips(data.versions, data.filters.version, (label) => filterQS({ version: label }), 5)}</div></section>
+<section><h3>${i18n("Platform")}</h3><div class="facet-list">${facetChips(data.platforms, data.filters.platform, (label) => filterQS({ platform: label }), 4)}</div></section>
 </div></div>`;
-  const usageModule = `<section id="usage" class="card full module-card"><div class="module-head"><div><span>${i18n("Module", "模块")}</span><h2>${i18n("Usage distribution", "使用分布")}</h2></div></div>
-<div class="module-panel wide"><h3>${i18nHTML(`Daily active installs <b>— ${rangeText}</b> (solid: users, faded: opens)`, `每日活跃 <b>— ${rangeText}</b>（实线：用户，淡色：打开次数）`)}</h3>
-${anyPing ? dailyChart(days) : `<div class="empty">${i18n("No pings yet — data starts flowing once a telemetry-enabled build ships", "暂无启动 ping — 等带统计的版本发布后这里开始有数据")}</div>`}</div>
+  const usageModule = `<section id="usage" class="card full module-card"><div class="module-head"><div><span>${i18n("Module")}</span><h2>${i18n("Usage distribution")}</h2></div></div>
+<div class="module-panel wide"><h3>${i18nHTML(`Daily active installs <b>— ${rangeText}</b> (solid: users, faded: opens)`)}</h3>
+${anyPing ? dailyChart(days) : `<div class="empty">${i18n("No pings yet — data starts flowing once a telemetry-enabled build ships")}</div>`}</div>
 <div class="module-split">
-<section class="module-panel"><h3>${i18nHTML(`Versions <b>— ${rangeText}</b>`, `版本分布 <b>— ${rangeText}</b>`)}</h3>${listBars(data.versions)}</section>
-<section class="module-panel"><h3>${i18nHTML(`Platforms <b>— ${rangeText}</b>`, `平台分布 <b>— ${rangeText}</b>`)}</h3>${listBars(data.platforms)}</section>
+<section class="module-panel"><h3>${i18nHTML(`Versions <b>— ${rangeText}</b>`)}</h3>${listBars(data.versions)}</section>
+<section class="module-panel"><h3>${i18nHTML(`Platforms <b>— ${rangeText}</b>`)}</h3>${listBars(data.platforms)}</section>
 </div></section>`;
-  const diagnosticsModule = `<section id="diagnostics" class="card full module-card"><div class="module-head"><div><span>${i18n("Module", "模块")}</span><h2>${i18n("Diagnostic triage", "诊断分诊")}</h2></div><a class="module-action" href="#top">${i18n("Back to overview", "回到概览")}</a></div>
-<section class="module-panel"><h3>${i18nHTML("Needs attention <b>— top 10 release crashes and exceptions</b>", "优先处理 <b>— 正式版崩溃与异常 Top 10</b>")}</h3>${reportGroups(releaseCrashes.slice(0, 10), true)}</section>
-${performanceDiagnostics.length ? `<section class="module-panel"><h3>${i18nHTML("Performance signals <b>— tracked separately from crashes</b>", "性能信号 <b>— 与崩溃分开统计</b>")}</h3>${reportGroups(performanceDiagnostics.slice(0, 5), true)}</section>` : ""}
-${developmentDiagnostics.length ? `<section class="module-panel"><h3>${i18nHTML("Development diagnostics <b>— excluded from release priority</b>", "开发版诊断 <b>— 不计入正式版优先级</b>")}</h3>${reportGroups(developmentDiagnostics.slice(0, 5), true)}</section>` : ""}
+  const diagnosticsModule = `<section id="diagnostics" class="card full module-card"><div class="module-head"><div><span>${i18n("Module")}</span><h2>${i18n("Diagnostic triage")}</h2></div><a class="module-action" href="#top">${i18n("Back to overview")}</a></div>
+<section class="module-panel"><h3>${i18nHTML("Needs attention <b>— top 10 release crashes and exceptions</b>")}</h3>${reportGroups(releaseCrashes.slice(0, 10), true)}</section>
+${performanceDiagnostics.length ? `<section class="module-panel"><h3>${i18nHTML("Performance signals <b>— tracked separately from crashes</b>")}</h3>${reportGroups(performanceDiagnostics.slice(0, 5), true)}</section>` : ""}
+${developmentDiagnostics.length ? `<section class="module-panel"><h3>${i18nHTML("Development diagnostics <b>— excluded from release priority</b>")}</h3>${reportGroups(developmentDiagnostics.slice(0, 5), true)}</section>` : ""}
 ${filters}
-<section class="module-panel"><h3>${i18nHTML("All report groups <b>— open, regression, severity, count, recency</b>", "全部诊断分组 <b>— 未处理、回归、严重性、次数和最近出现</b>")}</h3>${reportGroups(data.crashes)}</section>
+<section class="module-panel"><h3>${i18nHTML("All report groups <b>— open, regression, severity, count, recency</b>")}</h3>${reportGroups(data.crashes)}</section>
 </section>`;
   const sevenDayHref = esc(filterQS({ window: "7d" }, "preferences"));
   const unavailableNotice =
     range === 30
       ? i18nHTML(
           `The 30-day deduplication is precomputed hourly and has not reached every signal yet. <a href="${sevenDayHref}">Use 7d</a> meanwhile.`,
-          `30 天去重统计由后台每小时预聚合，目前还没覆盖到全部信号。<a href="${sevenDayHref}">先看 7 天</a>。`,
         )
-      : i18nHTML(`The ${rangeText} deduplication did not finish.`, `${rangeText} 的去重统计没能跑完。`);
-  // A precomputed window can silently go stale if the rollup cron stops, so the
-  // heading carries how old the least recently recomputed signal is.
+      : i18nHTML(`The ${rangeText} deduplication did not finish.`);
+// [[[[[[A precomputed window can silently go stale if the rollup cron stops, so the]]]]]]
+// [[[[[[heading carries how old the least recently recomputed signal is.]]]]]]
   const computedAt = data.metricUsersComputedAt
     ? ` <b>${esc(data.metricUsersComputedAt.slice(0, 16).replace("T", " "))}Z</b>`
     : "";
@@ -753,7 +739,6 @@ ${filters}
   const installsPanel = preferencePanel(
     i18nHTML(
       `Deduplicated installs <b>— ${rangeText}</b>${computedAt ? ` computed${computedAt}` : ""}`,
-      `按安装去重 <b>— ${rangeText}</b>${computedAt ? ` 统计于${computedAt}` : ""}`,
     ),
     data.metricUsersUnavailable
       ? `<div class="empty">${unavailableNotice}</div>`
@@ -761,23 +746,23 @@ ${filters}
     data.filters.preferenceMode === "users",
   );
   const opensPanel = preferencePanel(
-    i18nHTML(`Launch/open snapshots <b>— ${rangeText}</b>`, `启动/开启快照 <b>— ${rangeText}</b>`),
+    i18nHTML(`Launch/open snapshots <b>— ${rangeText}</b>`),
     settingsDashboard(settingsMetrics, { collapseSections: true }),
     data.filters.preferenceMode === "opens",
   );
   const preferencePanels = data.filters.preferenceMode === "opens" ? `${opensPanel}${installsPanel}` : `${installsPanel}${opensPanel}`;
-  const preferencesModule = `<section id="preferences" class="card full module-card"><div class="module-head"><div><span>${i18n("Module", "模块")}</span><h2>${i18n("Settings preferences", "设置偏好")}</h2></div><div class="module-actions">${preferenceControls}</div></div>
+  const preferencesModule = `<section id="preferences" class="card full module-card"><div class="module-head"><div><span>${i18n("Module")}</span><h2>${i18n("Settings preferences")}</h2></div><div class="module-actions">${preferenceControls}</div></div>
 <div class="preference-compare">${preferencePanels}</div></section>`;
-  const healthModule = `<section id="health" class="card full module-card"><div class="module-head"><div><span>${i18n("Module", "模块")}</span><h2>${i18n("Agent health", "运行健康")}</h2></div><div class="module-actions"><a class="module-action" href="${esc(filterQS({}, "preferences"))}">${i18n("Preferences", "设置偏好")}</a></div></div>
-<section class="module-panel"><h3>${i18nHTML(`Health summary <b>— ${rangeText}, compared with previous window</b>`, `健康摘要 <b>— ${rangeText}，对比上一窗口</b>`)}</h3>${agentHealth(agentMetrics, previousAgentMetrics)}</section>
-<section class="module-panel"><h3>${i18nHTML(`Affected installs <b>— ${rangeText}, deduplicated${healthComputedAt ? `, computed ${healthComputedAt}` : ""}</b>`, `受影响安装 <b>— ${rangeText}，按安装去重${healthComputedAt ? `，统计于 ${healthComputedAt}` : ""}</b>`)}</h3>${
+  const healthModule = `<section id="health" class="card full module-card"><div class="module-head"><div><span>${i18n("Module")}</span><h2>${i18n("Agent health")}</h2></div><div class="module-actions"><a class="module-action" href="${esc(filterQS({}, "preferences"))}">${i18n("Preferences")}</a></div></div>
+<section class="module-panel"><h3>${i18nHTML(`Health summary <b>— ${rangeText}, compared with previous window</b>`)}</h3>${agentHealth(agentMetrics, previousAgentMetrics)}</section>
+<section class="module-panel"><h3>${i18nHTML(`Affected installs <b>— ${rangeText}, deduplicated${healthComputedAt ? `, computed ${healthComputedAt}` : ""}</b>`)}</h3>${
     data.metricUsersUnavailable
       ? `<div class="empty">${range === 30
-          ? i18nHTML(`The 30-day deduplication is not ready. <a href="${esc(filterQS({ window: "7d" }, "health"))}">Use 7d</a> meanwhile.`, `30 天去重统计尚未就绪。<a href="${esc(filterQS({ window: "7d" }, "health"))}">先看 7 天</a>。`)
-          : i18n(`The ${rangeText} deduplication did not finish.`, `${rangeText} 的去重统计没能跑完。`)}</div>`
+          ? i18nHTML(`The 30-day deduplication is not ready. <a href="${esc(filterQS({ window: "7d" }, "health"))}">Use 7d</a> meanwhile.`)
+          : i18n(`The ${rangeText} deduplication did not finish.`)}</div>`
       : metricsCards(agentMetricUsers, ["desktop_hang", "desktop_hang_age", "desktop_webview2_failure", "desktop_restore", "desktop_exit"])
   }</section>
-<section class="module-panel"><h3>${i18nHTML(`Signal distributions <b>— ${rangeText}, opt-in aggregate</b>`, `信号分布 <b>— ${rangeText}，opt-in 汇总</b>`)}</h3>${metricsCards(agentMetrics)}</section>
+<section class="module-panel"><h3>${i18nHTML(`Signal distributions <b>— ${rangeText}, opt-in aggregate</b>`)}</h3>${metricsCards(agentMetrics)}</section>
 </section>`;
   const activeModuleHTML: Record<StatsModule, string> = {
     diagnostics: diagnosticsModule,
@@ -787,12 +772,11 @@ ${filters}
   };
 
   return page(
-    "Reasonix · Crash & Telemetry",
+    "Patty Code · Crash & Telemetry",
     "health",
     `${dashboardNav}
-<div id="top" class="hero-line"><div><h1>${i18n("Crash & Telemetry", "客户端健康看板")}</h1><p class="sub">${i18nHTML(
+<div id="top" class="hero-line"><div><h1>${i18n("Crash & Telemetry")}</h1><p class="sub">${i18nHTML(
       `${rangeText} window · anonymous launch pings, opt-in aggregate metrics, and user-sent diagnostic reports only`,
-      `${rangeText} 时间窗口 · 仅包含匿名启动 ping、opt-in 汇总指标和用户发送的诊断报告`,
     )}</p></div><div class="module-actions">${surfaceControls}${windowControls}</div></div>
 ${pageOverview}
 <div class="grid">
@@ -862,16 +846,16 @@ type ReportSample = {
 
 function manageGroup(group: Group): string {
   const fp = esc(group.fingerprint);
-  const setStatus = (s: string, label: string, zhLabel: string, cls: string) =>
+  const setStatus = (s: string, label: string, cls: string) =>
     group.status === s
       ? ""
-      : `<form method="post" action="/stats/group/${fp}" class="inline"><input type="hidden" name="action" value="status"><input type="hidden" name="status" value="${s}"><button class="btn ${cls} sm" type="submit">${i18n(label, zhLabel)}</button></form>`;
-  return `<div class="card full manage-card"><div class="manage-head"><h2>${i18nHTML("Manage <b>— admin</b>", "管理 <b>— 管理员</b>")}</h2><div class="manage-actions">${setStatus("resolved", "Mark resolved", "标记已解决", "ghost")}${setStatus("ignored", "Ignore", "忽略", "ghost")}${setStatus("open", "Reopen", "重新打开", "ghost")}
-<form method="post" action="/stats/group/${fp}" class="inline" onsubmit="return confirm('Delete this crash group and all its samples?')"><input type="hidden" name="action" value="delete"><button class="btn danger sm" type="submit">${i18n("Delete group", "删除分组")}</button></form></div></div>
+      : `<form method="post" action="/stats/group/${fp}" class="inline"><input type="hidden" name="action" value="status"><input type="hidden" name="status" value="${s}"><button class="btn ${cls} sm" type="submit">${i18n(label)}</button></form>`;
+  return `<div class="card full manage-card"><div class="manage-head"><h2>${i18nHTML("Manage <b>— admin</b>")}</h2><div class="manage-actions">${setStatus("resolved", "Mark resolved", "ghost")}${setStatus("ignored", "Ignore", "ghost")}${setStatus("open", "Reopen", "ghost")}
+<form method="post" action="/stats/group/${fp}" class="inline" onsubmit="return confirm('Delete this crash group and all its samples?')"><input type="hidden" name="action" value="delete"><button class="btn danger sm" type="submit">${i18n("Delete group")}</button></form></div></div>
 <div class="manage-grid">
-<form method="post" action="/stats/group/${fp}" class="manage-form"><input type="hidden" name="action" value="resolution"><label>${i18n("Resolved in", "解决版本")}<input type="text" name="resolvedIn" placeholder="v1.10.1" value="${esc(group.resolved_in)}"></label><button class="btn sm" type="submit">${i18n("Save", "保存")}</button></form>
-<form method="post" action="/stats/group/${fp}" class="manage-form"><input type="hidden" name="action" value="severity"><label>${i18n("Severity", "严重级别")}<select name="severity"><option${group.severity === "low" ? " selected" : ""}>low</option><option${group.severity === "medium" ? " selected" : ""}>medium</option><option${group.severity === "high" ? " selected" : ""}>high</option><option${group.severity === "critical" ? " selected" : ""}>critical</option></select></label><button class="btn sm" type="submit">${i18n("Save", "保存")}</button></form>
-<form method="post" action="/stats/group/${fp}" class="manage-form wide"><input type="hidden" name="action" value="note"><label>${i18n("Note", "备注")}<input type="text" name="note" placeholder="${esc("Add investigation note")}" value="${esc(group.note)}"></label><button class="btn sm" type="submit">${i18n("Save", "保存")}</button></form>
+<form method="post" action="/stats/group/${fp}" class="manage-form"><input type="hidden" name="action" value="resolution"><label>${i18n("Resolved in")}<input type="text" name="resolvedIn" placeholder="v1.10.1" value="${esc(group.resolved_in)}"></label><button class="btn sm" type="submit">${i18n("Save")}</button></form>
+<form method="post" action="/stats/group/${fp}" class="manage-form"><input type="hidden" name="action" value="severity"><label>${i18n("Severity")}<select name="severity"><option${group.severity === "low" ? " selected" : ""}>low</option><option${group.severity === "medium" ? " selected" : ""}>medium</option><option${group.severity === "high" ? " selected" : ""}>high</option><option${group.severity === "critical" ? " selected" : ""}>critical</option></select></label><button class="btn sm" type="submit">${i18n("Save")}</button></form>
+<form method="post" action="/stats/group/${fp}" class="manage-form wide"><input type="hidden" name="action" value="note"><label>${i18n("Note")}<input type="text" name="note" placeholder="${esc("Add investigation note")}" value="${esc(group.note)}"></label><button class="btn sm" type="submit">${i18n("Save")}</button></form>
 </div></div>`;
 }
 
@@ -879,7 +863,7 @@ function breadcrumbsList(json: string): string {
   try {
     const rows = JSON.parse(json) as { cat?: string; msg?: string }[];
     if (!Array.isArray(rows) || rows.length === 0) return "";
-    return `<details class="sample-nested"><summary>${i18n("breadcrumbs", "面包屑")}</summary><pre>${esc(rows.map((b) => `[${b.cat ?? ""}] ${b.msg ?? ""}`).join("\n"))}</pre></details>`;
+    return `<details class="sample-nested"><summary>${i18n("breadcrumbs")}</summary><pre>${esc(rows.map((b) => `[${b.cat ?? ""}] ${b.msg ?? ""}`).join("\n"))}</pre></details>`;
   } catch {
     return "";
   }
@@ -890,13 +874,13 @@ function sampleReport(r: ReportSample, i: number): string {
   const platform = [r.os, r.arch].filter(Boolean).join("/");
   const title = r.error_message || r.message.split("\n").find((line) => line.trim()) || r.error_type || "sample";
   const structured = [
-    r.source && [i18n("source", "来源"), r.source],
-    r.label && [i18n("label", "标签"), r.label],
-    r.error_type && [i18n("type", "类型"), r.error_type],
-    r.top_frame && [i18n("top", "顶层"), r.top_frame],
-    r.build_commit && [i18n("build", "构建"), r.build_commit],
-    r.channel && [i18n("channel", "渠道"), r.channel],
-    r.view && [i18n("view", "视图"), r.view],
+    r.source && [i18n("source"), r.source],
+    r.label && [i18n("label"), r.label],
+    r.error_type && [i18n("type"), r.error_type],
+    r.top_frame && [i18n("top"), r.top_frame],
+    r.build_commit && [i18n("build"), r.build_commit],
+    r.channel && [i18n("channel"), r.channel],
+    r.view && [i18n("view"), r.view],
   ]
     .filter(Boolean)
     .map(([label, value]) => `<span><b>${label}</b>${esc(value)}</span>`)
@@ -908,20 +892,20 @@ function sampleReport(r: ReportSample, i: number): string {
 <span class="sample-time">${esc((r.occurred_at || r.created_at).slice(0, 19).replace("T", " "))}</span>
 </summary>
 <div class="sample-body">
-<div class="sample-meta">${dev ? `<span><b>${i18n("device", "设备")}</b>${esc(dev)}</span>` : ""}${structured}</div>
-<div class="sample-actions"><button class="btn ghost sm copy-btn" type="button" data-copy="${esc(r.message)}"><span class="copy-label">${i18n("Copy message", "复制消息")}</span></button>${
+<div class="sample-meta">${dev ? `<span><b>${i18n("device")}</b>${esc(dev)}</span>` : ""}${structured}</div>
+<div class="sample-actions"><button class="btn ghost sm copy-btn" type="button" data-copy="${esc(r.message)}"><span class="copy-label">${i18n("Copy message")}</span></button>${
     stack
-      ? `<button class="btn ghost sm copy-btn" type="button" data-copy="${esc(stack)}"><span class="copy-label">${i18n("Copy stack", "复制堆栈")}</span></button>`
+      ? `<button class="btn ghost sm copy-btn" type="button" data-copy="${esc(stack)}"><span class="copy-label">${i18n("Copy stack")}</span></button>`
       : ""
   }</div>
 <pre>${esc(r.message)}</pre>
-${stack ? `<details class="sample-nested"><summary>${i18n("stack", "堆栈")}</summary><pre>${esc(stack)}</pre></details>` : ""}
+${stack ? `<details class="sample-nested"><summary>${i18n("stack")}</summary><pre>${esc(stack)}</pre></details>` : ""}
 ${breadcrumbsList(r.breadcrumbs)}
 </div></details>`;
 }
 
 function sampleReports(reports: ReportSample[], options: { limit?: number } = {}): string {
-  if (!reports.length) return `<div class="empty">${i18n("No raw samples stored for this group", "这个分组没有保存原始样本")}</div>`;
+  if (!reports.length) return `<div class="empty">${i18n("No raw samples stored for this group")}</div>`;
   const limit = options.limit ?? 10;
   const visible = reports.slice(0, limit);
   const hidden = reports.slice(limit);
@@ -929,7 +913,7 @@ function sampleReports(reports: ReportSample[], options: { limit?: number } = {}
   const hiddenSamples = hidden.map((r, i) => sampleReport(r, i + limit)).join("");
   const history =
     hidden.length > 0
-      ? `<details class="sample-more"><summary>${i18nHTML(`Historical samples ${hidden.length}`, `历史样本 ${hidden.length}`)}</summary><div class="sample-more-list">${hiddenSamples}</div></details>`
+      ? `<details class="sample-more"><summary>${i18nHTML(`Historical samples ${hidden.length}`)}</summary><div class="sample-more-list">${hiddenSamples}</div></details>`
       : "";
   return `<div class="sample-list">${visibleSamples}${history}</div>`;
 }
@@ -941,43 +925,43 @@ export function renderGroup(
 ): string {
   const samples = sampleReports(reports);
   const platform = [group.last_os, group.last_arch].filter(Boolean).join("/");
-  const status = statusPill(group.status) || `<span class="pill open">${i18n("open", "未处理")}</span>`;
+  const status = statusPill(group.status) || `<span class="pill open">${i18n("open")}</span>`;
   const tags = [
-    [i18n("source", "来源"), group.source || "legacy"],
-    group.label && [i18n("label", "标签"), group.label],
-    group.error_type && [i18n("type", "类型"), group.error_type],
-    group.top_frame && [i18n("top frame", "顶层帧"), group.top_frame],
-    platform && [i18n("platform", "平台"), platform],
-    group.last_build_commit && [i18n("build", "构建"), group.last_build_commit],
-    group.last_channel && [i18n("channel", "渠道"), group.last_channel],
+    [i18n("source"), group.source || "legacy"],
+    group.label && [i18n("label"), group.label],
+    group.error_type && [i18n("type"), group.error_type],
+    group.top_frame && [i18n("top frame"), group.top_frame],
+    platform && [i18n("platform"), platform],
+    group.last_build_commit && [i18n("build"), group.last_build_commit],
+    group.last_channel && [i18n("channel"), group.last_channel],
   ]
     .filter(Boolean)
     .map(([label, value]) => `<span><b>${label}</b>${esc(value)}</span>`)
     .join("");
   const metrics = [
-    [i18n("Occurrences", "出现次数"), String(group.count)],
-    [i18n("First seen", "首次出现"), `${group.first_seen.slice(0, 10)} · ${group.first_version || "?"}`],
-    [i18n("Last seen", "最近出现"), `${group.last_seen.slice(0, 10)} · ${group.last_version || "?"}`],
-    [i18n("Version range", "版本范围"), `${group.first_version || "?"} → ${group.last_version || "?"}`],
-    group.resolved_in && [i18n("Resolved in", "解决版本"), group.resolved_in],
-    group.regressed_at && [i18n("Regressed", "回归时间"), group.regressed_at.slice(0, 10)],
+    [i18n("Occurrences"), String(group.count)],
+    [i18n("First seen"), `${group.first_seen.slice(0, 10)} · ${group.first_version || "?"}`],
+    [i18n("Last seen"), `${group.last_seen.slice(0, 10)} · ${group.last_version || "?"}`],
+    [i18n("Version range"), `${group.first_version || "?"} → ${group.last_version || "?"}`],
+    group.resolved_in && [i18n("Resolved in"), group.resolved_in],
+    group.regressed_at && [i18n("Regressed"), group.regressed_at.slice(0, 10)],
   ]
     .filter(Boolean)
     .map(([label, value]) => `<div><span>${label}</span><b>${esc(value)}</b></div>`)
     .join("");
 
   return page(
-    `Reasonix · ${group.fingerprint.slice(0, 8)}`,
+    `Patty Code · ${group.fingerprint.slice(0, 8)}`,
     `stats / ${group.fingerprint.slice(0, 8)}`,
-    `<section class="group-hero"><div class="group-nav"><a class="back" href="/stats">${i18n("Back to stats", "返回统计")}</a><button class="btn ghost sm copy-btn" type="button" data-copy="${esc(group.fingerprint)}"><span class="copy-label">${i18n("Copy fingerprint", "复制指纹")}</span></button></div>
+    `<section class="group-hero"><div class="group-nav"><a class="back" href="/stats">${i18n("Back to stats")}</a><button class="btn ghost sm copy-btn" type="button" data-copy="${esc(group.fingerprint)}"><span class="copy-label">${i18n("Copy fingerprint")}</span></button></div>
 <div class="group-title"><span class="pill ${group.kind === "crash" ? "crash" : ""}">${esc(group.kind)}</span><h1>${esc(group.fingerprint.slice(0, 8))}</h1>${status}</div>
 ${group.title ? `<p class="summary group-summary">${esc(group.title)}</p>` : ""}
 <div class="group-tags">${tags}</div>
 <div class="group-metrics">${metrics}</div>
-${group.note ? `<p class="group-note">${i18n("Note", "备注")}: ${esc(group.note)}</p>` : ""}</section>
-<div class="card full sample-card"><h2>${i18nHTML("Samples <b>— newest first, first sample plus latest 5 kept</b>", "样本 <b>— 最新优先，保留首个样本和最近 5 个</b>")}</h2>${samples}</div>
+${group.note ? `<p class="group-note">${i18n("Note")}: ${esc(group.note)}</p>` : ""}</section>
+<div class="card full sample-card"><h2>${i18nHTML("Samples <b>— newest first, first sample plus latest 5 kept</b>")}</h2>${samples}</div>
 ${user.role === "admin" ? manageGroup(group) : ""}
-<a class="back" href="/stats">${i18n("Back to stats", "返回统计")}</a>`,
+<a class="back" href="/stats">${i18n("Back to stats")}</a>`,
     userNav(user),
   );
 }

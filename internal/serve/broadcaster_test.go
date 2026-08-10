@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/eventwire"
+	"patty/internal/event"
+	"patty/internal/eventwire"
 )
 
 func TestBroadcasterFanOut(t *testing.T) {

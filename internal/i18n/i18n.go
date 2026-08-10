@@ -1,17 +1,3 @@
-// Package i18n holds the CLI's translatable strings and a small detection
-// helper. Architecture: a single Messages struct of exported string fields
-// (plain text or fmt format strings, suffix *Fmt flags the latter). Each
-// language declares one Messages value in its own file. Call sites read
-// i18n.M.SomeField; for parameterised messages they pass it to fmt.Sprintf.
-//
-// Adding a field requires updating every messages_*.go file — drift is caught
-// at test time by TestCatalogsComplete via reflection, so a missing translation
-// fails CI instead of surfacing as a blank line at runtime.
-//
-// Scope (v1): CLI surface only — welcome, init wizard, chat REPL banner, usage,
-// user-facing CLI errors. System prompts, internal error wrappers, and agent
-// runtime telemetry stay English so model behaviour and developer logs are
-// language-stable.
 package i18n
 
 import (
@@ -19,28 +5,29 @@ import (
 	"strings"
 )
 
-// Messages is the catalogue of translatable CLI strings. Plain fields are
-// printed verbatim; *Fmt fields are fmt format strings the caller passes to
-// fmt.Sprintf. Catalogue values do not include trailing newlines — call sites
-// add framing whitespace, so the same field works wherever it appears.
 type Messages struct {
-	// welcome / status screen
 	WelcomeTitleFmt string // first-run box title — %s = product name (styled)
 	NoConfigYet     string // first-run cue under the welcome box
 
-	// `reasonix init` — points to the in-session /init skill + setup
 	InitHint string
 
-	// chat REPL
-	ChatTip             string // tip line under the chat banner
-	TurnCancelled       string // shown when Ctrl-C aborts the in-flight turn but the chat keeps running
-	InterruptedRecovery string // replay notice for a durable interrupted turn
-	RecoveryPaused      string // controlled Auto retry pause; user can continue in the next message
-	NoSessionToResume   string // shown when --continue / --resume finds nothing
-	ResumeRequiresTTY   string // shown when --resume runs piped instead of on a terminal
-	PickSessionLabel    string // header on the --resume picker
+	ChatTip                   string // tip line under the chat banner
+	ChatComposerTitle         string // heading above the borderless composer
+	ChatComposerPlaceholder   string // default empty-composer prompt
+	ChatComposerCommandsHint  string // slash palette hint below the composer
+	ChatComposerFilesHint     string // file reference hint below the composer
+	ChatComposerShellHint     string // shell mode hint below the composer
+	ChatComposerShortcutsHint string // shortcut help hint below the composer
+	ChatMastheadTitle         string // brand line below the launch artwork
+	ChatUserLabel             string // transcript timeline label for the human turn
+	ChatPlanLabel             string // transcript timeline modifier for a plan-mode turn
+	TurnCancelled             string // shown when Ctrl-C aborts the in-flight turn but the chat keeps running
+	InterruptedRecovery       string // replay notice for a durable interrupted turn
+	RecoveryPaused            string // controlled Auto retry pause; user can continue in the next message
+	NoSessionToResume         string // shown when --continue / --resume finds nothing
+	ResumeRequiresTTY         string // shown when --resume runs piped instead of on a terminal
+	PickSessionLabel          string // header on the --resume picker
 
-	// in-chat /resume command
 	ResumeBusy          string // shown when /resume is used mid-turn
 	ResumeBadIndexFmt   string // shown when /resume gets an out-of-range index (one %d)
 	ResumeAlreadyActive string // shown when /resume targets the current session
@@ -53,7 +40,6 @@ type Messages struct {
 	ResumePickHint         string // keyboard hint in the interactive resume picker
 	ResumeRecoveryBadgeFmt string // recovery-copy badge — %s = short parent session id
 
-	// chat TUI status line / approval banner.
 	ChatThinking                           string // live reasoning marker label, e.g. "thinking…"
 	ChatThoughtForFmt                      string // collapsed reasoning summary, "%d" = elapsed s
 	ChatStatusThinkingFmt                  string // "%s thinking… (%ds · <cancel hint>)" — %s = spinner, %d = elapsed s
@@ -77,8 +63,10 @@ type Messages struct {
 	ChatStatusCycleHint                    string // plan-toggle shortcut hint shown when no modal prompt owns the status row
 	ChatStatusCycleHintCompact             string // readable shortcut hint used by the persistent footer
 	ChatTurnReceiptLabel                   string // compact per-turn usage receipt attached to the completed assistant response
+	ChatStatusModeLabel                    string
 	ChatStatusModelLabel                   string
 	ChatStatusEffortLabel                  string
+	ChatStatusHeadroomLabel                string
 	ChatStatusWorkLabel                    string
 	ChatStatusCacheLabel                   string
 	ChatStatusContextLabel                 string
@@ -87,6 +75,20 @@ type Messages struct {
 	ChatStatusBalanceLabel                 string
 	ChatStatusCacheNowFmt                  string // cache status tag, "%s" = latest-turn hit rate with percent sign
 	ChatStatusCacheAvgFmt                  string // cache status tag, "%s" = session-average hit rate with percent sign
+	ChatModeAsk                            string
+	ChatModeAuto                           string
+	ChatModePlan                           string
+	ChatModeGoal                           string
+	ChatModeShell                          string
+	ChatModeYOLO                           string
+	ChatModeDontAsk                        string
+	ChatModeApprove                        string
+	ChatEffortAuto                         string
+	ChatEffortLow                          string
+	ChatEffortMedium                       string
+	ChatEffortHigh                         string
+	ChatEffortXHigh                        string
+	ChatEffortMax                          string
 	ChatStatusPlanApproval                 string // shortcuts hint while a plan is pending
 	PlanApprovalPrompt                     string // one-line "plan above is ready" banner shown above the input
 	PlanApprovalChoices                    string // start / revise / exit-without-executing choice list
@@ -105,7 +107,7 @@ type Messages struct {
 	SandboxEscapeApprovalChoices           string // approval choice list for OS sandbox escape prompts
 	ApprovalNeededFmt                      string // notification text for a pending approval, tool only
 	ApprovalNeededWithSubjectFmt           string // notification text for a pending approval with subject
-	ToolApprovalSourceFmt                  string // "Source: %s" / "来源: %s"
+	ToolApprovalSourceFmt                  string // "Source: %s" / "출처: %s"
 	ToolApprovalBuiltIn                    string // built-in tool source label
 	ToolApprovalImageUse                   string // image-understanding detail for understand_image-style tools
 	ApprovalToolLabelBash                  string // user-facing label for bash approvals
@@ -130,7 +132,7 @@ type Messages struct {
 	SandboxEscapeWrapReason                string // reason when no OS sandbox can wrap the command
 	SandboxEscapeRuntimeReason             string // fallback reason when an OS sandbox cannot start the command
 	SandboxEscapeDeclined                  string // model-facing denial when the user declines a one-shot unconfined retry
-	ApprovalToolLabelConfigWrite           string // user-facing label for Reasonix-managed config write approvals
+	ApprovalToolLabelConfigWrite           string // user-facing label for patty-managed config write approvals
 	ConfigWriteSubjectPrefix               string // subject prefix before the config file path for managed config write approval
 	ConfigWriteReason                      string // reason shown for managed config write approval
 	ConfigWriteDeclined                    string // model-facing denial when the user declines a managed config write
@@ -145,7 +147,6 @@ type Messages struct {
 	DiffFoldEnabledFmt                     string // notice when /diff-fold enables folding, %d = line limit
 	DiffFoldDisabled                       string // notice when /diff-fold disables folding (shows all lines)
 
-	// `ask` tool question card.
 	AskTypeSomething   string // the "type your own answer" option label
 	AskTypingHint      string // shown on that row while entering free text
 	AskChatInstead     string // the "don't pick, just chat" option label
@@ -155,7 +156,6 @@ type Messages struct {
 	AskUnanswered      string // placeholder for an unanswered ask question
 	AskSubmitHint      string // submit-tab keyboard hint
 
-	// output style listing (/output-style).
 	OutputStyleNone           string // no styles available
 	ThemeHeader               string // header above the /theme listing
 	ThemeHint                 string // how to select a theme
@@ -170,18 +170,15 @@ type Messages struct {
 	RuntimeRefreshBusy        string // runtime-affecting setting cannot change while work is active
 	RuntimeRefreshUnavailable string // current session cannot rebuild after a runtime-affecting setting change
 
-	// context compaction card (CompactionStarted / CompactionDone events).
 	CompactionWorking string // shown while the summarizer runs
 	CompactionTitle   string // card header before "· N messages · <trigger>"
 	CompactionUnit    string // the noun counted, e.g. "messages"
 	CompactionAuto    string // trigger label: reached the window threshold
 	CompactionManual  string // trigger label: user ran /compact
 
-	// extension structured-UI surfaces (ExtensionSurface / ExtensionStatus events).
 	ExtFormFieldsHint string // form card: field values are collected through the usual prompts
 	ExtRunActionFmt   string // card action hint, one %s = the /<plugin>:<action> slash name
 
-	// chat TUI slash commands.
 	SlashCompactFailed           string // "/compact" errored, prefixed before the underlying error
 	SlashNewDone                 string // "/new" succeeded
 	SlashNewFailed               string // "/new" errored
@@ -208,14 +205,11 @@ type Messages struct {
 	MouseCaptureOffHint          string // "/mouse" released mouse capture to the terminal
 	MouseCaptureTag              string // persistent status-line marker while mouse capture is off
 
-	// shell execution (! prefix).
 	ShellExecEmpty      string // bare "!" with no command
 	ShellExecFailedFmt  string // "shell command failed: %v"
 	ShellExecTimeoutFmt string // "shell command timed out (> %s)"
 	ShellModeHint       string // status line hint when input starts with !
 
-	// slash command + sub-command descriptions shown in the menu (CLI and desktop
-	// share these via i18n.M, so both frontends localize identically).
 	CmdNew              string // /new
 	CmdClear            string // /clear
 	CmdCls              string // /cls
@@ -280,9 +274,8 @@ type Messages struct {
 	ArgThemeCurrent     string // /theme <style> active tag
 	ArgLanguageAuto     string // /language auto
 	ArgLanguageEn       string // /language en
-	ArgLanguageZh       string // /language zh
+	ArgLanguageKo       string // /language ko-KR
 
-	// management listing notices (the Submit path: desktop / HTTP frontends)
 	ListModelsHeaderFmt string // "models (active: %s)"
 	ListModelsHint      string // how to switch
 	ListMemorySaved     string // "saved memories"
@@ -294,8 +287,6 @@ type Messages struct {
 	ListHooksNone       string // no hooks
 	ListMcpHeader       string // "mcp servers"
 	ListMcpNone         string // no mcp servers
-
-	// in-chat memory/model/rewind notices.
 
 	MemoryEditHint               string
 	ForgetUsage                  string
@@ -356,7 +347,6 @@ type Messages struct {
 	RewindUnavailableFmt         string
 	RewindEmpty                  string
 
-	// skill picker overlay (/skills interactive panel in CLI TUI)
 	SkillPickerAvailableFmt      string
 	SkillPickerMatchingFmt       string // "%d matching · %d total" when searching
 	SkillPickerHint              string
@@ -400,9 +390,8 @@ type Messages struct {
 	SkillPickerStatusNotDir      string // "not-directory" path status label
 	SkillPickerStatusUnreadable  string // "unreadable" path status label
 
-	// init wizard
 	EnterAPIKeysHeader       string // header before the per-env-var prompts
-	WroteFileFmt             string // "Wrote %s" — used for reasonix.toml and .env both
+	WroteFileFmt             string // "Wrote %s" — used for patty.toml and .env both
 	SetupComplete            string // success line at end of init
 	SetupCancelled           string // shown when the user aborts the wizard
 	TryHintFmt               string // "Try: %s" — %s = command to try (styled)
@@ -443,7 +432,6 @@ type Messages struct {
 	SetupConfirmSave         string
 	SetupConcurrentChangeFmt string
 
-	// model fetching
 	FetchingModelsFmt          string // "Fetching models for %s..."
 	FetchModelsSuccessFmt      string // "Found %d models for %s"
 	FetchModelsFailedFmt       string // "Failed to fetch models for %s: %v"
@@ -456,7 +444,6 @@ type Messages struct {
 	InvalidAPIKeyEnvFmt        string // "%q is not a valid API Key variable name..."
 	RepairedAPIKeyEnvFmt       string // "provider %s: replaced invalid api_key_env %q with %q"
 
-	// custom provider
 	CustomProviderDesc   string // "Add third-party OpenAI compatible model"
 	CustomAddMethodLabel string // "Select add method"
 	CustomMethodManual   string // "Enter model name manually"
@@ -467,7 +454,6 @@ type Messages struct {
 	CustomPromptAPIKey   string // "Enter API Key"
 	CustomAddedFmt       string // "Added custom model: %s"
 
-	// Anthropic compatible provider
 	AnthropicProviderDesc          string // "Add Anthropic API compatible model"
 	AnthropicAddMethodLabel        string // "Select add method"
 	AnthropicMethodManual          string // "Enter model name manually"
@@ -482,7 +468,6 @@ type Messages struct {
 	AnthropicFetchModelsFailedFmt  string // "Failed to fetch models for %s: %v"
 	AnthropicSelectModelsLabel     string // "Select models to enable for %s"
 
-	// remote SSH module
 	RemoteConnectingFmt       string // "connecting to %s…"
 	RemoteConnectedFmt        string // "connected to %s"
 	RemoteReconnectingFmt     string // "reconnecting to %s (attempt %d)…"
@@ -493,17 +478,15 @@ type Messages struct {
 	RemotePassphrasePromptFmt string // "passphrase for %s:"
 	RemotePasswordPromptFmt   string // "password for %s:"
 	RemoteBootstrapStepFmt    string // "remote serve: %s %s"
-	RemoteNoHostsHint         string // "no remote hosts configured; add one with `reasonix remote add`"
+	RemoteNoHostsHint         string // "no remote hosts configured; add one with `patcode remote add`"
 
-	// top-level / runAgent
 	UnknownCommandFmt         string // "unknown command %q"
-	UsageRunHint              string // "usage: reasonix run [--model NAME] <task>"
+	UsageRunHint              string // "usage: patcode run [--model NAME] <task>"
 	ErrorPrefix               string // "error:" — prefix for fatal-error output
 	ReconfigureOnUnknownModel string // shown when the configured model no longer resolves and setup is re-run
 	WriteConfigErr            string // "write config:" — prefix for write failure
 	WriteEnvErr               string // "write .env:" — prefix for env-write failure
 
-	// provider HTTP error explanations — actionable, reason + fix per status code
 	ProviderErrBadRequest          string // 400
 	ProviderErrAuth                string // 401 — no key configured / sent
 	ProviderErrAuthRejected        string // 401 — a key was sent but the server rejected it
@@ -515,14 +498,12 @@ type Messages struct {
 	ProviderErrServer              string // 500
 	ProviderErrServerBusy          string // 503
 
-	// selection menus
 	SelectOneHint      string // "(↑/↓ · Enter · q to cancel)"
 	SelectManyHint     string // "(↑/↓ · Space · Enter · q)"
 	SelectMoreAboveFmt string // "↑ %d more above"
 	SelectMoreBelowFmt string // "↓ %d more below"
 	SelectSearchHint   string // "/ to search · Esc to cancel"
 
-	// /provider command
 	CmdProvider          string // /provider
 	ProviderListHeader   string // header for /provider list
 	ProviderAlreadyOnFmt string // already on provider
@@ -530,7 +511,6 @@ type Messages struct {
 	ProviderPickLabel    string // label for provider model picker
 	ProviderNoModelsFmt  string // provider has no models
 
-	// `reasonix upgrade` / `reasonix update` — self-update
 	UpgradeChecking            string // "Checking for updates…"
 	UpgradeChannelDeprecated   string // legacy channel selection is ignored
 	UpgradeDevBuild            string // dev builds cannot self-update
@@ -551,7 +531,6 @@ type Messages struct {
 	UpgradeApplyFailed         string // "failed to apply update: %v"
 	UpgradeSuccessFmt          string // "Updated %s → %s"
 
-	// `reasonix report` — local CLI crash review and explicit upload
 	ReportNoPending           string
 	ReportHeaderFmt           string
 	ReportCapturedFmt         string
@@ -565,19 +544,15 @@ type Messages struct {
 	ReportSentDeleteFailedFmt string
 	ReportUsageBody           string
 
-	// First eligible interactive CLI telemetry consent.
 	CLITelemetryConsentNotice           string
 	CLITelemetryConsentPrompt           string
 	CLITelemetryConsentInvalid          string
 	CLITelemetryConsentSaveFailedFmt    string
 	CLITelemetryConsentCleanupFailedFmt string
 
-	// usage / help
 	UsageBody string // full multi-line help text
 }
 
-// ProviderStatusMessage returns an actionable explanation for a known provider
-// HTTP status, or "" when the status has no specific guidance.
 func (m Messages) ProviderStatusMessage(status int) string {
 	switch status {
 	case 400:
@@ -598,72 +573,49 @@ func (m Messages) ProviderStatusMessage(status int) string {
 	return ""
 }
 
-// M is the active catalogue. DetectLanguage replaces it; English is the
-// default so any code path that runs before detection still has text.
 var (
-	M               = English
-	currentLanguage = "en"
+	M               = Korean
+	currentLanguage = "ko"
 )
 
-// CurrentLanguage returns the language tag installed by the latest
-// DetectLanguage call. It lets frontends reuse the resolved locale without
-// re-reading the environment and accidentally ignoring an explicit override.
 func CurrentLanguage() string {
 	return currentLanguage
 }
 
-// DetectLanguage selects a catalogue from override (e.g. cfg.Language) or the
-// environment and installs it as M. Returns the resolved tag ("en", "zh") so
-// callers can log or expose it.
-//
-// Priority: override > REASONIX_LANG > LC_ALL > LC_MESSAGES > LANG > "en".
 func DetectLanguage(override string) string {
-	for _, c := range append([]string{override}, envCandidates()...) {
+	// Korean is the product default regardless of the host OS locale. English
+	// is opt-in through an explicit config/runtime override or PATTY_LANG.
+	for _, c := range []string{override, os.Getenv("PATTY_LANG")} {
 		if tag := normalize(c); tag != "" {
 			return setLanguage(tag)
 		}
 	}
-	return setLanguage("en")
-}
-
-func envCandidates() []string {
-	keys := []string{"REASONIX_LANG", "LC_ALL", "LC_MESSAGES", "LANG"}
-	out := make([]string, len(keys))
-	for i, k := range keys {
-		out[i] = os.Getenv(k)
-	}
-	return out
+	return setLanguage("ko") // Korean is the default; English is opt-in
 }
 
 func setLanguage(tag string) string {
 	switch tag {
-	case "zh-tw", "zh-TW":
-		M = ChineseTraditional
-		currentLanguage = "zh-TW"
-	case "zh":
-		M = Chinese
-		currentLanguage = "zh"
-	default:
-		M = English
+	case "en":
 		currentLanguage = "en"
+		M = English
+	case "ko":
+		currentLanguage = "ko"
+		M = Korean
+	default:
+		currentLanguage = "ko"
+		M = Korean
 	}
 	return currentLanguage
 }
 
-// normalize maps a locale string (e.g. "zh_CN.UTF-8", "zh-Hans-CN", "Chinese
-// (China)") to a short tag this package knows about. Returns "" for empty or
-// unrecognised input so DetectLanguage can fall through to the next candidate.
 func normalize(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
-	s = strings.ReplaceAll(s, "_", "-") // zh_TW.UTF-8 → zh-tw.utf-8 (POSIX locales use underscores)
+	s = strings.ReplaceAll(s, "_", "-") // ko_KR.UTF-8 → ko-kr.utf-8 (POSIX locales use underscores)
 	if s == "" {
 		return ""
 	}
-	if strings.HasPrefix(s, "zh-tw") || strings.HasPrefix(s, "zh-hant") || strings.Contains(s, "chinese traditional") || strings.Contains(s, "繁體") {
-		return "zh-TW"
-	}
-	if strings.HasPrefix(s, "zh") || strings.Contains(s, "chinese") || strings.Contains(s, "中文") {
-		return "zh"
+	if strings.HasPrefix(s, "ko") || strings.Contains(s, "korean") || strings.Contains(s, "한국어") {
+		return "ko"
 	}
 	if strings.HasPrefix(s, "en") || strings.Contains(s, "english") {
 		return "en"

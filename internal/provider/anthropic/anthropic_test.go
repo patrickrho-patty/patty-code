@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // TestBuildRequest covers the protocol conversion: system lift, tool_use /
@@ -476,7 +476,7 @@ data: {"type":"content_block_stop","index":0}
 
 // LongCat's Anthropic-compatible SSE stream can omit message_start.usage and
 // report the complete usage object in message_delta. Those input/cache counters
-// must not disappear from Reasonix metrics and billing estimates.
+// must not disappear from patty metrics and billing estimates.
 func TestReadStreamUsageFromMessageDelta(t *testing.T) {
 	sse := `event: message_start
 data: {"type":"message_start","message":{"id":"msg_1"}}
@@ -993,7 +993,7 @@ data: {"type":"message_stop"}
 		Extra: map[string]any{
 			"auth_header": true,
 			"headers": map[string]string{
-				"User-Agent":        "Reasonix",
+				"User-Agent":        "Patty Code",
 				"Authorization":     "Bearer wrong",
 				"x-api-key":         "wrong",
 				"anthropic-version": "bad",
@@ -1025,8 +1025,8 @@ data: {"type":"message_stop"}
 	if gotVersion != anthropicVersion {
 		t.Fatalf("anthropic-version = %q, want %q", gotVersion, anthropicVersion)
 	}
-	if gotUserAgent != "Reasonix" {
-		t.Fatalf("User-Agent = %q, want Reasonix", gotUserAgent)
+	if gotUserAgent != "Patty Code" {
+		t.Fatalf("User-Agent = %q, want Patty Code", gotUserAgent)
 	}
 	if usage == nil || usage.RequestCount != 1 {
 		t.Fatalf("usage request count = %+v, want 1", usage)

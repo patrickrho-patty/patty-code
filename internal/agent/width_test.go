@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// TestStreamedRowsBasic covers the four cursor-position cases the markdown
-// redraw uses to decide how far up to move before clearing.
 func TestStreamedRowsBasic(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -32,16 +30,13 @@ func TestStreamedRowsBasic(t *testing.T) {
 	}
 }
 
-// TestStreamedRowsCJK proves CJK doubles the column footprint so a Chinese
-// line wraps at half the column count.
 func TestStreamedRowsCJK(t *testing.T) {
-	in := strings.Repeat("中", 6) // 12 cols at width 10 → 1 wrap
+	in := strings.Repeat("한", 6) // 12 cols at width 10 → 1 wrap
 	if got := streamedRows(in, 10); got != 1 {
-		t.Errorf("streamedRows(6×中, 10) = %d, want 1", got)
+		t.Errorf("streamedRows(6×한, 10) = %d, want 1", got)
 	}
 }
 
-// TestStreamedRowsIgnoresAnsi: ANSI SGR codes must not inflate the row count.
 func TestStreamedRowsIgnoresAnsi(t *testing.T) {
 	in := "\x1b[1mhello\x1b[0m world"
 	if got := streamedRows(in, 80); got != 0 {

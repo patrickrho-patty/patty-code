@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	agenttest "reasonix/internal/agent/testutil"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	agenttest "patty/internal/agent/testutil"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 type desktopCountingTool struct {

@@ -23,7 +23,7 @@ func render(results []result) string {
 	if len(results) > 0 && results[0].CacheArm != "" && results[0].CacheArm != benchmarkCacheCold {
 		cache = " · " + results[0].CacheArm + "-cache"
 	}
-	return fmt.Sprintf("## 🤖 Reasonix e2e benchmark (%s · arm `%s`%s)\n\n", profile, arm, cache) + renderBody(results)
+	return fmt.Sprintf("## 🤖 Patty Code e2e benchmark (%s · arm `%s`%s)\n\n", profile, arm, cache) + renderBody(results)
 }
 
 // suiteStats aggregates result entries; ran/pass1 count tasks (first

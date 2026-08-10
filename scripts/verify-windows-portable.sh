@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Verify the Windows portable release unit (versioned-v1) before packaging.
 # This must run on the Windows staging directory: NTFS treats file names
-# case-insensitively, so Reasonix.exe and reasonix.exe silently overwrite each
+# case-insensitively, so PatCode.exe and patcode.exe silently overwrite each
 # other even though a source-level packaging test sees two different strings.
 set -euo pipefail
 
@@ -10,9 +10,9 @@ staging="${1:?usage: verify-windows-portable.sh STAGING_DIR}"
 
 # Root entry points for versioned-v1 (no Guard, no flat desktop/helper).
 required_root=(
-	"Reasonix.exe"
-	"reasonix-cli.exe"
-	"reasonix-launcher.exe"
+	"PatCode.exe"
+	"patcode-cli.exe"
+	"patty-code-launcher.exe"
 	"current.json"
 )
 
@@ -49,7 +49,7 @@ if [ -z "$active_dir" ]; then
 	active_dir=""
 	for d in "${version_dirs[@]}"; do
 		base=$(basename "$d")
-		if [ -f "$d/reasonix-desktop.exe" ] && [ -f "$d/reasonix-cli.exe" ] && [ -f "$d/reasonix-update-helper.exe" ]; then
+		if [ -f "$d/patty-desktop.exe" ] && [ -f "$d/patcode-cli.exe" ] && [ -f "$d/patty-code-update-helper.exe" ]; then
 			active_dir="versions/$base"
 			break
 		fi
@@ -64,7 +64,7 @@ version_path="$staging/$active_dir"
 	echo "Windows portable activeDir does not exist: $active_dir" >&2
 	exit 1
 }
-for name in reasonix-desktop.exe reasonix-cli.exe reasonix-update-helper.exe; do
+for name in patty-desktop.exe patcode-cli.exe patty-code-update-helper.exe; do
 	[ -f "$version_path/$name" ] || {
 		echo "Windows portable version member is missing: $active_dir/$name" >&2
 		exit 1
@@ -72,18 +72,18 @@ for name in reasonix-desktop.exe reasonix-cli.exe reasonix-update-helper.exe; do
 done
 
 # Guard must not persist in a normal portable layout.
-if [ -e "$staging/reasonix-guard.exe" ] || [ -e "$staging/reasonix-desktop.exe" ]; then
-	echo "Windows portable must not ship flat reasonix-guard.exe or reasonix-desktop.exe at InstallRoot" >&2
+if [ -e "$staging/patty-code-guard.exe" ] || [ -e "$staging/patty-desktop.exe" ]; then
+	echo "Windows portable must not ship flat patty-code-guard.exe or patty-desktop.exe at InstallRoot" >&2
 	exit 1
 fi
 
-# Reasonix.exe is the portable alias of the thin launcher.
-cmp -s "$staging/Reasonix.exe" "$staging/reasonix-launcher.exe" || {
-	echo "Reasonix.exe is not the packaged GUI launcher" >&2
+# PatCode.exe is the portable alias of the thin launcher.
+cmp -s "$staging/PatCode.exe" "$staging/patty-code-launcher.exe" || {
+	echo "PatCode.exe is not the packaged GUI launcher" >&2
 	exit 1
 }
-if cmp -s "$staging/Reasonix.exe" "$staging/reasonix-cli.exe"; then
-	echo "Reasonix.exe was overwritten by the CLI sidecar" >&2
+if cmp -s "$staging/PatCode.exe" "$staging/patcode-cli.exe"; then
+	echo "PatCode.exe was overwritten by the CLI sidecar" >&2
 	exit 1
 fi
 

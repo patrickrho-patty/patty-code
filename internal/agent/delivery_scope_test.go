@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
 func TestDeliveryExecutionScopeDoesNotChangeProviderRequestBytes(t *testing.T) {

@@ -14,7 +14,7 @@ import { unescapeRefPath } from "./refToken";
 // Sentence punctuation is excluded from path characters: Windows forbids `：`
 // in file names, and the CJK/ASCII punctuation set below almost never appears
 // inside a real path. Excluding it at match time is far more reliable than
-// trimming a trailing marker after the fact ("D:\x\y.md。已生成" must stop at
+// trimming a trailing marker after the fact ("D:\x\y.md. generated" must stop at
 // `。`). `.` is deliberately kept (extensions) and only stripped when it is
 // actually trailing.
 const SENT_PUNCT = "，。；、！？,;!?（）";

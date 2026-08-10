@@ -4,9 +4,9 @@ import (
 	"sync"
 	"testing"
 
-	"reasonix/internal/boot"
-	"reasonix/internal/control"
-	"reasonix/internal/extension"
+	"patty/internal/boot"
+	"patty/internal/control"
+	"patty/internal/extension"
 )
 
 func TestRuntimeDoctorEmptyApp(t *testing.T) {

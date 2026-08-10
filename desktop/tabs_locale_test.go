@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
+	"patty/internal/config"
+	"patty/internal/control"
 )
 
 func TestDefaultTopicTitleLocalizesAtAPIBoundary(t *testing.T) {
@@ -14,8 +14,8 @@ func TestDefaultTopicTitleLocalizesAtAPIBoundary(t *testing.T) {
 		want   string
 	}{
 		{locale: "en-US", want: defaultTopicTitleEn},
-		{locale: "zh-CN", want: defaultTopicTitle},
-		{locale: "zh-TW", want: defaultTopicTitleZhTW},
+		{locale: "ko-KR", want: defaultTopicTitleEn},
+		{locale: "en-US", want: defaultTopicTitleEn},
 	} {
 		app.setDesktopLocale(tt.locale)
 		if got := app.localizedTopicTitle(defaultTopicTitle, topicTitleSourceAuto); got != tt.want {
@@ -30,9 +30,8 @@ func TestManualDefaultTopicTitleIsNotLocalized(t *testing.T) {
 		locale string
 		title  string
 	}{
-		{locale: "zh-CN", title: defaultTopicTitleEn},
+		{locale: "ko-KR", title: defaultTopicTitleEn},
 		{locale: "en-US", title: defaultTopicTitle},
-		{locale: "zh-CN", title: defaultTopicTitleZhTW},
 	} {
 		app.setDesktopLocale(tt.locale)
 		if got := app.localizedTopicTitle(tt.title, topicTitleSourceManual); got != tt.title {
@@ -45,7 +44,7 @@ func TestCreateTopicPreservesManualDefaultTitle(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	app := &App{}
 	app.projectTreeChangedHook = func() {}
-	app.setDesktopLocale("zh-CN")
+	app.setDesktopLocale("ko-KR")
 
 	manual, err := app.CreateTopic("global", "", defaultTopicTitleEn)
 	if err != nil {
@@ -66,8 +65,8 @@ func TestCreateTopicPreservesManualDefaultTitle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateTopic automatic: %v", err)
 	}
-	if automatic.Title != defaultTopicTitle {
-		t.Fatalf("automatic title = %q, want localized %q", automatic.Title, defaultTopicTitle)
+	if automatic.Title != defaultTopicTitleEn {
+		t.Fatalf("automatic title = %q, want localized %q", automatic.Title, defaultTopicTitleEn)
 	}
 	if err := app.RenameTopic(automatic.ID, defaultTopicTitleEn); err != nil {
 		t.Fatalf("RenameTopic manual default: %v", err)
@@ -82,7 +81,7 @@ func TestCreateTopicPreservesManualDefaultTitle(t *testing.T) {
 }
 
 func TestDefaultTopicTitleVariantsRemainPersistenceSentinels(t *testing.T) {
-	for _, title := range []string{defaultTopicTitle, defaultTopicTitleEn, defaultTopicTitleZhTW} {
+	for _, title := range []string{defaultTopicTitle, defaultTopicTitleEn} {
 		if !isDefaultTopicTitle(title) {
 			t.Fatalf("title %q was not recognized as a default sentinel", title)
 		}
@@ -98,17 +97,17 @@ func TestForkTopicTitleUsesDesktopLocale(t *testing.T) {
 	if got := app.forkTopicTitle("New session"); got != "Forked session" {
 		t.Fatalf("English fork title = %q", got)
 	}
-	app.setDesktopLocale("zh-TW")
-	if got := app.forkTopicTitle(defaultTopicTitle); got != "分叉會話" {
-		t.Fatalf("Traditional Chinese fork title = %q", got)
+	app.setDesktopLocale("en-US")
+	if got := app.forkTopicTitle(defaultTopicTitle); got != "Forked session" {
+		t.Fatalf("desktop fork title = %q", got)
 	}
 	app.desktopLocale.Store(desktopLocaleUnknown)
-	if got := app.forkTopicTitle(""); got != "分叉会话" {
+	if got := app.forkTopicTitle(""); got != "분기 세션" {
 		t.Fatalf("legacy fallback fork title = %q", got)
 	}
 }
 
-func TestSetTrayLocaleSchedulesAutoCurrencyRefresh(t *testing.T) {
+func TestSetTrayLocaleAutoCurrencyDoesNotRefreshForAnyLocale(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	cfg := config.Default()
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
@@ -128,12 +127,12 @@ func TestSetTrayLocaleSchedulesAutoCurrencyRefresh(t *testing.T) {
 	app.activeTabID = "active"
 	app.setDesktopLocale("en")
 
-	if err := app.SetTrayLocale("zh-CN"); err != nil {
+	if err := app.SetTrayLocale("ko-KR"); err != nil {
 		t.Fatalf("SetTrayLocale: %v", err)
 	}
 	for _, tabID := range []string{"active", "inactive"} {
-		if !app.deferredRebuildPending(tabID) {
-			t.Fatalf("currency refresh for %q was not scheduled", tabID)
+		if app.deferredRebuildPending(tabID) {
+			t.Fatalf("currency refresh for %q was scheduled despite an English-only auto currency", tabID)
 		}
 	}
 }
@@ -155,7 +154,7 @@ func TestSetTrayLocaleKeepsExplicitCurrencyRuntime(t *testing.T) {
 	app.activeTabID = "active"
 	app.setDesktopLocale("en")
 
-	if err := app.SetTrayLocale("zh-CN"); err != nil {
+	if err := app.SetTrayLocale("ko-KR"); err != nil {
 		t.Fatalf("SetTrayLocale: %v", err)
 	}
 	if app.deferredRebuildPending("active") {
@@ -165,11 +164,11 @@ func TestSetTrayLocaleKeepsExplicitCurrencyRuntime(t *testing.T) {
 
 func TestDesktopEffectivePricingCurrencyUsesLocaleOnlyForAuto(t *testing.T) {
 	app := NewApp()
-	app.setDesktopLocale("zh-CN")
+	app.setDesktopLocale("ko-KR")
 
 	cfg := config.Default()
-	if got := app.desktopEffectivePricingCurrency(cfg); got != "CNY" {
-		t.Fatalf("auto pricing currency = %q, want CNY", got)
+	if got := app.desktopEffectivePricingCurrency(cfg); got != "USD" {
+		t.Fatalf("auto pricing currency = %q, want USD", got)
 	}
 
 	cfg.Desktop.Language = "en"

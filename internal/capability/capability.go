@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 type Kind string
@@ -69,13 +69,7 @@ type RouteCandidate struct {
 
 type RouteDecision struct {
 	Candidates []RouteCandidate
-	// Delivery marks a Delivery-profile route: the transient block must direct
-	// the model to the stable use_capability proxy — connect_tool_source is not
-	// registered in Delivery, so instructing it would dead-end the route.
 	Delivery bool
-	// CapabilityProxy directs unready MCP candidates to use_capability rather
-	// than connect_tool_source. True for Delivery and for dual-model Planner
-	// boots that expose the stable proxy without Economy's connector.
 	CapabilityProxy bool
 }
 
@@ -149,9 +143,6 @@ func Route(input string, entries []Entry) RouteDecision {
 	return RouteDecision{Candidates: limitRouteCandidates(routeCandidates(input, entries))}
 }
 
-// RouteDelivery routes against the full matched set before promoting built-in
-// playbooks, so candidates that become prefer are never discarded by the
-// ordinary suggest budget first.
 func RouteDelivery(input string, entries []Entry) RouteDecision {
 	return PromoteDelivery(RouteDecision{Candidates: routeCandidates(input, entries)})
 }
@@ -182,9 +173,6 @@ func routeCandidates(input string, entries []Entry) []RouteCandidate {
 	return candidates
 }
 
-// PromoteDelivery strengthens matched built-in playbooks in Delivery. Custom
-// skills keep their authored auto-use policy; only shipped workflows with a
-// concrete trigger match move from suggest to prefer.
 func PromoteDelivery(decision RouteDecision) RouteDecision {
 	decision.Delivery = true
 	for i := range decision.Candidates {
@@ -250,9 +238,6 @@ func RenderTransientBlock(d RouteDecision) string {
 		}
 		switch {
 		case d.Delivery || proxyMCP:
-			// Delivery and dual-model Planner have no connect_tool_source for
-			// MCP; the stable proxy both connects and calls on demand, keeping
-			// the concrete capability id.
 			if e.Status != StatusReady {
 				switch e.Kind {
 				case KindMCPTool:
@@ -312,29 +297,27 @@ func explicitSkill(text, name string) bool {
 	return strings.Contains(text, "/"+n) ||
 		strings.Contains(text, "use "+n+" skill") ||
 		strings.Contains(text, "using "+n+" skill") ||
-		strings.Contains(text, "使用 "+n+" skill") ||
-		strings.Contains(text, "用 "+n+" skill") ||
-		strings.Contains(text, "使用"+n+"技能") ||
-		strings.Contains(text, "用"+n+"技能")
+		strings.Contains(text, n+" skill 사용") ||
+		strings.Contains(text, n+" 스킬 사용")
 }
 
 func explicitMCP(text, server string) bool {
 	s := normalize(server)
-	return strings.Contains(text, s+" mcp") || strings.Contains(text, "mcp "+s) || strings.Contains(text, "使用 "+s+" mcp") || strings.Contains(text, "用 "+s+" mcp")
+	return strings.Contains(text, s+" mcp") || strings.Contains(text, "mcp "+s) || strings.Contains(text, s+" mcp 사용")
 }
 
 func looksLikeReview(text string) bool {
 	return containsAny(text, []string{
-		"review", "code review", "security review", "帮我看看", "有没有问题", "审查", "评审", "检查这段代码", "看看这段代码",
+		"review", "code review", "security review", "보여주세요", "문제 여부", "검토", "검토", "이 코드 검사", "이 코드 확인",
 	})
 }
 
 func looksLikeGitHub(text string) bool {
-	return containsAny(text, []string{"github", "issue", "issues", "pull request", " pr ", "讨论区", "仓库 issue", "github 上"})
+	return containsAny(text, []string{"github", "issue", "issues", "pull request", " pr ", "토론 게시판", "저장소 issue", "github에서"})
 }
 
 func looksFreshData(text string) bool {
-	return containsAny(text, []string{"latest", "recent", "today", "现在", "最新", "最近", "查一下", "搜索", "github"})
+	return containsAny(text, []string{"latest", "recent", "today", "지금", "최신", "최근", "확인해 주세요", "검색", "github"})
 }
 
 func triggerMatch(text string, triggers []string) bool {

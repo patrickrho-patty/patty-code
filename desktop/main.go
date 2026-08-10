@@ -1,7 +1,7 @@
-// Command reasonix-desktop is the Wails shell around the Reasonix kernel: a native
+// Command patty-desktop is the Wails shell around the patty kernel: a native
 // window hosting a webview frontend, with the Go-side control.Controller bound
 // directly to the UI (no HTTP hop — bindings in, runtime events out). It lives in
-// a nested module (reasonix/desktop) so the CGO/WebKit desktop build never touches
+// a nested module (patty/desktop) so the CGO/WebKit desktop build never touches
 // the CLI's CGO_ENABLED=0 single-static-binary guarantee, while still importing
 // the same internal/* kernel.
 package main
@@ -22,12 +22,12 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
 	// Blank imports wire compile-time built-ins into their registries, exactly as
-	// cmd/reasonix does — boot.Build resolves providers/tools from these registries.
-	_ "reasonix/internal/provider/anthropic"
-	_ "reasonix/internal/provider/openai"
-	_ "reasonix/internal/provider/responses"
-	"reasonix/internal/repair"
-	_ "reasonix/internal/tool/builtin"
+	// cmd/patcode does — boot.Build resolves providers/tools from these registries.
+	_ "patty/internal/provider/anthropic"
+	_ "patty/internal/provider/openai"
+	_ "patty/internal/provider/responses"
+	"patty/internal/repair"
+	_ "patty/internal/tool/builtin"
 )
 
 // assets embeds the built frontend. `all:` so dotfiles (e.g. the dist .gitkeep
@@ -38,7 +38,7 @@ import (
 var assets embed.FS
 
 // version is injected at build time via `wails build -ldflags "-X main.version=..."`,
-// mirroring cmd/reasonix/main.go. The auto-updater reads it (App.Version) to compare
+// mirroring cmd/patcode/main.go. The auto-updater reads it (App.Version) to compare
 // against the published manifest; an un-injected dev build stays "dev" and never
 // prompts to update.
 var version = "dev"
@@ -54,7 +54,7 @@ var channel = "stable"
 var macSelfUpdate = "false"
 
 const (
-	disableWebview2GPUEnv  = "REASONIX_DESKTOP_DISABLE_WEBVIEW2_GPU"
+	disableWebview2GPUEnv  = "PATTY_DESKTOP_DISABLE_WEBVIEW2_GPU"
 	linuxDRIRenderNodeGlob = "/dev/dri/renderD*"
 )
 
@@ -105,14 +105,14 @@ func main() {
 	launch := parseDesktopLaunchArgs(os.Args[1:])
 
 	app := NewApp()
-	title := "Reasonix"
+	title := "Patty Code"
 	singleInstance := singleInstanceLock(app)
 	appMenu := app.createAppMenu()
 	dragAndDrop := &options.DragAndDrop{EnableFileDrop: true}
 	bindings := []any{app}
 
 	if launch.RemoteWindowTicket != "" {
-		// A remote web child window: a second Reasonix process that hosts the
+		// A remote web child window: a second Patty Code process that hosts the
 		// SSH Serve page for one remote host. It deliberately skips local
 		// runtimes (tabs, tray, heartbeat, providers) and exposes no Wails
 		// bindings, local menus, or file drops, so it can never act as a second
@@ -216,7 +216,7 @@ func main() {
 			WebviewGpuIsDisabled: windowsWebview2GPUDisabled(),
 		},
 		Linux: &linux.Options{
-			ProgramName: "Reasonix",
+			ProgramName: "Patty Code",
 			// WebKitGTK GPU compositing is inconsistent across distros/drivers and
 			// is the one real cross-platform rough edge for a Go+webview stack:
 			// "always" can yield blank or flickering webviews on some setups, so

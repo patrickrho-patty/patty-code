@@ -6,14 +6,10 @@ import (
 	"testing"
 )
 
-// TestCatalogsComplete reflects over English (the baseline) and asserts every
-// other catalogue populates the same fields. Empty strings count as missing
-// translations so drift fails CI instead of surfacing as blank output. As new
-// languages land they get added to the catalogs map below.
 func TestCatalogsComplete(t *testing.T) {
-	en := reflect.ValueOf(English)
-	typ := en.Type()
-	catalogs := map[string]reflect.Value{"zh": reflect.ValueOf(Chinese), "zh-TW": reflect.ValueOf(ChineseTraditional)}
+	baseline := reflect.ValueOf(Korean)
+	typ := baseline.Type()
+	catalogs := map[string]reflect.Value{"ko": reflect.ValueOf(Korean), "en": reflect.ValueOf(English)}
 	for tag, cat := range catalogs {
 		for i := range typ.NumField() {
 			name := typ.Field(i).Name
@@ -24,26 +20,21 @@ func TestCatalogsComplete(t *testing.T) {
 	}
 }
 
-// TestCatalogsAgreeOnPlaceholders catches translations that silently drop or
 // gain %s/%d/%q placeholders — a class of bug that only blows up when the
-// affected message is rendered. Compares the count per format verb across
 // languages for any field whose name ends in "Fmt".
 func TestCatalogsAgreeOnPlaceholders(t *testing.T) {
+	ko := reflect.ValueOf(Korean)
 	en := reflect.ValueOf(English)
-	typ := en.Type()
+	typ := ko.Type()
 	for i := range typ.NumField() {
 		name := typ.Field(i).Name
 		if !strings.HasSuffix(name, "Fmt") {
 			continue
 		}
-		want := countVerbs(en.Field(i).String())
-		got := countVerbs(reflect.ValueOf(Chinese).Field(i).String())
+		want := countVerbs(ko.Field(i).String())
+		got := countVerbs(en.Field(i).String())
 		if want != got {
-			t.Errorf("%s: en has %d verbs, zh has %d", name, want, got)
-		}
-		gotTW := countVerbs(reflect.ValueOf(ChineseTraditional).Field(i).String())
-		if want != gotTW {
-			t.Errorf("%s: en has %d verbs, zh-TW has %d", name, want, gotTW)
+			t.Errorf("%s: ko has %d verbs, en has %d", name, want, got)
 		}
 	}
 }
@@ -55,8 +46,6 @@ func TestPlanApprovalChoicesExposeThreeExplicitActions(t *testing.T) {
 		want  []string
 	}{
 		{tag: "en", value: English.PlanApprovalChoices, want: []string{"Start execution", "Revise plan", "Exit without executing"}},
-		{tag: "zh", value: Chinese.PlanApprovalChoices, want: []string{"开始执行", "修改计划", "暂不执行，退出计划模式"}},
-		{tag: "zh-TW", value: ChineseTraditional.PlanApprovalChoices, want: []string{"開始執行", "修改計畫", "暫不執行，退出計畫模式"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.tag, func(t *testing.T) {
@@ -80,7 +69,6 @@ func TestPlanApprovalChoicesExposeThreeExplicitActions(t *testing.T) {
 }
 
 // countVerbs counts unescaped fmt placeholders (%s, %d, %q, %v, …). %% does
-// not count.
 func countVerbs(s string) int {
 	n := 0
 	for i := 0; i < len(s); i++ {
@@ -97,26 +85,27 @@ func countVerbs(s string) int {
 }
 
 // TestNormalize covers the locale-string shapes likely to land in $LANG /
-// $LC_ALL / $REASONIX_LANG. Unknown locales return "" so DetectLanguage falls
-// through to the next candidate instead of mis-routing.
+// $LC_ALL / $PATTY_LANG. Unknown locales return "" so DetectLanguage falls
 func TestNormalize(t *testing.T) {
 	cases := map[string]string{
-		"":                    "",
-		"en":                  "en",
-		"en_US.UTF-8":         "en",
-		"zh":                  "zh",
-		"zh_CN.UTF-8":         "zh",
-		"zh-Hans-CN":          "zh",
-		"Chinese (China)":     "zh",
-		"中文":                  "zh",
-		"zh-TW":               "zh-TW",
-		"zh_TW.UTF-8":         "zh-TW",
-		"zh-Hant-TW":          "zh-TW",
-		"zh-Hant":             "zh-TW",
-		"Chinese Traditional": "zh-TW",
-		"繁體":                  "zh-TW",
-		"fr_FR.UTF-8":         "",
-		"  ZH_TW  ":           "zh-TW",
+		"":                "",
+		"en":              "en",
+		"en_US.UTF-8":     "en",
+		"ko-KR":           "ko",
+		"ko_KR.UTF-8":     "ko",
+		"한국어":             "ko",
+		"Korean":          "ko",
+		"en-US":           "en",
+		"zh_CN.UTF-8":     "", // Chinese is no longer a supported option
+		"zh-Hans-CN":      "",
+		"Chinese (China)": "",
+		"중국어":             "",
+		"zh_TW.UTF-8":     "",
+		"zh-Hant-TW":      "",
+		"zh-Hant":         "",
+		"번체":              "",
+		"fr_FR.UTF-8":     "",
+		"  ZH_TW  ":       "",
 	}
 	for in, want := range cases {
 		if got := normalize(in); got != want {
@@ -125,36 +114,87 @@ func TestNormalize(t *testing.T) {
 	}
 }
 
-// TestDetectLanguagePriority verifies override beats env and that REASONIX_LANG
-// beats LANG. With a clean env we fall back to English.
 func TestDetectLanguagePriority(t *testing.T) {
-	t.Setenv("REASONIX_LANG", "")
+	t.Setenv("PATTY_LANG", "")
 	t.Setenv("LC_ALL", "")
 	t.Setenv("LC_MESSAGES", "")
 	t.Setenv("LANG", "")
 	defer DetectLanguage("") // restore default for other tests
 
+	if got := DetectLanguage(""); got != "ko" {
+		t.Errorf("clean env: got %q, want ko (Korean default)", got)
+	}
+
+	t.Setenv("LANG", "en_US.UTF-8")
+	if got := DetectLanguage(""); got != "ko" {
+		t.Errorf("LANG=en_US.UTF-8: got %q, want ko (ambient locale does not override product default)", got)
+	}
+
+	t.Setenv("PATTY_LANG", "en")
 	if got := DetectLanguage(""); got != "en" {
-		t.Errorf("clean env: got %q, want en", got)
+		t.Errorf("PATTY_LANG=en: got %q, want explicit English opt-in", got)
 	}
 
-	t.Setenv("LANG", "zh_CN.UTF-8")
-	if got := DetectLanguage(""); got != "zh" {
-		t.Errorf("LANG=zh_CN.UTF-8: got %q, want zh", got)
+	if got := DetectLanguage("en-US"); got != "en" {
+		t.Errorf("override=en-US: got %q, want en", got)
 	}
+	if got := CurrentLanguage(); got != "en" {
+		t.Errorf("current language = %q, want en", got)
+	}
+	if got := DetectLanguage("ko-KR"); got != "ko" || CurrentLanguage() != "ko" {
+		t.Errorf("korean current language = %q/%q, want ko", got, CurrentLanguage())
+	}
+}
 
-	t.Setenv("REASONIX_LANG", "en")
-	if got := DetectLanguage(""); got != "en" {
-		t.Errorf("REASONIX_LANG=en overriding LANG=zh: got %q, want en", got)
-	}
+func TestSeoulFlowChromeCopyIsCompleteInKoreanAndEnglish(t *testing.T) {
+	t.Cleanup(func() { DetectLanguage("") })
 
-	if got := DetectLanguage("zh"); got != "zh" {
-		t.Errorf("override=zh: got %q, want zh", got)
-	}
-	if got := CurrentLanguage(); got != "zh" {
-		t.Errorf("current language = %q, want zh", got)
-	}
-	if got := DetectLanguage("zh-TW"); got != "zh-TW" || CurrentLanguage() != "zh-TW" {
-		t.Errorf("traditional Chinese current language = %q/%q, want zh-TW", got, CurrentLanguage())
+	for _, tt := range []struct {
+		name string
+		lang string
+		want []string
+	}{
+		{
+			name: "korean-default",
+			lang: "ko",
+			want: []string{
+				"명령 / 메시지", "명령 또는 질문을 입력하세요",
+				"/ 명령어", "@ 파일", "! 셸", "? 단축키",
+				"작업", "모델", "추론", "여유", "자동", "보통",
+			},
+		},
+		{
+			name: "english-selectable",
+			lang: "en",
+			want: []string{
+				"COMMAND / MESSAGE", "Type a command or ask a question",
+				"/ commands", "@ files", "! shell", "? shortcuts",
+				"MODE", "MODEL", "EFFORT", "HEADROOM", "AUTO", "MEDIUM",
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			DetectLanguage(tt.lang)
+			got := []string{
+				M.ChatComposerTitle,
+				M.ChatComposerPlaceholder,
+				M.ChatComposerCommandsHint,
+				M.ChatComposerFilesHint,
+				M.ChatComposerShellHint,
+				M.ChatComposerShortcutsHint,
+				M.ChatStatusModeLabel,
+				M.ChatStatusModelLabel,
+				M.ChatStatusEffortLabel,
+				M.ChatStatusHeadroomLabel,
+				M.ChatModeAuto,
+				M.ChatEffortMedium,
+			}
+			if strings.Join(got, "\n") != strings.Join(tt.want, "\n") {
+				t.Fatalf("Seoul-flow chrome copy = %#v, want %#v", got, tt.want)
+			}
+			if strings.Contains(strings.Join(got, " "), "ENGINE") {
+				t.Fatalf("Seoul-flow model label must be MODEL, not ENGINE: %#v", got)
+			}
+		})
 	}
 }

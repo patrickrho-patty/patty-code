@@ -110,10 +110,10 @@ eq(Object.keys(DECISION_SURFACE_MOCK_TRIGGERS).length, 7, "QA stress scenes do n
 for (const [kind, trigger] of Object.entries(DECISION_SURFACE_MOCK_TRIGGERS)) {
   eq(decisionSurfaceMockFromInput(trigger), kind, `${kind} has a distinct canonical browser mock trigger`);
 }
-eq(decisionSurfaceMockFromInput("mock 工作区冲突"), "workspace_conflict", "Chinese mock phrases remain convenient for visual QA");
+eq(decisionSurfaceMockFromInput("mock workspace conflict"), "workspace_conflict", "English mock phrases remain convenient for visual QA");
 eq(decisionSurfaceMockFromInput("/approve-preview"), "tool_approval", "legacy approval preview trigger remains compatible");
 eq(isLongDecisionOptionsMockInput(LONG_DECISION_OPTIONS_MOCK_TRIGGER), true, "long-option QA has a canonical browser trigger");
-eq(isLongDecisionOptionsMockInput("mock 长文案选项"), true, "long-option QA has a convenient Chinese trigger");
+eq(isLongDecisionOptionsMockInput("mock long option text"), true, "long-option QA has a convenient English trigger");
 eq(decisionSurfaceMockFromInput(LONG_DECISION_OPTIONS_MOCK_TRIGGER), null, "long-option QA is not counted as an eighth product surface");
 
 // Plan exposes start, revise, and leave-without-executing as direct buttons so

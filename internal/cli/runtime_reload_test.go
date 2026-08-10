@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"reasonix/internal/boot"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
+	"patty/internal/boot"
+	"patty/internal/control"
+	"patty/internal/event"
 )
 
 // stubRuntimeRebuilder records how often the /reload build seam ran and

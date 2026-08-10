@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 const interruptedRecoveryTag = "interrupted-turn-recovery"

@@ -1,4 +1,4 @@
-# Reasonix Benchmarks
+# Patty Code Benchmarks
 
 Two primary harnesses live under `benchmarks/`; `cmd/e2ebench` also exposes a
 SWE-bench Verified mode:
@@ -65,7 +65,7 @@ decoder. The task ID is the directory name; tasks run in sorted ID order.
 | --- | --- | --- | --- |
 | `prompt` | string | yes | The task instruction handed to the agent. |
 | `class` | string | no | Task class label (e.g. `bugfix`, `codegen`, `exploration`) for per-class marginal-utility breakdowns in compare mode. |
-| `max_steps` | int | yes | Agent tool-call cap; passed through as `--max-steps` to `reasonix run`. |
+| `max_steps` | int | yes | Agent tool-call cap; passed through as `--max-steps` to `patty code run`. |
 | `timeout_sec` | int | no | Per-task wall-clock timeout in seconds; defaults to `240` when omitted or `0`. |
 
 Example (`tasks/fizzbuzz/task.toml`):
@@ -101,9 +101,9 @@ bytecode while tracebacks display the new source.
 
 ## Running the e2e suite
 
-Prerequisites: a `reasonix` binary (or `go run ./cmd/reasonix` …) with a
+Prerequisites: a `patty` binary (or `go run ./cmd/patty` …) with a
 configured provider. The harness invokes the agent as
-`reasonix run --auto --metrics <path> [--model NAME] [--max-steps N] [--profile delivery] [--ablate ARM] <prompt>`
+`patty code run --auto --metrics <path> [--model NAME] [--max-steps N] [--profile delivery] [--ablate ARM] <prompt>`
 inside a temp copy of the task's `workdir/`; the `--auto` flag is deliberate so
 unattended fixture writes are allowed.
 
@@ -134,13 +134,13 @@ own outcome).
 | `-suite` | `benchmarks/e2e` | Suite root (must contain `tasks/<id>/`). |
 | `-task` | *(all)* | Suite mode: run only these comma-separated task IDs (e.g. `-task fix-add-bug`); unknown IDs fail with the available list. |
 | `-attempts` | `1` | Suite and diff modes: retry a task until an attempt passes, up to N; enables the `Pass@≤N` KPI, and TTCS charges a retried solve with its failed attempts' wall. |
-| `-bin` | `reasonix` | Path to the reasonix binary. |
+| `-bin` | `patty` | Path to the patty code binary. |
 | `-model` | *(config default)* | Provider/model name. |
 | `-profile` | `baseline` | Tool-surface/runtime tier: `baseline` \| `economy` \| `balanced` \| `delivery`. All but `baseline` append `--profile <tier>` to the agent invocation; `baseline` passes no flag (byte-identical legacy control, behaviorally `balanced`). Economy starts with the core tool set and pays `connect_tool_source` rounds plus prefix resets to grow it — the report's Tool surface line prices that trade. |
 | `-ablate` | *(none)* | Ablation arm: comma-separated subsystems to switch off — `evidence`, `planner`, `subagent`, `retrieval`, `compaction`; `none` \| `all`. |
 | `-out` | *(stdout)* | Write the markdown report here. |
 | `-json` | *(none)* | Write the JSON report here (optional). |
-| `-trajectories` | *(none)* | Suite mode: write one `<task-id>.trajectory.jsonl` per task into this directory (the agent's full event stream with timestamps — see `reasonix run --trajectory`). The report gains a time-attribution line (tools vs. model) and each JSON result a `trajectory` digest. |
+| `-trajectories` | *(none)* | Suite mode: write one `<task-id>.trajectory.jsonl` per task into this directory (the agent's full event stream with timestamps — see `patty code run --trajectory`). The report gains a time-attribution line (tools vs. model) and each JSON result a `trajectory` digest. |
 | `-force-planner` | `false` | Suite mode: prefix each prompt with a plan-first directive so the two-model turn engages regardless of the planner gate. Use for the "with planner" arm of an A/B; results carry `plan_forced` so arms are only comparable with equal forcing. |
 | `-cache` | `cold` | Suite mode: `cold` runs each task as a fresh session (the fair cross-agent comparison arm); `warm` primes the provider prefix cache with a one-step run in the same workdir first, measuring the long-lived-session steady state. Never mix arms in one report — compare them with `-mode compare cold.json warm.json`. |
 | `-budget` | `800000` | Abort once total tokens cross this (`0` = no cap). Remaining tasks are reported as skipped. |
@@ -193,7 +193,7 @@ images and hand the resulting patches to the official grader:
 # network/proxy setup that prevents the agent from reading upstream fixes.
 go run ./cmd/e2ebench -mode swebench \
   -subset benchmarks/swebench/subset.json \
-  -network reasonix-eval -proxy http://127.0.0.1:8080
+  -network patty code-eval -proxy http://127.0.0.1:8080
 ```
 
 SWE-bench mode accepts the `-model`, `-profile`, `-ablate`, `-permission`,
@@ -249,7 +249,7 @@ go run ./benchmarks/context-maintenance-e2e comprehension
 
 ## See also
 
-- [`docs/CLI.md`](../docs/CLI.md) — the `reasonix run` flags the e2e harness
+- [`docs/CLI.md`](../docs/CLI.md) — the `patty code run` flags the e2e harness
   passes through (`--auto`, `--metrics`, `--model`, `--max-steps`,
   `--profile`, `--ablate`).
 - [`cmd/e2ebench/main.go`](../cmd/e2ebench/main.go) — suite runner and report

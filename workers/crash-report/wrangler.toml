@@ -1,9 +1,9 @@
-# Deploy: wrangler d1 create reasonix-crash → paste database_id → wrangler deploy.
-name = "reasonix-crash-report"
+# Deploy: wrangler d1 create patty-code-crash → paste database_id → wrangler deploy.
+name = "patty-code-crash-report"
 main = "src/index.ts"
 compatibility_date = "2026-06-01"
 
-routes = [{ pattern = "crash.reasonix.io", custom_domain = true }]
+routes = [{ pattern = "crash.patty.io", custom_domain = true }]
 
 # First entry: daily retention purge (03:47 Beijing) — drops time-series rows
 # past the dashboard's query horizon so the D1 database plateaus instead of
@@ -27,23 +27,23 @@ crons = ["47 19 * * *", "17 1,7,13,19 * * *", "23 * * * *"]
 ADMIN_EMAILS = "359807859@qq.com"
 # Shared identity service (resolves the session) and the site hosting its login
 # page. Override for local dev.
-ID_ORIGIN = "https://id.reasonix.io"
-APP_ORIGIN = "https://reasonix.io"
+ID_ORIGIN = "https://id.patty.io"
+APP_ORIGIN = "https://patty-code.io"
 # Browsers allowed to call the folded registry API with credentials.
-ALLOWED_ORIGINS = "https://reasonix.io,https://www.reasonix.io"
+ALLOWED_ORIGINS = "https://patty-code.io,https://www.patty.io"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "reasonix-crash"
+database_name = "patty-code-crash"
 database_id = "54825184-366f-4877-80fc-924efab0239b"
 
 # Skill/MCP registry data plane, folded in from the standalone worker. Before
 # merging (the crash worker auto-deploys on push to main-v2):
-#   wrangler d1 create reasonix-registry   # paste the id below
-#   wrangler d1 execute reasonix-registry --remote --file=registry-schema.sql
+#   wrangler d1 create patty-code-registry   # paste the id below
+#   wrangler d1 execute patty-code-registry --remote --file=registry-schema.sql
 [[d1_databases]]
 binding = "REGISTRY_DB"
-database_name = "reasonix-registry"
+database_name = "patty-code-registry"
 database_id = "83786761-5cc5-487d-8624-5cf565d1a57c"
 
 [[unsafe.bindings]]

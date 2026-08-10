@@ -7,14 +7,14 @@ import (
 	"slices"
 	"strings"
 
-	"reasonix/internal/tool"
+	"patty/internal/tool"
 )
 
-// ManagedConfigPaths is the set of Reasonix-owned configuration FILES a file
+// ManagedConfigPaths is the set of Patty Code-owned configuration FILES a file
 // tool may write outside the workspace roots, each write gated by a fresh
 // human approval (see tool.ConfigWriteApprover). The zero value matches
 // nothing, preserving plain workspace confinement. Entries are individual
-// files, never directories: the Reasonix home also holds credentials (.env),
+// files, never directories: the patty home also holds credentials (.env),
 // global hooks (settings.json), skills, and session stores, which must not
 // become writable through this escape hatch.
 type ManagedConfigPaths struct {
@@ -59,8 +59,8 @@ func (m ManagedConfigPaths) Match(target string) bool {
 func (m ManagedConfigPaths) approve(ctx context.Context, target string) error {
 	approver, ok := tool.ConfigWriteApproverFrom(ctx)
 	if !ok {
-		return fmt.Errorf("path %q is a Reasonix-managed config file outside the writable roots; writing it requires interactive user approval, which this session cannot provide. "+
-			"Ask the user to retry in an interactive session, or to add the directory to [sandbox] allow_write in reasonix.toml", target)
+		return fmt.Errorf("path %q is a patty-managed config file outside the writable roots; writing it requires interactive user approval, which this session cannot provide. "+
+			"Ask the user to retry in an interactive session, or to add the directory to [sandbox] allow_write in patty.toml", target)
 	}
 	req := tool.ConfigWriteRequest{Path: target}
 	if checker, ok := approver.(tool.ConfigWriteSessionChecker); ok && checker.ManagedConfigWriteSessionAllowed(ctx, req) {
@@ -72,7 +72,7 @@ func (m ManagedConfigPaths) approve(ctx context.Context, target string) error {
 	}
 	if !allow {
 		if strings.TrimSpace(reason) == "" {
-			reason = "the user declined this Reasonix config write — do not retry it; ask how they would like to proceed."
+			reason = "the user declined this Patty Code config write — do not retry it; ask how they would like to proceed."
 		}
 		return errors.New(reason)
 	}

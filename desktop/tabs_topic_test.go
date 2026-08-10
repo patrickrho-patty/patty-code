@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/control"
 )
 
 type runtimeStatusSessionController struct {
@@ -1115,7 +1115,7 @@ func TestProjectTreeKeepsAmbiguousMigratedRecoveryTopicVisible(t *testing.T) {
 		UpdatedAt:  time.Now().Add(-time.Hour),
 		Scope:      "global",
 		TopicID:    topicID,
-		TopicTitle: "恢复分支",
+		TopicTitle: "분기 복원",
 		Turns:      1,
 		Preview:    "legacy recovery prompt",
 	}); err != nil {
@@ -1189,7 +1189,7 @@ func TestProjectTreeRepairsIndexedGlobalTopicsAfterMigrationMarker(t *testing.T)
 		UpdatedAt:  time.Now().Add(-time.Hour),
 		Scope:      "global",
 		TopicID:    topicID,
-		TopicTitle: "你是谁",
+		TopicTitle: "당신은 누구세요",
 		Turns:      1,
 		Preview:    "who are you",
 	}); err != nil {
@@ -1213,15 +1213,15 @@ func TestProjectTreeRepairsIndexedGlobalTopicsAfterMigrationMarker(t *testing.T)
 	if global == nil {
 		t.Fatalf("project tree = %#v, want repaired Global folder", nodes)
 	}
-	if len(global.Children) != 1 || global.Children[0].TopicID != topicID || global.Children[0].Label != "你是谁" {
+	if len(global.Children) != 1 || global.Children[0].TopicID != topicID || global.Children[0].Label != "당신은 누구세요" {
 		t.Fatalf("global children = %#v, want repaired topic %q with preserved title", global.Children, topicID)
 	}
 	f := loadProjectsFile()
 	if !containsDesktopString(f.GlobalTopics, topicID) {
 		t.Fatalf("globalTopics = %#v, want %q", f.GlobalTopics, topicID)
 	}
-	if got := loadTopicTitle("", topicID); got != "你是谁" {
-		t.Fatalf("global topic title = %q, want 你是谁", got)
+	if got := loadTopicTitle("", topicID); got != "당신은 누구세요" {
+		t.Fatalf("global topic title = %q, want 당신은 누구세요", got)
 	}
 }
 
@@ -1243,7 +1243,7 @@ func TestDeletedRepairedGlobalTopicIsNotAutoRestored(t *testing.T) {
 		UpdatedAt:  time.Now().Add(-time.Hour),
 		Scope:      "global",
 		TopicID:    topicID,
-		TopicTitle: "临时 Global",
+		TopicTitle: "임시 Global",
 		Turns:      1,
 		Preview:    "delete repaired topic",
 	}); err != nil {
@@ -1307,8 +1307,8 @@ func TestRepairRescanKeepsIndexedTopicsUntouched(t *testing.T) {
 		return p
 	}
 	now := time.Now()
-	olderPath := writeIndexedSession("older.jsonl", "legacy_older_000000000001", "旧话题", now.Add(-3*time.Hour))
-	writeIndexedSession("newer.jsonl", "legacy_newer_000000000002", "新话题", now.Add(-time.Hour))
+	olderPath := writeIndexedSession("older.jsonl", "legacy_older_000000000001", "이전 주제", now.Add(-3*time.Hour))
+	writeIndexedSession("newer.jsonl", "legacy_newer_000000000002", "새 주제", now.Add(-time.Hour))
 	markTopicMigrationDone(dir)
 
 	// First pass repairs both missing topics.
@@ -1401,13 +1401,13 @@ func TestTombstonedTitleOnlyTopicStaysHiddenInProjectTree(t *testing.T) {
 	// Control: a legitimate title-only topic (not in GlobalTopics) must keep
 	// rendering through the orderedTopicIDs title-map fallback.
 	controlID := "topic_control_visible"
-	if err := setTopicTitle("", controlID, "正常话题"); err != nil {
+	if err := setTopicTitle("", controlID, "정상 주제"); err != nil {
 		t.Fatalf("set control title: %v", err)
 	}
 	// Race product: DeleteTopic landed, but a stale whole-map save wrote the
 	// topic's title back — tombstoned, absent from GlobalTopics, title present.
 	tombstonedID := "legacy_raced_000000000009"
-	if err := setTopicTitle("", tombstonedID, "被删除的话题"); err != nil {
+	if err := setTopicTitle("", tombstonedID, "삭제된 주제"); err != nil {
 		t.Fatalf("set stale title: %v", err)
 	}
 	if err := updateProjectsFile(func(f *desktopProjectFile) (bool, error) {
@@ -1454,7 +1454,7 @@ func TestRepairPassPrunesStaleTitleOfDeletedTopic(t *testing.T) {
 	// global title map. The next repair pass that saves the whole map must
 	// prune it instead of persisting it again.
 	tombstonedID := "legacy_raced_000000000010"
-	if err := setTopicTitle("", tombstonedID, "被删除的话题"); err != nil {
+	if err := setTopicTitle("", tombstonedID, "삭제된 주제"); err != nil {
 		t.Fatalf("set stale title: %v", err)
 	}
 	if err := updateProjectsFile(func(f *desktopProjectFile) (bool, error) {
@@ -1472,7 +1472,7 @@ func TestRepairPassPrunesStaleTitleOfDeletedTopic(t *testing.T) {
 		UpdatedAt:  time.Now().Add(-time.Hour),
 		Scope:      "global",
 		TopicID:    repairID,
-		TopicTitle: "待修复话题",
+		TopicTitle: "복구 대기 주제",
 		Turns:      1,
 		Preview:    "needs repair",
 	}); err != nil {
@@ -1486,8 +1486,8 @@ func TestRepairPassPrunesStaleTitleOfDeletedTopic(t *testing.T) {
 	if got := loadTopicTitle("", tombstonedID); got != "" {
 		t.Fatalf("stale title = %q, repair save should prune the tombstoned entry", got)
 	}
-	if got := loadTopicTitle("", repairID); got != "待修复话题" {
-		t.Fatalf("repaired title = %q, want 待修复话题", got)
+	if got := loadTopicTitle("", repairID); got != "복구 대기 주제" {
+		t.Fatalf("repaired title = %q, want 복구 대기 주제", got)
 	}
 	f := loadProjectsFile()
 	if containsDesktopString(f.GlobalTopics, tombstonedID) {
@@ -1520,7 +1520,7 @@ func TestTopicMigrationDefersEmptyLegacySession(t *testing.T) {
 func TestV05LegacyEventSessionsImportIntoGlobalTopic(t *testing.T) {
 	home := isolateDesktopUserDirs(t)
 
-	legacyDir := filepath.Join(home, ".reasonix", "sessions")
+	legacyDir := filepath.Join(home, ".patty", "sessions")
 	destDir := config.SessionDir()
 	writeLegacyEventSession(t, legacyDir, "v053-chat.events.jsonl", "hello from v0.53", "hi from v0.53", time.Now().Add(-time.Hour))
 
@@ -1773,7 +1773,7 @@ func TestPersistTabSessionPathUsesSessionDirOwnerBeforeSavingMeta(t *testing.T) 
 
 func TestBuildTabControllerIgnoresStaleSessionModelWhenTabModelResolves(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("REASONIX_TEST_KEY", "sk-test")
+	t.Setenv("PATTY_TEST_KEY", "sk-test")
 	if err := os.MkdirAll(filepath.Dir(config.UserConfigPath()), 0o755); err != nil {
 		t.Fatalf("mkdir config dir: %v", err)
 	}
@@ -1785,14 +1785,14 @@ name = "default-provider"
 kind = "openai"
 base_url = "https://default.invalid/v1"
 model = "default-model"
-api_key_env = "REASONIX_TEST_KEY"
+api_key_env = "PATTY_TEST_KEY"
 
 [[providers]]
 name = "tab-provider"
 kind = "openai"
 base_url = "https://tab.invalid/v1"
 model = "tab-model"
-api_key_env = "REASONIX_TEST_KEY"
+api_key_env = "PATTY_TEST_KEY"
 `), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -1838,7 +1838,7 @@ func TestLoadPinnedTabSessionFallsBackToMigratedBasename(t *testing.T) {
 		t.Fatalf("mkdir sessions: %v", err)
 	}
 	path := writeLegacySession(t, dir, "migrated-tab.jsonl", "resume after path migration", time.Now())
-	oldPath := filepath.Join(t.TempDir(), "old-reasonix", "projects", "slug", "sessions", filepath.Base(path))
+	oldPath := filepath.Join(t.TempDir(), "old-patty", "projects", "slug", "sessions", filepath.Base(path))
 
 	loaded, pinnedPath, ok, err := loadPinnedTabSession(dir, oldPath)
 	if err != nil {
@@ -1909,7 +1909,7 @@ func TestLoadPinnedTabSessionPreservesLoadError(t *testing.T) {
 
 func TestBuildTabControllerSurfacesPinnedSessionLoadError(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("REASONIX_TEST_KEY", "sk-test")
+	t.Setenv("PATTY_TEST_KEY", "sk-test")
 	if err := os.MkdirAll(filepath.Dir(config.UserConfigPath()), 0o755); err != nil {
 		t.Fatalf("mkdir config dir: %v", err)
 	}
@@ -1921,7 +1921,7 @@ name = "test-provider"
 kind = "openai"
 base_url = "https://test.invalid/v1"
 model = "test-model"
-api_key_env = "REASONIX_TEST_KEY"
+api_key_env = "PATTY_TEST_KEY"
 `), 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -2184,7 +2184,7 @@ func TestRestoredProjectTabUsesStoredTopicTitle(t *testing.T) {
 	if err := addProject(projectRoot, ""); err != nil {
 		t.Fatalf("add project: %v", err)
 	}
-	if err := setTopicTitle(projectRoot, topicID, "你是谁"); err != nil {
+	if err := setTopicTitle(projectRoot, topicID, "당신은 누구세요?"); err != nil {
 		t.Fatalf("set topic title: %v", err)
 	}
 
@@ -2198,8 +2198,8 @@ func TestRestoredProjectTabUsesStoredTopicTitle(t *testing.T) {
 	if len(tabs) != 1 {
 		t.Fatalf("tabs len = %d, want 1", len(tabs))
 	}
-	if got := tabs[0].TopicTitle; got != "你是谁" {
-		t.Fatalf("tab title = %q, want 你是谁", got)
+	if got := tabs[0].TopicTitle; got != "당신은 누구세요?" {
+		t.Fatalf("tab title = %q, want 당신은 누구세요?", got)
 	}
 	nodes := app.ListProjectTree()
 	if len(nodes) != 1 || len(nodes[0].Children) != 1 {
@@ -2279,7 +2279,7 @@ func TestListProjectTreeFallsBackToTopicIDCreatedAt(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	const topicID = "legacy_20260606-114914_2276f13fd87c"
-	if err := setTopicTitleWithSource("", topicID, "你好，你是谁", topicTitleSourceManual); err != nil {
+	if err := setTopicTitleWithSource("", topicID, "안녕하세요, 당신은 누구세요?", topicTitleSourceManual); err != nil {
 		t.Fatalf("set topic title: %v", err)
 	}
 	if err := prependTopicInProjectsFile("", topicID, false); err != nil {
@@ -2402,11 +2402,11 @@ func TestRenameTopicLocksTitleManual(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create topic: %v", err)
 	}
-	if err := app.RenameTopic(topic.ID, "手动标题"); err != nil {
+	if err := app.RenameTopic(topic.ID, "수동 제목"); err != nil {
 		t.Fatalf("rename topic: %v", err)
 	}
-	if got := loadTopicTitle(projectRoot, topic.ID); got != "手动标题" {
-		t.Fatalf("stored title = %q, want 手动标题", got)
+	if got := loadTopicTitle(projectRoot, topic.ID); got != "수동 제목" {
+		t.Fatalf("stored title = %q, want 수동 제목", got)
 	}
 	if got := loadTopicTitleSource(projectRoot, topic.ID); got != topicTitleSourceManual {
 		t.Fatalf("title source = %q, want manual", got)
@@ -2418,7 +2418,7 @@ func TestRenameTopicUpdatesOpenTabMeta(t *testing.T) {
 
 	projectRoot := t.TempDir()
 	app := NewApp()
-	topic, err := app.CreateTopic("project", projectRoot, "旧标题")
+	topic, err := app.CreateTopic("project", projectRoot, "이전 제목")
 	if err != nil {
 		t.Fatalf("create topic: %v", err)
 	}
@@ -2427,19 +2427,19 @@ func TestRenameTopicUpdatesOpenTabMeta(t *testing.T) {
 		t.Fatalf("open project tab: %v", err)
 	}
 	waitForTabReady(t, app, tab.ID)
-	if tab.TopicTitle != "旧标题" {
-		t.Fatalf("opened tab title = %q, want 旧标题", tab.TopicTitle)
+	if tab.TopicTitle != "이전 제목" {
+		t.Fatalf("opened tab title = %q, want 이전 제목", tab.TopicTitle)
 	}
 
-	if err := app.RenameTopic(topic.ID, "新标题"); err != nil {
+	if err := app.RenameTopic(topic.ID, "새 제목"); err != nil {
 		t.Fatalf("rename topic: %v", err)
 	}
 	tabs := app.ListTabs()
 	if len(tabs) != 1 {
 		t.Fatalf("tabs len = %d, want 1: %+v", len(tabs), tabs)
 	}
-	if got := tabs[0].TopicTitle; got != "新标题" {
-		t.Fatalf("open tab title = %q, want 新标题", got)
+	if got := tabs[0].TopicTitle; got != "새 제목" {
+		t.Fatalf("open tab title = %q, want 새 제목", got)
 	}
 }
 
@@ -2448,7 +2448,7 @@ func TestRenameTopicRecreatesDeletedProjectTitleIndexFromOpenTab(t *testing.T) {
 
 	projectRoot := t.TempDir()
 	app := NewApp()
-	topic, err := app.CreateTopic("project", projectRoot, "旧标题")
+	topic, err := app.CreateTopic("project", projectRoot, "이전 제목")
 	if err != nil {
 		t.Fatalf("create topic: %v", err)
 	}
@@ -2464,11 +2464,11 @@ func TestRenameTopicRecreatesDeletedProjectTitleIndexFromOpenTab(t *testing.T) {
 		t.Fatalf("remove topic title sources: %v", err)
 	}
 
-	if err := app.RenameTopic(topic.ID, "恢复标题"); err != nil {
+	if err := app.RenameTopic(topic.ID, "복원된 제목"); err != nil {
 		t.Fatalf("rename topic after deleting title index: %v", err)
 	}
-	if got := loadTopicTitle(projectRoot, topic.ID); got != "恢复标题" {
-		t.Fatalf("restored topic title = %q, want 恢复标题", got)
+	if got := loadTopicTitle(projectRoot, topic.ID); got != "복원된 제목" {
+		t.Fatalf("restored topic title = %q, want 복원된 제목", got)
 	}
 	nodes := app.ListProjectTree()
 	if len(nodes) != 1 || len(nodes[0].Children) != 1 || nodes[0].Children[0].TopicID != topic.ID {
@@ -2484,14 +2484,14 @@ func TestRenameTopicRecreatesDeletedProjectTitleIndexFromSessionMeta(t *testing.
 	if err := addProject(projectRoot, ""); err != nil {
 		t.Fatalf("add project: %v", err)
 	}
-	if err := setTopicTitle(projectRoot, topicID, "旧标题"); err != nil {
+	if err := setTopicTitle(projectRoot, topicID, "이전 제목"); err != nil {
 		t.Fatalf("set topic title: %v", err)
 	}
 	dir := config.SessionDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatalf("mkdir sessions: %v", err)
 	}
-	writeTopicSession(t, dir, "missing-index.jsonl", topicID, "旧标题", projectRoot)
+	writeTopicSession(t, dir, "missing-index.jsonl", topicID, "이전 제목", projectRoot)
 	if err := os.Remove(topicTitlesPath(projectRoot)); err != nil {
 		t.Fatalf("remove topic titles: %v", err)
 	}
@@ -2499,11 +2499,11 @@ func TestRenameTopicRecreatesDeletedProjectTitleIndexFromSessionMeta(t *testing.
 		t.Fatalf("remove topic title sources: %v", err)
 	}
 
-	if err := NewApp().RenameTopic(topicID, "恢复标题"); err != nil {
+	if err := NewApp().RenameTopic(topicID, "복원된 제목"); err != nil {
 		t.Fatalf("rename topic from session meta after deleting title index: %v", err)
 	}
-	if got := loadTopicTitle(projectRoot, topicID); got != "恢复标题" {
-		t.Fatalf("restored topic title = %q, want 恢复标题", got)
+	if got := loadTopicTitle(projectRoot, topicID); got != "복원된 제목" {
+		t.Fatalf("restored topic title = %q, want 복원된 제목", got)
 	}
 	nodes := NewApp().ListProjectTree()
 	if len(nodes) != 1 || len(nodes[0].Children) != 1 || nodes[0].Children[0].TopicID != topicID {
@@ -2516,7 +2516,7 @@ func TestOpenProjectTabRecoversMissingTopicTitleFromSessionMeta(t *testing.T) {
 
 	projectRoot := robustTempDir(t)
 	app := NewApp()
-	topic, err := app.CreateTopic("project", projectRoot, "旧标题")
+	topic, err := app.CreateTopic("project", projectRoot, "이전 제목")
 	if err != nil {
 		t.Fatalf("create topic: %v", err)
 	}
@@ -2524,7 +2524,7 @@ func TestOpenProjectTabRecoversMissingTopicTitleFromSessionMeta(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatalf("mkdir sessions: %v", err)
 	}
-	sessionPath := writeTopicSessionWithPrompt(t, dir, "stored-meta.jsonl", topic.ID, "用户保存标题", projectRoot, "first prompt should not win", time.Now())
+	sessionPath := writeTopicSessionWithPrompt(t, dir, "stored-meta.jsonl", topic.ID, "사용자가 저장한 제목", projectRoot, "first prompt should not win", time.Now())
 	if err := os.Remove(topicTitlesPath(projectRoot)); err != nil {
 		t.Fatalf("remove topic titles: %v", err)
 	}
@@ -2540,11 +2540,11 @@ func TestOpenProjectTabRecoversMissingTopicTitleFromSessionMeta(t *testing.T) {
 	if got := filepath.Clean(tab.Ctrl.SessionPath()); got != filepath.Clean(sessionPath) {
 		t.Fatalf("opened session path = %q, want %q", got, sessionPath)
 	}
-	if got := meta.TopicTitle; got != "用户保存标题" {
-		t.Fatalf("opened topic title = %q, want 用户保存标题", got)
+	if got := meta.TopicTitle; got != "사용자가 저장한 제목" {
+		t.Fatalf("opened topic title = %q, want 사용자가 저장한 제목", got)
 	}
-	if got := loadTopicTitle(projectRoot, topic.ID); got != "用户保存标题" {
-		t.Fatalf("stored topic title = %q, want 用户保存标题", got)
+	if got := loadTopicTitle(projectRoot, topic.ID); got != "사용자가 저장한 제목" {
+		t.Fatalf("stored topic title = %q, want 사용자가 저장한 제목", got)
 	}
 	if got := loadTopicTitleSource(projectRoot, topic.ID); got != topicTitleSourceManual {
 		t.Fatalf("title source = %q, want manual", got)
@@ -2556,7 +2556,7 @@ func TestOpenProjectTabRecoversMissingTopicTitleFromSessionTitle(t *testing.T) {
 
 	projectRoot := robustTempDir(t)
 	app := NewApp()
-	topic, err := app.CreateTopic("project", projectRoot, "旧标题")
+	topic, err := app.CreateTopic("project", projectRoot, "이전 제목")
 	if err != nil {
 		t.Fatalf("create topic: %v", err)
 	}
@@ -2565,7 +2565,7 @@ func TestOpenProjectTabRecoversMissingTopicTitleFromSessionTitle(t *testing.T) {
 		t.Fatalf("mkdir sessions: %v", err)
 	}
 	sessionPath := writeTopicSessionWithPrompt(t, dir, "stored-session-title.jsonl", topic.ID, "", projectRoot, "first prompt should not win", time.Now())
-	if err := setSessionTitle(dir, sessionPath, "历史手动标题"); err != nil {
+	if err := setSessionTitle(dir, sessionPath, "이력 수동 제목"); err != nil {
 		t.Fatalf("set session title: %v", err)
 	}
 	if err := os.Remove(topicTitlesPath(projectRoot)); err != nil {
@@ -2580,11 +2580,11 @@ func TestOpenProjectTabRecoversMissingTopicTitleFromSessionTitle(t *testing.T) {
 		t.Fatalf("open project tab: %v", err)
 	}
 	waitForTabReady(t, app, meta.ID)
-	if got := meta.TopicTitle; got != "历史手动标题" {
-		t.Fatalf("opened topic title = %q, want 历史手动标题", got)
+	if got := meta.TopicTitle; got != "이력 수동 제목" {
+		t.Fatalf("opened topic title = %q, want 이력 수동 제목", got)
 	}
-	if got := loadTopicTitle(projectRoot, topic.ID); got != "历史手动标题" {
-		t.Fatalf("stored topic title = %q, want 历史手动标题", got)
+	if got := loadTopicTitle(projectRoot, topic.ID); got != "이력 수동 제목" {
+		t.Fatalf("stored topic title = %q, want 이력 수동 제목", got)
 	}
 	if got := loadTopicTitleSource(projectRoot, topic.ID); got != topicTitleSourceManual {
 		t.Fatalf("title source = %q, want manual", got)
@@ -2651,7 +2651,7 @@ func TestAutoTitleTopicFromFirstUserMessage(t *testing.T) {
 		t.Fatalf("create topic: %v", err)
 	}
 	sessionPath := filepath.Join(t.TempDir(), "session.jsonl")
-	if err := os.WriteFile(sessionPath, []byte(`{"role":"user","content":"讲讲这个代码库的架构"}`+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(sessionPath, []byte(`{"role":"user","content":"이 코드베이스의 구조를 설명해 줘"}`+"\n"), 0o644); err != nil {
 		t.Fatalf("write session: %v", err)
 	}
 
@@ -2659,7 +2659,7 @@ func TestAutoTitleTopicFromFirstUserMessage(t *testing.T) {
 	if !updated {
 		t.Fatal("auto title should update")
 	}
-	if title != "讲讲这个代码库的架构" {
+	if title != "이 코드베이스의 구조를 설명해 줘" {
 		t.Fatalf("generated title = %q", title)
 	}
 	if got := loadTopicTitle(projectRoot, topic.ID); got != title {
@@ -2678,7 +2678,7 @@ func TestAutoTitleTopicStripsReasoningLanguagePrefix(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create topic: %v", err)
 	}
-	prompt := control.New(control.Options{ReasoningLanguage: "zh"}).Compose("讲讲这个代码库的架构")
+	prompt := control.New(control.Options{ReasoningLanguage: "ko-KR"}).Compose("이 코드베이스의 구조를 설명해 줘")
 	sessionPath := filepath.Join(t.TempDir(), "session.jsonl")
 	if err := os.WriteFile(sessionPath, []byte(`{"role":"user","content":`+strconv.Quote(prompt)+`}`+"\n"), 0o644); err != nil {
 		t.Fatalf("write session: %v", err)
@@ -2688,7 +2688,7 @@ func TestAutoTitleTopicStripsReasoningLanguagePrefix(t *testing.T) {
 	if !updated {
 		t.Fatal("auto title should update")
 	}
-	if title != "讲讲这个代码库的架构" {
+	if title != "이 코드베이스의 구조를 설명해 줘" {
 		t.Fatalf("generated title = %q", title)
 	}
 }
@@ -2703,36 +2703,36 @@ func TestAutoTitleTopicRefreshesOnThirdUserTurn(t *testing.T) {
 	}
 	sessionPath := filepath.Join(t.TempDir(), "session.jsonl")
 	firstTurn := strings.Join([]string{
-		`{"role":"user","content":"帮我看看"}`,
-		`{"role":"assistant","content":"可以"}`,
+		`{"role":"user","content":"좀 봐줘"}`,
+		`{"role":"assistant","content":"좋아"}`,
 	}, "\n") + "\n"
 	if err := os.WriteFile(sessionPath, []byte(firstTurn), 0o644); err != nil {
 		t.Fatalf("write first session: %v", err)
 	}
 
 	title, updated := autoTitleTopicFromSession(projectRoot, topic.ID, sessionPath)
-	if !updated || title != "帮我看看" {
-		t.Fatalf("first auto title = %q updated=%v, want 帮我看看/true", title, updated)
+	if !updated || title != "좀 봐줘" {
+		t.Fatalf("first auto title = %q updated=%v, want 좀 봐줘/true", title, updated)
 	}
 
 	thirdTurn := strings.Join([]string{
-		`{"role":"user","content":"帮我看看"}`,
-		`{"role":"assistant","content":"可以"}`,
-		`{"role":"user","content":"继续"}`,
-		`{"role":"assistant","content":"继续分析"}`,
-		`{"role":"user","content":"实现自动更新会话标题"}`,
-		`{"role":"assistant","content":"已实现"}`,
+		`{"role":"user","content":"좀 봐줘"}`,
+		`{"role":"assistant","content":"좋아"}`,
+		`{"role":"user","content":"계속"}`,
+		`{"role":"assistant","content":"계속 분석"}`,
+		`{"role":"user","content":"세션 제목 자동 업데이트 구현"}`,
+		`{"role":"assistant","content":"구현했습니다"}`,
 	}, "\n") + "\n"
 	if err := os.WriteFile(sessionPath, []byte(thirdTurn), 0o644); err != nil {
 		t.Fatalf("write third session: %v", err)
 	}
 
 	title, updated = autoTitleTopicFromSession(projectRoot, topic.ID, sessionPath)
-	if !updated || title != "实现自动更新会话标题" {
-		t.Fatalf("third-turn auto title = %q updated=%v, want 实现自动更新会话标题/true", title, updated)
+	if !updated || title != "세션 제목 자동 업데이트 구현" {
+		t.Fatalf("third-turn auto title = %q updated=%v, want 세션 제목 자동 업데이트 구현/true", title, updated)
 	}
-	if got := loadTopicTitle(projectRoot, topic.ID); got != "实现自动更新会话标题" {
-		t.Fatalf("stored title = %q, want 实现自动更新会话标题", got)
+	if got := loadTopicTitle(projectRoot, topic.ID); got != "세션 제목 자동 업데이트 구현" {
+		t.Fatalf("stored title = %q, want 세션 제목 자동 업데이트 구현", got)
 	}
 	meta := loadTopicAutoTitleMeta(projectRoot)[topic.ID]
 	if meta.Stage != 3 {
@@ -2749,19 +2749,19 @@ func TestAutoTitleDoesNotOverrideManualTopicTitle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create topic: %v", err)
 	}
-	if err := app.RenameTopic(topic.ID, "手动标题"); err != nil {
+	if err := app.RenameTopic(topic.ID, "수동 제목"); err != nil {
 		t.Fatalf("rename topic: %v", err)
 	}
 	sessionPath := filepath.Join(t.TempDir(), "session.jsonl")
-	if err := os.WriteFile(sessionPath, []byte(`{"role":"user","content":"讲讲这个代码库的架构"}`+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(sessionPath, []byte(`{"role":"user","content":"이 코드베이스의 구조를 설명해 줘"}`+"\n"), 0o644); err != nil {
 		t.Fatalf("write session: %v", err)
 	}
 
 	if title, updated := autoTitleTopicFromSession(projectRoot, topic.ID, sessionPath); updated || title != "" {
 		t.Fatalf("manual title should not auto-update, title=%q updated=%v", title, updated)
 	}
-	if got := loadTopicTitle(projectRoot, topic.ID); got != "手动标题" {
-		t.Fatalf("stored title = %q, want 手动标题", got)
+	if got := loadTopicTitle(projectRoot, topic.ID); got != "수동 제목" {
+		t.Fatalf("stored title = %q, want 수동 제목", got)
 	}
 }
 
@@ -2774,10 +2774,10 @@ func TestAutoTitleDoesNotOverrideManualSessionTitle(t *testing.T) {
 		t.Fatalf("create topic: %v", err)
 	}
 	sessionPath := filepath.Join(t.TempDir(), "session.jsonl")
-	if err := os.WriteFile(sessionPath, []byte(`{"role":"user","content":"讲讲这个代码库的架构"}`+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(sessionPath, []byte(`{"role":"user","content":"이 코드베이스의 구조를 설명해 줘"}`+"\n"), 0o644); err != nil {
 		t.Fatalf("write session: %v", err)
 	}
-	if err := agent.SaveBranchMetaPreserveUpdated(sessionPath, agent.BranchMeta{CustomTitle: "手动会话标题"}); err != nil {
+	if err := agent.SaveBranchMetaPreserveUpdated(sessionPath, agent.BranchMeta{CustomTitle: "수동 세션 제목"}); err != nil {
 		t.Fatalf("save branch meta: %v", err)
 	}
 

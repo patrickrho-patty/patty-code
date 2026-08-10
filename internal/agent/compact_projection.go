@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
 // compact writes a context projection; trigger stays "auto"/"manual" for UI cards.

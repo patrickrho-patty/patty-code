@@ -88,12 +88,9 @@ ok(
   "SettingsPanel loads secondary settings pages on demand",
 );
 ok(
-  !/from\s+["']qrcode\.react["']/.test(settingsSource),
+  !/from\s+["']qrcode\.react["']/.test(settingsSource) &&
+    !settingsSource.includes('import("qrcode.react")'),
   "SettingsPanel keeps QR rendering code out of the first settings chunk",
-);
-ok(
-  settingsSource.includes('import("qrcode.react")'),
-  "SettingsPanel loads QR rendering code on demand",
 );
 ok(
   !/from\s+["']react-markdown["']/.test(markdownSource) &&
@@ -112,14 +109,8 @@ ok(
   "Markdown local-path support avoids RegExp lookbehind required by newer WebKit",
 );
 ok(
-  !/import\s+\{\s*zh\s*\}\s+from\s+["']\.\.\/locales\/zh["']/.test(i18nSource) &&
-    !/import\s+\{\s*zhTW\s*\}\s+from\s+["']\.\.\/locales\/zh-TW["']/.test(i18nSource),
-  "i18n keeps Chinese dictionaries out of the unconditional initial chunk",
-);
-ok(
-  i18nSource.includes('import("../locales/zh")') &&
-    i18nSource.includes('import("../locales/zh-TW")'),
-  "i18n loads Chinese dictionaries on demand",
+  !i18nSource.includes("locales/zh"),
+  "i18n ships no Chinese locale dictionaries",
 );
 ok(
   mainSource.includes("await preloadDetectedLocale()"),

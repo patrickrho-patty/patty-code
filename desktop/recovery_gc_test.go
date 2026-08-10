@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/provider"
+	"patty/internal/agent"
+	"patty/internal/provider"
 )
 
 // forkCoveredRecoveryBranch builds the reclaimable shape in dir: a conflict
@@ -153,9 +153,9 @@ func TestRecoveryGCFirstSweepWaitsForTabRestore(t *testing.T) {
 }
 
 func TestRecoveryGCRunsDespiteSafeModeEnv(t *testing.T) {
-	// v1.20+: GC is no longer suppressed by REASONIX_SAFE_MODE.
+	// v1.20+: GC is no longer suppressed by PATTY_SAFE_MODE.
 	isolateDesktopUserDirs(t)
-	t.Setenv("REASONIX_SAFE_MODE", "1")
+	t.Setenv("PATTY_SAFE_MODE", "1")
 	root := globalTabWorkspaceRoot()
 	dir := desktopSessionDir(root)
 	if err := os.MkdirAll(dir, 0o755); err != nil {

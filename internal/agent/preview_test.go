@@ -5,12 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
-// realContract mirrors the shape compileExecutionContract emits: the
-// source_event lives under planner_ir, and the block replaces the whole user
-// turn.
 func realContract(sourceEvent string) string {
 	return "<memory-compiler-execution>\n" +
 		`{"type":"memory_v5_execution_contract","instruction":"Execute source_event through planner_ir.",` +
@@ -19,15 +16,12 @@ func realContract(sourceEvent string) string {
 }
 
 func jsonString(s string) string {
-	// minimal JSON string quoting for test fixtures (no control chars used here)
 	return `"` + s + `"`
 }
 
-// TestStripTransientUserBlocksUnwrapsMemoryCompilerExecution guards the #5307
-// contract: the Memory v5 <memory-compiler-execution> block REPLACES the user
-// turn (the prompt survives only inside the contract's source_event), so the
+// TestStripTransientUserBlocksUnwrapsMemoryCompilerExecution guards the 5307
+// turn (the prompt survives only inside the contracts source_event), so the
 // display/preview path must unwrap it to the original prompt — not drop it like
-// a prepended transient block, which would blank out the turn.
 func TestStripTransientUserBlocksUnwrapsMemoryCompilerExecution(t *testing.T) {
 	cases := []struct {
 		name string
@@ -41,9 +35,6 @@ func TestStripTransientUserBlocksUnwrapsMemoryCompilerExecution(t *testing.T) {
 		},
 		{
 			name: "language blocks before the compiler block",
-			// Real composition order: withTurnPreferences wraps the compiled
-			// contract, so the language blocks lead and the compiler block
-			// follows. Both must resolve to the original prompt.
 			in: "<reasoning-language>zh</reasoning-language>\n\n" +
 				"<response-language>zh</response-language>\n\n" + realContract("do the thing"),
 			want: "do the thing",
@@ -100,9 +91,8 @@ func TestStripTransientUserBlocksUnwrapsMemoryCompilerExecution(t *testing.T) {
 	}
 }
 
-// TestUserPreviewTextPreservesCompiledTurnPrompt is the regression for the bot
-// finding: a session whose first turn was compiled must still show the user's
-// prompt in history/sidebar previews, not a blank line.
+// finding: a session whose first turn was compiled must still show the users
+// prompt in historysidebar previews, not a blank line.
 func TestUserPreviewTextPreservesCompiledTurnPrompt(t *testing.T) {
 	in := realContract("ship the refactor")
 	if got := UserPreviewText(in); got != "ship the refactor" {
@@ -110,9 +100,7 @@ func TestUserPreviewTextPreservesCompiledTurnPrompt(t *testing.T) {
 	}
 }
 
-// TestSessionPreviewFromMessagesPreservesCompiledFirstTurn proves the end-to-end
-// preview path (used for the picker/sidebar) recovers the prompt when the first
-// persisted user turn is a compiled contract.
+// preview path (used for the pickersidebar) recovers the prompt when the first
 func TestSessionPreviewFromMessagesPreservesCompiledFirstTurn(t *testing.T) {
 	msgs := []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
@@ -130,23 +118,19 @@ func TestSessionPreviewFromMessagesPreservesCompiledFirstTurn(t *testing.T) {
 
 // Reproduces #5361: the v1.12.0 goal loop (fixed in #5387) accreted nested
 // memory-compiler-execution contracts — each turn's source_event string
-// embedded the previous turn's full <memory-compiler-execution> block. The
-// non-greedy unwrap regex stops at the FIRST </memory-compiler-execution>
-// (which is inside the outer contract's JSON string), so it captures a
-// truncated, invalid JSON body and leaves dangling tag/JSON garbage in the
-// transcript ("一堆字符串"). Existing corrupted sessions must still render
-// cleanly, so the display layer must unwrap robustly.
+// embedded the previous turns full <memory-compiler-execution> block. The
+// non-greedy unwrap regex stops at the FIRST <memory-compiler-execution>
+// (which is inside the outer contracts JSON string), so it captures a
+// truncated, invalid JSON body and leaves dangling tagJSON garbage in the
+// transcript (). Existing corrupted sessions must still render
 func TestUserPreviewTextUnwrapsNestedCompilerContracts(t *testing.T) {
-	// Deeply accreted contract (a long goal loop re-compiled the echoed contract
-	// many times). Two unwrap passes are not enough for N levels.
 	deep := "fix the login bug"
 	for range 6 {
 		deep = mcContract(t, "follow-up step\n"+deep)
 	}
 	assertNoContractLeak(t, UserPreviewText(deep), "follow-up step")
 
-	// A dangling / truncated block (streaming cut, or the model echoing a partial
-	// contract) has no closing tag, so the strict regex never matches it.
+// A dangling  truncated block (streaming cut, or the model echoing a partial
 	partial := "do the thing\n<memory-compiler-execution>\n{\"planner_ir\":{\"source_event\":\"do the thing\"," + strings.Repeat("x", 40)
 	assertNoContractLeak(t, UserPreviewText(partial), "do the thing")
 }
@@ -164,8 +148,6 @@ func assertNoContractLeak(t *testing.T, got, want string) {
 	}
 }
 
-// mcContract builds a <memory-compiler-execution> block whose
-// planner_ir.source_event is the given text, matching the real contract shape.
 func mcContract(t *testing.T, sourceEvent string) string {
 	t.Helper()
 	body, err := json.Marshal(struct {

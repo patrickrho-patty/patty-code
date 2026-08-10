@@ -1,6 +1,6 @@
-# Reasonix Desktop (Wails shell)
+# Patty Code Desktop (Wails shell)
 
-A native desktop window around the Reasonix Go kernel. The same
+A native desktop window around the Patty Code Go kernel. The same
 transport-agnostic `control.Controller` that backs the chat TUI and the HTTP/SSE
 server is bound **directly** to a React webview — Go methods in, typed events
 out, no HTTP hop.
@@ -25,11 +25,11 @@ out, no HTTP hop.
 
 ## Why a nested module
 
-`desktop/` is its own Go module (`module reasonix/desktop`, `replace reasonix =>
+`desktop/` is its own Go module (`module patty/desktop`, `replace patty code =>
 ../`). That keeps the CGO + WebKit desktop build entirely separate from the CLI's
 `CGO_ENABLED=0` single-static-binary guarantee: the parent module's `go build /
 vet / test ./...` skip this directory, while the import path stays under
-`reasonix/` so it can still import the `reasonix/internal/*` kernel.
+`patty/` so it can still import the `patty/internal/*` kernel.
 
 ## Prerequisites
 
@@ -96,7 +96,7 @@ component code and the CSS positioning contract:
 
 ```sh
 cd desktop
-wails build          # → build/bin/Reasonix(.app/.exe)
+wails build          # → build/bin/Patty Code(.app/.exe)
 ```
 
 **Linux on WebKitGTK 4.1 only** (Fedora 40+, Ubuntu 24.04+, Arch — no
@@ -131,7 +131,7 @@ git tag desktop-v1.1.0 && git push origin desktop-v1.1.0
 ```
 
 The app checks `latest.json` on startup (R2 first, then the
-`crash.reasonix.io` desktop release gateway) and shows an update banner when a
+`crash.patty.io` desktop release gateway) and shows an update banner when a
 newer version is published; **Settings → Software update** has a manual check.
 The gateway resolves only the desktop `desktop-v*` release line and never uses
 GitHub's repository-wide `/releases/latest` shortcut, so updater behavior does
@@ -144,7 +144,7 @@ not depend on homepage badge semantics. Self-update behavior by platform:
   --only-upgrade`, then relaunch through Guard. The first build that ships the
   update helper and Polkit policy is a one-time bootstrap: existing `.deb` users
   should overwrite-install once with
-  `sudo apt install ./Reasonix-linux-amd64.deb` (no uninstall required). After
+  `sudo apt install ./patty-linux-amd64.deb` (no uninstall required). After
   that, in-app authorized updates work. If Polkit/`pkexec` is unavailable, use
   the same manual command. Failed installs leave the running app intact so you
   can retry; successful installs are managed by apt/dpkg and are not auto-downgraded.
@@ -162,11 +162,11 @@ not depend on homepage badge semantics. Self-update behavior by platform:
   brand-new version can still show SmartScreen until the signature accumulates
   reputation: *More info → Run anyway*.
 - **macOS** — still unsigned and un-notarized. Open
-  `Reasonix-darwin-universal.dmg`, drag Reasonix into Applications, then clear the
+  `patty-darwin-universal.dmg`, drag Patty Code into Applications, then clear the
   quarantine attribute when Gatekeeper reports the app "is damaged" or is from an
   unidentified developer:
   ```sh
-  xattr -dr com.apple.quarantine /Applications/Reasonix.app
+  xattr -dr com.apple.quarantine /Applications/Patty Code.app
   ```
   This is also why macOS has no in-place self-update: the swap would be blocked.
   Adding a Developer ID certificate flips the release workflow's `HAS_APPLE_CERT`
@@ -179,7 +179,7 @@ signature sits next to each artifact in the release; verify with the
 [minisign](https://jedisct1.github.io/minisign/) CLI:
 
 ```sh
-minisign -Vm Reasonix-darwin-arm64.zip \
+minisign -Vm Patty Code-darwin-arm64.zip \
   -P RWSw66n0RsoSr6Zhh6qt5YO95YkpCayTOCMFVDNUQSjJYwxoYngNVBSq
 ```
 
@@ -232,17 +232,17 @@ handled here, and what to reach for if a target misbehaves:
   - **Wayland + NVIDIA**: On KDE Plasma Wayland with NVIDIA GPUs, WebKitGTK can
     crash at startup (`Error 71: Protocol error`) due to an upstream WebKit
     explicit-sync bug (WebKit #280210, #317089, NVIDIA/egl-wayland #179).
-    Reasonix automatically sets `__NV_DISABLE_EXPLICIT_SYNC=1` when it detects
+    Patty Code automatically sets `__NV_DISABLE_EXPLICIT_SYNC=1` when it detects
     Wayland + NVIDIA GPU. To opt out, set `__NV_DISABLE_EXPLICIT_SYNC=0`.
     Alternative fallbacks: `WEBKIT_DISABLE_DMABUF_RENDERER=1` (poor performance)
     or `GDK_BACKEND=x11` (forces XWayland).
 - **Windows / WebView2** — `Theme: SystemDefault` follows the OS light/dark
   setting; the installer embeds the WebView2 bootstrapper. Canary builds disable
   WebView2 GPU acceleration by default to smoke-test blank-window reports; set
-  `REASONIX_DESKTOP_DISABLE_WEBVIEW2_GPU=1` or `0` to force the fallback on or
+  `PATTY_DESKTOP_DISABLE_WEBVIEW2_GPU=1` or `0` to force the fallback on or
   off. The WebView2 shell always uses a direct connection for embedded assets
   and loopback remote-workspace pages; provider and other outbound traffic keeps
-  using Reasonix's own proxy configuration. Remote Markdown images are fetched
+  using Patty Code's own proxy configuration. Remote Markdown images are fetched
   by the Go backend with the same proxy settings and re-served from the local
   asset origin, so WebView2 never bypasses the configured proxy for them. Image
   hosts must resolve locally to public addresses; direct, HTTP(S)-proxy, and
@@ -281,7 +281,7 @@ desktop/
 
 ## Telemetry
 
-The desktop app sends one anonymous ping per launch to `crash.reasonix.io`:
+The desktop app sends one anonymous ping per launch to `crash.patty.io`:
 a random install id (generated locally, tied to nothing), app version, OS,
 arch, and OS version. When the previous process ended abnormally, the next
 normal launch may also send a bounded native diagnostic (lifecycle phase,

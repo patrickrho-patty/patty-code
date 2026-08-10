@@ -21,20 +21,20 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/botruntime"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/provider"
-	"reasonix/internal/sandbox"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/botruntime"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/provider"
+	"patty/internal/sandbox"
 )
 
 // settings_app.go is the desktop Settings panel's command surface: it reads the
 // resolved config and applies edits through internal/config/edit.go (the
 // purpose-built mutation API), then rebuilds the controller so the change takes
 // effect live — the same snapshot→reload→resume pattern as SetModel. Secrets are
-// the exception: they go to Reasonix's global .env (upsertDotEnv), since config
+// the exception: they go to patty's global .env (upsertDotEnv), since config
 // stores only the env-var name, not the key.
 
 // read
@@ -166,20 +166,12 @@ type AgentView struct {
 }
 
 type BotAllowlistView struct {
-	Enabled         bool     `json:"enabled"`
-	AllowAll        bool     `json:"allowAll"`
-	QQUsers         []string `json:"qqUsers"`
-	FeishuUsers     []string `json:"feishuUsers"`
-	WeixinUsers     []string `json:"weixinUsers"`
-	QQApprovers     []string `json:"qqApprovers"`
-	FeishuApprovers []string `json:"feishuApprovers"`
-	WeixinApprovers []string `json:"weixinApprovers"`
-	QQAdmins        []string `json:"qqAdmins"`
-	FeishuAdmins    []string `json:"feishuAdmins"`
-	WeixinAdmins    []string `json:"weixinAdmins"`
-	QQGroups        []string `json:"qqGroups"`
-	FeishuGroups    []string `json:"feishuGroups"`
-	WeixinGroups    []string `json:"weixinGroups"`
+	Enabled   bool     `json:"enabled"`
+	AllowAll  bool     `json:"allowAll"`
+	Users     []string `json:"users"`
+	Approvers []string `json:"approvers"`
+	Admins    []string `json:"admins"`
+	Groups    []string `json:"groups"`
 }
 
 type BotAccessView struct {
@@ -193,9 +185,7 @@ type BotAccessView struct {
 }
 
 type BotSelfUserIDsView struct {
-	QQ     []string `json:"qq"`
-	Feishu []string `json:"feishu"`
-	Weixin []string `json:"weixin"`
+	Desktop []string `json:"desktop"`
 }
 
 type BotPairingView struct {
@@ -222,38 +212,6 @@ type BotRouteView struct {
 	WorkspaceRoot    string `json:"workspaceRoot"`
 }
 
-type QQBotView struct {
-	Enabled          bool          `json:"enabled"`
-	AppID            string        `json:"appId"`
-	AppSecretEnv     string        `json:"appSecretEnv"`
-	SecretSet        bool          `json:"secretSet"`
-	Sandbox          bool          `json:"sandbox"`
-	Model            string        `json:"model"`
-	ToolApprovalMode string        `json:"toolApprovalMode"`
-	WorkspaceRoot    string        `json:"workspaceRoot"`
-	Access           BotAccessView `json:"access"`
-}
-
-type FeishuBotView struct {
-	Enabled           bool   `json:"enabled"`
-	Domain            string `json:"domain"`
-	AppID             string `json:"appId"`
-	AppSecretEnv      string `json:"appSecretEnv"`
-	SecretSet         bool   `json:"secretSet"`
-	VerificationToken string `json:"verificationToken"`
-	Mode              string `json:"mode"`
-	WebhookPort       int    `json:"webhookPort"`
-	RequireMention    bool   `json:"requireMention"`
-}
-
-type WeixinBotView struct {
-	Enabled   bool   `json:"enabled"`
-	AccountID string `json:"accountId"`
-	TokenEnv  string `json:"tokenEnv"`
-	TokenSet  bool   `json:"tokenSet"`
-	APIBase   string `json:"apiBase"`
-}
-
 type BotSettingsView struct {
 	Enabled            bool                `json:"enabled"`
 	Model              string              `json:"model"`
@@ -269,9 +227,6 @@ type BotSettingsView struct {
 	Pairing            BotPairingView      `json:"pairing"`
 	Routes             []BotRouteView      `json:"routes"`
 	Allowlist          BotAllowlistView    `json:"allowlist"`
-	QQ                 QQBotView           `json:"qq"`
-	Feishu             FeishuBotView       `json:"feishu"`
-	Weixin             WeixinBotView       `json:"weixin"`
 	Connections        []BotConnectionView `json:"connections"`
 }
 
@@ -309,7 +264,7 @@ type SettingsView struct {
 	ExpandThinking    bool   `json:"expandThinking"`
 	ConversationWidth string `json:"conversationWidth,omitempty"`
 	ConfigPath        string `json:"configPath"`
-	// ShadowedByPath is the workspace reasonix.toml that outranks the file this
+	// ShadowedByPath is the workspace patty.toml that outranks the file this
 	// panel writes, so an edit here can be overridden with nothing on screen to
 	// explain it (#4333). Empty when the panel's file is the one in effect.
 	ShadowedByPath string `json:"shadowedByPath,omitempty"`
@@ -349,7 +304,7 @@ type DesktopStartupSettingsView struct {
 
 // shadowingConfigPath returns the config file that outranks writePath for the
 // workspace at root, or "" when writePath is the one in effect. A project
-// reasonix.toml beats the user config, so settings written here would otherwise
+// patty.toml beats the user config, so settings written here would otherwise
 // look ignored (#4333).
 func shadowingConfigPath(writePath, root string) string {
 	effective := config.SourcePathForRoot(root)
@@ -942,7 +897,7 @@ func (a *App) DesktopStartupSettings() DesktopStartupSettingsView {
 	if err != nil {
 		view := desktopStartupSettingsFromConfig(nil)
 		view.ConfigWarnings = []string{
-			"user configuration could not be loaded; using built-in defaults. Run: reasonix doctor repair",
+			"user configuration could not be loaded; using built-in defaults. Run: patcode doctor repair",
 		}
 		view.ConfigPath = config.UserConfigPath()
 		return view
@@ -1133,10 +1088,6 @@ func sandboxEffectiveShellView(sh sandbox.Shell) string {
 }
 
 func botSettingsView(b config.BotConfig) BotSettingsView {
-	mode := strings.TrimSpace(b.Feishu.Mode)
-	if mode == "" {
-		mode = "webhook"
-	}
 	return BotSettingsView{
 		Enabled:            b.Enabled,
 		Model:              b.Model,
@@ -1148,9 +1099,7 @@ func botSettingsView(b config.BotConfig) BotSettingsView {
 		QueueDrop:          b.QueueDrop,
 		IgnoreSelfMessages: b.IgnoreSelfMessages,
 		SelfUserIDs: BotSelfUserIDsView{
-			QQ:     nonNil(b.SelfUserIDs.QQ),
-			Feishu: nonNil(b.SelfUserIDs.Feishu),
-			Weixin: nonNil(b.SelfUserIDs.Weixin),
+			Desktop: nonNil(b.SelfUserIDs.Desktop),
 		},
 		Control: BotControlView{
 			Enabled:  b.Control.Enabled,
@@ -1164,49 +1113,12 @@ func botSettingsView(b config.BotConfig) BotSettingsView {
 		},
 		Routes: botRouteViews(b.Routes),
 		Allowlist: BotAllowlistView{
-			Enabled:         b.Allowlist.Enabled,
-			AllowAll:        b.Allowlist.AllowAll,
-			QQUsers:         nonNil(b.Allowlist.QQUsers),
-			FeishuUsers:     nonNil(b.Allowlist.FeishuUsers),
-			WeixinUsers:     nonNil(b.Allowlist.WeixinUsers),
-			QQApprovers:     nonNil(b.Allowlist.QQApprovers),
-			FeishuApprovers: nonNil(b.Allowlist.FeishuApprovers),
-			WeixinApprovers: nonNil(b.Allowlist.WeixinApprovers),
-			QQAdmins:        nonNil(b.Allowlist.QQAdmins),
-			FeishuAdmins:    nonNil(b.Allowlist.FeishuAdmins),
-			WeixinAdmins:    nonNil(b.Allowlist.WeixinAdmins),
-			QQGroups:        nonNil(b.Allowlist.QQGroups),
-			FeishuGroups:    nonNil(b.Allowlist.FeishuGroups),
-			WeixinGroups:    nonNil(b.Allowlist.WeixinGroups),
-		},
-		QQ: QQBotView{
-			Enabled:          b.QQ.Enabled,
-			AppID:            b.QQ.AppID,
-			AppSecretEnv:     b.QQ.AppSecretEnv,
-			SecretSet:        strings.TrimSpace(b.QQ.AppSecretEnv) != "" && os.Getenv(b.QQ.AppSecretEnv) != "",
-			Sandbox:          b.QQ.Sandbox,
-			Model:            b.QQ.Model,
-			ToolApprovalMode: normalizeBotConnectionToolApprovalMode(b.QQ.ToolApprovalMode),
-			WorkspaceRoot:    b.QQ.WorkspaceRoot,
-			Access:           botAccessViewFromConfig(b.QQ.Access),
-		},
-		Feishu: FeishuBotView{
-			Enabled:           b.Feishu.Enabled,
-			Domain:            orDefault(strings.TrimSpace(b.Feishu.Domain), "feishu"),
-			AppID:             b.Feishu.AppID,
-			AppSecretEnv:      b.Feishu.AppSecretEnv,
-			SecretSet:         strings.TrimSpace(b.Feishu.AppSecretEnv) != "" && os.Getenv(b.Feishu.AppSecretEnv) != "",
-			VerificationToken: b.Feishu.VerificationToken,
-			Mode:              mode,
-			WebhookPort:       b.Feishu.WebhookPort,
-			RequireMention:    b.Feishu.RequireMention,
-		},
-		Weixin: WeixinBotView{
-			Enabled:   b.Weixin.Enabled,
-			AccountID: b.Weixin.AccountID,
-			TokenEnv:  b.Weixin.TokenEnv,
-			TokenSet:  strings.TrimSpace(b.Weixin.TokenEnv) != "" && os.Getenv(b.Weixin.TokenEnv) != "",
-			APIBase:   b.Weixin.APIBase,
+			Enabled:   b.Allowlist.Enabled,
+			AllowAll:  b.Allowlist.AllowAll,
+			Users:     nonNil(b.Allowlist.Users),
+			Approvers: nonNil(b.Allowlist.Approvers),
+			Admins:    nonNil(b.Allowlist.Admins),
+			Groups:    nonNil(b.Allowlist.Groups),
 		},
 		Connections: botConnectionViews(b.Connections),
 	}
@@ -1305,7 +1217,7 @@ func botDomainOrDefault(domain string) string {
 // applyConfigChange mutates the user-global config and rebuilds the controller so
 // the change takes effect this session. Desktop settings such as providers and
 // keys are account-level, not per-project: writing them to the global config
-// rather than the cwd's reasonix.toml is what lets them survive a workspace switch.
+// rather than the cwd's patty.toml is what lets them survive a workspace switch.
 func (a *App) applyConfigChange(mutate func(*config.Config) error) error {
 	_, err := a.applyConfigChangeWithWarning("settings", mutate)
 	return err
@@ -1477,7 +1389,7 @@ func (a *App) loadDesktopUserConfigForEditForRoot(root string) (*config.Config, 
 // config.LockUserConfigEdits(). Legacy migrations (provider-access normalize,
 // legacy bot-config merge) are applied to the returned copy in memory only;
 // the on-disk file migrates the first time a locked write path runs
-// loadDesktopUserConfigForEdit. Credentials (Reasonix global .env) are not
+// loadDesktopUserConfigForEdit. Credentials (Patty Code global .env) are not
 // loaded; callers that hand the config to a runtime resolving secrets from the
 // process env must use loadDesktopUserConfigForViewWithCredentials.
 func (a *App) loadDesktopUserConfigForView() (*config.Config, string, error) {
@@ -1489,7 +1401,7 @@ func (a *App) loadDesktopUserConfigForViewForRoot(root string) (*config.Config, 
 }
 
 // loadDesktopUserConfigForViewWithCredentials is loadDesktopUserConfigForView
-// plus credential resolution: like config.LoadForEdit it loads Reasonix's
+// plus credential resolution: like config.LoadForEdit it loads Patty Code's
 // global .env into the process env. Use it for read-only loads whose result
 // feeds a runtime that resolves env-based secrets — the bot runtime
 // (app-secret/control-token envs) and MCP server connects. It still never
@@ -1611,40 +1523,14 @@ func desktopBotConfigConfigured(bot config.BotConfig) bool {
 		(strings.TrimSpace(bot.Control.Addr) != "" && bot.Control.Addr != defaults.Control.Addr) ||
 		(strings.TrimSpace(bot.Control.TokenEnv) != "" && bot.Control.TokenEnv != defaults.Control.TokenEnv) ||
 		len(bot.Routes) > 0 ||
-		len(bot.SelfUserIDs.QQ)+len(bot.SelfUserIDs.Feishu)+len(bot.SelfUserIDs.Weixin) > 0 {
+		len(bot.SelfUserIDs.Desktop) > 0 {
 		return true
 	}
 	if bot.Allowlist.AllowAll ||
-		len(bot.Allowlist.QQUsers)+len(bot.Allowlist.FeishuUsers)+len(bot.Allowlist.WeixinUsers) > 0 ||
-		len(bot.Allowlist.QQApprovers)+len(bot.Allowlist.FeishuApprovers)+len(bot.Allowlist.WeixinApprovers) > 0 ||
-		len(bot.Allowlist.QQAdmins)+len(bot.Allowlist.FeishuAdmins)+len(bot.Allowlist.WeixinAdmins) > 0 ||
-		len(bot.Allowlist.QQGroups)+len(bot.Allowlist.FeishuGroups)+len(bot.Allowlist.WeixinGroups) > 0 {
-		return true
-	}
-	if bot.QQ.Enabled ||
-		strings.TrimSpace(bot.QQ.AppID) != "" ||
-		bot.QQ.AppSecretEnv != defaults.QQ.AppSecretEnv ||
-		bot.QQ.Sandbox != defaults.QQ.Sandbox ||
-		strings.TrimSpace(bot.QQ.Model) != "" ||
-		strings.TrimSpace(bot.QQ.ToolApprovalMode) != "" ||
-		strings.TrimSpace(bot.QQ.WorkspaceRoot) != "" ||
-		botruntime.BotAccessActive(bot.QQ.Access) {
-		return true
-	}
-	if bot.Feishu.Enabled ||
-		strings.TrimSpace(bot.Feishu.AppID) != "" ||
-		bot.Feishu.Domain != defaults.Feishu.Domain ||
-		bot.Feishu.AppSecretEnv != defaults.Feishu.AppSecretEnv ||
-		strings.TrimSpace(bot.Feishu.VerificationToken) != "" ||
-		bot.Feishu.Mode != defaults.Feishu.Mode ||
-		bot.Feishu.WebhookPort != defaults.Feishu.WebhookPort ||
-		bot.Feishu.RequireMention != defaults.Feishu.RequireMention {
-		return true
-	}
-	if bot.Weixin.Enabled ||
-		bot.Weixin.AccountID != defaults.Weixin.AccountID ||
-		bot.Weixin.TokenEnv != defaults.Weixin.TokenEnv ||
-		bot.Weixin.APIBase != defaults.Weixin.APIBase {
+		len(bot.Allowlist.Users) > 0 ||
+		len(bot.Allowlist.Approvers) > 0 ||
+		len(bot.Allowlist.Admins) > 0 ||
+		len(bot.Allowlist.Groups) > 0 {
 		return true
 	}
 	return false
@@ -2486,7 +2372,7 @@ func (a *App) SaveProviderModelCatalogs(updates []ProviderModelCatalogUpdate) ([
 			return err
 		}
 		defer unlockCredentials()
-		// Re-read while holding the same lock as every Reasonix credential
+		// Re-read while holding the same lock as every Patty Code credential
 		// writer, then keep that lock through the config commit. A rotation that
 		// won the race therefore invalidates the request fingerprint.
 		credentialsRevision := providerCredentialsRevision()
@@ -2659,7 +2545,7 @@ func (a *App) AddProviderPresetAccess(id, key string) (string, error) {
 
 // ResetProviderPresetAccess intentionally overwrites same-name provider entries
 // with the curated preset template. It only mutates config; provider secrets stay
-// in Reasonix home .env under whichever api_key_env the resulting preset uses.
+// in patty home .env under whichever api_key_env the resulting preset uses.
 func (a *App) ResetProviderPresetAccess(id string) error {
 	preset, ok := config.CuratedProviderPreset(id)
 	if !ok {
@@ -3138,7 +3024,7 @@ func (a *App) rebuildActiveSettingRuntimeMutationLocked(setting string) error {
 	return a.rebuildSettingTurnLocked(setting, tab, true, false)
 }
 
-// SetProviderKey writes a secret to Reasonix's global .env under the given
+// SetProviderKey writes a secret to patty's global .env under the given
 // env-var name (the one a provider's api_key_env points at) and rebuilds so it
 // resolves immediately.
 func (a *App) SetProviderKey(apiKeyEnv, value string) (string, error) {
@@ -3229,7 +3115,7 @@ func (a *App) ensureProviderAccessForKey(apiKeyEnv string) error {
 	return cfg.SaveTo(path)
 }
 
-// ClearProviderKey removes a provider secret from Reasonix's global .env
+// ClearProviderKey removes a provider secret from patty's global .env
 // and rebuilds so the provider immediately becomes unauthenticated.
 func (a *App) ClearProviderKey(apiKeyEnv string) error {
 	if strings.TrimSpace(apiKeyEnv) == "" {
@@ -3327,9 +3213,7 @@ func (a *App) SetBotSettings(b BotSettingsView) error {
 		c.Bot.QueueDrop = strings.TrimSpace(b.QueueDrop)
 		c.Bot.IgnoreSelfMessages = b.IgnoreSelfMessages
 		c.Bot.SelfUserIDs = config.BotSelfUserIDs{
-			QQ:     trimList(b.SelfUserIDs.QQ),
-			Feishu: trimList(b.SelfUserIDs.Feishu),
-			Weixin: trimList(b.SelfUserIDs.Weixin),
+			Desktop: trimList(b.SelfUserIDs.Desktop),
 		}
 		c.Bot.Control = config.BotControlConfig{
 			Enabled:  b.Control.Enabled,
@@ -3343,47 +3227,12 @@ func (a *App) SetBotSettings(b BotSettingsView) error {
 		}
 		c.Bot.Routes = botRouteConfigs(b.Routes)
 		c.Bot.Allowlist = config.BotAllowlist{
-			Enabled:         b.Allowlist.Enabled,
-			AllowAll:        b.Allowlist.AllowAll,
-			QQUsers:         trimList(b.Allowlist.QQUsers),
-			FeishuUsers:     trimList(b.Allowlist.FeishuUsers),
-			WeixinUsers:     trimList(b.Allowlist.WeixinUsers),
-			QQApprovers:     trimList(b.Allowlist.QQApprovers),
-			FeishuApprovers: trimList(b.Allowlist.FeishuApprovers),
-			WeixinApprovers: trimList(b.Allowlist.WeixinApprovers),
-			QQAdmins:        trimList(b.Allowlist.QQAdmins),
-			FeishuAdmins:    trimList(b.Allowlist.FeishuAdmins),
-			WeixinAdmins:    trimList(b.Allowlist.WeixinAdmins),
-			QQGroups:        trimList(b.Allowlist.QQGroups),
-			FeishuGroups:    trimList(b.Allowlist.FeishuGroups),
-			WeixinGroups:    trimList(b.Allowlist.WeixinGroups),
-		}
-		c.Bot.QQ = config.QQBotConfig{
-			Enabled:          b.QQ.Enabled,
-			AppID:            strings.TrimSpace(b.QQ.AppID),
-			AppSecretEnv:     strings.TrimSpace(b.QQ.AppSecretEnv),
-			Sandbox:          b.QQ.Sandbox,
-			Model:            strings.TrimSpace(b.QQ.Model),
-			ToolApprovalMode: normalizeBotConnectionToolApprovalMode(b.QQ.ToolApprovalMode),
-			WorkspaceRoot:    strings.TrimSpace(b.QQ.WorkspaceRoot),
-			Access:           botAccessConfigFromView(b.QQ.Access),
-		}
-		c.Bot.Feishu = config.FeishuBotConfig{
-			Enabled:            b.Feishu.Enabled,
-			Domain:             botDomainOrDefault(b.Feishu.Domain),
-			AppID:              strings.TrimSpace(b.Feishu.AppID),
-			AppSecretEnv:       strings.TrimSpace(b.Feishu.AppSecretEnv),
-			VerificationToken:  strings.TrimSpace(b.Feishu.VerificationToken),
-			Mode:               strings.TrimSpace(b.Feishu.Mode),
-			WebhookPort:        b.Feishu.WebhookPort,
-			RequireMention:     b.Feishu.RequireMention,
-			OutboundMediaRoots: append([]string(nil), c.Bot.Feishu.OutboundMediaRoots...),
-		}
-		c.Bot.Weixin = config.WeixinBotConfig{
-			Enabled:   b.Weixin.Enabled,
-			AccountID: strings.TrimSpace(b.Weixin.AccountID),
-			TokenEnv:  strings.TrimSpace(b.Weixin.TokenEnv),
-			APIBase:   strings.TrimRight(strings.TrimSpace(b.Weixin.APIBase), "/"),
+			Enabled:   b.Allowlist.Enabled,
+			AllowAll:  b.Allowlist.AllowAll,
+			Users:     trimList(b.Allowlist.Users),
+			Approvers: trimList(b.Allowlist.Approvers),
+			Admins:    trimList(b.Allowlist.Admins),
+			Groups:    trimList(b.Allowlist.Groups),
 		}
 		c.Bot.Connections = botConnectionConfigs(b.Connections)
 		return nil
@@ -3480,7 +3329,7 @@ func (a *App) SetDesktopLanguage(lang string) error {
 	if cfg, _, err := a.loadDesktopUserConfigForView(); err == nil && cfg.DesktopCurrency() == "" {
 		targetCurrency := a.desktopAutoPricingCurrency()
 		switch strings.ToLower(strings.TrimSpace(lang)) {
-		case "zh":
+		case "ko-kr", "ko":
 			targetCurrency = "CNY"
 		case "en":
 			targetCurrency = "USD"
@@ -3582,7 +3431,7 @@ func (a *App) desktopEffectivePricingCurrency(cfg *config.Config) string {
 
 func (a *App) desktopOfficialPricingLanguage(cfg *config.Config) string {
 	if a.desktopEffectivePricingCurrency(cfg) == "CNY" {
-		return "zh"
+		return "ko-KR"
 	}
 	return "en"
 }
@@ -3594,8 +3443,8 @@ func (a *App) SetTrayLocale(locale string) error {
 	a.setDesktopLocale(locale)
 	pricingCurrencyChanged := previousCurrency != a.desktopAutoPricingCurrency()
 	trayLocale := "en"
-	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(locale)), "zh") {
-		trayLocale = "zh"
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(locale)), "ko-KR") {
+		trayLocale = "ko-KR"
 	}
 	a.updateTrayLocale(trayLocale)
 	if pricingCurrencyChanged && a.desktopPricingFollowsDetectedLocale() {

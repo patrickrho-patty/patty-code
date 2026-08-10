@@ -1,38 +1,12 @@
-// Reasonix Community client. Renders the forum from the forum.reasonix.io API and
-// gates posting on the shared id.reasonix.io session (cookie sent cross-subdomain).
-// Bilingual like the rest of the site: static labels via .l-en/.l-zh spans that the
-// shared `reasonix-lang` choice toggles; plain-text strings pick the current lang.
+// Patty Code Community client. Renders the forum from the forum.patty.io API and
+// gates posting on the shared id.patty.io session (cookie sent cross-subdomain).
 import { initTheme } from "./theme.js";
 
-const FORUM = (import.meta.env.PUBLIC_FORUM_API || "https://forum.reasonix.io").replace(/\/$/, "");
-const ACCOUNTS = (import.meta.env.PUBLIC_ACCOUNTS_API || "https://id.reasonix.io").replace(/\/$/, "");
+const FORUM = (import.meta.env.PUBLIC_FORUM_API || "https://forum.patty.io").replace(/\/$/, "");
+const ACCOUNTS = (import.meta.env.PUBLIC_ACCOUNTS_API || "https://id.patty.io").replace(/\/$/, "");
 
 const el = (id) => document.getElementById(id);
 const qp = new URLSearchParams(location.search);
-
-let lang = "en";
-const L = (en, zh) => `<span class="l-en">${en}</span><span class="l-zh">${zh}</span>`;
-const t = (en, zh) => (lang === "zh" ? zh : en);
-
-function applyLangText() {
-  const attr = lang === "zh" ? "zh" : "en";
-  document.querySelectorAll("[data-ph-en]").forEach((n) => { n.placeholder = n.getAttribute(`data-ph-${attr}`); });
-  document.querySelectorAll("[data-l-en]").forEach((n) => { n.textContent = n.getAttribute(`data-l-${attr}`); });
-}
-function setLang(l) {
-  lang = l;
-  document.body.dataset.lang = l;
-  document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
-  document.querySelectorAll(".lang-switch button").forEach((b) => b.classList.toggle("active", b.dataset.lang === l));
-  try { localStorage.setItem("reasonix-lang", l); } catch {}
-  applyLangText();
-}
-function initLang() {
-  let saved = "";
-  try { saved = localStorage.getItem("reasonix-lang") || ""; } catch {}
-  setLang(saved || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"));
-  document.querySelectorAll(".lang-switch button").forEach((b) => b.addEventListener("click", () => setLang(b.dataset.lang)));
-}
 
 async function api(base, path, opts = {}) {
   const res = await fetch(base + path, {
@@ -53,38 +27,38 @@ async function api(base, path, opts = {}) {
 }
 const forum = (p, o) => api(FORUM, p, o);
 
-// Anti-spam / gate errors are localized by code; unknown codes fall back to the
+// Anti-spam  gate errors are localized by code; unknown codes fall back to the
 // server message.
 const ERR = {
-  email_unverified: ["Confirm your email address before posting.", "发帖前请先验证你的邮箱。"],
-  links_restricted: ["New members can't post links yet — participate a little to unlock.", "新成员暂时不能发链接——参与一段时间后解锁。"],
-  insufficient_trust: ["You don't have access to post in this category yet.", "你还没有在此分区发帖的权限。"],
-  silenced: ["Your account is temporarily restricted from posting.", "你的账号暂时被限制发帖。"],
-  rate_limited: ["You're posting too fast — take a short break.", "发帖太快了——稍微歇一会儿。"],
-  daily_limit: ["You've hit today's posting limit for your trust level.", "你已达到当前信任等级的每日发帖上限。"],
-  closed: ["This topic is closed to new replies.", "该话题已关闭，不能再回复。"],
-  self_flag: ["You can't report your own post.", "不能举报自己的帖子。"],
-  unauthorized: ["Sign in to continue.", "请先登录。"],
+  email_unverified: "Confirm your email address before posting.",
+  links_restricted: "New members can't post links yet — participate a little to unlock.",
+  insufficient_trust: "You don't have access to post in this category yet.",
+  silenced: "Your account is temporarily restricted from posting.",
+  rate_limited: "You're posting too fast — take a short break.",
+  daily_limit: "You've hit today's posting limit for your trust level.",
+  closed: "This topic is closed to new replies.",
+  self_flag: "You can't report your own post.",
+  unauthorized: "Sign in to continue.",
 };
-const errText = (err) => (ERR[err.code] ? t(ERR[err.code][0], ERR[err.code][1]) : err.message);
+const errText = (err) => (ERR[err.code] || err.message);
 
 const CATS = {
-  announcements: ["Announcements", "公告"],
-  help: ["Help & Support", "帮助与支持"],
-  skills: ["Skills & Plugins", "技能与插件"],
-  show: ["Show & Tell", "作品展示"],
-  feedback: ["Feedback & Ideas", "反馈与建议"],
+  announcements: "Announcements",
+  help: "Help & Support",
+  skills: "Skills & Plugins",
+  show: "Show & Tell",
+  feedback: "Feedback & Ideas",
 };
 const CATDESC = {
-  announcements: ["Releases, roadmap, and community news.", "版本发布、路线图与社区动态。"],
-  help: ["Stuck on setup, config, or cache behavior? Ask here.", "安装、配置或缓存问题？在这里提问。"],
-  skills: ["Share, request, and review community skills and MCP servers.", "分享、求助、评审社区技能与 MCP 服务。"],
-  show: ["Built something with Reasonix? Show the community.", "用 Reasonix 做了东西？来给社区看看。"],
-  feedback: ["Feature requests and product feedback.", "功能建议与产品反馈。"],
+  announcements: "Releases, roadmap, and community news.",
+  help: "Stuck on setup, config, or cache behavior? Ask here.",
+  skills: "Share, request, and review community skills and MCP servers.",
+  show: "Built something with Patty Code? Show the community.",
+  feedback: "Feature requests and product feedback.",
 };
-const catName = (slug, apiName) => (CATS[slug] ? L(CATS[slug][0], CATS[slug][1]) : esc(apiName));
-const catText = (slug, apiName) => (CATS[slug] ? t(CATS[slug][0], CATS[slug][1]) : apiName);
-const ROLES = { admin: ["admin", "管理员"], moderator: ["moderator", "版主"] };
+const catName = (slug, apiName) => (CATS[slug] || esc(apiName));
+const catText = (slug, apiName) => (CATS[slug] || apiName);
+const ROLES = { admin: "admin", moderator: "moderator" };
 
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -106,9 +80,9 @@ function avatar(handle, size = "") {
 function ago(iso) {
   if (!iso) return "";
   const s = Math.max(1, (Date.now() - new Date(iso).getTime()) / 1000);
-  const u = [[86400, "d", "天"], [3600, "h", "小时"], [60, "m", "分钟"]];
-  for (const [sec, en, zh] of u) if (s >= sec) { const v = Math.floor(s / sec); return L(`${v}${en} ago`, `${v}${zh}前`); }
-  return L("just now", "刚刚");
+  const u = [[86400, "d"], [3600, "h"], [60, "m"]];
+  for (const [sec, unit] of u) if (s >= sec) { const v = Math.floor(s / sec); return `${v}${unit} ago`; }
+  return "just now";
 }
 function md(body) {
   const parts = esc(body).split(/```/);
@@ -131,7 +105,7 @@ async function loadAccount() {
   if (slot) {
     slot.innerHTML = account
       ? `<a href="/account/" title="${esc(account.email)}">${avatar(account.handle)}</a>`
-      : `<a class="btn btn-ghost sm" href="${loginUrl()}">${L("Sign in", "登录")}</a>`;
+      : `<a class="btn btn-ghost sm" href="${loginUrl()}">Sign in</a>`;
   }
 }
 
@@ -148,10 +122,10 @@ function renderHome() {
     catBox.innerHTML = cats.map((c) => `
       <a class="cat" href="/community/?category=${esc(c.slug)}">
         <span class="ico">${CAT_ICONS[c.slug] || "💬"}</span>
-        <div><h3>${catName(c.slug, c.name)}</h3><p>${CATDESC[c.slug] ? L(CATDESC[c.slug][0], CATDESC[c.slug][1]) : esc(c.description)}</p>
-        <div class="meta">${c.topicCount || 0} ${L("topics", "话题")}${c.lastActivity ? " · " + ago(c.lastActivity) : ""}</div></div>
+        <div><h3>${catName(c.slug, c.name)}</h3><p>${CATDESC[c.slug] || esc(c.description)}</p>
+        <div class="meta">${c.topicCount || 0} topics${c.lastActivity ? " · " + ago(c.lastActivity) : ""}</div></div>
       </a>`).join("");
-  }).catch(() => { catBox.innerHTML = `<div class="empty">${L("Couldn't load categories.", "无法加载分区。")}</div>`; });
+  }).catch(() => { catBox.innerHTML = `<div class="empty">Couldn't load categories.</div>`; });
 
   const loadTopics = (sort) => {
     topicBox.innerHTML = `<div class="skeleton"><div class="bar"></div><div class="bar short"></div></div>`.repeat(3);
@@ -159,22 +133,22 @@ function renderHome() {
     if (category) q.set("category", category);
     if (sort) q.set("sort", sort);
     forum("/topics?" + q).then((d) => {
-      if (!d.topics.length) { topicBox.innerHTML = `<div class="empty">${L("No topics yet —", "还没有话题 ——")} <a class="tag" href="/community/new/">${L("start the first one", "来发第一个")}</a>.</div>`; return; }
+      if (!d.topics.length) { topicBox.innerHTML = `<div class="empty">No topics yet — <a class="tag" href="/community/new/">start the first one</a>.</div>`; return; }
       topicBox.innerHTML = d.topics.map((tp) => `
         <div class="topic">
           ${avatar(tp.author)}
           <div class="main">
             <div class="title">
-              ${tp.pinned ? `<span class="badge pinned">📌 ${L("Pinned", "置顶")}</span>` : ""}
-              ${tp.status === "solved" ? `<span class="badge solved">✓ ${L("Solved", "已解决")}</span>` : ""}
+              ${tp.pinned ? `<span class="badge pinned">📌 Pinned</span>` : ""}
+              ${tp.status === "solved" ? `<span class="badge solved">✓ Solved</span>` : ""}
               <a href="/community/topic/?id=${tp.id}">${esc(tp.title)}</a>
             </div>
             <div class="sub"><span class="cat-tag">${catName(tp.category, tp.categoryName)}</span> <span class="who">${esc(tp.author)}</span> · ${ago(tp.createdAt)}</div>
           </div>
-          <div class="stat"><div class="n">${tp.replyCount}</div><div class="l">${L("replies", "回复")}</div></div>
+          <div class="stat"><div class="n">${tp.replyCount}</div><div class="l">replies</div></div>
           <div class="last">${ago(tp.lastPostAt)}</div>
         </div>`).join("");
-    }).catch(() => { topicBox.innerHTML = `<div class="empty">${L("Couldn't load discussions.", "无法加载讨论。")}</div>`; });
+    }).catch(() => { topicBox.innerHTML = `<div class="empty">Couldn't load discussions.</div>`; });
   };
   loadTopics("latest");
 
@@ -191,17 +165,17 @@ let firstPostId = 0;
 function postHtml(p, topic) {
   const answer = topic.acceptedPostId && topic.acceptedPostId === p.id;
   const cls = answer ? "post answer" : p.id === firstPostId ? "post op" : "post";
-  const roleWord = ROLES[p.role] ? L(ROLES[p.role][0], ROLES[p.role][1]) : "";
+  const roleWord = ROLES[p.role] || "";
   const role = roleWord ? `<span class="badge role ${esc(p.role)}">${roleWord}</span>` : "";
   return `<article class="${cls}">
     ${avatar(p.handle || p.author, "lg")}
     <div>
-      ${answer ? `<div class="answer-flag">✓ ${L("Accepted answer", "已采纳回答")}</div>` : ""}
+      ${answer ? `<div class="answer-flag">✓ Accepted answer</div>` : ""}
       <div class="who"><span class="name">${esc(p.handle || p.author)}</span>${role}<span class="when">${ago(p.createdAt)}</span></div>
       <div class="body">${md(p.body)}</div>
       <div class="actions">
         <button class="react${p.liked ? " on" : ""}" data-like="${p.id}" data-liked="${p.liked ? "1" : "0"}" aria-pressed="${p.liked ? "true" : "false"}">👍 <span>${p.likeCount || 0}</span></button>
-        <button class="link-act" data-flag="${p.id}">${L("Report", "举报")}</button>
+        <button class="link-act" data-flag="${p.id}">Report</button>
       </div>
     </div>
   </article>`;
@@ -212,17 +186,17 @@ async function renderThread() {
   if (!id) { location.href = "/community/"; return; }
   let data;
   try { data = await forum(`/topics/${id}`); }
-  catch { el("posts").innerHTML = `<div class="empty">${L("That discussion doesn't exist or was removed.", "该讨论不存在或已被移除。")}</div>`; return; }
+  catch { el("posts").innerHTML = `<div class="empty">That discussion doesn't exist or was removed.</div>`; return; }
   const { topic, posts } = data;
   firstPostId = posts[0]?.id || 0;
 
-  document.title = `${topic.title} — ${t("Reasonix Community", "Reasonix 社区")}`;
+  document.title = `${topic.title} — Patty Code Community`;
   el("crumb-cat").textContent = catText(topic.category, topic.category);
   el("crumb-title").textContent = topic.title;
   el("t-title").textContent = topic.title;
   el("t-meta").innerHTML =
-    `${topic.status === "solved" ? `<span class="badge solved">✓ ${L("Solved", "已解决")}</span>` : ""}
-     <span>${topic.replyCount} ${L("replies", "回复")} · ${topic.viewCount} ${L("views", "浏览")} · ${L("started", "发起于")} ${ago(topic.createdAt)}</span>`;
+    `${topic.status === "solved" ? `<span class="badge solved">✓ Solved</span>` : ""}
+     <span>${topic.replyCount} replies · ${topic.viewCount} views · started ${ago(topic.createdAt)}</span>`;
   el("posts").innerHTML = posts.map((p) => postHtml(p, topic)).join("");
 
   const seen = new Set();
@@ -248,24 +222,23 @@ async function renderThread() {
     }
     const flag = e.target.closest("[data-flag]");
     if (flag && account) {
-      if (!confirm(t("Report this post as spam or abuse?", "举报该帖为垃圾/滥用内容？"))) return;
-      try { await forum(`/posts/${flag.dataset.flag}/flags`, { method: "POST", body: { reason: "spam" } }); flag.innerHTML = L("Reported ✓", "已举报 ✓"); flag.disabled = true; }
+      if (!confirm("Report this post as spam or abuse?")) return;
+      try { await forum(`/posts/${flag.dataset.flag}/flags`, { method: "POST", body: { reason: "spam" } }); flag.innerHTML = "Reported ✓"; flag.disabled = true; }
       catch (err) { alert(errText(err)); }
     } else if (flag) { location.href = loginUrl(); }
   });
 
   const zone = el("reply-zone");
   if (!account) {
-    zone.innerHTML = `<div class="composer"><div class="gate"><p>${L("Sign in with your Reasonix account to reply.", "用你的 Reasonix 账号登录后回复。")}</p><a class="btn btn-primary" href="${loginUrl()}">${L("Sign in", "登录")}</a></div></div>`;
+    zone.innerHTML = `<div class="composer"><div class="gate"><p>Sign in with your Patty Code account to reply.</p><a class="btn btn-primary" href="${loginUrl()}">Sign in</a></div></div>`;
     return;
   }
   zone.innerHTML = `
     <div class="msg error" id="reply-msg" hidden></div>
     <div class="composer">
-      <textarea id="reply-body" data-ph-en="Write a reply… Markdown and \`\`\` code blocks supported." data-ph-zh="写下回复… 支持 Markdown 和 \`\`\` 代码块。"></textarea>
-      <div class="foot"><span class="hint">${L("Signed in as", "已登录")} <b>${esc(account.handle)}</b></span><button class="btn btn-primary" id="reply-submit">${L("Post reply", "发布回复")}</button></div>
+      <textarea id="reply-body" placeholder="Write a reply… Markdown and \`\`\` code blocks supported."></textarea>
+      <div class="foot"><span class="hint">Signed in as <b>${esc(account.handle)}</b></span><button class="btn btn-primary" id="reply-submit">Post reply</button></div>
     </div>`;
-  applyLangText();
   el("reply-submit").addEventListener("click", async () => {
     const body = el("reply-body").value.trim();
     const msg = el("reply-msg");
@@ -296,15 +269,12 @@ async function renderNew() {
     for (const c of categories) {
       const o = document.createElement("option");
       o.value = c.id;
-      o.setAttribute("data-l-en", CATS[c.slug] ? CATS[c.slug][0] : c.name);
-      o.setAttribute("data-l-zh", CATS[c.slug] ? CATS[c.slug][1] : c.name);
       o.textContent = catText(c.slug, c.name);
       sel.appendChild(o);
     }
     const pre = qp.get("category");
     if (pre) { const m = categories.find((c) => c.slug === pre); if (m) sel.value = m.id; }
   } catch {}
-  applyLangText();
 
   el("f-submit").addEventListener("click", async () => {
     const msg = el("new-msg");
@@ -312,8 +282,8 @@ async function renderNew() {
     const categoryId = Number(sel.value);
     const title = el("f-title").value.trim();
     const body = el("f-body").value.trim();
-    if (!categoryId) { msg.textContent = t("Choose a category.", "请选择一个分区。"); msg.hidden = false; return; }
-    if (title.length < 6 || body.length < 10) { msg.textContent = t("Add a title (6+ chars) and a bit more detail (10+ chars).", "标题至少 6 个字符，正文至少 10 个字符。"); msg.hidden = false; return; }
+    if (!categoryId) { msg.textContent = "Choose a category."; msg.hidden = false; return; }
+    if (title.length < 6 || body.length < 10) { msg.textContent = "Add a title (6+ chars) and a bit more detail (10+ chars)."; msg.hidden = false; return; }
     el("f-submit").disabled = true;
     try {
       const { topic } = await forum("/topics", { method: "POST", body: { categoryId, title, body } });
@@ -327,7 +297,6 @@ async function renderNew() {
 
 (async function () {
   initTheme();
-  initLang();
   await loadAccount();
   if (el("topic-list")) renderHome();
   else if (el("posts")) renderThread();

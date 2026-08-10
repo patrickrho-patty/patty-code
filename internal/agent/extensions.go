@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"strings"
 
-	"reasonix/internal/event"
-	"reasonix/internal/extension"
-	"reasonix/internal/extension/dispatch"
-	"reasonix/internal/extension/providerconv"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/extension"
+	"patty/internal/extension/dispatch"
+	"patty/internal/extension/providerconv"
+	"patty/internal/provider"
 )
 
 // Extension Protocol v2 agent-side wiring. The agent consults the

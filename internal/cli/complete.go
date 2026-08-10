@@ -11,11 +11,11 @@ import (
 	"charm.land/lipgloss/v2"
 	rw "github.com/mattn/go-runewidth"
 
-	"reasonix/internal/control"
-	"reasonix/internal/fileref"
-	"reasonix/internal/i18n"
-	"reasonix/internal/plugin"
-	"reasonix/internal/skill"
+	"patty/internal/control"
+	"patty/internal/fileref"
+	"patty/internal/i18n"
+	"patty/internal/plugin"
+	"patty/internal/skill"
 )
 
 // compKind distinguishes the two completion menus.
@@ -29,12 +29,14 @@ const (
 
 // compItem is one menu row: label shown, insert applied on accept, hint dimmed.
 // descend marks a directory entry — accepting it fills the input and re-opens
-// the menu one level deeper instead of closing.
+// the menu one level deeper instead of closing. aliases are alternate spellings
+// (Korean canonical name, 초성, English name) the fuzzy filter also matches.
 type compItem struct {
 	label   string
 	insert  string
 	hint    string
 	descend bool
+	aliases []string
 }
 
 // completion is the live autocomplete menu state. Empty value = inactive.
@@ -223,7 +225,7 @@ func (m *chatTUI) inputCursorByteOffset() int {
 				absRow := m.input.ScrollYOffset() + cur.Y
 				if absRow >= 0 && absRow < len(rows) {
 					row := rows[absRow]
-					// cur.X is screen-relative and includes the "❯ " prompt
+					// cur.X is screen-relative and includes the blank prompt
 					// gutter (composerPromptWidth columns). Subtract it so
 					// we measure content columns only.
 					col := max(cur.X-composerPromptWidth, 0)
@@ -324,6 +326,7 @@ func (m *chatTUI) explicitSubcommandItems(val string) ([]compItem, int, bool) {
 	if !ok {
 		return nil, 0, false
 	}
+	cmd = canonicalBuiltinSlashCommand(cmd)
 	switch cmd {
 	case "/mcp", "/skill", "/skills", "/plugin", "/plugins", "/memory":
 	default:
@@ -348,7 +351,7 @@ func (m *chatTUI) bareSubcommandSpace(val string) bool {
 	if len(fields) != 1 {
 		return false
 	}
-	switch fields[0] {
+	switch canonicalBuiltinSlashCommand(fields[0]) {
 	case "/mcp", "/skill", "/skills", "/plugin", "/plugins", "/memory":
 		return true
 	default:
@@ -366,7 +369,7 @@ func slashItemsToComps(items []control.SlashItem) []compItem {
 
 func (m *chatTUI) branchArgItems(val string) ([]compItem, int, bool) {
 	cmdEnd := strings.IndexAny(val, " \t")
-	if cmdEnd < 0 || val[:cmdEnd] != "/switch" {
+	if cmdEnd < 0 || canonicalBuiltinSlashCommand(val[:cmdEnd]) != "/switch" {
 		return nil, 0, false
 	}
 	from := strings.LastIndexAny(val, " \t") + 1
@@ -439,6 +442,10 @@ func fuzzyFilterSlash(items []compItem, query string) []compItem {
 			prefix = append(prefix, it)
 		case subsequenceMatch(l, lq):
 			rest = append(rest, it)
+		case aliasMatches(it, lq):
+			// 초성, the Korean canonical name, and the English name all filter
+			// the palette ("/ㅂㄹㅊ" → branch), but are ranked after the label.
+			rest = append(rest, it)
 		}
 	}
 	if len(prefix) == 0 && len(rest) == 0 {
@@ -448,6 +455,18 @@ func fuzzyFilterSlash(items []compItem, query string) []compItem {
 	out = append(out, prefix...)
 	out = append(out, rest...)
 	return out
+}
+
+// aliasMatches reports whether query matches any of an item's alternate
+// spellings as a case-folded prefix or subsequence.
+func aliasMatches(it compItem, query string) bool {
+	for _, a := range it.aliases {
+		la := strings.ToLower(a)
+		if strings.HasPrefix(la, query) || subsequenceMatch(la, query) {
+			return true
+		}
+	}
+	return false
 }
 
 // subsequenceMatch reports whether query appears in target as a case-folded

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/bot"
-	"reasonix/internal/event"
+	"patty/internal/bot"
+	"patty/internal/event"
 )
 
 type desktopForwardTestAdapter struct {
@@ -25,7 +25,7 @@ type desktopForwardTestAdapter struct {
 
 func newDesktopForwardTestAdapter() *desktopForwardTestAdapter {
 	return &desktopForwardTestAdapter{
-		platform: bot.PlatformFeishu,
+		platform: bot.Platform("generic"),
 		name:     "forward-test",
 		messages: make(chan bot.InboundMessage),
 		entered:  make(chan struct{}),
@@ -59,9 +59,9 @@ func (a *desktopForwardTestAdapter) Send(ctx context.Context, msg bot.OutboundMe
 
 func newDesktopForwardTestRuntime(adapter bot.Adapter) *desktopBotRuntime {
 	gw := bot.NewGatewayWithAdapterBindings(bot.GatewayConfig{}, []bot.AdapterBinding{{
-		ID:       "feishu-lark",
-		Domain:   "lark",
-		Platform: bot.PlatformFeishu,
+		ID:       "generic-main",
+		Domain:   "generic",
+		Platform: bot.Platform("generic"),
 		Adapter:  adapter,
 	}}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	return &desktopBotRuntime{gw: gw}
@@ -70,8 +70,8 @@ func newDesktopForwardTestRuntime(adapter bot.Adapter) *desktopBotRuntime {
 func TestBotEventForwarderDoesNotBlockEventEmissionOnSlowSend(t *testing.T) {
 	adapter := newDesktopForwardTestAdapter()
 	forwarder := newBotEventForwarder(newDesktopForwardTestRuntime(adapter), []botForwardTarget{{
-		ConnID:   "feishu-lark",
-		Domain:   "lark",
+		ConnID:   "generic-main",
+		Domain:   "generic",
 		ChatID:   "oc-group-1",
 		ChatType: bot.ChatGroup,
 	}})
@@ -106,8 +106,8 @@ func TestBotEventForwarderApprovalNoticeDoesNotExposeReplyID(t *testing.T) {
 	adapter := newDesktopForwardTestAdapter()
 	close(adapter.release)
 	forwarder := newBotEventForwarder(newDesktopForwardTestRuntime(adapter), []botForwardTarget{{
-		ConnID:   "feishu-lark",
-		Domain:   "lark",
+		ConnID:   "generic-main",
+		Domain:   "generic",
 		ChatID:   "oc-group-1",
 		ChatType: bot.ChatGroup,
 	}})
@@ -124,7 +124,7 @@ func TestBotEventForwarderApprovalNoticeDoesNotExposeReplyID(t *testing.T) {
 		if strings.Contains(msg.Text, "approval-1") || strings.Contains(msg.Text, "/approve") {
 			t.Fatalf("approval notice exposed unusable reply routing: %q", msg.Text)
 		}
-		if !strings.Contains(msg.Text, "桌面") {
+		if !strings.Contains(msg.Text, "데스크톱") {
 			t.Fatalf("approval notice = %q, want desktop guidance", msg.Text)
 		}
 	case <-time.After(500 * time.Millisecond):
@@ -136,8 +136,8 @@ func TestBotEventForwarderSuppressesOperatorNoticesWithoutHidingUserWarnings(t *
 	forwarder := &botEventForwarder{
 		runtime: &desktopBotRuntime{},
 		targets: []botForwardTarget{{
-			ConnID:   "feishu-lark",
-			Domain:   "lark",
+			ConnID:   "generic-main",
+			Domain:   "generic",
 			ChatID:   "oc-group-1",
 			ChatType: bot.ChatGroup,
 		}},

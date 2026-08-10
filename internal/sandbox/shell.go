@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/proc"
-	"reasonix/internal/secrets"
+	"patty/internal/proc"
+	"patty/internal/secrets"
 )
 
 // psUTF8Prologue forces PowerShell to emit UTF-8 instead of the host's OEM code
-// page (e.g. CP936 on a Chinese Windows), so non-ASCII command output and error
+// page (e.g. CP936 on a Korean Windows), so non-ASCII command output and error
 // text come back as valid UTF-8 rather than mojibake.
 const psUTF8Prologue = "$OutputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
 

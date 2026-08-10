@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/ablation"
-	fileencoding "reasonix/internal/fileutil/encoding"
+	"patty/internal/ablation"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 type swebenchOpts struct {
@@ -91,10 +91,10 @@ func runSwebenchInstance(o swebenchOpts, inst swebenchInstance) (result, string)
 		return r, ""
 	}
 
-	metricsPath := "/tmp/reasonix-metrics.json"
+	metricsPath := "/tmp/patty-metrics.json"
 	args := swebenchAgentArgs(metricsPath, o.model, o.profile, o.permission, o.arm, o.maxSteps, swebenchPrompt(inst))
-	agentCmd := append([]string{"exec", "-e", "REASONIX_HOME=/opt/rxhome", container},
-		testbedShell("/usr/local/bin/reasonix "+shellQuoteAll(args))...)
+	agentCmd := append([]string{"exec", "-e", "PATTY_HOME=/opt/rxhome", container},
+		testbedShell("/usr/local/bin/patty "+shellQuoteAll(args))...)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(o.timeoutSec)*time.Second)
 	defer cancel()
@@ -233,7 +233,7 @@ func patchFileList(numstat string) []string {
 // container. The API key is streamed in rather than baked into an image layer
 // or an argv, so it never lands anywhere a later docker inspect can read it.
 func provisionAgent(o swebenchOpts, container string) error {
-	if err := dockerRun("cp", o.bin, container+":/usr/local/bin/reasonix"); err != nil {
+	if err := dockerRun("cp", o.bin, container+":/usr/local/bin/patty"); err != nil {
 		return err
 	}
 	if err := dockerRun("exec", container, "mkdir", "-p", "/opt/rxhome"); err != nil {
@@ -243,9 +243,9 @@ func provisionAgent(o swebenchOpts, container string) error {
 		"bash", "-c", "umask 077 && cat > /opt/rxhome/config.toml"); err != nil {
 		return err
 	}
-	env, err := os.ReadFile(filepath.Join(os.Getenv("REASONIX_HOME"), ".env"))
+	env, err := os.ReadFile(filepath.Join(os.Getenv("PATTY_HOME"), ".env"))
 	if err != nil {
-		return fmt.Errorf("read credentials from $REASONIX_HOME/.env: %w", err)
+		return fmt.Errorf("read credentials from $PATTY_HOME/.env: %w", err)
 	}
 	return dockerPipe(string(env), "exec", "-i", container,
 		"bash", "-c", "umask 077 && cat > /opt/rxhome/.env")
@@ -255,7 +255,7 @@ func provisionAgent(o swebenchOpts, container string) error {
 // harness, then reads back its report. We never decide resolution ourselves.
 func gradeSwebench(o swebenchOpts, patches map[string]string, order []string) (swebenchReport, error) {
 	var report swebenchReport
-	predictions, err := encodePredictions("reasonix", patches, order)
+	predictions, err := encodePredictions("patty", patches, order)
 	if err != nil {
 		return report, err
 	}
@@ -279,7 +279,7 @@ func gradeSwebench(o swebenchOpts, patches map[string]string, order []string) (s
 		return report, fmt.Errorf("run_evaluation: %w", err)
 	}
 
-	raw, err := fileencoding.ReadFileUTF8(filepath.Join(o.workDir, swebenchReportPath("reasonix", o.runID)))
+	raw, err := fileencoding.ReadFileUTF8(filepath.Join(o.workDir, swebenchReportPath("patty", o.runID)))
 	if err != nil {
 		return report, err
 	}
@@ -355,7 +355,7 @@ func renderSwebench(results []result, o swebenchOpts) string {
 		model = "config default"
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "## SWE-bench Verified — Reasonix (arm `%s`)\n\n", o.arm.Arm())
+	fmt.Fprintf(&b, "## SWE-bench Verified — Patty Code (arm `%s`)\n\n", o.arm.Arm())
 	posture := o.permission
 	if posture == "" {
 		posture = "auto"

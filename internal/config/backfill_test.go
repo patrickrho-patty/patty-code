@@ -10,7 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func hasModel(c *Config, model string) *ProviderEntry {
@@ -36,7 +36,7 @@ func TestBackfillDeepSeekProRestoresPro(t *testing.T) {
 }
 
 func TestBackfillDeepSeekProUsesConfiguredLanguage(t *testing.T) {
-	c := &Config{Language: "zh", Providers: []ProviderEntry{
+	c := &Config{Language: "ko-KR", Providers: []ProviderEntry{
 		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY"},
 	}}
 	backfillDeepSeekPro(c)
@@ -988,7 +988,7 @@ func TestBackfillDeepSeekOfficialPrices(t *testing.T) {
 }
 
 func TestBackfillDeepSeekOfficialPricesUsesConfiguredLanguage(t *testing.T) {
-	c := &Config{Language: "zh", Providers: []ProviderEntry{{
+	c := &Config{Language: "ko-KR", Providers: []ProviderEntry{{
 		Name:    "deepseek",
 		Kind:    "openai",
 		BaseURL: "https://api.deepseek.com",
@@ -1044,7 +1044,7 @@ func TestBackfillDeepSeekOfficialPricesKeepsProviderWidePrice(t *testing.T) {
 
 func TestApplyDeepSeekOfficialDefaultPricingUsesConfiguredLanguage(t *testing.T) {
 	c := Default()
-	c.Language = "zh"
+	c.Language = "ko-KR"
 	applyDeepSeekOfficialDefaultPricing(c)
 	flash, ok := c.Provider("deepseek-flash")
 	if !ok {
@@ -1063,7 +1063,7 @@ func TestApplyDeepSeekOfficialDefaultPricingUsesConfiguredLanguage(t *testing.T)
 }
 
 func TestApplyDeepSeekOfficialDefaultPricingKeepsCustomPrice(t *testing.T) {
-	c := &Config{Language: "zh", Providers: []ProviderEntry{{
+	c := &Config{Language: "ko-KR", Providers: []ProviderEntry{{
 		Name:    "deepseek-flash",
 		Kind:    "openai",
 		BaseURL: "https://api.deepseek.com",
@@ -1082,7 +1082,7 @@ func TestApplyDeepSeekOfficialDefaultPricingKeepsCustomPrice(t *testing.T) {
 
 func TestLoadForEditAutoCurrencyKeepsPersistedOfficialUSDPrice(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.toml")
-	body := `language = "zh"
+	body := `language = "ko-KR"
 
 [[providers]]
 name = "deepseek-flash"
@@ -1114,9 +1114,9 @@ price = { cache_hit = 0.0028, input = 0.14, output = 0.28, currency = "$" }
 
 func TestLoadForRootAutoCurrencyKeepsPersistedOfficialUSDPrice(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
-	body := `language = "zh"
+	t.Setenv("PATTY_HOME", home)
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
+	body := `language = "ko-KR"
 
 [[providers]]
 name = "deepseek-flash"
@@ -1168,9 +1168,9 @@ price = { cache_hit = 0.0028, input = 0.14, output = 0.28, currency = "$" }
 
 func TestLoadForRootAutoCurrencyDoesNotMixPartialOfficialPrices(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
-	body := `language = "zh"
+	t.Setenv("PATTY_HOME", home)
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
+	body := `language = "ko-KR"
 
 [[providers]]
 name = "deepseek"
@@ -1211,9 +1211,9 @@ func TestDeepSeekOfficialPricingCurrencyResolution(t *testing.T) {
 	}{
 		{name: "old config defaults to USD", want: "USD"},
 		{name: "English auto", desktop: DesktopConfig{Language: "en"}, want: "USD"},
-		{name: "Chinese auto", desktop: DesktopConfig{Language: "zh"}, want: "CNY"},
-		{name: "CLI Chinese fallback", language: "zh", want: "CNY"},
-		{name: "explicit USD wins over Chinese", language: "zh", desktop: DesktopConfig{Language: "zh", Currency: "USD"}, want: "USD"},
+		{name: "Korean auto", desktop: DesktopConfig{Language: "ko-KR"}, want: "CNY"},
+		{name: "CLI Korean fallback", language: "ko-KR", want: "CNY"},
+		{name: "explicit USD wins over Korean", language: "ko-KR", desktop: DesktopConfig{Language: "ko-KR", Currency: "USD"}, want: "USD"},
 		{name: "explicit CNY wins over English", language: "en", desktop: DesktopConfig{Language: "en", Currency: "CNY"}, want: "CNY"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1228,12 +1228,12 @@ func TestDeepSeekOfficialPricingCurrencyResolution(t *testing.T) {
 func TestLoadForRootKeepsPricingRegionUserGlobal(t *testing.T) {
 	home := t.TempDir()
 	project := t.TempDir()
-	t.Setenv("REASONIX_HOME", home)
-	t.Setenv("REASONIX_CREDENTIALS_STORE", "file")
+	t.Setenv("PATTY_HOME", home)
+	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
 	if err := os.WriteFile(filepath.Join(home, "config.toml"), []byte("[desktop]\nlanguage = \"en\"\ncurrency = \"USD\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(project, "reasonix.toml"), []byte("[desktop]\nlanguage = \"zh\"\ncurrency = \"CNY\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(project, "patty.toml"), []byte("[desktop]\nlanguage = \"zh\"\ncurrency = \"CNY\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1251,7 +1251,7 @@ func TestLoadForRootKeepsPricingRegionUserGlobal(t *testing.T) {
 
 func TestApplyDeepSeekOfficialDefaultPricingExplicitCurrencyWins(t *testing.T) {
 	c := Default()
-	c.Desktop.Language = "zh"
+	c.Desktop.Language = "ko-KR"
 	c.Desktop.Currency = "USD"
 	applyDeepSeekOfficialDefaultPricing(c)
 	flash, _ := c.Provider("deepseek-flash")
@@ -1268,7 +1268,7 @@ func TestApplyDeepSeekOfficialDefaultPricingExplicitCurrencyWins(t *testing.T) {
 }
 
 func TestResetOfficialProviderPricingOnUpgradeRunsOnce(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "reasonix.toml")
+	path := filepath.Join(t.TempDir(), "patty.toml")
 	c := &Config{
 		ConfigVersion: 2,
 		Providers: []ProviderEntry{

@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
+	"patty/internal/agent"
+	"patty/internal/event"
 )
 
 // bindExecutorProjection rebinds the agent's projection sidecar to path.

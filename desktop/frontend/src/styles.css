@@ -1,5 +1,5 @@
 /*
- * Reasonix desktop — single-column, developer-dense, terminal-flavored chat UI.
+ * Patty Code desktop — single-column, developer-dense, terminal-flavored chat UI.
  *
  * Multi-platform notes:
  *  - System font stack for text; bundled icon fonts only (no web-font fetches).
@@ -10,7 +10,7 @@
  */
 
 @font-face {
-  font-family: "Reasonix Seti";
+  font-family: "Patty Seti";
   src: url("./assets/file-icons/seti/seti.woff") format("woff");
   font-style: normal;
   font-weight: normal;
@@ -59,8 +59,8 @@
   --font-status: var(--font-control-small);
   --statusbar-dock-height: max(30px, calc(28px * var(--font-scale)));
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei",
-    "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
+    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
+    "Helvetica Neue", Arial, sans-serif;
   --font-content-family: var(--font-ui);
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code",
     Consolas, "Liberation Mono", Menlo, monospace;
@@ -79,11 +79,11 @@
   --scrollbar-corner: transparent;
 
   /* brand + semantic */
-  --accent: #d97757;
-  --accent-fg: #1a0f0a;
+  --accent: #d64550;
+  --accent-fg: #ffffff;
   --accent-text: var(--accent-fg);
-  --accent-soft: rgba(217, 119, 87, 0.14);
-  --accent-strong: #e58a6b;
+  --accent-soft: rgba(214, 69, 80, 0.16);
+  --accent-strong: #e0656f;
   --grad: linear-gradient(120deg, var(--accent), var(--accent-strong));
   /* Chart series colours for the usage-stats model charts (donut + stacked
      trend). A fixed two-set palette taken from GitHub Primer's data-viz
@@ -248,8 +248,8 @@
 }
 
 :root[data-platform="windows"] {
-  --font-ui: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI",
-    "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", "Malgun Gothic",
+    "Noto Sans KR", Arial, sans-serif;
   --font-content-family: var(--font-ui);
   --font-mono: "Cascadia Code", "Cascadia Mono", Consolas, "Liberation Mono",
     ui-monospace, monospace;
@@ -258,45 +258,43 @@
 }
 
 :root[data-platform="darwin"] {
-  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
-    "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo",
+    "Helvetica Neue", Arial, sans-serif;
   --font-content-family: var(--font-ui);
   --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco,
     "Cascadia Code", Consolas, monospace;
 }
 
 :root[data-platform="linux"] {
-  --font-ui: system-ui, "Noto Sans", "Noto Sans CJK SC", "WenQuanYi Micro Hei",
-    "Microsoft YaHei", Arial, sans-serif;
+  --font-ui: system-ui, "Noto Sans", "Noto Sans KR", "Noto Sans CJK KR",
+    Arial, sans-serif;
   --font-content-family: var(--font-ui);
   --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono",
     "Noto Sans Mono", "Liberation Mono", Consolas, monospace;
 }
 
 /* font-family presets */
-:root[data-font-family="yahei"] {
-  --font-ui: "Microsoft YaHei UI", "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC",
+:root[data-font-family="malgun"] {
+  --font-ui: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR",
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-content-family: var(--font-ui);
 }
 
-:root[data-font-family="pingfang"] {
-  --font-ui: "PingFang SC", "苹方-简", "Noto Sans SC",
-    "Microsoft YaHei", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
+:root[data-font-family="applesdgothic"] {
+  --font-ui: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-content-family: var(--font-ui);
 }
 
-:root[data-font-family="noto"] {
-  --font-ui: "Noto Sans SC", "Noto Sans", "PingFang SC",
-    "Microsoft YaHei", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
+:root[data-font-family="notokr"] {
+  --font-ui: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-content-family: var(--font-ui);
 }
 
 :root[data-font-family="custom"] {
-  --font-ui: var(--font-family-custom, "PingFang SC"),
-    "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
+  --font-ui: var(--font-family-custom, "Apple SD Gothic Neo"),
+    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     sans-serif;
   --font-content-family: var(--font-ui);
@@ -345,10 +343,10 @@
     --fg: #111827;
     --fg-dim: #4b5563;
     --fg-faint: #8a94a6;
-    --accent: #2f5fa8;
+    --accent: #c14a4d;
     --accent-fg: #fff;
-    --accent-soft: rgba(47, 95, 168, 0.12);
-    --accent-strong: #244f91;
+    --accent-soft: rgba(193, 74, 77, 0.12);
+    --accent-strong: #a83a3d;
     --chart-1: #006edb;
     --chart-2: #30a147;
     --chart-3: #eb670f;
@@ -385,7 +383,7 @@
     --tree-row-hover-bg: var(--workspace-files-hover);
     --tree-row-current-bg: color-mix(in srgb, var(--workspace-selection-bg) 42%, var(--workspace-files-bg));
     --tree-row-marker: var(--workspace-selection-bar);
-    --mode-auto-bg: #2f5fa8;
+    --mode-auto-bg: #c14a4d;
     --mode-auto-border: #386dbb;
     --mode-auto-fg: #fff;
     --mode-plan-bg: var(--accent-soft);
@@ -420,10 +418,10 @@
   --fg: #111827;
   --fg-dim: #4b5563;
   --fg-faint: #8a94a6;
-  --accent: #2f5fa8;
+  --accent: #c14a4d;
   --accent-fg: #fff;
-  --accent-soft: rgba(47, 95, 168, 0.12);
-  --accent-strong: #244f91;
+  --accent-soft: rgba(193, 74, 77, 0.12);
+  --accent-strong: #a83a3d;
   --chart-1: #006edb;
   --chart-2: #30a147;
   --chart-3: #eb670f;
@@ -460,7 +458,7 @@
   --tree-row-hover-bg: var(--workspace-files-hover);
   --tree-row-current-bg: color-mix(in srgb, var(--workspace-selection-bg) 42%, var(--workspace-files-bg));
   --tree-row-marker: var(--workspace-selection-bar);
-  --mode-auto-bg: #2f5fa8;
+  --mode-auto-bg: #c14a4d;
   --mode-auto-border: #386dbb;
   --mode-auto-fg: #fff;
   --mode-plan-bg: var(--accent-soft);
@@ -501,8 +499,8 @@
   --workspace-files-bg: #15161a;
   --workspace-files-hover: #202126;
   --workspace-selection-bg: rgba(255, 106, 61, 0.16);
-  --workspace-selection-fg: #ff9a52;
-  --workspace-selection-bar: #ff6a3d;
+  --workspace-selection-fg: #e0656f;
+  --workspace-selection-bar: #d64550;
   --border: rgba(255, 255, 255, 0.1);
   --border-2: rgba(255, 255, 255, 0.2);
   --border-soft: rgba(255, 255, 255, 0.07);
@@ -512,18 +510,18 @@
   --fg: #f1f1ef;
   --fg-dim: #a7a8ad;
   --fg-faint: #6c6e74;
-  --accent: #ff6a3d;
-  --accent-fg: #0c0d10;
+  --accent: #d64550;
+  --accent-fg: #ffffff;
   --accent-text: #ffffff;
-  --accent-soft: rgba(255, 106, 61, 0.16);
-  --accent-strong: #ff9a52;
+  --accent-soft: rgba(214, 69, 80, 0.16);
+  --accent-strong: #e0656f;
   --ok: #3ad17e;
   --warn: #e3a23a;
   --err: #f0573f;
-  --control-primary-bg: #ff6a3d;
+  --control-primary-bg: #d64550;
   --control-primary-fg: #0c0d10;
   --code-bg: #101115;
-  --grad: linear-gradient(120deg, #ff6a3d, #ff9a52);
+  --grad: linear-gradient(120deg, #d64550, #e0656f);
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-2: 0 14px 40px rgba(0, 0, 0, 0.6);
   --r-s: 5px;
@@ -549,8 +547,8 @@
   --workspace-files-bg: #ffffff;
   --workspace-files-hover: #f0efe9;
   --workspace-selection-bg: rgba(255, 90, 44, 0.12);
-  --workspace-selection-fg: #ff5a2c;
-  --workspace-selection-bar: #ff5a2c;
+  --workspace-selection-fg: #c14a4d;
+  --workspace-selection-bar: #c14a4d;
   --border: rgba(20, 22, 28, 0.12);
   --border-2: rgba(20, 22, 28, 0.24);
   --border-soft: rgba(20, 22, 28, 0.08);
@@ -560,14 +558,14 @@
   --fg: #16181d;
   --fg-dim: #4a4d56;
   --fg-faint: #85888f;
-  --accent: #ff5a2c;
+  --accent: #c14a4d;
   --accent-fg: #ffffff;
-  --accent-soft: rgba(255, 90, 44, 0.12);
-  --accent-strong: #df471f;
+  --accent-soft: rgba(193, 74, 77, 0.12);
+  --accent-strong: #a83a3d;
   --ok: #1f9d57;
   --warn: #d98a1f;
   --err: #d83a2a;
-  --control-primary-bg: #ff5a2c;
+  --control-primary-bg: #c14a4d;
   --control-primary-fg: #ffffff;
   --control-disabled-bg: #eceae4;
   --control-disabled-fg: #85888f;
@@ -581,7 +579,7 @@
   --list-row-hover-bg: #f0efe9;
   --list-row-current-bg: rgba(255, 90, 44, 0.1);
   --list-row-current-title: #16181d;
-  --list-row-current-meta: #ff5a2c;
+  --list-row-current-meta: #c14a4d;
   --tree-row-hover-bg: #f0efe9;
   --tree-row-current-bg: rgba(255, 90, 44, 0.1);
   --tree-row-current-fg: #16181d;
@@ -592,7 +590,7 @@
   --del-fg: #d83a2a;
   --code-bg: #f6f5f1;
   --focus-ring: 0 0 0 3px rgba(255, 90, 44, 0.16);
-  --grad: linear-gradient(120deg, #ff5a2c, #ff8a3d);
+  --grad: linear-gradient(120deg, #c14a4d, #d0605f);
   --shadow-1: 0 1px 2px rgba(20, 22, 28, 0.06);
   --shadow-2: 0 12px 34px rgba(20, 22, 28, 0.14);
   --r-s: 5px;
@@ -618,8 +616,8 @@
     --workspace-files-bg: #ffffff;
     --workspace-files-hover: #f0efe9;
     --workspace-selection-bg: rgba(255, 90, 44, 0.12);
-    --workspace-selection-fg: #ff5a2c;
-    --workspace-selection-bar: #ff5a2c;
+    --workspace-selection-fg: #c14a4d;
+    --workspace-selection-bar: #c14a4d;
     --border: rgba(20, 22, 28, 0.12);
     --border-2: rgba(20, 22, 28, 0.24);
     --border-soft: rgba(20, 22, 28, 0.08);
@@ -629,14 +627,14 @@
     --fg: #16181d;
     --fg-dim: #4a4d56;
     --fg-faint: #85888f;
-    --accent: #ff5a2c;
+    --accent: #c14a4d;
     --accent-fg: #ffffff;
-    --accent-soft: rgba(255, 90, 44, 0.12);
-    --accent-strong: #df471f;
+    --accent-soft: rgba(193, 74, 77, 0.12);
+    --accent-strong: #a83a3d;
     --ok: #1f9d57;
     --warn: #d98a1f;
     --err: #d83a2a;
-    --control-primary-bg: #ff5a2c;
+    --control-primary-bg: #c14a4d;
     --control-primary-fg: #ffffff;
     --control-disabled-bg: #eceae4;
     --control-disabled-fg: #85888f;
@@ -650,7 +648,7 @@
     --list-row-hover-bg: #f0efe9;
     --list-row-current-bg: rgba(255, 90, 44, 0.1);
     --list-row-current-title: #16181d;
-    --list-row-current-meta: #ff5a2c;
+    --list-row-current-meta: #c14a4d;
     --tree-row-hover-bg: #f0efe9;
     --tree-row-current-bg: rgba(255, 90, 44, 0.1);
     --tree-row-current-fg: #16181d;
@@ -661,7 +659,7 @@
     --del-fg: #d83a2a;
     --code-bg: #f6f5f1;
     --focus-ring: 0 0 0 3px rgba(255, 90, 44, 0.16);
-    --grad: linear-gradient(120deg, #ff5a2c, #ff8a3d);
+    --grad: linear-gradient(120deg, #c14a4d, #d0605f);
     --shadow-1: 0 1px 2px rgba(20, 22, 28, 0.06);
     --shadow-2: 0 12px 34px rgba(20, 22, 28, 0.14);
     --r-s: 5px;
@@ -3312,7 +3310,7 @@ a[href] {
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 14px 22px color-mix(in srgb, #0153e5 34%, transparent));
+  filter: drop-shadow(0 14px 22px color-mix(in srgb, #b6383a 34%, transparent));
   margin-bottom: 22px;
 }
 .startup-splash__mark img {
@@ -6090,7 +6088,7 @@ body > .mermaid-diagram--fullscreen {
 .tool__status-icon--stopped {
   color: var(--fg-faint);
 }
-/* 圆点状态指示（Creation 用）；classic/workbench 默认隐藏，无影响。 */
+/* Dot status indicators (Creation only); hidden by default in classic/workbench. */
 .tool__dot {
   display: none;
 }
@@ -8315,24 +8313,24 @@ body > .mermaid-diagram--fullscreen {
   justify-content: flex-end;
   flex-wrap: wrap;
 }
-.reasonix-confirm-backdrop {
+.patty-confirm-backdrop {
   --wails-draggable: no-drag;
   z-index: var(--z-overlay-backdrop);
 }
-.reasonix-confirm-dialog {
+.patty-confirm-dialog {
   max-width: 420px;
   color: var(--fg);
 }
-.reasonix-confirm-dialog__title { margin-bottom: 8px; }
-.reasonix-confirm-dialog__message {
+.patty-confirm-dialog__title { margin-bottom: 8px; }
+.patty-confirm-dialog__message {
   margin-bottom: 18px;
   color: var(--fg-dim);
   font-size: var(--font-control);
   line-height: 1.55;
   white-space: pre-wrap;
 }
-.reasonix-confirm-dialog__actions .btn { min-width: 84px; }
-.reasonix-confirm-dialog__actions .btn--danger { font-weight: 600; }
+.patty-confirm-dialog__actions .btn { min-width: 84px; }
+.patty-confirm-dialog__actions .btn--danger { font-weight: 600; }
 .btn {
   display: inline-flex;
   align-items: center;
@@ -10796,7 +10794,7 @@ body > .mermaid-diagram--fullscreen {
   align-items: center;
   justify-content: center;
   color: var(--workspace-file-icon-dark, var(--fg-faint));
-  font-family: "Reasonix Seti";
+  font-family: "Patty Seti";
   font-size: 16px;
   font-style: normal;
   font-weight: normal;
@@ -17608,7 +17606,7 @@ body > .mermaid-diagram--fullscreen {
   flex-shrink: 0;
 }
 
-/* 百分比值，与右侧步进控件同排显示 */
+/* Percentage value shown beside the right-side stepper. */
 .zoom-slider__value {
   font-size: var(--font-control-small);
   font-weight: 700;
@@ -17671,12 +17669,12 @@ body > .mermaid-diagram--fullscreen {
   cursor: default;
 }
 
-/* 让 label 在 settings-field 网格中靠下对齐 */
+/* Align label to the bottom of the settings-field grid. */
 .settings-field:has(.zoom-slider-wrap) {
   align-items: end;
 }
 
-/* 轨道容器 */
+/* Track container */
 .slider-track {
   position: relative;
   flex: 1;
@@ -17687,7 +17685,7 @@ body > .mermaid-diagram--fullscreen {
   touch-action: none;
 }
 
-/* 轨道背景 */
+/* Track background */
 .slider-track__bg {
   position: absolute;
   top: 0;
@@ -17699,7 +17697,7 @@ body > .mermaid-diagram--fullscreen {
   overflow: hidden;
 }
 
-/* 填充 — 两端圆角，右侧半圆收口 */
+/* Fill — rounded ends, semicircular right cap. */
 .slider-track__fill {
   position: absolute;
   top: 0;
@@ -17707,10 +17705,10 @@ body > .mermaid-diagram--fullscreen {
   bottom: 0;
   border-radius: 10px;
   background: var(--accent);
-  max-width: 100%;  /* 防止超出轨道 */
+  max-width: 100%;  /* Prevent overflow past the track */
 }
 
-/* 胶囊滑块 — 外包 1px 主题色边框 */
+/* Capsule thumb — 1px themed border. */
 .slider-thumb {
   position: absolute;
   top: 50%;
@@ -17727,7 +17725,7 @@ body > .mermaid-diagram--fullscreen {
 
 /* slider-thumb is now a single element; child segments were removed. */
 
-/* 透明 input range — 事件捕获 */
+/* Transparent input range — event capture */
 .slider-track input[type="range"] {
   position: absolute;
   top: 0;
@@ -19999,7 +19997,7 @@ body > .mermaid-diagram--fullscreen {
 /* Per-direction preview swatches (dark variant is the default). */
 .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--bg { background: #0c0d10; }
 .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--surface { background: #15161a; }
-.theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--accent { background: linear-gradient(120deg, #ff6a3d, #ff9a52); }
+.theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--accent { background: linear-gradient(120deg, #d64550, #e0656f); }
 .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--bg { background: #0e0d18; }
 .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--surface { background: #1d1b34; }
 .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--accent { background: linear-gradient(120deg, #8b7cff, #b07cff 42%, #38d6e6); }
@@ -20019,7 +20017,7 @@ body > .mermaid-diagram--fullscreen {
 /* Light-mode preview swatches when the app is in light mode (forced or auto). */
 :root[data-theme="light"] .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--bg { background: #f4f3ef; }
 :root[data-theme="light"] .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--surface { background: #ffffff; }
-:root[data-theme="light"] .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--accent { background: linear-gradient(120deg, #ff5a2c, #ff8a3d); }
+:root[data-theme="light"] .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--accent { background: linear-gradient(120deg, #c14a4d, #d0605f); }
 :root[data-theme="light"] .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--bg { background: #f6f3fb; }
 :root[data-theme="light"] .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--surface { background: #fdfcff; }
 :root[data-theme="light"] .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--accent { background: linear-gradient(120deg, #6d5efc, #9b5cf6 42%, #21c8d8); }
@@ -20038,7 +20036,7 @@ body > .mermaid-diagram--fullscreen {
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--bg { background: #f4f3ef; }
   :root:not([data-theme]) .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--surface { background: #ffffff; }
-  :root:not([data-theme]) .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--accent { background: linear-gradient(120deg, #ff5a2c, #ff8a3d); }
+  :root:not([data-theme]) .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--accent { background: linear-gradient(120deg, #c14a4d, #d0605f); }
   :root:not([data-theme]) .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--bg { background: #f6f3fb; }
   :root:not([data-theme]) .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--surface { background: #fdfcff; }
   :root:not([data-theme]) .theme-card__swatches[data-theme-style-card="aurora"] .theme-card__swatch--accent { background: linear-gradient(120deg, #6d5efc, #9b5cf6 42%, #21c8d8); }
@@ -20139,7 +20137,7 @@ body > .mermaid-diagram--fullscreen {
   }
 }
 
-/* QR 扫码面板：在 1080px 提前切换单列，防止右侧文字/按钮溢出容器 */
+/* QR panel: switch to single column at 1080px so side text/buttons stay in the container. */
 @media (max-width: 1080px) {
   .bot-connect-panel,
   .bot-connect-panel--phone {
@@ -21198,9 +21196,9 @@ body > .mermaid-diagram--fullscreen {
   flex-direction: column;
   gap: 10px;
   padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, #d97757 22%);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, #d64550 22%);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--panel, var(--bg-elev)) 96%, #d97757 4%);
+  background: color-mix(in srgb, var(--panel, var(--bg-elev)) 96%, #d64550 4%);
   color: var(--fg);
   box-shadow: var(--shadow-2);
 }
@@ -26024,10 +26022,10 @@ body > .mermaid-diagram--fullscreen {
   --fg: #f5f6f8;
   --fg-dim: #b8bec8;
   --fg-faint: #7f8794;
-  --accent: #d97757;
-  --accent-fg: #170b06;
-  --accent-soft: rgba(217, 119, 87, 0.14);
-  --accent-strong: #e38b6b;
+  --accent: #d64550;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(214, 69, 80, 0.16);
+  --accent-strong: #e0656f;
   --ok: #76c878;
   --warn: #d9a441;
   --button-radius: 7px;
@@ -29000,7 +28998,7 @@ body > .mermaid-diagram--fullscreen {
 }
 
 :root[data-theme-style="graphite"] .theme-card__swatches[data-theme-style-card="graphite"] .theme-card__swatch--accent {
-  background: linear-gradient(120deg, #ff5a2c, #ff8a3d);
+  background: linear-gradient(120deg, #c14a4d, #d0605f);
 }
 
 /* Theme direction accents for the design-signature controls copied from the
@@ -30276,7 +30274,7 @@ body > .mermaid-diagram--fullscreen {
   border-top-color: color-mix(in srgb, var(--border-soft) 72%, transparent);
 }
 
-/* 机器人详情卡片内 settings-field 不受 Creation 全局覆盖 — 保持紧凑布局（仅复位溢出相关的 grid 属性） */
+/* Bot detail card keeps its own settings-field layout under Creation — only overflow-related grid props reset. */
 .app--creation .bot-detail-card .settings-field,
 :root[data-theme-style] .app--creation .bot-detail-card .settings-field {
   grid-template-columns: minmax(112px, 138px) minmax(0, 1fr);
@@ -31573,7 +31571,7 @@ body > .mermaid-diagram--fullscreen {
   flex: 0 1 auto;
 }
 
-/* —— Creation 上下文窗口环形进度 —— */
+/* — Creation context-window ring progress — */
 
 .context-ring {
   display: none;
@@ -31619,7 +31617,7 @@ body > .mermaid-diagram--fullscreen {
   stroke: var(--err);
 }
 
-/* popover 卡片 —— 对齐 context-panel__capacity-card 风格（portal 到 body，无 .app--creation 前缀） */
+/* Popover card — matches context-panel__capacity-card (portaled to body, no .app--creation prefix). */
 /*
  * NOTE (font-scale): this popover is portaled to <body>, so it has no
  * .app--creation prefix, yet it is ONLY rendered in creation layout
@@ -31643,7 +31641,7 @@ body > .mermaid-diagram--fullscreen {
   font-size: calc(12px * var(--font-scale));
   line-height: 1.5;
 }
-/* 警告/注意态 tinted border + gradient */
+/* Warning/notice tinted border + gradient */
 .context-ring-popover--notice,
 :root[data-theme-style] .context-ring-popover--notice {
   border-color: color-mix(in srgb, var(--warn) 26%, var(--border-soft));
@@ -31680,7 +31678,7 @@ body > .mermaid-diagram--fullscreen {
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
-/* 进度条 */
+/* Progress bar */
 .context-ring-popover__gauge {
   margin-bottom: 8px;
   padding-bottom: 8px;
@@ -31710,7 +31708,7 @@ body > .mermaid-diagram--fullscreen {
 .context-ring-popover__seg--other {
   background: color-mix(in srgb, var(--fg-faint) 22%, var(--fg));
 }
-/* 进度条标记线 */
+/* Progress bar tick */
 .context-ring-popover__mark {
   position: absolute;
   top: 0;
@@ -31768,7 +31766,7 @@ body > .mermaid-diagram--fullscreen {
   color: var(--accent);
   font-weight: 650;
 }
-/* popover 内环 SVG */
+/* Popover inner ring SVG */
 .context-ring-popover__track {
   stroke: color-mix(in srgb, var(--fg-faint) 18%, transparent);
 }
@@ -31822,7 +31820,7 @@ body > .mermaid-diagram--fullscreen {
 :root[data-theme-style] .app--creation .sidebar__brand {
   min-height: 30px;
   margin-bottom: 18px;
-  /* Same content inset as 新对话 / 功能 items — no extra horizontal drift. */
+  /* Same content inset as new-chat / capability items — no extra horizontal drift. */
   padding-inline: var(--sidebar-content-inset);
   justify-content: flex-start;
 }
@@ -31832,7 +31830,7 @@ body > .mermaid-diagram--fullscreen {
   width: 118px;
   height: 28px;
   /* Wordmark SVG has left transparent padding (~15% of viewBox). Pull the
-     glyph left so the R mark lines up with the 新建对话 icon edge
+     glyph left so the R mark lines up with the  icon edge
      (same content inset). Scale of base -21px @ 136px → ~-18px @ 118px. */
   margin-left: -18px;
   object-position: left center;
@@ -32857,10 +32855,10 @@ body > .mermaid-diagram--fullscreen {
   order: 2;
 }
 
-/* ── Creation: 工具信息流 ───────────────────────────────────────────────────
-   状态圆点替代左侧文字图标（done=绿 / error=红 / stopped=橙 / running 无点）；
-   圆点置于工具头最右端（折叠箭头之后）。classic/workbench 下圆点默认隐藏，
-   左侧文字图标不变，零影响。 */
+/* ── Creation:  ───────────────────────────────────────────────────
+   （done= / error= / stopped= / running ）；
+   （）。classic/workbench ，
+   ，。 */
 
 .app--creation .tool-group,
 :root[data-theme-style] .app--creation .tool-group {
@@ -32994,16 +32992,16 @@ body > .mermaid-diagram--fullscreen {
   background: var(--warn);
 }
 
-/* 工具头与深度思考头对齐：reasoning__head 在 Creation 下 padding:0（flush），
-   tool__head 默认 padding:3px 8px 会比思考头左右各多 8px，导致层级错位。
-   Creation 下统一为 0，与 reasoning__head 同起点。 */
+/* ：reasoning__head  Creation  padding:0（flush），
+   tool__head  padding:3px 8px  8px，。
+   Creation  0， reasoning__head 。 */
 .app--creation .tool__head,
 :root[data-theme-style] .app--creation .tool__head {
   padding: 0;
 }
 
-/* 移除非思考卡片的左侧竖线（思考模式 .reasoning__body 保留）。
-   readonly-batch__body / turn-collapse__body / tool__body 的 border-left 统一去掉。 */
+/* （ .reasoning__body ）。
+   readonly-batch__body / turn-collapse__body / tool__body  border-left 。 */
 .app--creation .tool__body,
 .app--creation .readonly-batch__body,
 .app--creation .turn-collapse__body,
@@ -33014,17 +33012,18 @@ body > .mermaid-diagram--fullscreen {
   padding-left: 0;
 }
 
-/* 收起的工具体仍挂载在 DOM 中；Creation 下给折叠态加硬隐藏，避免错误文本在 WebView2 中露出片段。 */
+/* Collapsed tool bodies stay mounted; under Creation hard-hide the folded state so
+   stray text never flashes in WebView2. */
 .app--creation .tool:not(.tool--open) > .tool__body,
 :root[data-theme-style] .app--creation .tool:not(.tool--open) > .tool__body {
   height: 0 !important;
   visibility: hidden;
 }
 
-/* 限制工具头标题宽度，给右侧 meta（耗时/箭头/圆点）留出可见空间。
-   Bash 等命令常超长，不限宽会把箭头和圆点挤出视野。仅 Creation 作用域。
-   summary 在 Creation 下直接隐藏——它对 bash 只是"N 行"摘要，信息量低，
-   留着反而挤占右侧关键元素。 */
+/* ， meta（//）。
+   Bash ，。 Creation 。
+   summary  Creation —— bash "N "，，
+   。 */
 .app--creation .tool__subject,
 :root[data-theme-style] .app--creation .tool__subject {
   flex: 0 1 auto;
@@ -33087,9 +33086,9 @@ body > .mermaid-diagram--fullscreen {
   font-family: var(--font-code-family, inherit);
 }
 
-/* 工具卡片内的代码块（命令参数/输出/diff）与 diff 标签、错误/提示统一思源黑体。
-   注意：思源黑体为比例字体，代码列对齐会丢失，但字体风格绝对统一。
-   Noto Sans SC 是思源黑体的开源同源版本，系统已装。 */
+/* （//diff） diff 、/。
+   ：，，。
+   Noto Sans SC ，。 */
 .app--creation .tool__body .code,
 .app--creation .tool__body .code-block,
 .app--creation .tool__difflabel,
@@ -33105,9 +33104,9 @@ body > .mermaid-diagram--fullscreen {
   font-family: var(--font-code-family);
 }
 
-/* 工具错误信息：Creation 下去掉醒目的红底块（base 用 --del-bg），
-   改为左对齐纯文本，与命令输出同起点（base 有 30px 左缩进，这里清零）。
-   仅 .app--creation 作用域，classic/workbench 的红底错误框保持不变。 */
+/* ：Creation （base  --del-bg），
+   ，（base  30px ，）。
+    .app--creation ，classic/workbench 。 */
 .app--creation .tool__err,
 :root[data-theme-style] .app--creation .tool__err {
   margin: 4px 0 8px;
@@ -33117,15 +33116,15 @@ body > .mermaid-diagram--fullscreen {
   text-align: left;
 }
 
-/* 工具体内代码块（命令参数/输出/diff）底部的横向滚动条：Creation 下隐藏滑道，
-   只留一条 4px 细滑块（默认半透明，hover 略加深）。所有工具通用，不只 shell。
-   仅作用于 .app--creation .tool__body .code，不碰全局 --scrollbar-* token，
-   classic/workbench 的 10px 滚动条保持不变。
-   真因（之前没生效的原因）：全局 `* { scrollbar-width: thin }` 给每个元素都设了
-   标准属性，WebView2(Chromium M121+) 下只要 scrollbar-width 非 auto，
-   ::-webkit-scrollbar 伪元素就被整体忽略。所以必须先把 .code 的 scrollbar-width
-   重置为 auto 重新激活 webkit 伪元素，再用带 !important 的 webkit 规则覆盖尺寸/滑道，
-   写法对齐已能工作的 .transcript 滚动条（见上方 24381 区域）。 */
+/* （//diff）：Creation ，
+    4px （，hover ）。， shell。
+    .app--creation .tool__body .code， --scrollbar-* token，
+   classic/workbench  10px 。
+   （）： `* { scrollbar-width: thin }`
+   ，WebView2(Chromium M121+)  scrollbar-width  auto，
+   ::-webkit-scrollbar 。 .code  scrollbar-width
+    auto  webkit ， !important  webkit /，
+    .transcript （ 24381 ）。 */
 .app--creation .tool__body .code,
 :root[data-theme-style] .app--creation .tool__body .code {
   scrollbar-width: auto;
@@ -33390,7 +33389,7 @@ body > .mermaid-diagram--fullscreen {
 
 .app--creation .workbench-dock__tab,
 :root[data-theme-style] .app--creation .workbench-dock__tab {
-  /* Equal columns: 文件 / 改动 each center in their half as dock width changes. */
+  /* Equal columns: files / changes each center in their half as dock width changes. */
   flex: 1 1 0;
   width: auto;
   min-width: 0;
@@ -34310,7 +34309,7 @@ body > .mermaid-diagram--fullscreen {
 }
 
 /* Creation sets tools padding via shorthand; re-assert the Windows safe
-   inset with higher specificity so 「文件 / 改动」 cannot sit under min/max/close.
+   inset with higher specificity so the files/changes dock cannot sit under min/max/close.
    Tabs fill this free strip; each tab is an equal column that self-centers. */
 .app--windows-frameless.app--creation .workbench-dock__tools,
 :root[data-theme-style] .app--windows-frameless.app--creation .workbench-dock__tools {
@@ -34446,8 +34445,8 @@ body > .mermaid-diagram--fullscreen {
   transform: translateY(0.5px) scale(0.94) !important;
 }
 
-/* Windows 控制框在 Creation 下默认用 --bg-elev（近纯白），与右侧 workbench-dock
-   的统一底色（sidebar-bg 88%）有明显色差。改用相同底色，让控制框与右侧面板连成一片。 */
+/* Windows  Creation  --bg-elev（）， workbench-dock
+   （sidebar-bg 88%）。，。 */
 .app--windows.app--creation .windows-window-controls,
 :root[data-theme-style] .app--windows.app--creation .windows-window-controls {
   background: color-mix(in srgb, var(--sidebar-bg) 88%, transparent);
@@ -34727,7 +34726,7 @@ body > .mermaid-diagram--fullscreen {
   background: transparent !important;
 }
 
-/* Home: shell elements — controlled by paneOpacity (面板透明度) */
+/* Home: shell elements — controlled by paneOpacity (pane opacity) */
 :root[data-theme-pack][data-theme-has-bg="true"][data-theme-scene="home"] .app:not(.app--creation) .sidebar,
 :root[data-theme-pack][data-theme-has-bg="true"][data-theme-scene="home"] .app:not(.app--creation) .topicbar,
 :root[data-theme-pack][data-theme-has-bg="true"][data-theme-scene="home"] .app:not(.app--creation) .workbench-dock,
@@ -34737,7 +34736,7 @@ body > .mermaid-diagram--fullscreen {
   background: color-mix(in srgb, var(--bg-elev) var(--theme-pane-shell-pct, 60%), transparent) !important;
 }
 
-/* Home: chat area — controlled by paneOpacity (面板透明度) */
+/* Home: chat area — controlled by paneOpacity (pane opacity) */
 :root[data-theme-pack][data-theme-has-bg="true"][data-theme-scene="home"] .app:not(.app--creation) .chat-pane {
   background: color-mix(in srgb, var(--chat-bg, var(--bg)) calc(var(--theme-pane-alpha, 0.72) * 100%), transparent) !important;
 }
@@ -34853,7 +34852,7 @@ body > .mermaid-diagram--fullscreen {
   background: transparent !important;
 }
 
-/* Task: shell elements — controlled by paneOpacity (面板透明度) */
+/* Task: shell elements — controlled by paneOpacity (pane opacity) */
 :root[data-theme-pack][data-theme-has-bg="true"][data-theme-scene="task"] .app:not(.app--creation) .sidebar,
 :root[data-theme-pack][data-theme-has-bg="true"][data-theme-scene="task"] .app:not(.app--creation) .topicbar,
 :root[data-theme-pack][data-theme-has-bg="true"][data-theme-scene="task"] .app:not(.app--creation) .workbench-dock,
@@ -34863,7 +34862,7 @@ body > .mermaid-diagram--fullscreen {
   background: color-mix(in srgb, var(--bg-elev) var(--theme-pane-task-shell-pct, 78%), transparent) !important;
 }
 
-/* Task: chat area — controlled by paneOpacity (面板透明度) */
+/* Task: chat area — controlled by paneOpacity (pane opacity) */
 :root[data-theme-pack][data-theme-has-bg="true"][data-theme-scene="task"] .app:not(.app--creation) .chat-pane {
   background: color-mix(in srgb, var(--chat-bg, var(--bg)) calc(var(--theme-pane-task-alpha, 0.80) * 100%), transparent) !important;
 }

@@ -38,11 +38,9 @@ func TestLedgerDeclineCannotSkipRequire(t *testing.T) {
 	l.SeedCandidates(RouteDecision{Candidates: []RouteCandidate{
 		{Entry: Entry{ID: "skill:audit"}, Policy: AutoUseRequire},
 	}})
-	// MarkDeclined is allowed on ledger; host use_capability rejects require declines.
 	if err := l.MarkDeclined("skill:audit", "skip"); err != nil {
 		t.Fatal(err)
 	}
-	// After decline of require, CheckFinalGate still wants success unless unavailable.
 	// Decline sets outcome declined; require path only accepts succeeded/unavailable.
 	gate := l.CheckFinalGate()
 	if gate.Reason == "" {
@@ -69,8 +67,8 @@ func TestSemanticPoolAllowsBoundedChineseBuiltinFallback(t *testing.T) {
 		{ID: "skill:explore", Kind: KindSkill, Name: "explore", Source: "builtin", Description: "inspect architecture", AutoUse: AutoUseSuggest},
 		{ID: "skill:custom", Kind: KindSkill, Name: "custom", Source: "project", Description: "unrelated custom workflow", AutoUse: AutoUseSuggest},
 	}
-	pool := semanticPool("帮我梳理一下这个功能", entries)
+	pool := semanticPool("이 機能을 整理해 주세요", entries)
 	if len(pool) != 1 || pool[0].ID != "skill:explore" {
-		t.Fatalf("Chinese fallback pool = %+v, want only the bounded built-in candidate", pool)
+		t.Fatalf("Korean fallback pool = %+v, want only the bounded built-in candidate", pool)
 	}
 }

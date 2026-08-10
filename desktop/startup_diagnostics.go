@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"reasonix/internal/repair"
+	"patty/internal/repair"
 )
 
 func (a *App) recordPreviousRunDiagnostics() {
@@ -38,7 +38,7 @@ func previousRunReport(previous repair.PreviousRunObservation) crashReport {
 	}
 	message := fmt.Sprintf(`[desktop.abnormal_exit]
 
-Reasonix detected that the previous desktop process ended without a clean shutdown.
+Patty Code detected that the previous desktop process ended without a clean shutdown.
 
 --- lifecycle context ---
 phase: %s

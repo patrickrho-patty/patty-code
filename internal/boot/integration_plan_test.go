@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/extension"
-	"reasonix/internal/extensioncontract"
+	"patty/internal/extension"
+	"patty/internal/extensioncontract"
 )
 
 func TestRebuildFromNoOpPreservesCacheHash(t *testing.T) {

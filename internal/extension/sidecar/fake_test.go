@@ -15,18 +15,18 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/extension/rpcwire"
-	"reasonix/internal/pluginpkg"
+	"patty/internal/extension/protocol"
+	"patty/internal/extension/rpcwire"
+	"patty/internal/pluginpkg"
 )
 
 // Re-exec fake sidecar (the standard Go helper-process pattern): the test
-// binary re-executes itself with REASONIX_FAKE_SIDECAR=1 and speaks the real
+// binary re-executes itself with PATTY_FAKE_SIDECAR=1 and speaks the real
 // Extension Protocol v2 over stdin/stdout. Behavior is steered through env:
 //
-//		REASONIX_FAKE_SIDECAR=1            enable the helper
-//		REASONIX_FAKE_INIT_RESULT          raw JSON InitializeResult to answer with
-//		REASONIX_FAKE_MODE                 comma-separated behavior flags:
+//		PATTY_FAKE_SIDECAR=1            enable the helper
+//		PATTY_FAKE_INIT_RESULT          raw JSON InitializeResult to answer with
+//		PATTY_FAKE_MODE                 comma-separated behavior flags:
 //		                                   early_request | early_notify |
 //		                                   ignore_shutdown | stall_intercept |
 //		                                   block_intercept | stderr_flood |
@@ -34,9 +34,9 @@ import (
 //		                                   provider_stream | crash_after_init |
 //	                                  wedge_after_init
 const (
-	fakeEnvEnable     = "REASONIX_FAKE_SIDECAR"
-	fakeEnvInitResult = "REASONIX_FAKE_INIT_RESULT"
-	fakeEnvMode       = "REASONIX_FAKE_MODE"
+	fakeEnvEnable     = "PATTY_FAKE_SIDECAR"
+	fakeEnvInitResult = "PATTY_FAKE_INIT_RESULT"
+	fakeEnvMode       = "PATTY_FAKE_MODE"
 )
 
 // TestFakeSidecarHelperProcess is the re-exec entry point. It skips in the
@@ -306,7 +306,7 @@ func fakeSidecarPackage(t testing.TB, name string, configure func(rt *pluginpkg.
 	rt := fakeSidecarRuntime(t, configure)
 	pkg := pluginpkg.Package{
 		Root:         t.TempDir(),
-		ManifestKind: "reasonix",
+		ManifestKind: "patty",
 		Manifest: pluginpkg.Manifest{
 			Name:    name,
 			Version: "1.0.0",

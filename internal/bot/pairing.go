@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/fileutil"
-	fileencoding "reasonix/internal/fileutil/encoding"
+	"patty/internal/config"
+	"patty/internal/fileutil"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 const (
@@ -83,7 +83,7 @@ func CreateOrRefreshPairingRequest(msg InboundMessage, cfg PairingConfig) (Pairi
 	}
 	path := PairingStorePath()
 	if path == "" {
-		return PairingRequest{}, false, errors.New("reasonix user state directory is unavailable")
+		return PairingRequest{}, false, errors.New("patty user state directory is unavailable")
 	}
 	pairingMu.Lock()
 	defer pairingMu.Unlock()
@@ -130,7 +130,7 @@ func CreateOrRefreshPairingRequest(msg InboundMessage, cfg PairingConfig) (Pairi
 func ListPairingRequests() ([]PairingRequest, error) {
 	path := PairingStorePath()
 	if path == "" {
-		return nil, errors.New("reasonix user state directory is unavailable")
+		return nil, errors.New("patty user state directory is unavailable")
 	}
 	pairingMu.Lock()
 	defer pairingMu.Unlock()
@@ -156,7 +156,7 @@ func ApprovePairingCode(code string) (PairingRequest, error) {
 	}
 	userPath := config.UserConfigPath()
 	if userPath == "" {
-		return PairingRequest{}, errors.New("reasonix user config path is unavailable")
+		return PairingRequest{}, errors.New("patty user config path is unavailable")
 	}
 	unlock := config.LockUserConfigEdits()
 	defer unlock()
@@ -168,26 +168,10 @@ func ApprovePairingCode(code string) (PairingRequest, error) {
 		return req, nil
 	}
 	cfg.Bot.Allowlist.Enabled = true
-	switch req.Platform {
-	case PlatformQQ:
-		cfg.Bot.Allowlist.QQUsers, _ = appendUnique(cfg.Bot.Allowlist.QQUsers, req.UserID)
-	case PlatformFeishu:
-		cfg.Bot.Allowlist.FeishuUsers, _ = appendUnique(cfg.Bot.Allowlist.FeishuUsers, req.UserID)
-	case PlatformWeixin:
-		cfg.Bot.Allowlist.WeixinUsers, _ = appendUnique(cfg.Bot.Allowlist.WeixinUsers, req.UserID)
-	}
+	cfg.Bot.Allowlist.Users, _ = appendUnique(cfg.Bot.Allowlist.Users, req.UserID)
 	if allowlistAdminCount(cfg.Bot.Allowlist) == 0 {
-		switch req.Platform {
-		case PlatformQQ:
-			cfg.Bot.Allowlist.QQAdmins, _ = appendUnique(cfg.Bot.Allowlist.QQAdmins, req.UserID)
-			cfg.Bot.Allowlist.QQApprovers, _ = appendUnique(cfg.Bot.Allowlist.QQApprovers, req.UserID)
-		case PlatformFeishu:
-			cfg.Bot.Allowlist.FeishuAdmins, _ = appendUnique(cfg.Bot.Allowlist.FeishuAdmins, req.UserID)
-			cfg.Bot.Allowlist.FeishuApprovers, _ = appendUnique(cfg.Bot.Allowlist.FeishuApprovers, req.UserID)
-		case PlatformWeixin:
-			cfg.Bot.Allowlist.WeixinAdmins, _ = appendUnique(cfg.Bot.Allowlist.WeixinAdmins, req.UserID)
-			cfg.Bot.Allowlist.WeixinApprovers, _ = appendUnique(cfg.Bot.Allowlist.WeixinApprovers, req.UserID)
-		}
+		cfg.Bot.Allowlist.Admins, _ = appendUnique(cfg.Bot.Allowlist.Admins, req.UserID)
+		cfg.Bot.Allowlist.Approvers, _ = appendUnique(cfg.Bot.Allowlist.Approvers, req.UserID)
 	}
 	if err := cfg.SaveTo(userPath); err != nil {
 		return PairingRequest{}, err
@@ -207,10 +191,6 @@ func approvePairingForConnectionAccess(botCfg *config.BotConfig, req PairingRequ
 				return true
 			}
 		}
-	}
-	if req.Platform == PlatformQQ && (connectionID == "" || connectionID == string(PlatformQQ)) {
-		approvePairingAccess(&botCfg.QQ.Access, req.UserID)
-		return true
 	}
 	return false
 }
@@ -269,7 +249,7 @@ func removePairingCode(code string) (PairingRequest, error) {
 	}
 	path := PairingStorePath()
 	if path == "" {
-		return PairingRequest{}, errors.New("reasonix user state directory is unavailable")
+		return PairingRequest{}, errors.New("patty user state directory is unavailable")
 	}
 	pairingMu.Lock()
 	defer pairingMu.Unlock()
@@ -354,7 +334,7 @@ func newPairingCode() (string, error) {
 }
 
 func allowlistAdminCount(a config.BotAllowlist) int {
-	return len(a.QQAdmins) + len(a.FeishuAdmins) + len(a.WeixinAdmins)
+	return len(a.Admins)
 }
 
 func appendUnique(values []string, next string) ([]string, bool) {

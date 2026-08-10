@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/provider"
 )
 
 func TestMetricsSinkForwardsEachEventOnce(t *testing.T) {

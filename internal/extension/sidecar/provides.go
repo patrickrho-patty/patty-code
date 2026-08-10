@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/pluginpkg"
+	"patty/internal/extension/protocol"
+	"patty/internal/pluginpkg"
 )
 
 func (c *Client) initializeParams() protocol.InitializeParams {

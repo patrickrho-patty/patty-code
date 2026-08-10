@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/proc"
-	"reasonix/internal/secrets"
+	"patty/internal/agent"
+	"patty/internal/proc"
+	"patty/internal/secrets"
 )
 
 const (
@@ -66,8 +66,6 @@ func (gw *BotGateway) buildProjectIndex() []botProjectEntry {
 	collector := newBotProjectCollector()
 	collector.add(gw.cfg.WorkspaceRoot, "default")
 
-	// cfg.Channels / cfg.ConnectionChannels are rewritten under gw.mu at runtime,
-	// so the whole scan shares the controllers critical section below.
 	gw.mu.Lock()
 	platforms := make([]string, 0, len(gw.cfg.Channels))
 	for platform := range gw.cfg.Channels {
@@ -178,9 +176,6 @@ func (gw *BotGateway) buildSessionIndex(projects []botProjectEntry) []botSession
 	}
 	collector := newBotSessionCollector(projectByRoot)
 
-	// cfg.Channels / cfg.ConnectionChannels are rewritten under gw.mu at runtime;
-	// collect the mapping-derived entries under a short lock, keeping the
-	// filesystem scan below outside it.
 	gw.mu.Lock()
 	platforms := make([]string, 0, len(gw.cfg.Channels))
 	for platform := range gw.cfg.Channels {
@@ -489,24 +484,24 @@ func formatBotProjects(projects []botProjectEntry, query string, limit int) stri
 	matches := filterBotProjects(projects, query)
 	if len(matches) == 0 {
 		if strings.TrimSpace(query) == "" {
-			return "还没有可用项目索引。请先在 bot 连接、route 或当前会话里配置 workspace_root。"
+			return "사용 가능한 프로젝트 인덱스가 없습니다. 먼저 bot 연결, route 또는 현재 세션에서 workspace_root를 구성하세요。"
 		}
-		return "没有匹配的项目。"
+		return "일치하는 프로젝트가 없습니다。"
 	}
 	if limit <= 0 || limit > len(matches) {
 		limit = len(matches)
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "项目索引（%d/%d）：", limit, len(matches))
+	fmt.Fprintf(&b, "프로젝트 인덱스 (%d/%d)：", limit, len(matches))
 	for i := range limit {
 		project := matches[i]
 		fmt.Fprintf(&b, "\n%s %s — %s", project.ID, project.Name, displayBotPath(project.Root))
 		if len(project.Sources) > 0 {
-			fmt.Fprintf(&b, "\n  来源: %s", strings.Join(project.Sources, ", "))
+			fmt.Fprintf(&b, "\n  출처: %s", strings.Join(project.Sources, ", "))
 		}
 	}
 	if len(matches) > limit {
-		fmt.Fprintf(&b, "\n还有 %d 个结果，请加关键词缩小范围。", len(matches)-limit)
+		fmt.Fprintf(&b, "\n나머지 %d 개의 결과가 있습니다. 키워드를 추가하여 범위를 좁히세요。", len(matches)-limit)
 	}
 	return b.String()
 }
@@ -515,15 +510,15 @@ func formatBotSessions(sessions []botSessionEntry, query string, limit int) stri
 	matches := filterBotSessions(sessions, query)
 	if len(matches) == 0 {
 		if strings.TrimSpace(query) == "" {
-			return "还没有可用会话索引。已有项目会话或 bot session_mappings 后会出现在这里。"
+			return "사용 가능한 세션 인덱스가 없습니다。프로젝트 세션이나 bot session_mappings를 구성하면 여기에 나타납니다."
 		}
-		return "没有匹配的会话。"
+		return "일치하는 세션이 없습니다。"
 	}
 	if limit <= 0 || limit > len(matches) {
 		limit = len(matches)
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "会话索引（%d/%d）：", limit, len(matches))
+	fmt.Fprintf(&b, "세션 인덱스 (%d/%d)：", limit, len(matches))
 	for i := range limit {
 		session := matches[i]
 		project := firstNonEmptyString(session.ProjectName, "global")
@@ -532,39 +527,39 @@ func formatBotSessions(sessions []botSessionEntry, query string, limit int) stri
 			fmt.Fprintf(&b, " · %s", singleLineBotText(session.TopicTitle, 40))
 		}
 		if session.Preview != "" {
-			fmt.Fprintf(&b, "\n  预览: %s", singleLineBotText(session.Preview, 90))
+			fmt.Fprintf(&b, "\n  미리보기: %s", singleLineBotText(session.Preview, 90))
 		}
 		if session.SessionPath != "" {
-			fmt.Fprintf(&b, "\n  文件: %s", displayBotPath(session.SessionPath))
+			fmt.Fprintf(&b, "\n  파일: %s", displayBotPath(session.SessionPath))
 		} else if session.SessionID != "" {
-			fmt.Fprintf(&b, "\n  目标: %s", session.SessionID)
+			fmt.Fprintf(&b, "\n  대상: %s", session.SessionID)
 		}
 		if session.RemoteID != "" || session.ConnectionID != "" {
-			fmt.Fprintf(&b, "\n  远端: %s %s", session.ConnectionID, session.RemoteID)
+			fmt.Fprintf(&b, "\n  원격: %s %s", session.ConnectionID, session.RemoteID)
 		}
 	}
 	if len(matches) > limit {
-		fmt.Fprintf(&b, "\n还有 %d 个结果，请加关键词缩小范围。", len(matches)-limit)
+		fmt.Fprintf(&b, "\n나머지 %d 개의 결과가 있습니다. 키워드를 추가하여 범위를 좁히세요。", len(matches)-limit)
 	}
 	return b.String()
 }
 
 func formatBotProjectSearchResults(results []botProjectSearchResult, limit int) string {
 	if len(results) == 0 {
-		return "没有跨项目命中。"
+		return "크로스-프로젝트 결과가 없습니다。"
 	}
 	if limit <= 0 || limit > len(results) {
 		limit = len(results)
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "跨项目检索结果（%d/%d）：", limit, len(results))
+	fmt.Fprintf(&b, "크로스-프로젝트 검색 결과 (%d/%d)：", limit, len(results))
 	for i := range limit {
 		result := results[i]
 		project := firstNonEmptyString(result.ProjectName, result.ProjectID)
 		fmt.Fprintf(&b, "\n- %s %s:%d: %s", project, displayBotPath(result.Path), result.Line, singleLineBotText(result.Text, 120))
 	}
 	if len(results) > limit {
-		fmt.Fprintf(&b, "\n还有 %d 条命中，请加关键词缩小范围。", len(results)-limit)
+		fmt.Fprintf(&b, "\n나머지 %d 개의 결과가 있습니다，키워드를 추가하여 범위를 좁히세요。", len(results)-limit)
 	}
 	return b.String()
 }
@@ -572,7 +567,7 @@ func formatBotProjectSearchResults(results []botProjectSearchResult, limit int) 
 func searchBotProjects(ctx context.Context, projects []botProjectEntry, query string, limit int) ([]botProjectSearchResult, error) {
 	query = strings.TrimSpace(query)
 	if len([]rune(query)) < 2 {
-		return nil, errors.New("检索词至少需要 2 个字符")
+		return nil, errors.New("검색어는 최소 2자 이상이 필요합니다")
 	}
 	var roots []string
 	seen := map[string]bool{}
@@ -589,7 +584,7 @@ func searchBotProjects(ctx context.Context, projects []botProjectEntry, query st
 		roots = append(roots, root)
 	}
 	if len(roots) == 0 {
-		return nil, errors.New("没有可检索的项目目录")
+		return nil, errors.New("검색 가능한 프로젝트 디렉토리가 없습니다")
 	}
 	if limit <= 0 {
 		limit = botSearchListLimit
@@ -618,8 +613,6 @@ func searchBotProjectsWithRG(ctx context.Context, rg string, projects []botProje
 	args = append(args, roots...)
 	cmd := exec.CommandContext(ctx, rg, args...)
 	cmd.Env = secrets.ProcessEnv()
-	// The desktop app hosts bot bridges in the GUI process; without this an
-	// rg search flashes a console window on Windows.
 	proc.HideWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {

@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
+	"patty/internal/agent"
+	"patty/internal/config"
 )
 
 // recoveryGCInterval bounds how often the background sweep repeats after the

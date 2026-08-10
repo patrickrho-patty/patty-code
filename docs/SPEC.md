@@ -1,6 +1,6 @@
-# Reasonix Engineering Spec
+# Patty Code Engineering Spec
 
-> Reasonix is a coding agent: a thin harness driving multiple models, with **all
+> Patty Code is a coding agent: a thin harness driving multiple models, with **all
 > capabilities supplied by configuration and plugins**. This document is the
 > contract — code follows it. Change the contract first, then the code.
 
@@ -21,19 +21,19 @@
 
 Language: **English is the primary language for all code** — comments,
 user-facing strings, tool descriptions, system prompts, and this spec. The
-README is bilingual (`README.md` English + `README.zh-CN.md`).
+README is bilingual (`README.md` English + `README.ko-KR.md`).
 
 ## 2. Layout
 
 ```
-reasonix/
-├── go.mod / go.sum          # module reasonix; require BurntSushi/toml
+patty/
+├── go.mod / go.sum          # module patty; require BurntSushi/toml
 ├── Makefile                 # build / cross / vet / fmt / test
-├── README.md / README.zh-CN.md
-├── reasonix.example.toml         # sample config
+├── README.md / README.ko-KR.md
+├── patty.example.toml         # sample config
 ├── docs/SPEC.md             # this file
-├── cmd/reasonix/main.go          # entry; blank-imports built-in providers/tools
-├── cmd/reasonix-plugin-example/  # reference MCP stdio plugin (a runnable example)
+├── cmd/patty/main.go          # entry; blank-imports built-in providers/tools
+├── cmd/patty-plugin-example/  # reference MCP stdio plugin (a runnable example)
 └── internal/
     ├── cli/                 # subcommand routing, flags, assembly, exit codes
     ├── config/              # TOML loading (flag > project > user > defaults)
@@ -42,12 +42,12 @@ reasonix/
     ├── tool/                # Tool interface + Registry
     │   └── builtin/         # read_file/write_file/edit_file/move_file/bash/ls/glob/grep
     ├── permission/          # per-call Policy: allow/ask/deny rules → Decision
-    ├── command/             # custom slash commands loaded from .reasonix/commands/*.md
+    ├── command/             # custom slash commands loaded from .patty/commands/*.md
     ├── plugin/              # stdio JSON-RPC (MCP) client; adapts remote tools
     ├── remote/              # SSH transport for the Remote-SSH module
     │   ├── forward/         # -L / -R port-forward lifecycle
     │   ├── sftpfs/          # SFTP file layer (quarantines pkg/sftp)
-    │   └── bootstrap/       # detached `reasonix serve` bootstrap over SSH
+    │   └── bootstrap/       # detached `patcode serve` bootstrap over SSH
     └── agent/               # Session + harness loop
 ```
 
@@ -162,10 +162,10 @@ interface (`call` / `notify` / `close`) abstracts that, so the MCP-level logic
   workflow gates rather than separate process sandboxes.
 - Configuration provenance is runtime metadata and determines persistence scope.
   Desktop and CLI installs write the user-global `config.toml`; project
-  `reasonix.toml` and `.mcp.json` entries remain in their owning project file.
+  `patty.toml` and `.mcp.json` entries remain in their owning project file.
   Every configured source is trusted without a separate launch-confirmation
   step. Project entries override same-name global entries, and project
-  `reasonix.toml` overrides `.mcp.json`. Editing writes to the effective entry's
+  `patty.toml` overrides `.mcp.json`. Editing writes to the effective entry's
   source; removing it reveals the next lower-priority declaration.
 - Each remote tool is adapted to the `Tool` interface and injected into the run
   registry, namespaced `mcp__<server>__<tool>` (spaces normalised to `_`) to
@@ -174,7 +174,7 @@ interface (`call` / `notify` / `close`) abstracts that, so the MCP-level logic
   to false (a remote tool is opaque — we can't see its side effects), so a
   plugin opts a tool into parallel-batch dispatch and the permission layer's
   reader-default by declaring `readOnlyHint: true` in `tools/list`.
-- Installation is the trust decision for tool metadata. Reasonix assumes an
+- Installation is the trust decision for tool metadata. Patty Code assumes an
   installed server reports `readOnlyHint` and `destructiveHint` honestly;
   planner/read-only filtering is a workflow boundary for trusted servers, not
   containment against a malicious MCP server. Explicit deny rules and the
@@ -182,7 +182,7 @@ interface (`call` / `notify` / `close`) abstracts that, so the MCP-level logic
 - `prompts/list` + `prompts/get` surface as `/mcp__<server>__<prompt>` slash
   commands; `resources/list` + `resources/read` are referenced as
   `@<server>:<uri>` in chat. `/mcp` shows connected servers and their counts.
-- `cmd/reasonix-plugin-example` is a runnable reference stdio server (`echo`,
+- `cmd/patty-plugin-example` is a runnable reference stdio server (`echo`,
   `wordcount`), driven by an end-to-end test that builds the real binary.
 
 ### 3.4 Agent (`internal/agent`)
@@ -241,7 +241,7 @@ prefix cache-stable:
 
 ### 3.6 Context management (compaction)
 
-Long tasks eventually fill the model's context window. Reasonix manages this with
+Long tasks eventually fill the model's context window. Patty Code manages this with
 **low-frequency compaction** that respects the cache-first design:
 
 - Each provider declares its `context_window` (tokens). Context maintenance is
@@ -254,7 +254,7 @@ Long tasks eventually fill the model's context window. Reasonix manages this wit
   run. At `agent.compact_force_ratio` (default `0.9`), the existing forced fold
   may proceed even when the fold economics would normally skip it.
 - Users can inspect or change the 65–85% automatic threshold with
-  `reasonix config compact-ratio [--local] [VALUE]`. The default is 80%; the
+  `patcode config compact-ratio [--local] [VALUE]`. The default is 80%; the
   project-local value overrides the shared user config used by desktop and new
   CLI sessions.
 - A positive `model_overrides.<model>.context_window` replaces the provider-wide
@@ -276,7 +276,7 @@ Long tasks eventually fill the model's context window. Reasonix manages this wit
   result so the recent tail never begins with an orphan tool message whose
   `tool_calls` were summarized away.
 - The dropped originals are archived under the user config dir
-  (`reasonix/archive/<timestamp>.jsonl`; see §5 for its per-OS location), one
+  (`patty/archive/<timestamp>.jsonl`; see §5 for its per-OS location), one
   message per line, so the full history stays traceable.
 - The read-only `history` tool gives the agent on-demand BM25 retrieval over
   saved session JSONL files. `scope="project"` searches the current controller's
@@ -391,7 +391,7 @@ func (p Policy) Decide(toolName string, readOnly bool, args json.RawMessage) Dec
   grant is path-scoped when a path is available, stored as `Edit(<path>)` so all
   built-in file-mutating tools share it. A
   non-interactive run
-  (`reasonix run`, a sub-agent, anything with no TTY / no approver) cannot prompt.
+  (`patcode run`, a sub-agent, anything with no TTY / no approver) cannot prompt.
   Its explicit posture therefore resolves without blocking: Ask/manual fails
   closed, Auto allows only ordinary writer fallback, and YOLO may bypass ordinary
   Ask decisions. Nested or indirect Bash remains stricter: headless
@@ -439,8 +439,8 @@ func (p Policy) Decide(toolName string, readOnly bool, args json.RawMessage) Dec
   Plan-blocked, and their child turns inherit the Plan workflow marker and
   explicit phase opt-outs.
 - **User decisions are separate from tool approvals.** Runtime tool approval has
-  three user-facing postures: `ask` ("需要批准"), `auto` ("自动批准"), and
-  `yolo` ("Yolo批准"). `auto` lets the permission policy auto-approve the writer
+  three user-facing postures: `ask` ("승인 필요"), `auto` ("자동 승인"), and
+  `yolo` ("Yolo승인"). `auto` lets the permission policy auto-approve the writer
   fallback while preserving explicit ask/deny rules; `yolo` skips ordinary tool
   permission prompts for approval-gated tools such as writers and Bash. Explicit
   deny rules and forced fresh reviews still apply. Nested or indirect Bash
@@ -459,8 +459,8 @@ func (p Policy) Decide(toolName string, readOnly bool, args json.RawMessage) Dec
   user decision.
 
 - **Collaboration mode is separate from tool approval.** The desktop composer
-  presents collaboration as `normal` ("正常模式"), `plan` ("计划模式"), and
-  `goal` ("目标模式"). `/goal <objective>` starts an autonomous, session-scoped
+  presents collaboration as `normal` ("일반 모드"), `plan` ("계획 모드"), and
+  `goal` ("목표 모드"). `/goal <objective>` starts an autonomous, session-scoped
   active goal: the controller prepends goal context to user turns outside the
   cache-stable system prompt and keeps issuing continuation turns until the
   model reports completion, repeats the same blocked state three times, the user
@@ -481,8 +481,8 @@ func (p Policy) Decide(toolName string, readOnly bool, args json.RawMessage) Dec
   implementation work automatically add an AutoResearch protocol to the same
   transient active-goal user block. AutoResearch is a Goal strategy, not a
   standalone global skill: it writes project-local state under
-  `.reasonix/autoresearch/YYYYMMDD-HHMMSS-slug/` and keeps dynamic run state out
-  of `REASONIX.md`, `AGENTS.md`, project memory, tool schemas, and the
+  `.patty/autoresearch/YYYYMMDD-HHMMSS-slug/` and keeps dynamic run state out
+  of `PATTY.md`, `AGENTS.md`, project memory, tool schemas, and the
   cache-stable system prompt. `/goal --research <objective>` forces that
   strategy; `/goal --simple <objective>` forces lightweight Goal. Outside goal
   mode, ordinary prompts never change collaboration mode or create durable
@@ -498,9 +498,9 @@ func (p Policy) Decide(toolName string, readOnly bool, args json.RawMessage) Dec
 | YOLO approval / `yolo` | Ordinary prompts auto-allowed; deny rules and fresh reviews remain | Waits for user | Waits for user |
 | Approved-plan execution window | Approved plan's writer fallback is auto-allowed; explicit `ask` / `deny` rules remain | Future plans still wait | Waits for user |
 
-Out of the box (`mode = "ask"`, no rules), interactive `reasonix` prompts before
-each writer/bash call and `reasonix run` fails closed on those calls because it
-has no approver. Use `reasonix run --auto ...` / `-y` to allow ordinary writer
+Out of the box (`mode = "ask"`, no rules), interactive `patty` prompts before
+each writer/bash call and `patcode run` fails closed on those calls because it
+has no approver. Use `patcode run --auto ...` / `-y` to allow ordinary writer
 fallback in unattended automation; `--permission-mode auto` is equivalent.
 Explicit `ask` rules still fail closed under Auto, and `deny` rules harden every
 posture.
@@ -514,8 +514,8 @@ The chat TUI accepts `/command` input. Three kinds share one dispatch:
   saving the previous transcript for resume/history. `/clear` requires
   confirmation, then discards the current context without saving it; it does not
   delete project memory.
-- **Custom commands** are Markdown files under `.reasonix/commands/` (project) and
-  the user config dir, e.g. `~/.reasonix/commands/` on macOS/Linux; the project dir overrides the user dir on a
+- **Custom commands** are Markdown files under `.patty/commands/` (project) and
+  the user config dir, e.g. `~/.patty/commands/` on macOS/Linux; the project dir overrides the user dir on a
   name clash. A file `review.md` becomes `/review`; a subdirectory namespaces it
   (`git/commit.md` → `/git:commit`). Invoking one renders its body and sends the
   result as the next user turn.
@@ -530,7 +530,7 @@ Review the staged diff. Focus on $ARGUMENTS, list bugs with file:line.
 ```
 
 - Frontmatter is an optional `---`-fenced block of simple `key: value` lines;
-  `description` and `argument-hint` are recognised (no YAML dependency — Reasonix
+  `description` and `argument-hint` are recognised (no YAML dependency — Patty Code
   stays lean). The remainder is the body template.
 - Substitution in the body: `$ARGUMENTS` (all args, space-joined), `$1`…`$N`
   (positional, empty when absent), `$$` (a literal `$`). Arguments are the
@@ -592,10 +592,10 @@ the profile with the Boot-wired Skill runners. Each run gets an isolated child
 session and returns only its final answer to the caller. The headless contract is
 explicit:
 
-- `reasonix subagent try <name> ... <task>` uses the read-only Skill runner;
-- `reasonix subagent run <name> ... <task>` uses the normal permission and
+- `patcode subagent try <name> ... <task>` uses the read-only Skill runner;
+- `patcode subagent run <name> ... <task>` uses the normal permission and
   sandbox path; and
-- ordinary `Controller.Run` / `reasonix run` remains unchanged and does not
+- ordinary `Controller.Run` / `patcode run` remains unchanged and does not
   reinterpret slash-prefixed input as a subagent command.
 
 Desktop and CLI profile mutations share
@@ -657,22 +657,22 @@ type Chunk struct {
 
 ## 5. Configuration (TOML)
 
-Resolution order: **flag > project `./reasonix.toml` > the user config file
-> built-in defaults**. Starting with **Reasonix v1.8.1**, the user config lives
-at `~/.reasonix/config.toml` on macOS/Linux and
-`%AppData%\reasonix\config.toml` on Windows. See
+Resolution order: **flag > project `./patty.toml` > the user config file
+> built-in defaults**. Starting with **Patty Code v1.8.1**, the user config lives
+at `~/.patty/config.toml` on macOS/Linux and
+`%AppData%\patty\config.toml` on Windows. See
 [Configuration paths](./CONFIG_PATHS.md) for migration and related data paths.
-Fields marked user/global only are not overridden by project `reasonix.toml`.
+Fields marked user/global only are not overridden by project `patty.toml`.
 Provider entries name secrets with `api_key_env`; saved key values live in
-Reasonix's global `<Reasonix home>/.env`, shared by CLI and desktop. Project
+Patty Code's global `<Patty Code home>/.env`, shared by CLI and desktop. Project
 `.env`, home `.env`, inherited shell environment variables, legacy credentials,
 and the OS keyring are not provider-key runtime fallbacks. Project `.env` still
 feeds workspace-scoped, non-provider `${VAR}` expansion for MCP/plugin settings
-without importing provider keys or Reasonix control variables.
+without importing provider keys or Patty Code control variables.
 
 ```toml
 default_model = "deepseek"   # provider name (→ its default model) or "provider/model"
-# language    = "zh"                # ui language tag; empty = auto-detect from $LANG / $REASONIX_LANG
+# language    = "zh"                # ui language tag; empty = auto-detect from $LANG / $PATTY_LANG
 
 [ui]
 # shortcut_layout = "desktop"       # classic|desktop; compatibility setting
@@ -680,9 +680,9 @@ default_model = "deepseek"   # provider name (→ its default model) or "provide
 show_turn_usage = false              # hide per-request token/cost receipts in the TUI; default true
 
 [agent]
-system_prompt = "You are Reasonix, a coding agent..."  # or system_prompt_file = "..."
+system_prompt = "You are Patty Code, a coding agent..."  # or system_prompt_file = "..."
 temperature       = 0.0
-reasoning_language = "auto"       # visible reasoning text: auto|zh|en
+reasoning_language = "auto"       # visible reasoning text: auto|ko-KR|en
 # plan_mode_read_only_commands = ["gh issue view"]   # legacy compatibility only; Plan bash uses Permissions
 # planner_model = "deepseek-pro"   # optional: two-model collaboration (low-frequency planner)
 # subagent_model = "deepseek-pro"   # optional default for runAs=subagent skills
@@ -744,12 +744,12 @@ ask   = []                                 # force a prompt even if otherwise al
 [serve]
 auth_mode = "none"             # none|token|password; use auth before binding beyond localhost
 # token = ""                   # optional fixed token; empty token mode generates one at startup
-# password_hash = ""           # bcrypt hash generated with reasonix serve --hash-password --password '...'
+# password_hash = ""           # bcrypt hash generated with patcode serve --hash-password --password '...'
 # behind_proxy = false         # trust X-Forwarded-* only behind a trusted reverse proxy
 
 [[plugins]]
 name    = "example"            # type defaults to "stdio"
-command = "reasonix-plugin-example"
+command = "patty-plugin-example"
 args    = []
 # env   = { FOO = "bar" }
 # startup_timeout_seconds = 60         # initialize + tools/list cap; 0 = global/default cap
@@ -780,14 +780,14 @@ parseable for upgrade compatibility, but are ignored and removed by a one-time
 migration. The CLI `--max-steps` flag and `[bot].max_steps` remain separate,
 explicit controls for one-off and unattended execution.
 
-`reasonix setup` writes this default config so the CLI is usable out of the box.
+`patcode setup` writes this default config so the CLI is usable out of the box.
 
 `[ui].cursor_shape` is normalized to `underline`, `block`, or `bar`; empty or
 unknown values fall back to `bar`. It applies to the Bubble Tea CLI/TUI
 textarea only, while desktop and browser inputs keep their platform-native
 cursor behavior.
 
-`[serve]` controls the HTTP browser frontend used by `reasonix serve`. The
+`[serve]` controls the HTTP browser frontend used by `patcode serve`. The
 default `auth_mode = "none"` is intended for the loopback default
 `127.0.0.1:8787`; deployments reachable from another machine must use `token` or
 `password`. Password mode requires either a startup `--password` or a stored
@@ -798,9 +798,9 @@ headers.
 MCP servers may also be declared in a project-root `.mcp.json` using Claude
 Code's exact `mcpServers` schema (`command`/`args`/`env`, `type`/`url`/`headers`,
 `${VAR}` expansion). It is read after the TOML files and merged into
-`[[plugins]]`; on a name collision `reasonix.toml` wins (it is the more explicit,
-Reasonix-specific source). This lets a server already configured for Claude work in
-Reasonix unchanged.
+`[[plugins]]`; on a name collision `patty.toml` wins (it is the more explicit,
+patty-specific source). This lets a server already configured for Claude work in
+Patty Code unchanged.
 
 MCP startup has a separate lifecycle from an individual tool call. A caller
 waits briefly for cold startup, while the shared launch/authorization/
@@ -818,7 +818,7 @@ the connection is ready.
 
 `[sandbox]` is the *enforcement* layer beneath permissions (which are *policy*).
 Phase 0 confines the file-writing built-ins (`write_file`, `edit_file`,
-`multi_edit`, `move_file`) to `workspace_root` (default cwd), the Reasonix user
+`multi_edit`, `move_file`) to `workspace_root` (default cwd), the Patty Code user
 config dir, plus `allow_write`: a write whose target — resolved to an absolute,
 symlink-free path so a symlinked dir or `..` cannot tunnel out — falls outside
 every root is refused, and the error is fed back to the model. Confinement is on
@@ -832,56 +832,4 @@ Linux): each command is allowed to write only
 the same roots plus platform-specific command temp/cache roots, denied reads
 under `forbid_read`, and allowed to reach the network only when
 `network = true`.
-**Windows status:** Reasonix does not ship an OS-level Bash sandbox on Windows.
-The effective mode is fixed to `off`; an older config containing
-`bash = "enforce"` remains readable but resolves to `off`, `reasonix doctor`
-reports the ignored value, and the desktop control is read-only. Bash therefore
-runs unconfined on Windows. The in-process file tools continue to enforce
-`workspace_root`, `allow_write`, and `forbid_read`.
-When no OS sandbox is available, `bash = "enforce"` refuses bash execution
-instead of running unconfined. Install the platform sandbox backend
-(bubblewrap/`bwrap` on Linux, `sandbox-exec` on macOS) or set
-`[sandbox] bash = "off"` to explicitly restore the pre-1.16 unconfined shell
-behavior. The escape-prompt and broader OS support are Phase 1's remainder (§9).
-
-## 6. Error Handling
-
-- Library code wraps with `fmt.Errorf("...: %w", err)` and returns; it never
-  prints or calls `os.Exit`.
-- Only `cli` / `main` decide exit codes and user-facing messages.
-- Tool execution errors are fed back to the model, not fatal.
-- Network layer should apply bounded exponential backoff on 429 / 5xx
-  (interface reserved; implementation may follow).
-
-## 7. Code Style
-
-- `gofmt` + `go vet` must be clean; package names lowercase; exported
-  identifiers documented; comments explain *why*, not *what*.
-- No premature generalization. Prefer clear and direct.
-
-## 8. Distribution
-
-- Build: `CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=$(VERSION)" -o reasonix ./cmd/reasonix`
-- Cross matrix: `darwin|linux|windows` × `amd64|arm64`.
-- Version injected via ldflags (`git describe --tags --always`).
-- Install: prebuilt binary / `go install` / future `brew tap`.
-
-## 9. Roadmap (not in current scope)
-
-- Sandbox Phase 1: an OS-level jail for `bash` so commands — not just the
-  file-writer built-ins (Phase 0) — are confined to the workspace. **Seatbelt on
-  macOS and bubblewrap on Linux ship, on by default when available** (see §5).
-  Remaining: the escape-prompt — detect sandbox-unavailable or sandbox-denied failures and
-  offer an explicit, permission-gated unconfined rerun (in `reasonix run`, the
-  command just fails and the model adapts), which completes the "allow inside the
-  box, prompt at its edge" model. With this in place, "always allow" rule
-  persistence becomes optional rather than load-bearing.
-- MCP long tail (deferred deliberately — no consumer / no foundation yet): OAuth
-  2.0 + `headersHelper` auth for remote servers; the remaining `.mcp.json` scopes
-  (local / user — project scope shipped, see §5); tool-search deferral;
-  `list_changed` live updates; channels / elicitation / roots; plugins that
-  provide *providers*, not just tools.
-- An Anthropic-native provider `kind` (native prompt-cache control), proving the
-  registry generalises beyond one wire format.
-- "Always allow" persistence writing learned rules back to project config; a
-  per-session permission override flag for `reasonix run`.
+**Windows status:** Patty Code does not shi

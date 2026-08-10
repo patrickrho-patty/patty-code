@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/evidence"
-	"reasonix/internal/taskintent"
+	"patty/internal/evidence"
+	"patty/internal/taskintent"
 )
 
 func TestNewClassifiesWithExistingHeuristics(t *testing.T) {

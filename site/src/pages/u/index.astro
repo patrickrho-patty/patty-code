@@ -3,10 +3,9 @@ import Account from '../../layouts/Account.astro';
 ---
 <Account
   wide
-  title="Public profile — Reasonix"
-  titleEn="Public profile — Reasonix"
-  titleZh="公开主页 — Reasonix"
-  description="View a Reasonix community profile.">
+  title="Public profile — Patty Code"
+  titleEn="Public profile — Patty Code"
+  description="View a Patty Code community profile.">
   <div id="public-profile-gate" class="auth-msg">Loading profile…</div>
 
   <div id="public-profile" hidden>
@@ -18,6 +17,6 @@ import Account from '../../layouts/Account.astro';
       </div>
     </div>
     <p id="public-profile-bio" style="white-space:pre-wrap;line-height:1.7"></p>
-    <p class="hint"><span class="l-en">Joined </span><span class="l-zh">加入于 </span><span id="public-profile-joined"></span></p>
+    <p class="hint">Joined <span id="public-profile-joined"></span></p>
   </div>
 </Account>

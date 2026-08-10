@@ -12,9 +12,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"reasonix/internal/config"
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/frontmatter"
+	"patty/internal/config"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/frontmatter"
 )
 
 // Store is the scoped auto-memory store: project and global directories of
@@ -28,8 +28,8 @@ import (
 // current project or every project, while Type only classifies its contents.
 // List() and Index() merge both directories so every session sees the full set.
 type Store struct {
-	Dir       string // ...reasonix/projects/<slug>/memory
-	GlobalDir string // ...reasonix/memory/global (shared across projects)
+	Dir       string // ...patty/projects/<slug>/memory
+	GlobalDir string // ...patty/memory/global (shared across projects)
 }
 
 // Type classifies a memory, mirroring the auto-memory taxonomy.
@@ -98,7 +98,7 @@ type ArchivedMemory struct {
 }
 
 // StoreFor resolves the auto-memory directory for a project working dir under
-// Reasonix home, e.g. ~/.reasonix/projects/-Users-me-proj/memory.
+// patty home, e.g. ~/.patty/projects/-Users-me-proj/memory.
 // A "" userDir (config dir unresolvable) yields a zero Store, which all methods
 // treat as a disabled no-op.
 func StoreFor(userDir, cwd string) Store {
@@ -435,7 +435,7 @@ func render(m Memory, name string) string {
 	return b.String()
 }
 
-// previousReleaseRoutingType keeps scope safe when an older Reasonix binary
+// previousReleaseRoutingType keeps scope safe when an older Patty Code binary
 // shares the same state directory. Previous releases routed user/feedback to
 // GlobalDir and project/reference to Dir, so metadata.type remains a compatible
 // routing hint while metadata.fact_type preserves the independent new category.

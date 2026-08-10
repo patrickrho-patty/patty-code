@@ -5,15 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
-// scriptedTurns is a provider that replays a distinct chunk set per Stream call,
-// so a controller turn that re-enters the agent (plan turn, then approved
-// execution turn) sees a different model response each time.
 type scriptedTurns struct {
 	turns [][]provider.Chunk
 	call  int
@@ -51,9 +48,6 @@ func textTurn(text string) []provider.Chunk {
 	return []provider.Chunk{{Type: provider.ChunkText, Text: text}, {Type: provider.ChunkDone}}
 }
 
-// TestPlanGateEndToEnd drives explicit Plan Mode through a real agent: the plan
-// marker reaches the model, the controller asks for approval, and approval exits
-// Plan Mode, seeds the task list, and runs the execution turn.
 func TestPlanGateEndToEnd(t *testing.T) {
 	prov := &scriptedTurns{turns: [][]provider.Chunk{
 		textTurn("Plan:\n1. Add the config field\n2. Wire it into boot\n3. Add tests"),
@@ -81,7 +75,7 @@ func TestPlanGateEndToEnd(t *testing.T) {
 
 	go func() { c.Approve(<-approvalID, true, false, false) }()
 
-	input := "实现 issue #2395：新增配置项、自动判断复杂任务、补测试和文档"
+	input := "issue #2395 구현: 설정 항목 추가, 복잡한 작업 자동 판단, 테스트와 문서 보완"
 	if err := c.runTurnWithRaw(context.Background(), input, input); err != nil {
 		t.Fatalf("runTurnWithRaw: %v", err)
 	}
@@ -148,8 +142,6 @@ func TestApprovedPlanSeedClearsAfterExecutionWithoutModelTodoWrite(t *testing.T)
 	}
 }
 
-// TestPlanGateRejectionStaysInPlan proves a rejected plan keeps plan mode on
-// and never runs the execution turn: only the plan turn reached the model.
 func TestPlanGateRejectionStaysInPlan(t *testing.T) {
 	prov := &scriptedTurns{turns: [][]provider.Chunk{
 		textTurn("Plan:\n1. Add the config field\n2. Add tests"),
@@ -176,7 +168,7 @@ func TestPlanGateRejectionStaysInPlan(t *testing.T) {
 
 	go func() { c.Approve(<-approvalID, false, false, false) }()
 
-	input := "实现 issue #2395：新增配置项、自动判断复杂任务、补测试和文档"
+	input := "issue #2395 구현: 설정 항목 추가, 복잡한 작업 자동 판단, 테스트와 문서 보완"
 	if err := c.runTurnWithRaw(context.Background(), input, input); err != nil {
 		t.Fatalf("runTurnWithRaw: %v", err)
 	}

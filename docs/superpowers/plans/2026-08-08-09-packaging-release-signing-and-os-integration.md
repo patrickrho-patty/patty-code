@@ -13,7 +13,7 @@ Replace every platform-specific packaging identity — GoReleaser, NPM, GitHub A
 ## 2. Scope
 
 - `.goreleaser.yaml` binary names, artifact slugs, metadata
-- `cmd/reasonix-*` → `cmd/patty-*` (entry point renames from plan-03)
+- `cmd/patty-*` → `cmd/patty-*` (entry point renames from plan-03)
 - Desktop build configs: NSIS installer names, AppImage spec, DMG settings
 - GitHub release workflows: asset names, channel metadata
 - PolicyKit desktop entry file
@@ -27,34 +27,34 @@ Replace every platform-specific packaging identity — GoReleaser, NPM, GitHub A
 ## 3. Task List
 
 ### T1: Update GoReleaser config
-- Binary name: `reasonix` → `patty`, `reasonix-launcher` → `patty-launcher`
+- Binary name: `patty` → `patty`, `patty-code-launcher` → `patty-launcher`
 - Artifact slug format: `patty-code-{version}-{os}-{arch}`
 - Remove legacy-migrator goreleaser target
 
 ### T2: Rename launcher command
-- `cmd/reasonix-launcher/main.go` → `cmd/patty-launcher/main.go`
+- `cmd/patty-launcher/main.go` → `cmd/patty-launcher/main.go`
 - Reads executable name from Profile at runtime
 - Embedded profile digest verification
 
 ### T3: Delete legacy migrator binaries
-- Remove `cmd/reasonix-legacy-migrator/` entirely
+- Remove `cmd/patty-legacy-migrator/` entirely
 - Remove migration code paths from `internal/repair/`
 
 ### T4: Update macOS packaging
-- `.app` bundle name: `Reasonix.app` → `Patty Code.app`
+- `.app` bundle name: `Patty Code.app` → `Patty Code.app`
 - Info.plist: CFBundleName, CFBundleDisplayName from Profile
-- URL scheme: `reasonix://` → `patty://`
+- URL scheme: `patty://` → `patty://`
 - Keychain service string updated
 
 ### T5: Update Windows packaging
-- NSIS installer title/name: "Reasonix" → "Patty Code"
+- NSIS installer title/name: "Patty Code" → "Patty Code"
 - Application User Model ID (AppUserModelID)
 - Registry key updates
 - Mutex/named pipe prefixes changed to patty
 
 ### T6: Update Linux packaging
 - `.desktop` file: name, icon reference from Profile
-- PolicyKit action file (`io.reasonix.policy`)
+- PolicyKit action file (`io.patty.policy`)
 - Package metadata in deb/rpm spec files
 - Systemd service file names if applicable
 

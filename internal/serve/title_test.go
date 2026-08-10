@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"reasonix/internal/config"
-	"reasonix/internal/provider"
+	"patty/internal/config"
+	"patty/internal/provider"
 )
 
 type recordingTitleProvider struct {
@@ -38,7 +38,7 @@ func TestTitleProviderDisablesReasoning(t *testing.T) {
 func TestGenerateTitleStripsPasteLabelAndUsesShortBudget(t *testing.T) {
 	prov := &recordingTitleProvider{}
 	s := &Server{titleProv: prov}
-	got := s.generateTitle(context.Background(), "[已粘贴文本 #1 · 20 行]\nfix the login loop")
+	got := s.generateTitle(context.Background(), "[붙여넣은 텍스트 #1 · 20 줄]\nfix the login loop")
 	if got != "fix the login loop" {
 		t.Fatalf("title = %q, want pasted label removed", got)
 	}

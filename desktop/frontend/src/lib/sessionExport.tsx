@@ -3,7 +3,7 @@ import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import type { Components } from "react-markdown";
 import katexCss from "katex/dist/katex.min.css?inline";
 import { highlightToHtml } from "./highlight";
-import { reasonixRehypePlugins, reasonixRemarkPlugins } from "../components/markdownRemarkPlugins";
+import { pattyRehypePlugins, pattyRemarkPlugins } from "../components/markdownRemarkPlugins";
 import { normalizeMath } from "../components/mathNormalize";
 import {
   createRasterPdf,
@@ -42,7 +42,7 @@ ${katexCss}
   padding: 48px 56px;
   background: #ffffff;
   color: var(--fg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Malgun Gothic", sans-serif;
   font-size: 16px;
   line-height: 1.68;
   overflow-wrap: anywhere;
@@ -232,8 +232,8 @@ function StaticMarkdown({ text }: { text: string }) {
   return (
     <div className="md">
       <ReactMarkdown
-        remarkPlugins={reasonixRemarkPlugins}
-        rehypePlugins={reasonixRehypePlugins}
+        remarkPlugins={pattyRemarkPlugins}
+        rehypePlugins={pattyRehypePlugins}
         components={staticMarkdownComponents}
         urlTransform={(value, key) => transformExportMarkdownUrl(value, key, defaultUrlTransform)}
       >

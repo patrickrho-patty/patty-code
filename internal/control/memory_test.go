@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"reasonix/internal/memory"
+	"patty/internal/memory"
 )
 
 // TestMemoryWriteReflectsInSnapshot verifies that a memory write lands on disk
@@ -54,7 +54,7 @@ func TestSaveMemoryQueuesFullBodyForCurrentSession(t *testing.T) {
 	}
 	c := New(Options{Memory: memory.Load(memory.Options{CWD: cwd, UserDir: userDir})})
 
-	body := "Always answer in Chinese unless the user explicitly asks for English.\nKeep technical terms precise."
+	body := "Always answer in Korean unless the user explicitly asks for English.\nKeep technical terms precise."
 	if _, err := c.SaveMemory(memory.Memory{
 		Name:        "response-language",
 		Description: "preferred response language",

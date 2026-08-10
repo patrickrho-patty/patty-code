@@ -21,7 +21,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 //go:embed login.html
@@ -38,9 +38,9 @@ const (
 )
 
 const (
-	cookieToken     = "reasonix_token"    // holds the token for token mode
-	cookieSession   = "reasonix_session"  // holds the HMAC-signed session for password mode
-	cookieRedirect  = "reasonix_redirect" // temporary: where to go after login
+	cookieToken     = "patty_token"    // holds the token for token mode
+	cookieSession   = "patty_session"  // holds the HMAC-signed session for password mode
+	cookieRedirect  = "patty_redirect" // temporary: where to go after login
 	tokenByteLen    = 32                  // 256-bit random token
 	sessionDuration = 30 * 24 * time.Hour // how long a password session lasts
 	bcryptCost      = 12                  // bcrypt cost factor
@@ -183,7 +183,7 @@ func HashPassword(password string) (string, error) {
 
 func sessionKeyForPasswordHash(passwordHash string) []byte {
 	if passwordHash != "" {
-		key, err := pbkdf2.Key(sha256.New, passwordHash, []byte("reasonix serve session key"), pbkdf2Iter, 32)
+		key, err := pbkdf2.Key(sha256.New, passwordHash, []byte("patcode serve session key"), pbkdf2Iter, 32)
 		if err != nil {
 			panic("serve/auth: pbkdf2 failed: " + err.Error())
 		}

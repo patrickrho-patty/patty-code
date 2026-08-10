@@ -280,7 +280,7 @@
   },
   {
     "Name": "docs",
-    "Description": "Search and read the official documentation embedded in this exact Reasonix build. Use it before web search or assumptions for Reasonix setup, CLI, Desktop, configuration, permissions, MCP, memory, recovery, provider behavior, and maintainer workflows. Search first, then read the returned section_id when the full section is needed.",
+    "Description": "Search and read the official documentation embedded in this exact Patty Code build. Use it before web search or assumptions for patcode setup, CLI, Desktop, configuration, permissions, MCP, memory, recovery, provider behavior, and maintainer workflows. Search first, then read the returned section_id when the full section is needed.",
     "ReadOnly": true,
     "Schema": {
       "properties": {
@@ -295,12 +295,12 @@
           "type": "string"
         },
         "language": {
-          "description": "Language preference. search defaults to auto from the query; list defaults to all. Explicit en or zh-CN filters results.",
+          "description": "Language preference. search defaults to auto from the query; list defaults to all. Explicit en or ko-KR filters results.",
           "enum": [
             "auto",
             "all",
             "en",
-            "zh-CN"
+            "ko-KR"
           ],
           "type": "string"
         },
@@ -598,7 +598,7 @@
   },
   {
     "Name": "install_skill",
-    "Description": "Author and save a new skill — a reusable playbook future turns invoke via run_skill (or /\u003cname\u003e). Runnable immediately this turn; appears in the pinned Skills index on the next launch. 'project' (default) writes to \u003crepo\u003e/.reasonix/skills/ (this workspace only); 'global' writes to the Reasonix home skills directory (every project).",
+    "Description": "Author and save a new skill — a reusable playbook future turns invoke via run_skill (or /\u003cname\u003e). Runnable immediately this turn; appears in the pinned Skills index on the next launch. 'project' (default) writes to \u003crepo\u003e/.patty/skills/ (this workspace only); 'global' writes to the patty home skills directory (every project).",
     "ReadOnly": false,
     "Schema": {
       "properties": {
@@ -656,7 +656,7 @@
   },
   {
     "Name": "install_source",
-    "Description": "Plan, install, or uninstall a Reasonix skill, MCP server, or plugin package from a URL, local file/folder, .mcp.json, executable, or package name. Two-phase: with apply=false (default) returns a deterministic plan with per-action risk level; with apply=true copies/registers skills, connects/persists MCP servers, or installs plugin packages after validation. op='uninstall' removes a previously installed skill, MCP server, or plugin package by name.",
+    "Description": "Plan, install, or uninstall a patty skill, MCP server, or plugin package from a URL, local file/folder, .mcp.json, executable, or package name. Two-phase: with apply=false (default) returns a deterministic plan with per-action risk level; with apply=true copies/registers skills, connects/persists MCP servers, or installs plugin packages after validation. op='uninstall' removes a previously installed skill, MCP server, or plugin package by name.",
     "ReadOnly": false,
     "Schema": {
       "properties": {
@@ -1293,7 +1293,7 @@
   },
   {
     "Name": "remember",
-    "Description": "Save a durable background fact so it survives across sessions. Use for things worth remembering long-term: who the user is and their preferences (type \"user\"); guidance on how to work, including the why (type \"feedback\"); ongoing goals or constraints not derivable from the code (type \"project\"); or pointers to external resources (type \"reference\"). For feedback/project, structure the body with a \"**Why:**\" line and a \"**How to apply:**\" line so the fact is actionable later; link related memories inline with [[their-name]]. Do NOT save what the repo already records (code structure, git history) or facts that only matter to the current conversation; if asked to remember one of those, save instead the non-obvious point behind it. Choose scope \"project\" for the current workspace (the safe default) or \"global\" only when the fact should affect every project. Standing rules that must always be followed belong in project or global REASONIX.md/AGENTS.md instructions, not background memory. Before saving, check the loaded memory index for an entry that already covers this — reuse that name to update it rather than create a near-duplicate, and use `forget` to drop one that is now wrong. The saved index loads into context at the start of each session.",
+    "Description": "Save a durable background fact so it survives across sessions. Use for things worth remembering long-term: who the user is and their preferences (type \"user\"); guidance on how to work, including the why (type \"feedback\"); ongoing goals or constraints not derivable from the code (type \"project\"); or pointers to external resources (type \"reference\"). For feedback/project, structure the body with a \"**Why:**\" line and a \"**How to apply:**\" line so the fact is actionable later; link related memories inline with [[their-name]]. Do NOT save what the repo already records (code structure, git history) or facts that only matter to the current conversation; if asked to remember one of those, save instead the non-obvious point behind it. Choose scope \"project\" for the current workspace (the safe default) or \"global\" only when the fact should affect every project. Standing rules that must always be followed belong in project or global PATTY_CODE.md/AGENTS.md instructions, not background memory. Before saving, check the loaded memory index for an entry that already covers this — reuse that name to update it rather than create a near-duplicate, and use `forget` to drop one that is now wrong. The saved index loads into context at the start of each session.",
     "ReadOnly": false,
     "Schema": {
       "properties": {
@@ -1438,7 +1438,7 @@
   },
   {
     "Name": "slash_command",
-    "Description": "Invoke a project slash command (a reusable prompt template or skill) by name. Returns the command's expanded prompt text for you to act on in this turn — it does not run on its own. Call with an empty command (or \"list\") to see what's available. Available: explore, init, install-capability, reasonix-guide, research, review, security-review, test.",
+    "Description": "Invoke a project slash command (a reusable prompt template or skill) by name. Returns the command's expanded prompt text for you to act on in this turn — it does not run on its own. Call with an empty command (or \"list\") to see what's available. Available: explore, init, install-capability, patty-guide, research, review, security-review, test.",
     "ReadOnly": true,
     "Schema": {
       "properties": {

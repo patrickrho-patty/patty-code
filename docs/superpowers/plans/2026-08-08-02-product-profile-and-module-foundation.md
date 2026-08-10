@@ -227,8 +227,8 @@ const (
 ### T8: Wire Profile into config loading layer
 - Read: internal/config/config.go and config discovery
 - Replace hardcoded env prefixes and paths with Profile-derived values
-- Test: clean install writes to `.patty/`, not `.reasonix/`
-- Expected: No more hardcoded "reasonix" strings in config path resolution
+- Test: clean install writes to `.patty/`, not `.patty/`
+- Expected: No more hardcoded "patty" strings in config path resolution
 
 ## 8. Cross-Platform Considerations
 

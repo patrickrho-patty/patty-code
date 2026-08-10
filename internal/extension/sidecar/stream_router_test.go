@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/pluginpkg"
+	"patty/internal/extension/protocol"
+	"patty/internal/pluginpkg"
 )
 
 // recordingRouter captures routed provider stream notifications.

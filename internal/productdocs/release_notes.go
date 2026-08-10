@@ -8,7 +8,17 @@ import (
 
 type localizedText struct {
 	English string `json:"en"`
-	Chinese string `json:"zh"`
+	Korean  string `json:"ko-KR"`
+}
+
+func (t localizedText) text(locale string) string {
+	if locale == "ko-KR" {
+		if k := strings.TrimSpace(t.Korean); k != "" {
+			return k
+		}
+		return strings.TrimSpace(t.English)
+	}
+	return strings.TrimSpace(t.English)
 }
 
 type releaseItem struct {
@@ -68,10 +78,10 @@ func renderReleaseDocuments(data []byte) ([]renderedReleaseDocument, int, error)
 			return nil, 0, fmt.Errorf("release-notes/releases.json has duplicate version %q", release.Version)
 		}
 		seen[release.Version] = struct{}{}
-		for _, locale := range []string{"en", "zh-CN"} {
+		for _, locale := range []string{"en", "ko-KR"} {
 			suffix := ".md"
-			if locale == "zh-CN" {
-				suffix = ".zh-CN.md"
+			if locale == "ko-KR" {
+				suffix = ".ko-KR.md"
 			}
 			documents = append(documents, renderedReleaseDocument{
 				path:    "changelog/v" + release.Version + suffix,
@@ -99,43 +109,40 @@ func validReleaseVersion(version string) bool {
 }
 
 func renderReleaseMarkdown(release releaseRecord, locale string) string {
-	zh := locale == "zh-CN"
+	korean := locale == "ko-KR"
 	localize := func(value localizedText) string {
-		if zh {
-			return strings.TrimSpace(value.Chinese)
-		}
-		return strings.TrimSpace(value.English)
+		return value.text(locale)
 	}
-	heading := func(en, cn string) string {
-		if zh {
-			return cn
+	heading := func(en, ko string) string {
+		if korean {
+			return ko
 		}
 		return en
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "# Reasonix v%s — %s\n\n", release.Version, localize(release.Title))
-	if zh {
-		fmt.Fprintf(&b, "发布日期：%s\n\n发布渠道：%s\n\n状态：%s\n", release.Date, release.Channel, release.Status)
+	fmt.Fprintf(&b, "# Patty Code v%s — %s\n\n", release.Version, localize(release.Title))
+	if korean {
+		fmt.Fprintf(&b, "배포일: %s\n\n배포 채널: %s\n\n상태: %s\n", release.Date, release.Channel, release.Status)
 	} else {
 		fmt.Fprintf(&b, "Release date: %s\n\nChannel: %s\n\nStatus: %s\n", release.Date, release.Channel, release.Status)
 	}
 	if len(release.Surfaces) > 0 {
-		fmt.Fprintf(&b, "\n%s: %s\n", heading("Surfaces", "涉及产品面"), strings.Join(release.Surfaces, ", "))
+		fmt.Fprintf(&b, "\n%s: %s\n", heading("Surfaces", "적용 제품 영역"), strings.Join(release.Surfaces, ", "))
 	}
 
-	fmt.Fprintf(&b, "\n## %s\n\n%s\n", heading("Summary", "摘要"), localize(release.Summary))
-	renderReleaseItems(&b, heading("Highlights", "亮点"), release.Highlights, localize, heading)
+	fmt.Fprintf(&b, "\n## %s\n\n%s\n", heading("Summary", "요약"), localize(release.Summary))
+	renderReleaseItems(&b, heading("Highlights", "주요 내용"), release.Highlights, localize, heading)
 	if len(release.Changes.New)+len(release.Changes.Improved)+len(release.Changes.Fixed) > 0 {
-		fmt.Fprintf(&b, "\n## %s\n", heading("Changes", "变更"))
-		renderReleaseItemGroup(&b, heading("New", "新增"), release.Changes.New, localize, heading)
-		renderReleaseItemGroup(&b, heading("Improved", "改进"), release.Changes.Improved, localize, heading)
-		renderReleaseItemGroup(&b, heading("Fixed", "修复"), release.Changes.Fixed, localize, heading)
+		fmt.Fprintf(&b, "\n## %s\n", heading("Changes", "변경 사항"))
+		renderReleaseItemGroup(&b, heading("New", "신규 추가"), release.Changes.New, localize, heading)
+		renderReleaseItemGroup(&b, heading("Improved", "개선 사항"), release.Changes.Improved, localize, heading)
+		renderReleaseItemGroup(&b, heading("Fixed", "복구"), release.Changes.Fixed, localize, heading)
 	}
-	renderReleaseItems(&b, heading("Upgrade notes", "升级说明"), release.Upgrade, localize, heading)
-	renderReleaseItems(&b, heading("Known risks", "已知风险"), release.Risks, localize, heading)
-	renderReleaseItems(&b, heading("Related guides", "相关指南"), release.Guides, localize, heading)
+	renderReleaseItems(&b, heading("Upgrade notes", "액스레이제이션설명"), release.Upgrade, localize, heading)
+	renderReleaseItems(&b, heading("Known risks", "알려진 위험"), release.Risks, localize, heading)
+	renderReleaseItems(&b, heading("Related guides", "관련 가이드"), release.Guides, localize, heading)
 	if len(release.Contributors) > 0 {
-		fmt.Fprintf(&b, "\n## %s\n\n%s\n", heading("Contributors", "贡献者"), strings.Join(release.Contributors, ", "))
+		fmt.Fprintf(&b, "\n## %s\n\n%s\n", heading("Contributors", "기여자"), strings.Join(release.Contributors, ", "))
 	}
 	return strings.TrimSpace(b.String()) + "\n"
 }
@@ -190,14 +197,14 @@ func renderReleaseItemBullets(
 			fmt.Fprintf(b, ": %s", body)
 		}
 		if item.Href != "" {
-			fmt.Fprintf(b, " [%s](%s)", heading("Open guide", "打开指南"), item.Href)
+			fmt.Fprintf(b, " [%s](%s)", heading("Open guide", "가이드 열기"), item.Href)
 		}
 		if len(item.Refs) > 0 {
 			refs := make([]string, 0, len(item.Refs))
 			for _, ref := range item.Refs {
 				refs = append(refs, fmt.Sprintf("#%d", ref))
 			}
-			fmt.Fprintf(b, " (%s: %s)", heading("Refs", "关联"), strings.Join(refs, ", "))
+			fmt.Fprintf(b, " (%s: %s)", heading("Refs", "참조"), strings.Join(refs, ", "))
 		}
 		b.WriteByte('\n')
 	}

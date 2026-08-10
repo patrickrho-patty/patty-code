@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/logo-ghost-wave-effect.svg" alt="Reasonix" width="360"/>
+  <img src="docs/logo-ghost-wave-effect.svg" alt="Patty Code" width="360"/>
 </p>
 
 <p align="center">
   <strong>English</strong>
   &nbsp;·&nbsp;
-  <a href="./README.zh-CN.md">简体中文</a>
+  <a href="./README.ko-KR.md">(Korean)</a>
   &nbsp;·&nbsp;
   <a href="./docs/GUIDE.md">Guide</a>
   &nbsp;·&nbsp;
@@ -15,26 +15,26 @@
   &nbsp;·&nbsp;
   <a href="./docs/SPEC.md">Spec</a>
   &nbsp;·&nbsp;
-  <a href="https://esengine.github.io/DeepSeek-Reasonix/">Website</a>
+  <a href="https://pattycorp.github.io/DeepSeek-PattyCode/">Website</a>
   &nbsp;·&nbsp;
   <strong><a href="https://discord.gg/XF78rEME2D">Discord</a></strong>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/reasonix"><img src="https://img.shields.io/npm/v/reasonix.svg?style=flat-square&color=cb3837&labelColor=161b22&logo=npm&logoColor=white" alt="npm version"/></a>
-  <a href="https://github.com/esengine/DeepSeek-Reasonix/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/esengine/DeepSeek-Reasonix/ci.yml?style=flat-square&label=ci&labelColor=161b22&logo=githubactions&logoColor=white" alt="CI"/></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/reasonix.svg?style=flat-square&color=8b949e&labelColor=161b22" alt="license"/></a>
-  <a href="https://www.npmjs.com/package/reasonix"><img src="https://img.shields.io/npm/dm/reasonix.svg?style=flat-square&color=3fb950&labelColor=161b22&label=downloads" alt="downloads"/></a>
-  <a href="https://github.com/esengine/DeepSeek-Reasonix/stargazers"><img src="https://img.shields.io/github/stars/esengine/DeepSeek-Reasonix.svg?style=flat-square&color=dbab09&labelColor=161b22&logo=github&logoColor=white" alt="GitHub stars"/></a>
-  <a href="https://atomgit.com/esengine/DeepSeek-Reasonix"><img src="https://atomgit.com/esengine/DeepSeek-Reasonix/star/badge.svg" alt="AtomGit stars"/></a>
-  <a href="https://github.com/esengine/DeepSeek-Reasonix/graphs/contributors"><img src="https://img.shields.io/github/contributors/esengine/DeepSeek-Reasonix.svg?style=flat-square&color=bc8cff&labelColor=161b22&logo=github&logoColor=white" alt="contributors"/></a>
-  <a href="https://github.com/esengine/DeepSeek-Reasonix/discussions"><img src="https://img.shields.io/github/discussions/esengine/DeepSeek-Reasonix.svg?style=flat-square&color=58a6ff&labelColor=161b22&logo=github&logoColor=white" alt="Discussions"/></a>
+  <a href="https://www.npmjs.com/package/patty"><img src="https://img.shields.io/npm/v/patty-code.svg?style=flat-square&color=cb3837&labelColor=161b22&logo=npm&logoColor=white" alt="npm version"/></a>
+  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/pattycorp/DeepSeek-PattyCode/ci.yml?style=flat-square&label=ci&labelColor=161b22&logo=githubactions&logoColor=white" alt="CI"/></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/patty-code.svg?style=flat-square&color=8b949e&labelColor=161b22" alt="license"/></a>
+  <a href="https://www.npmjs.com/package/patty"><img src="https://img.shields.io/npm/dm/patty-code.svg?style=flat-square&color=3fb950&labelColor=161b22&label=downloads" alt="downloads"/></a>
+  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/stargazers"><img src="https://img.shields.io/github/stars/pattycorp/DeepSeek-PattyCode.svg?style=flat-square&color=dbab09&labelColor=161b22&logo=github&logoColor=white" alt="GitHub stars"/></a>
+  <a href="https://atomgit.com/pattycorp/DeepSeek-PattyCode"><img src="https://atomgit.com/pattycorp/DeepSeek-PattyCode/star/badge.svg" alt="AtomGit stars"/></a>
+  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors"><img src="https://img.shields.io/github/contributors/pattycorp/DeepSeek-PattyCode.svg?style=flat-square&color=bc8cff&labelColor=161b22&logo=github&logoColor=white" alt="contributors"/></a>
+  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/discussions"><img src="https://img.shields.io/github/discussions/pattycorp/DeepSeek-PattyCode.svg?style=flat-square&color=58a6ff&labelColor=161b22&logo=github&logoColor=white" alt="Discussions"/></a>
   <a href="https://discord.gg/XF78rEME2D"><img src="https://img.shields.io/badge/discord-join-5865F2.svg?style=flat-square&labelColor=161b22&logo=discord&logoColor=white" alt="Discord"/></a>
 </p>
 
 <p align="center">
-  <a href="https://trendshift.io/repositories/27020?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-27020" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/27020/monthly?language=Go" alt="esengine/DeepSeek-Reasonix | Trendshift" width="250" height="55"/></a>
-  <a href="https://trendshift.io/repositories/27020?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-27020" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/27020" alt="esengine/DeepSeek-Reasonix | Trendshift" width="250" height="55"/></a>
+  <a href="https://trendshift.io/repositories/27020?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-27020" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/27020/monthly?language=Go" alt="pattycorp/DeepSeek-Patty Code | Trendshift" width="250" height="55"/></a>
+  <a href="https://trendshift.io/repositories/27020?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-27020" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/27020" alt="pattycorp/DeepSeek-Patty Code | Trendshift" width="250" height="55"/></a>
 </p>
 
 <br/>
@@ -57,7 +57,7 @@
 ## Features
 
 - **Config-driven.** Providers, the agent, enabled tools, and plugins are all
-  declared in `reasonix.toml`. No hardcoded models.
+  declared in `patty.toml`. No hardcoded models.
 - **Multi-model & composable.** DeepSeek ships as a preset; any
   OpenAI-compatible endpoint is a config entry, not new code. Optionally run
   two models together (executor + planner) in separate, cache-stable sessions.
@@ -73,8 +73,8 @@
 
 ## Install
 
-Choose the path that matches how you want to use Reasonix. The CLI/TUI,
-desktop app, and VS Code extension all use the same local Reasonix engine.
+Choose the path that matches how you want to use Patty Code. The CLI/TUI,
+desktop app, and VS Code extension all use the same local Patty Code engine.
 
 ### Path A: CLI / TUI
 
@@ -82,16 +82,16 @@ Install the native binary through npm on any supported platform, or use
 Homebrew on macOS:
 
 ```sh
-npm i -g reasonix                  # any OS; pulls the prebuilt native binary
-brew install esengine/reasonix/reasonix   # macOS
+npm i -g patty code                  # any OS; pulls the prebuilt native binary
+brew install pattycorp/patty/patty code   # macOS
 ```
 
 Prebuilt archives (`darwin|linux|windows × amd64|arm64`) and `SHA256SUMS` are on
-every [GitHub release](https://github.com/esengine/DeepSeek-Reasonix/releases).
+every [GitHub release](https://github.com/pattycorp/DeepSeek-PattyCode/releases).
 
 ### Path B: Desktop app
 
-Use the [official download page](https://reasonix.io/?download=desktop#start)
+Use the [official download page](https://patty-code.io/?download=desktop#start)
 for the latest desktop build.
 
 | Platform | Package | Architecture |
@@ -106,19 +106,19 @@ with a free certificate provided by the [SignPath Foundation](https://signpath.o
 ### Path C: VS Code extension
 
 Complete Path A first. The extension does not bundle the CLI; it starts your
-local `reasonix acp` backend and adds native chat, editor context, tool-call
+local `patty code acp` backend and adds native chat, editor context, tool-call
 approvals, model selection, and workspace sessions.
 
-- **VS Code:** [install from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SivanLiu.reasonix-agent)
-- **VSCodium / Eclipse Theia:** [install from Open VSX Registry](https://open-vsx.org/extension/SivanLiu/reasonix-agent)
-- **Extension ID:** `SivanLiu.reasonix-agent` · [source and usage guide](https://github.com/SivanCola/reasonix-vscode)
+- **VS Code:** [install from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SivanLiu.patty-agent)
+- **VSCodium / Eclipse Theia:** [install from Open VSX Registry](https://open-vsx.org/extension/SivanLiu/patty-code-agent)
+- **Extension ID:** `SivanLiu.patty-agent` · [source and usage guide](https://github.com/SivanCola/patty-code-vscode)
 
 ### Path D: Build from source
 
 ```sh
-git clone https://github.com/esengine/DeepSeek-Reasonix.git
-cd DeepSeek-Reasonix
-make build      # -> bin/reasonix(.exe)
+git clone https://github.com/pattycorp/DeepSeek-PattyCode.git
+cd DeepSeek-PattyCode
+make build      # -> bin/patty(.exe)
 make cross      # -> dist/ (darwin|linux|windows × amd64|arm64)
 ```
 
@@ -129,19 +129,19 @@ make cross      # -> dist/ (darwin|linux|windows × amd64|arm64)
 These commands are for the CLI/TUI installed through Path A:
 
 ```sh
-reasonix setup                      # configure a provider and model
-reasonix                            # start an interactive session
-reasonix run "implement the TODOs in main.go"
+patty code setup                      # configure a provider and model
+patty code                            # start an interactive session
+patty code run "implement the TODOs in main.go"
 ```
 
-In an interactive session, run `/init` when you want Reasonix to create project
+In an interactive session, run `/init` when you want Patty Code to create project
 instructions.
 
 ### Desktop app
 
 Download the installer for your platform from the
-[official download page](https://reasonix.io/?download=desktop#start), install
-and launch Reasonix, then configure a provider and model in the app. The CLI
+[official download page](https://patty-code.io/?download=desktop#start), install
+and launch Patty Code, then configure a provider and model in the app. The CLI
 commands above are not required for the desktop app.
 
 For advanced CLI usage and configuration, see the **[CLI reference](./docs/CLI.md)**,
@@ -167,11 +167,11 @@ For advanced CLI usage and configuration, see the **[CLI reference](./docs/CLI.m
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=esengine%2FDeepSeek-Reasonix&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=pattycorp%2FDeepSeek-PattyCode&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/esengine/DeepSeek-Reasonix/star-history/assets/star-history/star-history-dark.svg" />
-   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/esengine/DeepSeek-Reasonix/star-history/assets/star-history/star-history-light.svg" />
-   <img alt="Star History Chart" src="https://raw.githubusercontent.com/esengine/DeepSeek-Reasonix/star-history/assets/star-history/star-history-light.svg" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pattycorp/DeepSeek-PattyCode/star-history/assets/star-history/star-history-dark.svg" />
+   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/pattycorp/DeepSeek-PattyCode/star-history/assets/star-history/star-history-light.svg" />
+   <img alt="Star History Chart" src="https://raw.githubusercontent.com/pattycorp/DeepSeek-PattyCode/star-history/assets/star-history/star-history-light.svg" />
  </picture>
 </a>
 
@@ -179,25 +179,25 @@ For advanced CLI usage and configuration, see the **[CLI reference](./docs/CLI.m
 
 ## Acknowledgments
 
-A small list of folks whose work has shaped Reasonix the most — the current top
+A small list of folks whose work has shaped Patty Code the most — the current top
 20 contributors by commit count. The full contributor graph is on
-[GitHub](https://github.com/esengine/DeepSeek-Reasonix/graphs/contributors?all=1).
+[GitHub](https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors?all=1).
 
-<!-- reasonix-top-contributors:start -->
+<!-- patty-code-top-contributors:start -->
 | Contributor | Contributor | Contributor | Contributor |
 | --- | --- | --- | --- |
-| [**SivanCola**](https://github.com/SivanCola) | [**esengine**](https://github.com/esengine) | [**ttmouse**](https://github.com/ttmouse) | [**lifu963**](https://github.com/lifu963) |
-| **reasonix** | [**HUQIANTAO**](https://github.com/HUQIANTAO) | [**GTC2080**](https://github.com/GTC2080) | [**light-front-theory**](https://github.com/light-front-theory) |
+| [**SivanCola**](https://github.com/SivanCola) | [**pattycorp**](https://github.com/pattycorp) | [**ttmouse**](https://github.com/ttmouse) | [**lifu963**](https://github.com/lifu963) |
+| **patty** | [**HUQIANTAO**](https://github.com/HUQIANTAO) | [**GTC2080**](https://github.com/GTC2080) | [**light-front-theory**](https://github.com/light-front-theory) |
 | **merge-order-check** | [**Li-Charles-One**](https://github.com/Li-Charles-One) | [**eghrhegpe**](https://github.com/eghrhegpe) | **wufengfan** |
 | [**CVEngineer66**](https://github.com/CVEngineer66) | [**dependabot\[bot\]**](https://github.com/apps/dependabot) | [**lanshi17**](https://github.com/lanshi17) | [**SuMuxi66**](https://github.com/SuMuxi66) |
 | [**CnsMaple**](https://github.com/CnsMaple) | [**cyq1017**](https://github.com/cyq1017) | [**JesonChou**](https://github.com/JesonChou) | [**XTLine**](https://github.com/XTLine) |
-<!-- reasonix-top-contributors:end -->
+<!-- patty-code-top-contributors:end -->
 
 Special thanks to [**Bernardxu123**](https://github.com/Bernardxu123) for designing the project logo and intro video.
 
 <p align="center">
-  <a href="https://github.com/esengine/DeepSeek-Reasonix/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=esengine/DeepSeek-Reasonix&max=100&columns=12" alt="Contributors to esengine/DeepSeek-Reasonix" width="860"/>
+  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=pattycorp/DeepSeek-PattyCode&max=100&columns=12" alt="Contributors to pattycorp/DeepSeek-PattyCode" width="860"/>
   </a>
 </p>
 
@@ -208,14 +208,14 @@ Special thanks to [**Bernardxu123**](https://github.com/Bernardxu123) for design
 <p align="center">
   <sub>MIT — see <a href="./LICENSE">LICENSE</a></sub>
   <br/>
-  <sub>Built by the community at <a href="https://github.com/esengine/DeepSeek-Reasonix/graphs/contributors">esengine/DeepSeek-Reasonix</a></sub>
+  <sub>Built by the community at <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors">pattycorp/DeepSeek-PattyCode</a></sub>
 </p>
 
 ---
 
 <p align="center"><sub><strong>Support this project</strong></sub></p>
 
-If Reasonix has been useful and you'd like to say thanks, you can. It stays a
+If Patty Code has been useful and you'd like to say thanks, you can. It stays a
 coffee, not a contract — donations don't buy feature priority or change how
 issues get triaged.
 

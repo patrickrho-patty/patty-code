@@ -2,28 +2,28 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { safeNext } from "./safe-next.js";
 
-const ORIGIN = "https://reasonix.io";
+const ORIGIN = "https://patty-code.io";
 
 // The security invariant: whatever safeNext returns, re-resolving it the way a
 // browser does when it assigns `location.href` must stay on our origin or an
-// allowed reasonix.io host. Asserting this (rather than a fixed string) catches
+// allowed patty-code.io host. Asserting this (rather than a fixed string) catches
 // any value that looks same-origin but re-parses off-site.
 function assertLandsSomewhereSafe(returned) {
   if (returned === null) return;
   const landed = new URL(returned, ORIGIN);
-  const ok = landed.origin === ORIGIN || landed.host === "reasonix.io" || landed.host.endsWith(".reasonix.io");
+  const ok = landed.origin === ORIGIN || landed.host === "patty-code.io" || landed.host.endsWith(".patty.io");
   assert.ok(ok, `returned ${JSON.stringify(returned)} re-resolves off-site to ${landed.href}`);
 }
 
 test("same-origin path passes through as an absolute same-origin URL", () => {
   const got = safeNext("/account/settings?x=1#y", ORIGIN);
-  assert.equal(got, "https://reasonix.io/account/settings?x=1#y");
+  assert.equal(got, "https://patty-code.io/account/settings?x=1#y");
   assertLandsSomewhereSafe(got);
 });
 
-test("allowed reasonix.io subdomain passes through", () => {
-  const got = safeNext("https://crash.reasonix.io/x", ORIGIN);
-  assert.equal(got, "https://crash.reasonix.io/x");
+test("allowed patty-code.io subdomain passes through", () => {
+  const got = safeNext("https://crash.patty.io/x", ORIGIN);
+  assert.equal(got, "https://crash.patty.io/x");
   assertLandsSomewhereSafe(got);
 });
 
@@ -52,7 +52,7 @@ test("rejects control characters (as decoded by URLSearchParams) smuggling a pro
 test("dot-segment inputs that normalize to a //host pathname do not escape", () => {
   // These resolve to a same-origin URL whose pathname is "//evil.example".
   // Returning the bare pathname would re-parse as a protocol-relative redirect;
-  // returning the absolute href keeps them on reasonix.io. Assert end to end.
+  // returning the absolute href keeps them on patty-code.io. Assert end to end.
   for (const p of ["/.//evil.example", "/a/..//evil.example", "/..//evil.example", "/%2e//evil.example"]) {
     const got = safeNext(decodeURIComponent(p), ORIGIN);
     assert.notEqual(got, null, p);
@@ -66,6 +66,6 @@ test("rejects an unrelated https host and non-https schemes", () => {
   assert.equal(safeNext("javascript:alert(1)", ORIGIN), null);
 });
 
-test("rejects a reasonix.io-lookalike host", () => {
-  assert.equal(safeNext("https://reasonix.io.evil.example/", ORIGIN), null);
+test("rejects a patty-code.io-lookalike host", () => {
+  assert.equal(safeNext("https://patty-code.io.evil.example/", ORIGIN), null);
 });

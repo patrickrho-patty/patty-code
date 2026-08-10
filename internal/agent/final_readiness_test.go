@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/evidence"
-	"reasonix/internal/instruction"
-	"reasonix/internal/provider"
+	"patty/internal/evidence"
+	"patty/internal/instruction"
+	"patty/internal/provider"
 )
 
 func readinessLedger(receipts ...evidence.Receipt) *evidence.Ledger {

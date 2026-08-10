@@ -21,8 +21,8 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"reasonix/internal/installlayout"
-	"reasonix/internal/repair"
+	"patty/internal/installlayout"
+	"patty/internal/repair"
 )
 
 // resolveWindowsUpdateHelperSource finds the on-disk helper for the running
@@ -31,10 +31,22 @@ func resolveWindowsUpdateHelperSource(installDir string) string {
 	if path, err := installlayout.ActiveUpdateHelperPath(installDir); err == nil {
 		return path
 	}
+	// Rebranded payloads stage the helper under versions/<active>/ with the
+	// patty-code-* name until installlayout adopts the renamed members.
+	if ptr, err := installlayout.ReadCurrent(installDir); err == nil && ptr.ActiveVersion != "" {
+		if path := filepath.Join(installDir, "versions", ptr.ActiveVersion, windowsUpdateHelperFileName); isRegularWindowsUpdateHelper(path) {
+			return path
+		}
+	}
 	return filepath.Join(installDir, windowsUpdateHelperFileName)
 }
 
-const windowsUpdateHelperFileName = "reasonix-update-helper.exe"
+func isRegularWindowsUpdateHelper(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
+const windowsUpdateHelperFileName = "patty-code-update-helper.exe"
 
 var claimWindowsUpdateHelperExecutionFn = claimVerifiedWindowsUpdateHelperExecution
 
@@ -195,7 +207,7 @@ func prepareVersionedWindowsUpdateHelper(installDir string) (string, [sha256.Siz
 }
 
 func stageWindowsUpdateHelperCopy(dir string, data []byte) (string, error) {
-	staged, err := os.CreateTemp(dir, "reasonix-update-helper-*.exe")
+	staged, err := os.CreateTemp(dir, "patty-code-update-helper-*.exe")
 	if err != nil {
 		return "", err
 	}

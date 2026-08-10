@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/skill"
-	"reasonix/internal/tool"
+	"patty/internal/skill"
+	"patty/internal/tool"
 )
 
 func TestRoutePrefersReviewSkillForReviewRequest(t *testing.T) {
@@ -16,7 +16,7 @@ func TestRoutePrefersReviewSkillForReviewRequest(t *testing.T) {
 		Scope:       skill.ScopeBuiltin,
 	}}, []tool.ContractEntry{{Name: "run_skill"}})
 
-	decision := Route("帮我看看这段代码有没有问题", entries)
+	decision := Route("이 코드에 문제 여부를 확인해 줘", entries)
 	if len(decision.Candidates) == 0 {
 		t.Fatal("Route returned no candidates")
 	}
@@ -33,7 +33,7 @@ func TestRouteRequiresExplicitSkill(t *testing.T) {
 		Scope:       skill.ScopeProject,
 	}}, []tool.ContractEntry{{Name: "run_skill"}})
 
-	decision := Route("请使用 audit skill 检查一下", entries)
+	decision := Route("audit skill 사용해서 확인해 줘", entries)
 	if len(decision.Candidates) == 0 {
 		t.Fatal("Route returned no candidates")
 	}
@@ -92,10 +92,10 @@ func TestRouteKeepsAllStrongCandidatesBeforeSuggestBudget(t *testing.T) {
 
 func TestRouteDeliveryPromotesMatchedBuiltinSkills(t *testing.T) {
 	entries := []Entry{
-		{ID: "skill:explore", Kind: KindSkill, Name: "explore", Source: string(skill.ScopeBuiltin), AutoUse: AutoUseSuggest, Triggers: []string{"调用链"}},
-		{ID: "skill:custom", Kind: KindSkill, Name: "custom", Source: string(skill.ScopeProject), AutoUse: AutoUseSuggest, Triggers: []string{"调用链"}},
+		{ID: "skill:explore", Kind: KindSkill, Name: "explore", Source: string(skill.ScopeBuiltin), AutoUse: AutoUseSuggest, Triggers: []string{"호출 체인"}},
+		{ID: "skill:custom", Kind: KindSkill, Name: "custom", Source: string(skill.ScopeProject), AutoUse: AutoUseSuggest, Triggers: []string{"호출 체인"}},
 	}
-	decision := RouteDelivery("分析调用链", entries)
+	decision := RouteDelivery("호출 체인 분석", entries)
 	if !decision.Delivery || len(decision.Candidates) != 2 {
 		t.Fatalf("delivery decision = %+v", decision)
 	}
@@ -114,7 +114,7 @@ func TestRoutePrefersGitHubMCPForIssueLookup(t *testing.T) {
 		ReadOnly:    true,
 	}})
 
-	decision := Route("查一下 GitHub issue 里有没有相关反馈", entries)
+	decision := Route("GitHub issue에 관련 피드백이 있는지 확인해 줘", entries)
 	if len(decision.Candidates) == 0 {
 		t.Fatal("Route returned no candidates")
 	}

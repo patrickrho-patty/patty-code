@@ -178,7 +178,7 @@ function localized(value, lang) {
 
 function refsSuffix(refs = []) {
   if (!refs.length) return "";
-  return ` (${refs.map((ref) => `[#${ref}](https://github.com/esengine/DeepSeek-Reasonix/pull/${ref})`).join(", ")})`;
+  return ` (${refs.map((ref) => `[#${ref}](https://github.com/pattycorp/DeepSeek-Patty Code/pull/${ref})`).join(", ")})`;
 }
 
 function renderItems(items, lang) {
@@ -197,8 +197,8 @@ export function renderGitHubRelease(release, lang = "zh") {
     `**${isZh ? "发布渠道" : "Release channel"}：${channelLabel} · v${release.version}**`,
     "",
     isZh
-      ? `[English →](https://reasonix.io/changelog/v${release.version}/?lang=en) · [网页版完整更新日志 →](https://reasonix.io/changelog/v${release.version}/)`
-      : `[中文 →](https://reasonix.io/changelog/v${release.version}/?lang=zh) · [Full release notes →](https://reasonix.io/changelog/v${release.version}/?lang=en)`,
+      ? `[English →](https://patty-code.io/changelog/v${release.version}/?lang=en) · [网页版完整更新日志 →](https://patty-code.io/changelog/v${release.version}/)`
+      : `[한국어 →](https://patty-code.io/changelog/v${release.version}/?lang=zh) · [Full release notes →](https://patty-code.io/changelog/v${release.version}/?lang=en)`,
     "",
   ];
 
@@ -213,7 +213,7 @@ export function renderGitHubRelease(release, lang = "zh") {
   lines.push(
     `## ${isZh ? "概览" : "Overview"}`,
     "",
-    `**Reasonix v${release.version} — ${localized(release.title, lang)}**`,
+    `**Patty Code v${release.version} — ${localized(release.title, lang)}**`,
     "",
     localized(release.summary, lang),
     "",

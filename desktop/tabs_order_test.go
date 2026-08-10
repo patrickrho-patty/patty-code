@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
 )
 
 func testAppWithOrderedTabs(t *testing.T, active string, ids ...string) *App {
@@ -928,7 +928,7 @@ func TestBuildTabControllerBlocksWhenSessionLeaseHeld(t *testing.T) {
 	// The surfaced startup error is the sanitized busy message: the raw lease
 	// error would leak the session path and the holder's host-pid-writer id
 	// into the topbar banner.
-	if !strings.Contains(tab.StartupErr, "already open in another Reasonix window") {
+	if !strings.Contains(tab.StartupErr, "already open in another patty window") {
 		t.Fatalf("startup error = %q, want user-facing busy message", tab.StartupErr)
 	}
 	if strings.Contains(tab.StartupErr, agent.ErrSessionLeaseHeld.Error()) ||

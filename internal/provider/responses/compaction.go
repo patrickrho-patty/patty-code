@@ -3,7 +3,7 @@ package responses
 import (
 	"context"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 // CompactionCapabilities reports model-level compaction budgets from the

@@ -12,15 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/config"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/secrets"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/config"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/secrets"
 )
 
-// GatewayConfig 是 BotGateway 的配置。
+// GatewayConfig is the configuration for BotGateway.
 type GatewayConfig struct {
 	Model             string
 	ToolApprovalMode  string
@@ -74,7 +74,7 @@ type GatewayConfig struct {
 	// Desktop, when the gateway is embedded in the desktop app, gives bot
 	// chats a god view over desktop sessions (/desktop commands): global
 	// status, event subscriptions, and remote approvals for any live desktop
-	// session. Nil when the gateway runs standalone (reasonix bot start).
+	// session. Nil when the gateway runs standalone (patcode bot start).
 	Desktop DesktopBridge
 }
 
@@ -113,8 +113,8 @@ type RouteConfig struct {
 }
 
 // AdapterBinding attaches an adapter instance to one saved bot connection.
-// Feishu and Lark share PlatformFeishu, so ID/Domain keep their sessions,
-// replies, and per-connection settings separated at runtime.
+// ID/Domain keep sessions, replies, and per-connection settings separated at
+// runtime.
 type AdapterBinding struct {
 	ID       string
 	Domain   string
@@ -122,7 +122,7 @@ type AdapterBinding struct {
 	Adapter  Adapter
 }
 
-// AllowlistConfig 控制哪些用户/群可以使用 bot。
+// AllowlistConfig controls which users/groups may use the bot.
 type AllowlistConfig struct {
 	Enabled   bool
 	AllowAll  bool
@@ -161,8 +161,8 @@ type AdapterHealthSnapshot struct {
 	Closed        bool      `json:"closed"`
 }
 
-// BotGateway 是 reasonix bot 消息网关，管理 Controller 生命周期、session 并发、
-// 事件渲染和平台适配器。
+// BotGateway is the bot message gateway; it manages Controller lifecycles,
+// session concurrency, event rendering, and platform adapters.
 type BotGateway struct {
 	cfg      GatewayConfig
 	adapters []AdapterBinding
@@ -275,7 +275,7 @@ func (s *sessionEventSink) Emit(e event.Event) {
 	}
 }
 
-// NewGateway 创建一个新的 BotGateway。
+// NewGateway creates a new BotGateway.
 func NewGateway(cfg GatewayConfig, adapters map[Platform]Adapter, logger *slog.Logger) *BotGateway {
 	bindings := make([]AdapterBinding, 0, len(adapters))
 	for plat, adapter := range adapters {
@@ -346,7 +346,20 @@ func normalizeAdapterBindings(adapters []AdapterBinding) []AdapterBinding {
 }
 
 func (gw *BotGateway) buildAllowlist() {
-	for _, plat := range []Platform{PlatformQQ, PlatformFeishu, PlatformWeixin} {
+	plats := map[Platform]bool{}
+	for plat := range gw.cfg.Allowlist.Users {
+		plats[plat] = true
+	}
+	for plat := range gw.cfg.Allowlist.Admins {
+		plats[plat] = true
+	}
+	for plat := range gw.cfg.Allowlist.Approvers {
+		plats[plat] = true
+	}
+	for plat := range gw.cfg.Allowlist.Groups {
+		plats[plat] = true
+	}
+	for plat := range plats {
 		gw.allowlist[plat] = make(map[string]bool)
 		if !gw.cfg.Allowlist.Enabled {
 			continue
@@ -371,12 +384,12 @@ func addAllowlistUsers(dst map[string]bool, users []string) {
 }
 
 func (gw *BotGateway) buildSelfUserIDs() {
-	for _, plat := range []Platform{PlatformQQ, PlatformFeishu, PlatformWeixin} {
+	for plat := range gw.cfg.SelfUserIDs {
 		gw.selfUserIDs[plat] = stringSet(gw.cfg.SelfUserIDs[plat])
 	}
 }
 
-// Start 启动所有已启用的平台适配器并开始处理消息。
+// Start launches every enabled platform adapter and begins processing messages.
 func (gw *BotGateway) Start(ctx context.Context) (err error) {
 	gw.lifecycleMu.Lock()
 	if gw.stopped {
@@ -440,7 +453,7 @@ func (gw *BotGateway) Start(ctx context.Context) (err error) {
 		return err
 	}
 
-	// 合并所有适配器的消息通道
+	// merge the message channels of every adapter
 	for _, binding := range gw.adapters {
 		gw.gatewayWG.Go(func() {
 			gw.dispatchLoop(runCtx, binding)
@@ -582,9 +595,10 @@ func (gw *BotGateway) ensureAdapterHealthLocked(binding AdapterBinding) *Adapter
 	return health
 }
 
-// Stop 停止所有适配器并关闭所有 session。它会等待 dispatch 与 turn goroutine
-// 全部退出，所以绝不能在 GatewayConfig 回调里同步调用（见 OnInbound 的
-// reentrancy contract），否则 Stop 会等待正在运行该回调的 goroutine 自己。
+// Stop halts every adapter and closes every session. It waits for dispatch and
+// turn goroutines to exit, so it must never be called synchronously from a
+// GatewayConfig callback (see the OnInbound reentrancy contract), or Stop will
+// wait on the goroutine running that callback itself.
 func (gw *BotGateway) Stop() {
 	gw.lifecycleMu.Lock()
 	if gw.stopped {
@@ -740,13 +754,13 @@ func (gw *BotGateway) handleMessage(ctx context.Context, binding AdapterBinding,
 	}
 	gw.logger.Info("bot inbound message", logFields...)
 
-	// allowlist 检查
+	// allowlist check
 	if !gw.checkAllowlist(binding.Platform, msg) {
 		gw.logger.Info("user not in allowlist", "platform", binding.Platform, "connection", msg.ConnectionID, "user", hashID(msg.UserID))
 		if gw.offerPairing(ctx, binding.Adapter, msg) {
 			return
 		}
-		_ = gw.sendText(ctx, binding.Adapter, msg, "抱歉，您没有使用此 bot 的权限。")
+		_ = gw.sendText(ctx, binding.Adapter, msg, "죄송합니다. 이 bot을 사용할 권한이 없습니다.")
 		return
 	}
 	if gw.cfg.OnInbound != nil {
@@ -758,19 +772,20 @@ func (gw *BotGateway) handleMessage(ctx context.Context, binding AdapterBinding,
 	} else if normalized, ok := gw.normalizeAskShortcut(key, msg.Text); ok {
 		msg.Text = normalized
 	} else if _, ok := decisionShortcutCommand(msg.Text); ok && gw.sessions.IsActive(key) {
-		_ = gw.sendText(ctx, binding.Adapter, msg, "没有找到可匹配的待处理操作。请重新触发一次操作后回复编号，或按消息中的 ID 使用 /approve、/deny 或 /answer。")
+		_ = gw.sendText(ctx, binding.Adapter, msg, "일치하는 대기 작업을 찾을 수 없습니다. 작업을 다시 실행한 뒤 번호로 답하거나, 메시지의 ID로 /approve, /deny, /answer를 사용하세요.")
 		return
 	}
 
-	// 斜杠命令处理
+	// slash command handling
 	if IsSlashBypass(msg.Text) {
 		gw.logger.Info("bot slash command", logFields...)
 		gw.handleSlashCommand(ctx, binding.Adapter, key, msg)
 		return
 	}
 
-	// 已接管桌面会话的聊天：普通消息直接驱动那个桌面会话，不进 bot 自己的
-	// 会话机器（斜杠命令仍走上面的分支，/desktop release 永远可达）。
+	// A chat that took over a desktop session: plain messages drive that
+	// desktop session directly, bypassing the bot's own session machine (slash
+	// commands still use the branch above; /desktop release stays reachable).
 	if gw.divertToDesktopTakeover(ctx, binding.Adapter, msg) {
 		gw.logger.Info("bot message diverted to desktop takeover", logFields...)
 		return
@@ -787,7 +802,7 @@ func (gw *BotGateway) handleMessage(ctx context.Context, binding AdapterBinding,
 				if cleanup != nil {
 					cleanup()
 				}
-				_ = gw.sendText(ctx, binding.Adapter, msg, "已收到，会并入当前任务。")
+				_ = gw.sendText(ctx, binding.Adapter, msg, "받았습니다. 현재 작업에 병합하겠습니다.")
 				return
 			}
 		case QueueModeInterrupt:
@@ -796,12 +811,12 @@ func (gw *BotGateway) handleMessage(ctx context.Context, binding AdapterBinding,
 			result := gw.sessions.ReplacePending(key, msg)
 			gw.storeReactionCleanup(key, cleanup)
 			gw.logger.Info("bot active turn interrupted; newest message queued", "session", key[:8], "pending", result.Pending)
-			_ = gw.sendText(ctx, binding.Adapter, msg, "已停止当前任务，稍后处理这条新消息。")
+			_ = gw.sendText(ctx, binding.Adapter, msg, "현재 작업을 중지했습니다. 이 새 메시지는 나중에 처리하겠습니다.")
 			return
 		}
 	}
 
-	// session 并发控制
+	// session concurrency control
 	result := gw.sessions.TryAcquireWithQueue(key, msg, QueueOptions{
 		Mode: queueMode,
 		Cap:  gw.cfg.QueueCap,
@@ -812,7 +827,7 @@ func (gw *BotGateway) handleMessage(ctx context.Context, binding AdapterBinding,
 		if cleanup != nil {
 			cleanup()
 		}
-		_ = gw.sendText(ctx, binding.Adapter, msg, "当前会话排队已满，请稍后再发，或使用 /queue interrupt 中断当前任务。")
+		_ = gw.sendText(ctx, binding.Adapter, msg, "현재 세션 큐가 가득 찼습니다. 잠시 후 다시 보내거나 /queue interrupt로 현재 작업을 중단하세요.")
 		return
 	}
 	if result.Queued {
@@ -1074,7 +1089,7 @@ func (gw *BotGateway) requireCommandRole(ctx context.Context, adapter Adapter, m
 	if gw.checkCommandRole(msg.Platform, msg, role) {
 		return true
 	}
-	_ = gw.sendText(ctx, adapter, msg, "抱歉，你没有执行此 bot 命令的权限。")
+	_ = gw.sendText(ctx, adapter, msg, "죄송합니다. 이 bot 명령을 실행할 권한이 없습니다.")
 	return false
 }
 
@@ -1139,11 +1154,11 @@ func (gw *BotGateway) offerPairing(ctx context.Context, adapter Adapter, msg Inb
 		gw.logger.Warn("bot pairing request failed", "platform", msg.Platform, "chat_type", msg.ChatType, "err", err)
 		return false
 	}
-	prefix := "需要先完成配对。"
+	prefix := "먼저 페어링을 완료해야 합니다."
 	if !created {
-		prefix = "你已有待批准的配对请求。"
+		prefix = "승인 대기 중인 페어링 요청이 있습니다."
 	}
-	text := fmt.Sprintf("%s\n配对码: %s\n请在本机运行: reasonix bot pairing approve %s\n此码将在 %s 过期。",
+	text := fmt.Sprintf("%s\n페어링 코드: %s\n로컬에서 실행하세요: patcode bot pairing approve %s\n이 코드는 %s 후에 만료됩니다.",
 		prefix, req.Code, req.Code, req.ExpiresAt.Local().Format("2006-01-02 15:04"))
 	_ = gw.sendText(ctx, adapter, msg, text)
 	return true
@@ -1178,9 +1193,9 @@ func (gw *BotGateway) normalizeApprovalShortcut(key, text string) (string, bool)
 
 func approvalShortcutCommand(text string) (string, bool) {
 	switch strings.ToLower(strings.TrimSpace(text)) {
-	case "1", "y", "yes", "ok", "同意", "批准", "允许", "允许一次":
+	case "1", "y", "yes", "ok", "동의", "승인", "허용", "한 번 허용":
 		return "/approve", true
-	case "2", "0", "n", "no", "deny", "拒绝":
+	case "2", "0", "n", "no", "deny", "거절":
 		return "/deny", true
 	default:
 		return "", false
@@ -1189,9 +1204,9 @@ func approvalShortcutCommand(text string) (string, bool) {
 
 func recoveryShortcutCommand(text string, canGrantTask bool) (string, bool) {
 	switch strings.ToLower(strings.TrimSpace(text)) {
-	case "1", "y", "yes", "ok", "继续", "继续此变更", "continue":
+	case "1", "y", "yes", "ok", "계속", "이 변경 계속", "continue":
 		return "/recovery-continue", true
-	case "2", "a", "同类", "本任务允许", "allow similar":
+	case "2", "a", "유사", "이 작업 허용", "allow similar":
 		if canGrantTask {
 			return "/recovery-continue-task", true
 		}
@@ -1201,7 +1216,7 @@ func recoveryShortcutCommand(text string, canGrantTask bool) (string, bool) {
 			return "/recovery-revise", true
 		}
 		return "", false
-	case "修改", "修改方案", "换个办法", "revise":
+	case "수정", "수정안", "다른 방법", "revise":
 		return "/recovery-revise", true
 	default:
 		return "", false
@@ -1338,7 +1353,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 			cancel()
 		}
 		gw.sessions.ForceRelease(key)
-		_ = gw.sendText(ctx, adapter, msg, "已停止当前任务。")
+		_ = gw.sendText(ctx, adapter, msg, "현재 작업을 중지했습니다.")
 
 	case strings.HasPrefix(msg.Text, "/new") || strings.HasPrefix(msg.Text, "/reset"):
 		var cancel context.CancelFunc
@@ -1362,7 +1377,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 			if err := state.ctrl.NewSession(); err != nil {
 				gw.logger.Warn("new session failed", "err", err)
 				gw.sessions.ForceRelease(key)
-				_ = gw.sendText(ctx, adapter, msg, "新会话创建失败，请稍后重试。")
+				_ = gw.sendText(ctx, adapter, msg, "새 세션을 만들지 못했습니다. 잠시 후 다시 시도하세요.")
 				return
 			}
 			if state.leases != nil {
@@ -1370,7 +1385,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 					gw.logger.Warn("new session lease failed", "err", control.SessionInUseMessage(err))
 					gw.unlinkAndCloseSessionState(key, state)
 					gw.sessions.ForceRelease(key)
-					_ = gw.sendText(ctx, adapter, msg, "新会话创建失败：无法取得写入权限。请关闭其他 Reasonix 窗口或进程后重试。")
+					_ = gw.sendText(ctx, adapter, msg, "새 세션 생성 실패: 쓰기 권한을 얻지 못했습니다. 다른 Patty Code 창이나 프로세스를 닫은 뒤 다시 시도하세요.")
 					return
 				}
 			}
@@ -1390,16 +1405,16 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 			gw.rememberSessionReady(msg, state.ctrl)
 		}
 		gw.sessions.ForceRelease(key)
-		_ = gw.sendText(ctx, adapter, msg, "已开始新会话。")
+		_ = gw.sendText(ctx, adapter, msg, "새 세션을 시작했습니다.")
 
 	case strings.HasPrefix(msg.Text, "/approve"):
 		if !gw.requireCommandRole(ctx, adapter, msg, "approver") {
 			return
 		}
-		// 从消息中解析 approval ID
+		// parse the approval ID from the message
 		parts := strings.Fields(msg.Text)
 		if len(parts) < 2 {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /approve <id>")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /approve <id>")
 			return
 		}
 		gw.mu.Lock()
@@ -1413,9 +1428,9 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 				state.ctrl.Approve(parts[1], true, false, false)
 			}
 			gw.forgetPendingApproval(key, parts[1])
-			_ = gw.sendText(ctx, adapter, msg, "已批准。")
+			_ = gw.sendText(ctx, adapter, msg, "승인했습니다.")
 		} else {
-			_ = gw.sendText(ctx, adapter, msg, "没有找到当前会话中的待审批操作，请重新触发一次操作。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 세션에 대기 중인 승인 작업이 없습니다. 작업을 다시 실행하세요.")
 		}
 
 	case strings.HasPrefix(msg.Text, "/deny"):
@@ -1424,7 +1439,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		}
 		parts := strings.Fields(msg.Text)
 		if len(parts) < 2 {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /deny <id>")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /deny <id>")
 			return
 		}
 		gw.mu.Lock()
@@ -1437,9 +1452,9 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 				state.ctrl.Approve(parts[1], false, false, false)
 			}
 			gw.forgetPendingApproval(key, parts[1])
-			_ = gw.sendText(ctx, adapter, msg, "已拒绝。")
+			_ = gw.sendText(ctx, adapter, msg, "거절했습니다.")
 		} else {
-			_ = gw.sendText(ctx, adapter, msg, "没有找到当前会话中的待审批操作，请重新触发一次操作。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 세션에 대기 중인 승인 작업이 없습니다. 작업을 다시 실행하세요.")
 		}
 
 	case strings.HasPrefix(msg.Text, "/recovery-continue-task"):
@@ -1448,7 +1463,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		}
 		parts := strings.Fields(msg.Text)
 		if len(parts) < 2 {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /recovery-continue-task <id>")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /recovery-continue-task <id>")
 			return
 		}
 		gw.mu.Lock()
@@ -1456,13 +1471,13 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		gw.mu.Unlock()
 		if ok && state.ctrl != nil {
 			if err := state.ctrl.ResolveRecovery(parts[1], agent.RecoveryActionContinueTask, ""); err != nil {
-				_ = gw.sendText(ctx, adapter, msg, "确认失败: "+err.Error())
+				_ = gw.sendText(ctx, adapter, msg, "확인 실패: "+err.Error())
 				return
 			}
 			gw.forgetPendingApproval(key, parts[1])
-			_ = gw.sendText(ctx, adapter, msg, "已继续；本任务内同类操作将自动执行，范围扩大或风险升级仍会确认。")
+			_ = gw.sendText(ctx, adapter, msg, "계속합니다. 이 작업 내의 유사 작업은 자동으로 실행되며, 범위 확대나 위험 상승 시에는 다시 확인합니다.")
 		} else {
-			_ = gw.sendText(ctx, adapter, msg, "没有找到当前会话中的待确认操作。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 세션에 확인 대기 중인 작업이 없습니다.")
 		}
 
 	case strings.HasPrefix(msg.Text, "/recovery-continue"):
@@ -1471,7 +1486,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		}
 		parts := strings.Fields(msg.Text)
 		if len(parts) < 2 {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /recovery-continue <id>")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /recovery-continue <id>")
 			return
 		}
 		gw.mu.Lock()
@@ -1479,13 +1494,13 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		gw.mu.Unlock()
 		if ok && state.ctrl != nil {
 			if err := state.ctrl.ResolveRecovery(parts[1], agent.RecoveryActionContinue, ""); err != nil {
-				_ = gw.sendText(ctx, adapter, msg, "确认失败: "+err.Error())
+				_ = gw.sendText(ctx, adapter, msg, "확인 실패: "+err.Error())
 				return
 			}
 			gw.forgetPendingApproval(key, parts[1])
-			_ = gw.sendText(ctx, adapter, msg, "已继续。")
+			_ = gw.sendText(ctx, adapter, msg, "계속했습니다.")
 		} else {
-			_ = gw.sendText(ctx, adapter, msg, "没有找到当前会话中的待确认操作。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 세션에 확인 대기 중인 작업이 없습니다.")
 		}
 
 	case strings.HasPrefix(msg.Text, "/recovery-revise"):
@@ -1494,7 +1509,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		}
 		parts := strings.Fields(msg.Text)
 		if len(parts) < 2 {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /recovery-revise <id> [补充要求]")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /recovery-revise <id> [보충 요구사항]")
 			return
 		}
 		feedback := strings.TrimSpace(strings.Join(parts[2:], " "))
@@ -1503,13 +1518,13 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		gw.mu.Unlock()
 		if ok && state.ctrl != nil {
 			if err := state.ctrl.ResolveRecovery(parts[1], agent.RecoveryActionRevise, feedback); err != nil {
-				_ = gw.sendText(ctx, adapter, msg, "修改方案失败: "+err.Error())
+				_ = gw.sendText(ctx, adapter, msg, "수정안 적용 실패: "+err.Error())
 				return
 			}
 			gw.forgetPendingApproval(key, parts[1])
-			_ = gw.sendText(ctx, adapter, msg, "已拒绝当前变更并注入修改要求。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 변경을 거절하고 수정 요구사항을 반영했습니다.")
 		} else {
-			_ = gw.sendText(ctx, adapter, msg, "没有找到当前会话中的恢复检查点。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 세션에서 복구 체크포인트를 찾을 수 없습니다.")
 		}
 
 	case strings.HasPrefix(msg.Text, "/recovery-stop"):
@@ -1520,7 +1535,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		}
 		parts := strings.Fields(msg.Text)
 		if len(parts) < 2 {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /recovery-stop <id>")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /recovery-stop <id>")
 			return
 		}
 		gw.mu.Lock()
@@ -1528,19 +1543,19 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		gw.mu.Unlock()
 		if ok && state.ctrl != nil {
 			if err := state.ctrl.ResolveRecovery(parts[1], agent.RecoveryActionRevise, "cancel this proposed action"); err != nil {
-				_ = gw.sendText(ctx, adapter, msg, "取消变更失败: "+err.Error())
+				_ = gw.sendText(ctx, adapter, msg, "변경 취소 실패: "+err.Error())
 				return
 			}
 			gw.forgetPendingApproval(key, parts[1])
-			_ = gw.sendText(ctx, adapter, msg, "已取消当前变更；如需停止整个任务，请使用 /stop。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 변경을 취소했습니다. 전체 작업을 중지하려면 /stop을 사용하세요.")
 		} else {
-			_ = gw.sendText(ctx, adapter, msg, "没有找到当前会话中的恢复检查点。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 세션에서 복구 체크포인트를 찾을 수 없습니다.")
 		}
 
 	case strings.HasPrefix(msg.Text, "/answer"):
 		parts := strings.Fields(msg.Text)
 		if len(parts) < 3 {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /answer <id> <选项或 q1=选项;q2=选项>")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /answer <id> <옵션 또는 q1=옵션;q2=옵션>")
 			return
 		}
 		askID := parts[1]
@@ -1561,12 +1576,12 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		}
 		gw.mu.Unlock()
 		if !ok || state.ctrl == nil {
-			_ = gw.sendText(ctx, adapter, msg, "没有找到当前会话。")
+			_ = gw.sendText(ctx, adapter, msg, "현재 세션을 찾을 수 없습니다.")
 			return
 		}
 		answers := parseAskAnswers(questions, rawAnswer)
 		state.ctrl.AnswerQuestion(askID, answers)
-		_ = gw.sendText(ctx, adapter, msg, "已提交回答。")
+		_ = gw.sendText(ctx, adapter, msg, "답변을 제출했습니다.")
 
 	case strings.HasPrefix(msg.Text, "/yolo") || strings.HasPrefix(msg.Text, "/mode"):
 		if !gw.requireCommandRole(ctx, adapter, msg, "admin") {
@@ -1574,7 +1589,7 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		}
 		mode, statusOnly, ok := parseToolApprovalModeCommand(msg.Text)
 		if !ok {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /yolo on|off|auto|status，或 /mode yolo|ask|auto")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /yolo on|off|auto|status, 또는 /mode yolo|ask|auto")
 			return
 		}
 		if statusOnly {
@@ -1584,14 +1599,14 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		persistErr := gw.setToolApprovalModeForMessage(key, msg, mode)
 		text := toolApprovalModeChangedText(mode)
 		if persistErr != nil {
-			text += "\n当前会话已生效，但保存到设置失败：" + persistErr.Error()
+			text += "\n현재 세션에는 적용되었지만 설정 저장에 실패했습니다: " + persistErr.Error()
 		}
 		_ = gw.sendText(ctx, adapter, msg, text)
 
 	case strings.HasPrefix(msg.Text, "/queue"):
 		mode, clear, statusOnly, ok := parseQueueCommand(msg.Text)
 		if !ok {
-			_ = gw.sendText(ctx, adapter, msg, "用法: /queue steer|followup|collect|interrupt|status|default")
+			_ = gw.sendText(ctx, adapter, msg, "사용법: /queue steer|followup|collect|interrupt|status|default")
 			return
 		}
 		if statusOnly {
@@ -1600,11 +1615,11 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		}
 		if clear {
 			gw.sessions.ClearQueueMode(key)
-			_ = gw.sendText(ctx, adapter, msg, "已恢复默认队列模式："+queueModeLabel(gw.queueMode(key, msg))+"。")
+			_ = gw.sendText(ctx, adapter, msg, "기본 큐 모드로 복원했습니다: "+queueModeLabel(gw.queueMode(key, msg))+".")
 			return
 		}
 		gw.sessions.SetQueueMode(key, mode)
-		_ = gw.sendText(ctx, adapter, msg, "已切换队列模式："+queueModeLabel(mode)+"。")
+		_ = gw.sendText(ctx, adapter, msg, "큐 모드를 전환했습니다: "+queueModeLabel(mode)+".")
 
 	case slashCommandVerb(msg.Text) == "/projects":
 		if !gw.requireCommandRole(ctx, adapter, msg, "admin") {
@@ -1653,27 +1668,27 @@ func (gw *BotGateway) handleSlashCommand(ctx context.Context, adapter Adapter, k
 		sessions := len(gw.controllers)
 		gw.mu.Unlock()
 		mode := gw.currentToolApprovalMode(key, msg)
-		_ = gw.sendText(ctx, adapter, msg, fmt.Sprintf("活跃任务数: %d\n保留会话数: %d\n工具审批模式: %s\n队列模式: %s\n当前会话排队: %d\n连接健康: %s", active, sessions, toolApprovalModeLabel(mode), queueModeLabel(gw.queueMode(key, msg)), pending, gw.adapterHealthSummaryText()))
+		_ = gw.sendText(ctx, adapter, msg, fmt.Sprintf("활성 작업 수: %d\n보존 세션 수: %d\n도구 승인 모드: %s\n큐 모드: %s\n현재 세션 대기: %d\n연결 상태: %s", active, sessions, toolApprovalModeLabel(mode), queueModeLabel(gw.queueMode(key, msg)), pending, gw.adapterHealthSummaryText()))
 
 	case strings.HasPrefix(msg.Text, "/help"):
-		help := "可用命令:\n" +
-			"/stop - 停止当前任务\n" +
-			"/new - 开始新会话\n" +
-			"/reset - 重置会话\n" +
-			"/approve <id> - 批准操作\n" +
-			"/deny <id> - 拒绝操作\n" +
-			"/answer <id> <选项> - 回答 ask 问题\n" +
-			"/yolo on|off|auto|status - 切换或查看工具审批模式\n" +
-			"/mode yolo|ask|auto - 切换工具审批模式\n" +
-			"/queue steer|followup|collect|interrupt|status - 切换或查看队列模式\n" +
-			"/projects [关键词] - 查看可切换项目索引\n" +
-			"/use project <id|名称> - 将当前远端会话切到某个项目\n" +
-			"/sessions search <关键词> - 搜索可 attach 的历史会话\n" +
-			"/attach session <id|关键词> - 绑定当前远端会话到已有历史会话\n" +
-			"/search all <关键词> - 跨已索引项目检索文件内容\n" +
-			"/desktop status|watch|approve|deny|answer - 桌面端上帝视角(需内嵌运行)\n" +
-			"/status - 查看状态\n" +
-			"/help - 显示帮助"
+		help := "사용 가능한 명령:\n" +
+			"/stop - 현재 작업 중지\n" +
+			"/new - 새 세션 시작\n" +
+			"/reset - 세션 초기화\n" +
+			"/approve <id> - 작업 승인\n" +
+			"/deny <id> - 작업 거절\n" +
+			"/answer <id> <옵션> - ask 질문에 답변\n" +
+			"/yolo on|off|auto|status - 도구 승인 모드 전환 또는 확인\n" +
+			"/mode yolo|ask|auto - 도구 승인 모드 전환\n" +
+			"/queue steer|followup|collect|interrupt|status - 큐 모드 전환 또는 확인\n" +
+			"/projects [키워드] - 전환 가능한 프로젝트 인덱스 보기\n" +
+			"/use project <id|이름> - 현재 원격 세션을 프로젝트로 전환\n" +
+			"/sessions search <키워드> - attach할 수 있는 이전 세션 검색\n" +
+			"/attach session <id|키워드> - 현재 원격 세션을 기존 이전 세션에 연결\n" +
+			"/search all <키워드> - 인덱싱된 프로젝트에서 파일 내용 검색\n" +
+			"/desktop status|watch|approve|deny|answer - 데스크톱 전체 보기(내장 실행 필요)\n" +
+			"/status - 상태 보기\n" +
+			"/help - 도움말 표시"
 		_ = gw.sendText(ctx, adapter, msg, help)
 	}
 }
@@ -1689,21 +1704,21 @@ func slashCommandVerb(text string) string {
 func (gw *BotGateway) handleUseProjectCommand(key, text string) string {
 	selector := parseUseProjectSelector(text)
 	if selector == "" {
-		return "用法: /use project <项目 id|名称|路径>，或 /use project default 恢复默认路由。"
+		return "사용법: /use project <프로젝트 id|이름|경로>, 또는 /use project default로 기본 라우팅을 복원하세요."
 	}
 	if isDefaultBotSelector(selector) {
 		if !gw.setSessionRuntimeOverride(key, sessionRuntimeOverride{}, false) {
 			return botRuntimeSwitchBusyText()
 		}
-		return "已恢复当前远端会话的默认项目路由。下一条消息会按 bot 配置重新选择 workspace。"
+		return "현재 원격 세션의 기본 프로젝트 라우팅을 복원했습니다. 다음 메시지는 bot 설정에 따라 workspace를 다시 선택합니다."
 	}
 	projects := gw.buildProjectIndex()
 	project, matches := resolveBotProject(projects, selector)
 	if project.Root == "" {
 		if len(matches) > 0 {
-			return "匹配到多个项目，请使用项目 id：\n" + formatBotProjects(matches, "", botProjectListLimit)
+			return "여러 프로젝트가 일치합니다. 프로젝트 id를 사용하세요:\n" + formatBotProjects(matches, "", botProjectListLimit)
 		}
-		return "没有匹配的项目。可先用 /projects 查看当前索引。"
+		return "일치하는 프로젝트가 없습니다. 먼저 /projects로 현재 인덱스를 확인하세요."
 	}
 	if !gw.setSessionRuntimeOverride(key, sessionRuntimeOverride{
 		channel: ChannelConfig{WorkspaceRoot: project.Root},
@@ -1711,7 +1726,7 @@ func (gw *BotGateway) handleUseProjectCommand(key, text string) string {
 	}, true) {
 		return botRuntimeSwitchBusyText()
 	}
-	return fmt.Sprintf("已将当前远端会话切到项目 %s %s。\n下一条消息将在 %s 中运行。", project.ID, project.Name, displayBotPath(project.Root))
+	return fmt.Sprintf("현재 원격 세션을 프로젝트 %s %s로 전환했습니다.\n다음 메시지는 %s에서 실행됩니다.", project.ID, project.Name, displayBotPath(project.Root))
 }
 
 func parseUseProjectSelector(text string) string {
@@ -1746,22 +1761,22 @@ func parseSessionsQuery(text string) string {
 func (gw *BotGateway) handleAttachSessionCommand(key, text string) string {
 	selector := parseAttachSessionSelector(text)
 	if selector == "" {
-		return "用法: /attach session <会话 id|关键词|path:...>"
+		return "사용법: /attach session <세션 id|키워드|path:...>"
 	}
 	projects := gw.buildProjectIndex()
 	sessions := gw.buildSessionIndex(projects)
 	session, matches := resolveBotSession(sessions, selector)
 	if session.ID == "" {
 		if len(matches) > 0 {
-			return "匹配到多个会话，请使用会话 id：\n" + formatBotSessions(matches, "", botSessionListLimit)
+			return "여러 세션이 일치합니다. 세션 id를 사용하세요:\n" + formatBotSessions(matches, "", botSessionListLimit)
 		}
-		return "没有匹配的会话。可先用 /sessions search <关键词> 查看当前索引。"
+		return "일치하는 세션이 없습니다. 먼저 /sessions search <키워드>로 현재 인덱스를 확인하세요."
 	}
 	if session.SessionPath == "" {
-		return "这个会话没有可恢复的 path: transcript，暂时不能 attach。"
+		return "이 세션에는 복구 가능한 path: transcript가 없어 지금은 attach할 수 없습니다."
 	}
 	if info, err := os.Stat(session.SessionPath); err != nil || info.IsDir() {
-		return "会话文件不可用或已被移动：" + displayBotPath(session.SessionPath)
+		return "세션 파일을 사용할 수 없거나 이동되었습니다: " + displayBotPath(session.SessionPath)
 	}
 	workspaceRoot := session.WorkspaceRoot
 	if workspaceRoot == "" {
@@ -1776,7 +1791,7 @@ func (gw *BotGateway) handleAttachSessionCommand(key, text string) string {
 		return botRuntimeSwitchBusyText()
 	}
 	projectName := firstNonEmptyString(session.ProjectName, botProjectName(workspaceRoot), "global")
-	return fmt.Sprintf("已 attach 到会话 %s（%s）。\n下一条消息会从 %s 继续。", session.ID, projectName, displayBotPath(session.SessionPath))
+	return fmt.Sprintf("세션 %s(%s)에 attach했습니다.\n다음 메시지는 %s에서 이어집니다.", session.ID, projectName, displayBotPath(session.SessionPath))
 }
 
 func parseAttachSessionSelector(text string) string {
@@ -1790,20 +1805,20 @@ func parseAttachSessionSelector(text string) string {
 func (gw *BotGateway) handleProjectSearchCommand(ctx context.Context, text string) string {
 	parts := strings.Fields(text)
 	if len(parts) < 3 || !strings.EqualFold(parts[1], "all") {
-		return "用法: /search all <关键词>"
+		return "사용법: /search all <키워드>"
 	}
 	query := strings.TrimSpace(strings.Join(parts[2:], " "))
 	searchCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 	results, err := searchBotProjects(searchCtx, gw.buildProjectIndex(), query, botSearchListLimit)
 	if err != nil {
-		return "检索失败：" + err.Error()
+		return "검색 실패: " + err.Error()
 	}
 	return formatBotProjectSearchResults(results, botSearchListLimit)
 }
 
 func botRuntimeSwitchBusyText() string {
-	return "当前会话仍有正在运行、等待确认或后台执行的任务。请先完成或停止这些任务，再切换项目或 attach 会话。"
+	return "현재 세션에 실행 중이거나 확인 대기 중이거나 백그라운드에서 실행 중인 작업이 있습니다. 먼저 이러한 작업을 완료하거나 중지한 뒤 프로젝트를 전환하거나 세션에 attach하세요."
 }
 
 func (gw *BotGateway) setSessionRuntimeOverride(key string, override sessionRuntimeOverride, enabled bool) bool {
@@ -1865,7 +1880,7 @@ func (gw *BotGateway) sessionRuntimeOverrideForMessage(msg InboundMessage) (sess
 
 func isDefaultBotSelector(selector string) bool {
 	switch strings.ToLower(strings.TrimSpace(selector)) {
-	case "default", "reset", "inherit", "global", "none", "默认", "重置":
+	case "default", "reset", "inherit", "global", "none", "기본", "초기화":
 		return true
 	default:
 		return false
@@ -1881,9 +1896,9 @@ func parseQueueCommand(text string) (mode string, clear bool, statusOnly bool, o
 		return "", false, true, true
 	}
 	switch strings.ToLower(strings.TrimSpace(parts[1])) {
-	case "status", "state", "show", "状态", "查看":
+	case "status", "state", "show", "상태", "보기":
 		return "", false, true, true
-	case "default", "reset", "inherit", "默认", "重置":
+	case "default", "reset", "inherit", "기본", "초기화":
 		return "", true, false, true
 	default:
 		if normalized := NormalizeOptionalQueueMode(parts[1]); normalized != "" {
@@ -1894,7 +1909,7 @@ func parseQueueCommand(text string) (mode string, clear bool, statusOnly bool, o
 }
 
 func (gw *BotGateway) queueStatusText(key string, msg InboundMessage) string {
-	return fmt.Sprintf("当前队列模式：%s\n当前会话排队: %d\n全局上限: %d\n溢出策略: %s\n用法：/queue steer|followup|collect|interrupt|status|default",
+	return fmt.Sprintf("현재 큐 모드: %s\n현재 세션 대기: %d\n전역 상한: %d\n오버플로 정책: %s\n사용법: /queue steer|followup|collect|interrupt|status|default",
 		queueModeLabel(gw.queueMode(key, msg)),
 		gw.sessions.PendingCount(key),
 		gw.cfg.QueueCap,
@@ -1905,31 +1920,31 @@ func (gw *BotGateway) queueStatusText(key string, msg InboundMessage) string {
 func queueModeLabel(mode string) string {
 	switch NormalizeQueueMode(mode) {
 	case QueueModeFollowup:
-		return "逐条跟进"
+		return "하나씩 후속 처리"
 	case QueueModeCollect:
-		return "合并收集"
+		return "병합 수집"
 	case QueueModeInterrupt:
-		return "打断重跑"
+		return "중단 후 재실행"
 	default:
-		return "即时补充"
+		return "즉시 보충"
 	}
 }
 
 func queueDropLabel(drop string) string {
 	switch NormalizeQueueDrop(drop) {
 	case QueueDropOld:
-		return "丢弃最早消息"
+		return "가장 오래된 메시지 폐기"
 	case QueueDropNew:
-		return "拒绝新消息"
+		return "새 메시지 거절"
 	default:
-		return "压缩摘要"
+		return "압축 요약"
 	}
 }
 
 func (gw *BotGateway) adapterHealthSummaryText() string {
 	snapshots := gw.AdapterHealth()
 	if len(snapshots) == 0 {
-		return "未启动"
+		return "시작되지 않음"
 	}
 	parts := make([]string, 0, len(snapshots))
 	for _, h := range snapshots {
@@ -1970,13 +1985,13 @@ func parseToolApprovalModeCommand(text string) (mode string, statusOnly bool, ok
 
 func parseToolApprovalModeArg(arg string) (mode string, statusOnly bool, ok bool) {
 	switch strings.ToLower(strings.TrimSpace(arg)) {
-	case "status", "state", "show", "状态", "查看":
+	case "status", "state", "show", "상태", "보기":
 		return "", true, true
-	case "on", "enable", "enabled", "true", "1", "yolo", "full", "full-access", "bypass", "开启", "打开":
+	case "on", "enable", "enabled", "true", "1", "yolo", "full", "full-access", "bypass", "켜기", "열기":
 		return control.ToolApprovalYolo, false, true
-	case "off", "disable", "disabled", "false", "0", "ask", "询问", "关闭":
+	case "off", "disable", "disabled", "false", "0", "ask", "묻기", "끄기":
 		return control.ToolApprovalAsk, false, true
-	case "auto", "自动":
+	case "auto", "자동":
 		return control.ToolApprovalAuto, false, true
 	default:
 		return "", false, false
@@ -2041,17 +2056,17 @@ func (gw *BotGateway) currentToolApprovalMode(key string, msg InboundMessage) st
 
 func (gw *BotGateway) toolApprovalModeStatusText(key string, msg InboundMessage) string {
 	mode := gw.currentToolApprovalMode(key, msg)
-	return fmt.Sprintf("当前工具审批模式：%s\n用法：/yolo on|off|auto|status，或 /mode yolo|ask|auto", toolApprovalModeLabel(mode))
+	return fmt.Sprintf("현재 도구 승인 모드: %s\n사용법: /yolo on|off|auto|status, 또는 /mode yolo|ask|auto", toolApprovalModeLabel(mode))
 }
 
 func toolApprovalModeChangedText(mode string) string {
 	switch normalizeBotToolApprovalMode(mode) {
 	case control.ToolApprovalYolo:
-		return "已开启 YOLO：普通工具审批将自动放行；Ask 问题和计划批准仍会等待确认。"
+		return "YOLO를 켰습니다: 일반 도구 승인은 자동으로 처리되며, Ask 질문과 계획 승인은 여전히 확인을 기다립니다."
 	case control.ToolApprovalAuto:
-		return "已切换为自动模式：策略允许的工具会自动放行，仍保留需要询问或拒绝的规则。"
+		return "자동 모드로 전환했습니다: 정책이 허용하는 도구는 자동으로 처리되며, 묻기나 거절이 필요한 규칙은 유지됩니다."
 	default:
-		return "已切回询问模式：工具执行前会请求确认。"
+		return "묻기 모드로 복귀했습니다: 도구 실행 전에 확인을 요청합니다."
 	}
 }
 
@@ -2060,16 +2075,16 @@ func toolApprovalModeLabel(mode string) string {
 	case control.ToolApprovalYolo:
 		return "YOLO"
 	case control.ToolApprovalAuto:
-		return "自动"
+		return "자동"
 	default:
-		return "询问"
+		return "묻기"
 	}
 }
 
 func (gw *BotGateway) runTurn(ctx context.Context, adapter Adapter, key string, msg InboundMessage, cleanup func()) {
 	gw.logger.Info("bot turn started", "platform", msg.Platform, "chat_type", msg.ChatType, "chat", hashID(msg.ChatID), "session", key[:8])
 	defer func() {
-		// 检查是否有等待队列中的消息
+		// check for messages waiting in the queue
 		next := gw.sessions.Release(key)
 		if next != nil {
 			if cleanup != nil {
@@ -2083,15 +2098,16 @@ func (gw *BotGateway) runTurn(ctx context.Context, adapter Adapter, key string, 
 		gw.flushReactionCleanups(key, cleanup)
 	}()
 
-	// 获取或创建 Controller
+	// get or create the Controller
 	state := gw.getOrCreateSession(ctx, key, msg)
 	if state == nil || state.ctrl == nil {
-		_ = gw.sendText(ctx, adapter, msg, "内部错误：无法创建会话。")
+		_ = gw.sendText(ctx, adapter, msg, "내부 오류: 세션을 만들 수 없습니다.")
 		return
 	}
 	gw.rememberSessionReady(msg, state.ctrl)
 
-	// 构建输入文本：群聊中在消息前加上发送者名，并把 IM 媒体保存为 @附件引用。
+	// Build the input text: prefix the sender name in group chats and save IM
+	// media as @attachment references.
 	input := gw.inputTextWithMedia(ctx, adapter, msg, state)
 	if msg.ChatType == ChatGroup {
 		userName := strings.TrimSpace(msg.UserName)
@@ -2103,10 +2119,10 @@ func (gw *BotGateway) runTurn(ctx context.Context, adapter Adapter, key string, 
 		input = fmt.Sprintf("[%s] %s", userName, input)
 	}
 
-	// 发送"正在输入"状态
+	// send the "typing" status
 	_ = adapter.SendTyping(ctx, msg.ChatID)
 
-	// 创建事件渲染 sink
+	// create the event rendering sink
 	sink := newRenderSink(
 		ctx,
 		adapter,
@@ -2142,7 +2158,7 @@ func (gw *BotGateway) runTurn(ctx context.Context, adapter Adapter, key string, 
 	state.sink.setTarget(sink)
 	defer state.sink.setTarget(nil)
 
-	// 创建带取消的 context
+	// create a cancellable context
 	turnCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -2160,7 +2176,7 @@ func (gw *BotGateway) runTurn(ctx context.Context, adapter Adapter, key string, 
 		cancel()
 	}
 
-	// 运行一轮对话
+	// run one conversation turn
 	err := state.ctrl.RunTurn(turnCtx, input)
 	sink.Emit(event.Event{Kind: event.TurnDone, Err: err})
 	if err != nil {
@@ -2188,7 +2204,7 @@ func (gw *BotGateway) inputTextWithMedia(ctx context.Context, adapter Adapter, m
 	errs = append(errs, itemErrs...)
 	if len(errs) > 0 {
 		gw.logger.Warn("bot media attachment failed", "platform", msg.Platform, "chat", hashID(msg.ChatID), "errors", len(errs))
-		_ = gw.sendText(ctx, adapter, msg, fmt.Sprintf("有 %d 个附件保存失败；我会先处理可用内容。", len(errs)))
+		_ = gw.sendText(ctx, adapter, msg, fmt.Sprintf("첨부 파일 %d개 저장에 실패했습니다. 사용 가능한 내용부터 처리하겠습니다.", len(errs)))
 	}
 	return appendMediaRefs(appendMediaFallbacks(input, fallbacks), refs)
 }

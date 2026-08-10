@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 )
 
-// hashID 对用户/群聊 ID 做脱敏哈希，用于日志和状态展示。
+// [hashID / ID ，。]
 func hashID(id string) string {
 	if id == "" {
 		return ""

@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/event"
-	"reasonix/internal/permission"
-	"reasonix/internal/provider"
-	"reasonix/internal/recovery"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/event"
+	"patty/internal/permission"
+	"patty/internal/provider"
+	"patty/internal/recovery"
+	"patty/internal/tool"
 )
 
 // End-to-end: scripted provider fails verification, runs read-only diagnosis,

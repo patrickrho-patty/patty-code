@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/boundedllm"
-	"reasonix/internal/event"
-	"reasonix/internal/nilutil"
-	"reasonix/internal/provider"
+	"patty/internal/boundedllm"
+	"patty/internal/event"
+	"patty/internal/nilutil"
+	"patty/internal/provider"
 )
 
 // PolicyPrompt is the fixed Goal evaluator system prompt. After this ships it

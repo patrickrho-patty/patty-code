@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"reasonix/internal/pluginpkg"
+	"patty/internal/pluginpkg"
 )
 
 func completePluginHookExecutionConfig(h pluginpkg.Hook, root, goos string, mode ExecutionMode) HookConfig {

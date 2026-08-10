@@ -25,7 +25,7 @@ test("GitHub rendering keeps product sections and source PR links", async () => 
   assert.match(markdown, /## 风险提示/);
   assert.match(markdown, /## 致谢/);
   assert.match(markdown, /\/pull\/6460/);
-  assert.match(markdown, /reasonix\.io\/changelog\/v1\.17\.13/);
+  assert.match(markdown, /patty.io\/changelog\/v1\.17\.13/);
 });
 
 test("validation rejects bilingual drift", () => {
@@ -76,9 +76,9 @@ test("managed Preview records bind every surface to one exact ordinal", () => {
     risks: [],
     contributors: [],
     links: {
-      github: "https://github.com/esengine/DeepSeek-Reasonix/releases/tag/v1.19.0-preview.3",
-      compare: "https://github.com/esengine/DeepSeek-Reasonix/compare/v1.19.0-preview.2...v1.19.0-preview.3",
-      download: "https://reasonix.io/?download=desktop&channel=preview#start",
+      github: "https://github.com/pattycorp/DeepSeek-Patty Code/releases/tag/v1.19.0-preview.3",
+      compare: "https://github.com/pattycorp/DeepSeek-Patty Code/compare/v1.19.0-preview.2...v1.19.0-preview.3",
+      download: "https://patty-code.io/?download=desktop&channel=preview#start",
     },
   };
 
@@ -109,7 +109,7 @@ test("publication marker is bound to reviewed version, channel, SHA, and builds"
     channel: "preview",
     candidateSha: release.candidateSha,
     publishedAt: "2026-07-31T00:00:00.000Z",
-    releaseNotesUrl: "https://reasonix.io/changelog/v1.19.0-preview.3/",
+    releaseNotesUrl: "https://patty-code.io/changelog/v1.19.0-preview.3/",
     builds: release.builds,
   };
 

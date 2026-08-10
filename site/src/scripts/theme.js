@@ -1,8 +1,8 @@
-// Reasonix — shared three-state theme switch (system / light / dark).
+// Patty Code — shared three-state theme switch (system / light / dark).
 // The pre-paint inline script in each layout sets documentElement.dataset.theme
 // before first paint; this module wires the toggle buttons and keeps the
 // resolved theme in sync with OS changes while the preference is "system".
-const THEME_KEY = "reasonix-theme";
+const THEME_KEY = "patty-theme";
 const META_LIGHT = "#ffffff";
 const META_DARK = "#1f232b";
 

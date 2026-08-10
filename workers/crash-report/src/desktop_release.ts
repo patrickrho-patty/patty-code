@@ -1,19 +1,19 @@
-const R2_BASE = "https://dl.reasonix.io";
-const GITHUB_RELEASES_API = "https://api.github.com/repos/esengine/DeepSeek-Reasonix/releases?per_page=100";
-const GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/esengine/DeepSeek-Reasonix/releases/latest";
+const R2_BASE = "https://dl.patty.io";
+const GITHUB_RELEASES_API = "https://api.github.com/repos/patty-io/patty-code/releases?per_page=100";
+const GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/patty-io/patty-code/releases/latest";
 const RELEASE_METHODS = "GET, HEAD, OPTIONS";
-const DESKTOP_DOWNLOAD_PAGE = "https://reasonix.io/?download=desktop#start";
+const DESKTOP_DOWNLOAD_PAGE = "https://patty-code.io/?download=desktop#start";
 const DESKTOP_UPDATER_ASSETS = [
-  ["platforms", "darwin-arm64", "Reasonix-darwin-arm64.zip"],
-  ["platforms", "darwin-amd64", "Reasonix-darwin-amd64.zip"],
-  ["platforms", "windows-amd64", "Reasonix-windows-amd64-installer.exe"],
-  ["platforms", "windows-arm64", "Reasonix-windows-arm64-installer.exe"],
-  ["platforms", "linux-amd64", "Reasonix-linux-amd64.tar.gz"],
-  ["native_packages", "linux-amd64", "Reasonix-linux-amd64.deb"],
+  ["platforms", "darwin-arm64", "patty-darwin-arm64.zip"],
+  ["platforms", "darwin-amd64", "Patty Code-darwin-amd64.zip"],
+  ["platforms", "windows-amd64", "patty-windows-amd64-installer.exe"],
+  ["platforms", "windows-arm64", "patty-windows-arm64-installer.exe"],
+  ["platforms", "linux-amd64", "patty-linux-amd64.tar.gz"],
+  ["native_packages", "linux-amd64", "patty-linux-amd64.deb"],
 ] as const;
 const DESKTOP_DOWNLOAD_ASSETS = [
-  ["downloads", "Reasonix-darwin-universal.dmg", "Reasonix-darwin-universal.dmg"],
-  ["downloads", "Reasonix-windows-amd64.zip", "Reasonix-windows-amd64.zip"],
+  ["downloads", "patty-darwin-universal.dmg", "patty-darwin-universal.dmg"],
+  ["downloads", "patty-windows-amd64.zip", "patty-windows-amd64.zip"],
 ] as const;
 const SHA256 = /^[0-9a-f]{64}$/;
 const MAX_RELEASE_ASSET_SIZE = 1 << 30;
@@ -36,12 +36,12 @@ type GitHubRelease = {
 };
 
 const CLI_ASSETS = [
-  "reasonix-darwin-amd64.tar.gz",
-  "reasonix-darwin-arm64.tar.gz",
-  "reasonix-linux-amd64.tar.gz",
-  "reasonix-linux-arm64.tar.gz",
-  "reasonix-windows-amd64.zip",
-  "reasonix-windows-arm64.zip",
+  "patty-code-darwin-amd64.tar.gz",
+  "patty-code-darwin-arm64.tar.gz",
+  "patty-code-linux-amd64.tar.gz",
+  "patty-code-linux-arm64.tar.gz",
+  "patty-code-windows-amd64.zip",
+  "patty-code-windows-arm64.zip",
   "SHA256SUMS",
 ] as const;
 const CLI_ASSET_NAMES = new Set<string>(CLI_ASSETS);
@@ -59,7 +59,7 @@ function gatewayHeaders(source: string): Record<string, string> {
     "cache-control": "public, max-age=300, stale-if-error=86400",
     "access-control-allow-origin": "*",
     "access-control-allow-methods": RELEASE_METHODS,
-    "x-reasonix-release-source": source,
+    "x-patty-code-release-source": source,
   };
 }
 
@@ -115,7 +115,7 @@ function expectedCLIAssetURL(value: unknown, tag: string, name: string): string 
   const safe = safeHTTPSURL(value);
   if (!safe) return "";
   const url = new URL(safe);
-  const path = `/esengine/DeepSeek-Reasonix/releases/download/${tag}/${name}`;
+  const path = `/patty-io/patty-code/releases/download/${tag}/${name}`;
   return url.hostname.toLowerCase() === "github.com" &&
     !url.port &&
     url.pathname === path &&
@@ -172,7 +172,7 @@ function normalizeCLIRelease(
   if (CLI_ASSETS.some((name) => !assetsByName.has(name))) return null;
 
   const tag = String(release.tag_name);
-  const releaseURL = `https://github.com/esengine/DeepSeek-Reasonix/releases/tag/${tag}`;
+  const releaseURL = `https://github.com/patty-io/patty-code/releases/tag/${tag}`;
   return {
     order,
     release: {
@@ -196,7 +196,7 @@ function selectCLIRelease(releases: GitHubRelease[], channel: PublicReleaseChann
 async function fetchCLIRelease(url: string, channel: PublicReleaseChannel, source: string): Promise<Response | null> {
   try {
     const response = await fetch(url, {
-      headers: { accept: "application/json", "user-agent": "reasonix-release-gateway" },
+      headers: { accept: "application/json", "user-agent": "patty-code-release-gateway" },
     });
     if (!response.ok) return null;
     const release = normalizeCLIRelease((await response.json()) as GitHubRelease, channel)?.release;
@@ -209,7 +209,7 @@ async function fetchCLIRelease(url: string, channel: PublicReleaseChannel, sourc
 async function fetchLatestCLIReleaseFromGitHub(channel: PublicReleaseChannel): Promise<Response | null> {
   try {
     const response = await fetch(GITHUB_RELEASES_API, {
-      headers: { accept: "application/vnd.github+json", "user-agent": "reasonix-release-gateway" },
+      headers: { accept: "application/vnd.github+json", "user-agent": "patty-code-release-gateway" },
     });
     if (!response.ok) return null;
     const release = selectCLIRelease((await response.json()) as GitHubRelease[], channel);
@@ -236,7 +236,7 @@ function desktopAssetBases(
   if (channel === "preview") {
     return allowLegacyPreview ? [r2, `${R2_BASE}/desktop-preview/`] : [r2];
   }
-  return [r2, `https://github.com/esengine/DeepSeek-Reasonix/releases/download/desktop-${version}/`];
+  return [r2, `https://github.com/patty-io/patty-code/releases/download/desktop-${version}/`];
 }
 
 function normalizeDesktopManifest(
@@ -321,7 +321,7 @@ async function fetchManifestText(
     const res = await fetch(safeURL, {
       headers: {
         accept: "application/json",
-        "user-agent": "reasonix-release-gateway",
+        "user-agent": "patty-code-release-gateway",
       },
     });
     if (!res.ok) return null;
@@ -338,7 +338,7 @@ async function fetchLatestDesktopManifestFromGitHub(): Promise<Response | null> 
     const latest = await fetch(GITHUB_LATEST_RELEASE_API, {
       headers: {
         accept: "application/vnd.github+json",
-        "user-agent": "reasonix-release-gateway",
+        "user-agent": "patty-code-release-gateway",
       },
     });
     if (!latest.ok) return null;
@@ -349,7 +349,7 @@ async function fetchLatestDesktopManifestFromGitHub(): Promise<Response | null> 
     if (!match || release.draft !== false || release.prerelease !== false) return null;
 
     const expectedManifestURL =
-      `https://github.com/esengine/DeepSeek-Reasonix/releases/download/${tag}/latest.json`;
+      `https://github.com/patty-io/patty-code/releases/download/${tag}/latest.json`;
     const manifest = Array.isArray(release.assets)
       ? release.assets.find((asset) =>
           asset?.name === "latest.json" &&
@@ -397,7 +397,7 @@ export async function handleCLIRelease(channel: PublicReleaseChannel): Promise<R
     caches?: CacheStorage & { default?: Cache };
   }).caches;
   const cache = cacheStorage?.default;
-  const cacheKey = new Request(`https://crash.reasonix.io/v1/cli/releases/${channel}/latest.json`);
+  const cacheKey = new Request(`https://crash.patty.io/v1/cli/releases/${channel}/latest.json`);
   const cached = await cache?.match(cacheKey);
   if (cached) return cached;
 

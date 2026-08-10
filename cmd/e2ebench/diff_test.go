@@ -18,20 +18,20 @@ import (
 )
 
 func TestEnv(t *testing.T) {
-	if got := os.Getenv("REASONIX_E2E_ENV"); got != "ok" {
-		t.Fatalf("REASONIX_E2E_ENV = %q", got)
+	if got := os.Getenv("PATTY_E2E_ENV"); got != "ok" {
+		t.Fatalf("PATTY_E2E_ENV = %q", got)
 	}
 }
 `)
 
-	ok, out := runTests(repo, "GOWORK=off REASONIX_E2E_ENV=ok go test", []string{"./..."})
+	ok, out := runTests(repo, "GOWORK=off PATTY_E2E_ENV=ok go test", []string{"./..."})
 	if !ok {
 		t.Fatalf("runTests failed:\n%s", out)
 	}
 }
 
 func TestRunTestsRejectsDynamicEnvAssignment(t *testing.T) {
-	ok, out := runTests(t.TempDir(), "REASONIX_E2E_ENV=$(echo ok) go test", []string{"./..."})
+	ok, out := runTests(t.TempDir(), "PATTY_E2E_ENV=$(echo ok) go test", []string{"./..."})
 	if ok {
 		t.Fatal("runTests accepted dynamic env assignment")
 	}

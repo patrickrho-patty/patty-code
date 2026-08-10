@@ -34,8 +34,8 @@ type ImSourceMessage = {
   text: string;
 };
 
-const IM_SOURCE_START = "[[reasonix-im]]";
-const IM_SOURCE_END = "[[/reasonix-im]]";
+const IM_SOURCE_START = "[[patty-im]]";
+const IM_SOURCE_END = "[[/patty-im]]";
 
 function parseImSourceMessage(text: string): ImSourceMessage | null {
   // Display-only metadata: keep IM sender/chat details out of model prompts.
@@ -61,12 +61,11 @@ function parseImSourceMessage(text: string): ImSourceMessage | null {
   };
 }
 
-function imSourceLabel(source: ImSourceMessage, t: ReturnType<typeof useT>): string {
+function imSourceLabel(source: ImSourceMessage): string {
   if (source.label.trim()) return source.label.trim();
   const provider = source.provider.trim().toLowerCase();
   if (provider === "lark") return "Lark";
-  if (provider === "weixin" || provider === "wechat") return t("settings.botWeixin");
-  return t("settings.botFeishu");
+  return source.provider.trim() || "IM";
 }
 
 function attachmentIcon(kind: "image" | "file" | "folder") {
@@ -92,7 +91,7 @@ type PastedBlockInfo = {
   content: string;
 };
 
-const PASTE_LABEL_RE = /\[(?:已粘贴文本|已貼上文字|Pasted text) #\d+ · \d+ (?:行|lines)\]/g;
+const PASTE_LABEL_RE = /\[Pasted text #\d+ · \d+ lines\]/g;
 
 export function parsePastedBlocks(text: string, submitText?: string): PastedBlockInfo[] {
   const labels = text.match(PASTE_LABEL_RE);
@@ -244,7 +243,7 @@ export function UserMessage({
   const invocationSegments = imSource ? [] : invocationSegmentsFromMessage(displayText, submitText, invocationMetadata);
   const hasInvocationSegments = invocationSegments.some((segment) => segment.type === "invocation");
   const orderedAttachments = sortDisplayAttachments(attachments);
-  const sourceLabel = imSource ? imSourceLabel(imSource, t) : "";
+  const sourceLabel = imSource ? imSourceLabel(imSource) : "";
   const sentAt = createdAt === undefined ? null : messageDate(createdAt);
   const canEdit = turn !== undefined && onEdit !== undefined && !editDisabled;
   const [editing, setEditing] = useState(false);

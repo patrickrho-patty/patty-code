@@ -164,7 +164,7 @@ export function serializeInvocationSubmit(text: string, invocations: ComposerInv
 }
 
 function invocationBody(submitText: string): string {
-  const sessionQuestionMarker = "当前用户问题：\n";
+  const sessionQuestionMarker = "Current user question:\n";
   const markerIndex = submitText.lastIndexOf(sessionQuestionMarker);
   return (markerIndex >= 0 ? submitText.slice(markerIndex + sessionQuestionMarker.length) : submitText).trim();
 }

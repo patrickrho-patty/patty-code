@@ -19,7 +19,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 
-	"reasonix/internal/remote/sshtest"
+	"patty/internal/remote/sshtest"
 )
 
 func TestNewSSHClientPrefersRecordedHostKeyAlgorithm(t *testing.T) {

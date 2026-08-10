@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"reasonix/internal/extension/protocol"
-	"reasonix/internal/extension/providerconv"
-	"reasonix/internal/provider"
+	"patty/internal/extension/protocol"
+	"patty/internal/extension/providerconv"
+	"patty/internal/provider"
 )
 
 // Provider is the host-side handle for one extension-hosted provider ref.

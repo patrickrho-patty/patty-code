@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/event"
-	"reasonix/internal/recovery"
+	"patty/internal/config"
+	"patty/internal/event"
+	"patty/internal/recovery"
 )
 
 // metrics_app.go is the aggregate desktop-metrics flush: anonymous (signal,
@@ -26,7 +26,7 @@ import (
 // or base URLs; custom provider/model identifiers are normalized into bounded
 // buckets. Gated on config desktop.metrics (default on), dev-skipped.
 
-var metricsEndpoint = "https://crash.reasonix.io/v1/metrics"
+var metricsEndpoint = "https://crash.patty.io/v1/metrics"
 
 const metricsPendingFile = "metrics-pending.json"
 const metricsPostTimeout = 8 * time.Second
@@ -254,9 +254,6 @@ func (m *metricsAggregator) observeBotSettingsSnapshot(c *config.Config) {
 	m.inc("settings_bot_tool_approval", knownBucketDefault(bot.ToolApprovalMode, "ask", "ask", "auto", "yolo"))
 	m.inc("settings_bot_allowlist", boolBucket(bot.Allowlist.Enabled))
 	m.inc("settings_bot_allow_all", boolBucket(bot.Allowlist.AllowAll))
-	m.inc("settings_bot_qq_enabled", boolBucket(bot.QQ.Enabled))
-	m.inc("settings_bot_feishu_enabled", boolBucket(bot.Feishu.Enabled))
-	m.inc("settings_bot_weixin_enabled", boolBucket(bot.Weixin.Enabled))
 	m.inc("settings_bot_connection_count", countBucket(len(bot.Connections)))
 	for _, conn := range bot.Connections {
 		provider := knownBucket(conn.Provider, "qq", "feishu", "weixin")

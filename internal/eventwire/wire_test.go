@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
 func TestToWireRetryingJSON(t *testing.T) {
@@ -216,7 +216,7 @@ func TestToWireMessageMemoryCitations(t *testing.T) {
 			Source:    "MEMORY.md",
 			LineStart: 116,
 			LineEnd:   123,
-			Note:      "reasonix workflow",
+			Note:      "patty workflow",
 			Kind:      "memory_reference",
 		}},
 	})
@@ -224,7 +224,7 @@ func TestToWireMessageMemoryCitations(t *testing.T) {
 		t.Fatalf("memory citations = %+v, want one citation", w.MemoryCitations)
 	}
 	got := w.MemoryCitations[0]
-	if got.Source != "MEMORY.md" || got.LineStart != 116 || got.LineEnd != 123 || got.Note != "reasonix workflow" {
+	if got.Source != "MEMORY.md" || got.LineStart != 116 || got.LineEnd != 123 || got.Note != "patty workflow" {
 		t.Fatalf("citation = %+v, want source/line/note preserved", got)
 	}
 	b, err := json.Marshal(w)

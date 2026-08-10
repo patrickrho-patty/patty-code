@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/sandbox"
-	"reasonix/internal/secrets"
+	"patty/internal/sandbox"
+	"patty/internal/secrets"
 )
 
 // fakeOverlay serves a fixed path→content map and records writes.

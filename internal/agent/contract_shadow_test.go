@@ -3,7 +3,7 @@ package agent
 import (
 	"testing"
 
-	"reasonix/internal/evidence"
+	"patty/internal/evidence"
 )
 
 func TestBuildShadowContractReplaysTheTurn(t *testing.T) {

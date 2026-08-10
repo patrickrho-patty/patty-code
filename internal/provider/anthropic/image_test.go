@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func TestBuildRequestEmbedsImageBlockForVisionModel(t *testing.T) {

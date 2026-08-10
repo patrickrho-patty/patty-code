@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
-	"reasonix/internal/tool/builtin"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
+	"patty/internal/tool/builtin"
 )
 
 func TestOrdinaryModeBlocksMixedMutationAndVerification(t *testing.T) {

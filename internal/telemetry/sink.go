@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/evidence"
-	"reasonix/internal/netclient"
-	"reasonix/internal/provider"
-	"reasonix/internal/recovery"
+	"patty/internal/event"
+	"patty/internal/evidence"
+	"patty/internal/netclient"
+	"patty/internal/provider"
+	"patty/internal/recovery"
 )
 
 type Options struct {
@@ -243,8 +243,8 @@ func permissionBucket(value string) string {
 
 func languageBucket(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
-	if strings.HasPrefix(value, "zh") {
-		return "zh"
+	if strings.HasPrefix(value, "ko-KR") {
+		return "ko-KR"
 	}
 	if strings.HasPrefix(value, "en") {
 		return "en"

@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"reasonix/internal/testenv"
+	"patty/internal/testenv"
 )
 
 func TestMain(m *testing.M) {
-	if os.Getenv("REASONIX_CONFIG_LOCK_HELPER") == "1" {
+	if os.Getenv("PATTY_CONFIG_LOCK_HELPER") == "1" {
 		os.Exit(m.Run())
 	}
 	// RunWithIsolatedUserState redirects every path-shaped location, but the OS

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/sessiontemp"
+	"patty/internal/sessiontemp"
 )
 
 func TestWithSubagentSessionTempIsIndependent(t *testing.T) {

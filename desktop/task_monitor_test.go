@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/control"
-	"reasonix/internal/taskmonitor"
+	"patty/internal/agent"
+	"patty/internal/control"
+	"patty/internal/taskmonitor"
 )
 
 type taskKillController struct {

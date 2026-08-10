@@ -11,8 +11,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"reasonix/internal/sandbox"
-	"reasonix/internal/tool"
+	"patty/internal/sandbox"
+	"patty/internal/tool"
 )
 
 func powershellPath(t *testing.T) string {
@@ -37,12 +37,12 @@ func TestBashPowerShellRunsNativeCommand(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("powershell e2e is windows-only")
 	}
-	out, err := runPS(t, "Write-Output reasonix-ok")
+	out, err := runPS(t, "Write-Output patty-ok")
 	if err != nil {
 		t.Fatalf("powershell command failed: %v (out=%q)", err, out)
 	}
-	if !strings.Contains(out, "reasonix-ok") {
-		t.Fatalf("output = %q, want it to contain reasonix-ok", out)
+	if !strings.Contains(out, "patty-ok") {
+		t.Fatalf("output = %q, want it to contain patty-ok", out)
 	}
 }
 
@@ -96,25 +96,20 @@ func TestBashPowerShellOutputIsUTF8(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("powershell e2e is windows-only")
 	}
-	out, err := runPS(t, "Write-Output 'AB-中文-CD'")
+	out, err := runPS(t, "Write-Output 'AB-機能整理檢討-CD'")
 	if err != nil {
 		t.Fatalf("command failed: %v (out=%q)", err, out)
 	}
-	if !strings.Contains(out, "中文") {
-		t.Fatalf("non-ASCII output mojibake — got %q (want it to contain 中文)", out)
+	if !strings.Contains(out, "機能整理檢討") {
+		t.Fatalf("non-ASCII output mojibake — got %q (want it to contain 機能整理檢討)", out)
 	}
 }
 
-// TestBashPowerShellExecuteDetailedContract is the Windows CI contract for the
-// shell execution metadata path: Chinese workspace path, UTF-8 output, exit
-// code preservation (including 0), and PowerShell 5.1 vs pwsh identity.
 func TestBashPowerShellExecuteDetailedContract(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("powershell e2e is windows-only; Linux/macOS CI covers bash path")
 	}
-	// Windows PowerShell 5.1 is the compatibility-critical path: unlike pwsh,
 	// it does not parse &&/|| and commonly runs under a legacy console code page.
-	// Require it on native Windows instead of silently selecting pwsh first.
 	ps51Path, err := exec.LookPath("powershell")
 	if err != nil {
 		t.Fatalf("Windows PowerShell 5.1 is required for this contract: %v", err)
@@ -123,8 +118,6 @@ func TestBashPowerShellExecuteDetailedContract(t *testing.T) {
 		name string
 		path string
 	}{{name: "powershell-5.1", path: ps51Path}}
-	// PowerShell 7 is optional for ordinary Windows installations, but the
-	// GitHub Windows runner provides it; exercise it whenever available.
 	if pwshPath, lookupErr := exec.LookPath("pwsh"); lookupErr == nil {
 		paths = append(paths, struct {
 			name string
@@ -140,21 +133,20 @@ func TestBashPowerShellExecuteDetailedContract(t *testing.T) {
 
 func assertPowerShellDetailedContract(t *testing.T, psPath string) {
 	t.Helper()
-	// Chinese directory name — native Windows CI must keep path + UTF-8 intact.
-	work := filepath.Join(t.TempDir(), "中文目录-reasonix")
+	// Korean directory name — native Windows CI must keep path + UTF-8 intact.
+	work := filepath.Join(t.TempDir(), "한글 디렉터리-patty")
 	if err := os.MkdirAll(work, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	marker := filepath.Join(work, "标记.txt")
-	if err := os.WriteFile(marker, []byte("内容-utf8"), 0o644); err != nil {
+	marker := filepath.Join(work, "마커.txt")
+	if err := os.WriteFile(marker, []byte("내용-utf8"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	b := bash{shell: sandbox.Shell{Kind: sandbox.ShellPowerShell, Path: psPath}, workDir: work}
 
-	// Success: exit 0 must be retained (not omitted) and UTF-8 content preserved.
 	argsOK, _ := json.Marshal(map[string]string{
-		"command": "Get-Content -LiteralPath .\\标记.txt -Encoding utf8; Write-Output '中文-ok'",
+		"command": "Get-Content -LiteralPath .\\마커.txt -Encoding utf8; Write-Output '한글-ok'",
 	})
 	res, err := b.ExecuteDetailed(context.Background(), argsOK)
 	if err != nil {
@@ -169,8 +161,8 @@ func assertPowerShellDetailedContract(t *testing.T, psPath string) {
 	if res.Execution.ExitCode == nil || *res.Execution.ExitCode != 0 {
 		t.Fatalf("exitCode=%v want 0", res.Execution.ExitCode)
 	}
-	if !strings.Contains(res.Output, "内容-utf8") || !strings.Contains(res.Output, "中文-ok") {
-		t.Fatalf("UTF-8/Chinese lost in combined output: %q", res.Output)
+	if !strings.Contains(res.Output, "내용-utf8") || !strings.Contains(res.Output, "한글-ok") {
+		t.Fatalf("UTF-8/Korean lost in combined output: %q", res.Output)
 	}
 	if !utf8.ValidString(res.Output) {
 		t.Fatal("combined output is not valid UTF-8")
@@ -194,7 +186,6 @@ func assertPowerShellDetailedContract(t *testing.T, psPath string) {
 		}
 	}
 
-	// Non-zero exit: preserve real code and execution failure phase.
 	argsFail, _ := json.Marshal(map[string]string{"command": "exit 17"})
 	fail, err := b.ExecuteDetailed(context.Background(), argsFail)
 	if err == nil {
@@ -209,7 +200,6 @@ func assertPowerShellDetailedContract(t *testing.T, psPath string) {
 }
 
 func TestBashPowerShell51PreflightRejectsAndAndDetailed(t *testing.T) {
-	// Runs on every OS: pure preflight, no process launch.
 	b := bash{shell: sandbox.Shell{Kind: sandbox.ShellPowerShell, Path: "powershell"}}
 	args, _ := json.Marshal(map[string]string{"command": "echo a && echo b"})
 	res, err := b.ExecuteDetailed(context.Background(), args)

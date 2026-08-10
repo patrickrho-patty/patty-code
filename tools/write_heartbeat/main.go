@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"reasonix/internal/config"
-	fileencoding "reasonix/internal/fileutil/encoding"
+	"patty/internal/config"
+	fileencoding "patty/internal/fileutil/encoding"
 )
 
 type Task struct {
@@ -32,7 +32,6 @@ func main() {
 	}
 	path := filepath.Join(base, "heartbeat-tasks.json")
 
-	// Read existing
 	b, _ := fileencoding.ReadFileUTF8(path)
 	var data struct {
 		Tasks []Task `json:"tasks"`
@@ -47,15 +46,15 @@ func main() {
 	now := time.Now().UnixMilli()
 	data.Tasks = append(data.Tasks, Task{
 		ID:        "greeting_hello_001",
-		Title:     "打个招呼",
-		Prompt:    "你好！请用一段友好的话介绍一下你自己，然后用中文打个招呼。",
+		Title:     "인사하기",
+		Prompt:    "안녕! 친절한 말로 자신을 소개하세요. 그런 다음 한국어로 인사하세요.",
 		Interval:  "2m",
 		Enabled:   true,
 		CreatedAt: now,
 	}, Task{
 		ID:        "daily_check_002",
-		Title:     "每日检查",
-		Prompt:    "检查当前项目的最新改动和状态，总结需要关注的事项。",
+		Title:     "매일 점검",
+		Prompt:    "현재 프로젝트의 최신 변경사항과 상태 확인, 주의해야 할 사항 요약.",
 		Interval:  "1h",
 		Enabled:   true,
 		CreatedAt: now,

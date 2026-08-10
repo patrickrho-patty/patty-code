@@ -5,12 +5,12 @@
 #
 # Output lands in <repo>/dist/ with stable, platform-keyed names that
 # desktop/cmd/sign's `manifest` subcommand maps back to update.PlatformKey:
-#   macOS:   Reasonix-darwin-<arch>.zip                  (ditto archive; updater channel)
-#            Reasonix-darwin-universal.dmg               (drag-to-install; human download)
-#   Windows: Reasonix-windows-<arch>-installer.exe       (NSIS per-user installer; updater channel)
-#            Reasonix-windows-<arch>.zip                 (portable human download)
-#   Linux:   Reasonix-linux-<arch>.tar.gz                (desktop + guard + CLI; portable updater)
-#            Reasonix-linux-<arch>.deb                   (Debian/Ubuntu package; native updater)
+#   macOS:   Patty Code-darwin-<arch>.zip                  (ditto archive; updater channel)
+#            Patty Code-darwin-universal.dmg               (drag-to-install; human download)
+#   Windows: Patty Code-windows-<arch>-installer.exe       (NSIS per-user installer; updater channel)
+#            Patty Code-windows-<arch>.zip                 (portable human download)
+#   Linux:   Patty Code-linux-<arch>.tar.gz                (desktop + guard + CLI; portable updater)
+#            Patty Code-linux-<arch>.deb                   (Debian/Ubuntu package; native updater)
 #
 # Usage: scripts/desktop-build.sh <os/arch> <version> [channel]
 #   e.g. scripts/desktop-build.sh darwin/arm64 v1.1.0
@@ -25,12 +25,12 @@ os="${PLATFORM%/*}"
 arch="${PLATFORM#*/}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APPNAME="Reasonix"            # wails.json productName -> Reasonix.app
-BINNAME="reasonix-desktop"    # wails.json outputfilename -> linux binary name
-CLINAME="reasonix"            # bundled CLI sidecar used for remote serve upload
-WINDOWS_CLINAME="reasonix-cli" # Windows cannot store Reasonix.exe and reasonix.exe separately
-GUARDNAME="reasonix-guard"
-LAUNCHERNAME="reasonix-launcher"
+APPNAME="Patty Code"            # wails.json productName -> Patty Code.app
+BINNAME="patty-desktop"    # wails.json outputfilename -> linux binary name
+CLINAME="patcode"        # bundled CLI sidecar used for remote serve upload
+WINDOWS_CLINAME="patcode-cli" # Windows cannot store PatCode.exe and patcode.exe separately
+GUARDNAME="patty-code-guard"
+LAUNCHERNAME="patty-code-launcher"
 windows_resource_tool_dir=""
 windows_host_include=""
 
@@ -46,7 +46,7 @@ fi
 GIT_COMMIT="$(git -C "$ROOT" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)"
 BUILD_TIME_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # The remote protocol source-revision ldflag was removed with Remote Workbench.
-product_docs_ldflags="-X reasonix/internal/productdocs.linkedVersion=$VERSION -X reasonix/internal/productdocs.linkedRevision=$SOURCE_REVISION"
+product_docs_ldflags="-X patty/internal/productdocs.linkedVersion=$VERSION -X patty/internal/productdocs.linkedRevision=$SOURCE_REVISION"
 cli_identity_ldflags="-X main.version=$VERSION -X main.gitCommit=$GIT_COMMIT -X main.buildTimeUTC=$BUILD_TIME_UTC $product_docs_ldflags"
 
 cleanup() {
@@ -61,34 +61,34 @@ trap cleanup EXIT
 
 cd "$ROOT/desktop"
 
-# build_guard produces the one-shot legacy migrator still named reasonix-guard
+# build_guard produces the one-shot legacy migrator still named patty-code-guard
 # in compatibility payloads for 1.18–1.19.1 updaters. Source is intentionally
 # separate from the removed Guard recovery product.
 build_guard() {
-	echo "==> go build Reasonix legacy migrator (compat name reasonix-guard)"
+	echo "==> go build Patty Code legacy migrator (compat name patty-code-guard)"
 	mkdir -p "$(dirname "$guard_out")"
 	if [ "$arch" = universal ]; then
 		guard_tmp=$(mktemp -d)
-		(cd "$ROOT" && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o "$guard_tmp/amd64" ./cmd/reasonix-legacy-migrator)
-		(cd "$ROOT" && GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o "$guard_tmp/arm64" ./cmd/reasonix-legacy-migrator)
+		(cd "$ROOT" && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o "$guard_tmp/amd64" ./cmd/patty-code-legacy-migrator)
+		(cd "$ROOT" && GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o "$guard_tmp/arm64" ./cmd/patty-code-legacy-migrator)
 		lipo -create "$guard_tmp/amd64" "$guard_tmp/arm64" -output "$guard_out"
 		rm -rf "$guard_tmp"
 	else
-		(cd "$ROOT" && GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o "$guard_out" ./cmd/reasonix-legacy-migrator)
+		(cd "$ROOT" && GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o "$guard_out" ./cmd/patty-code-legacy-migrator)
 	fi
 }
 
 build_cli() {
-	echo "==> go build Reasonix CLI sidecar"
+	echo "==> go build Patty Code CLI sidecar"
 	mkdir -p "$(dirname "$cli_out")"
 	if [ "$arch" = universal ]; then
 		cli_tmp=$(mktemp -d)
-		(cd "$ROOT" && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w $cli_identity_ldflags" -o "$cli_tmp/amd64" ./cmd/reasonix)
-		(cd "$ROOT" && GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w $cli_identity_ldflags" -o "$cli_tmp/arm64" ./cmd/reasonix)
+		(cd "$ROOT" && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w $cli_identity_ldflags" -o "$cli_tmp/amd64" ./cmd/patcode)
+		(cd "$ROOT" && GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w $cli_identity_ldflags" -o "$cli_tmp/arm64" ./cmd/patcode)
 		lipo -create "$cli_tmp/amd64" "$cli_tmp/arm64" -output "$cli_out"
 		rm -rf "$cli_tmp"
 	else
-		(cd "$ROOT" && GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags="-s -w $cli_identity_ldflags" -o "$cli_out" ./cmd/reasonix)
+		(cd "$ROOT" && GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags="-s -w $cli_identity_ldflags" -o "$cli_out" ./cmd/patcode)
 	fi
 }
 
@@ -117,39 +117,39 @@ node -e 'const fs=require("fs"),f="wails.json",j=JSON.parse(fs.readFileSync(f,"u
 # NSIS installer is Windows-only (Wails requires a single windows target for -nsis).
 ldflags="-X main.version=$VERSION -X main.channel=$CHANNEL $product_docs_ldflags"
 [ "$os" = "darwin" ] && [ "${HAS_APPLE_CERT:-}" = "true" ] && ldflags="$ldflags -X main.macSelfUpdate=true"
-UPDATE_HELPER="reasonix-update-helper.exe"
+UPDATE_HELPER="patty-code-update-helper.exe"
 if [ "$os" = windows ]; then
 	windows_resource_tool_dir=$(mktemp -d)
-	windows_host_include="$ROOT/desktop/build/windows/installer/reasonix_host.nsh"
+	windows_host_include="$ROOT/desktop/build/windows/installer/patty_host.nsh"
 	case "$(uname -s 2>/dev/null || printf '%s' unknown)" in
 		Darwin* | Linux* | FreeBSD*)
-			printf '%s\n' '!define REASONIX_UNINST_FINALIZE '\''/bin/cp -f "%1" "reasonix-uninstall.exe"'\''' >"$windows_host_include"
+			printf '%s\n' '!define PATTY_CODE_UNINST_FINALIZE '\''/bin/cp -f "%1" "patty-code-uninstall.exe"'\''' >"$windows_host_include"
 			;;
 		*)
-			printf '%s\n' '!define REASONIX_UNINST_FINALIZE '\''cmd.exe /C copy /Y "%1" "reasonix-uninstall.exe" >NUL'\''' >"$windows_host_include"
+			printf '%s\n' '!define PATTY_CODE_UNINST_FINALIZE '\''cmd.exe /C copy /Y "%1" "patty-code-uninstall.exe" >NUL'\''' >"$windows_host_include"
 			;;
 	esac
-	windows_resource_tool="$windows_resource_tool_dir/reasonix-windows-resource.exe"
+	windows_resource_tool="$windows_resource_tool_dir/patty-code-windows-resource.exe"
 	echo "==> build Windows resource stamper"
 	go build -trimpath -o "$windows_resource_tool" ./cmd/windows-resource
 	guard_out="$ROOT/desktop/build/windows/installer/$GUARDNAME.exe"
 	build_guard
-	stamp_windows_executable "$guard_out" "Reasonix Legacy Migrator" "$GUARDNAME" "$GUARDNAME.exe"
+	stamp_windows_executable "$guard_out" "Patty Code Legacy Migrator" "$GUARDNAME" "$GUARDNAME.exe"
 	launcher_out="$ROOT/desktop/build/windows/installer/$LAUNCHERNAME.exe"
 	echo "==> go build Windows GUI thin launcher"
 	(cd "$ROOT" && GOOS=windows GOARCH="$arch" CGO_ENABLED=0 go build -trimpath \
-		-ldflags="-s -w -H windowsgui -X main.version=$VERSION" -o "$launcher_out" ./cmd/reasonix-launcher)
-	stamp_windows_executable "$launcher_out" "Reasonix Launcher" "$LAUNCHERNAME" "$LAUNCHERNAME.exe"
+		-ldflags="-s -w -H windowsgui -X main.version=$VERSION" -o "$launcher_out" ./cmd/patty-code-launcher)
+	stamp_windows_executable "$launcher_out" "Patty Code Launcher" "$LAUNCHERNAME" "$LAUNCHERNAME.exe"
 	echo "==> go build Windows update helper"
 	GOOS=windows GOARCH="$arch" go build -trimpath -ldflags="-s -w" \
 		-o "build/windows/installer/$UPDATE_HELPER" ./cmd/update-helper
-	stamp_windows_executable "build/windows/installer/$UPDATE_HELPER" "Reasonix Update Helper" "reasonix-update-helper" "$UPDATE_HELPER"
+	stamp_windows_executable "build/windows/installer/$UPDATE_HELPER" "Patty Code Update Helper" "patty-code-update-helper" "$UPDATE_HELPER"
 	cli_out="$ROOT/desktop/build/windows/installer/$WINDOWS_CLINAME.exe"
 	build_cli
-	stamp_windows_executable "$cli_out" "Reasonix CLI" "$WINDOWS_CLINAME" "$WINDOWS_CLINAME.exe"
+	stamp_windows_executable "$cli_out" "Patty Code CLI" "$WINDOWS_CLINAME" "$WINDOWS_CLINAME.exe"
 	# The first NSIS pass must regenerate this release's uninstaller; a stale
 	# preserved file must never enter the signing payload.
-	rm -f "build/windows/installer/reasonix-uninstall.exe"
+	rm -f "build/windows/installer/patty-code-uninstall.exe"
 fi
 build_args=()
 [ "${DESKTOP_BUILD_CLEAN:-1}" != "0" ] && build_args+=(-clean)
@@ -162,7 +162,7 @@ build_args+=(-platform "$PLATFORM" -ldflags "$ldflags")
 echo "==> wails build ${build_args[*]}"
 wails build "${build_args[@]}"
 if [ "$os" != windows ]; then
-	# Linux still ships a one-shot migrator named reasonix-guard in the portable
+	# Linux still ships a one-shot migrator named patty-code-guard in the portable
 	# tarball so 1.18–1.19.1 updaters can hand off. macOS does not bundle Guard.
 	if [ "$os" = linux ]; then
 		guard_out="$ROOT/desktop/build/bin/$GUARDNAME"
@@ -170,7 +170,7 @@ if [ "$os" != windows ]; then
 		launcher_out="$ROOT/desktop/build/bin/$LAUNCHERNAME"
 		echo "==> go build Linux thin launcher"
 		(cd "$ROOT" && GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -trimpath \
-			-ldflags="-s -w -X main.version=$VERSION" -o "$launcher_out" ./cmd/reasonix-launcher)
+			-ldflags="-s -w -X main.version=$VERSION" -o "$launcher_out" ./cmd/patty-code-launcher)
 	fi
 	cli_out="$ROOT/desktop/build/bin/$CLINAME"
 	build_cli
@@ -180,11 +180,11 @@ mkdir -p "$ROOT/dist"
 
 case "$os" in
 darwin)
-	# Wails names the bundle after outputfilename (reasonix-desktop.app); repackage
-	# it as Reasonix.app for a clean user-facing name.
+	# Wails names the bundle after outputfilename (patty-desktop.app); repackage
+	# it as Patty Code.app for a clean user-facing name.
 	staging=$(mktemp -d)
 	app="$staging/${APPNAME}.app"
-	cp -R "build/bin/reasonix-desktop.app" "$app"
+	cp -R "build/bin/patty-desktop.app" "$app"
 	# v1.20+: no Guard in the App bundle. CLI remains a sibling helper for
 	# terminal workflows; LaunchServices must own the Wails process directly.
 	cp "$cli_out" "$app/Contents/MacOS/$CLINAME"
@@ -289,25 +289,25 @@ windows)
 	cp "$launcher_out" "$payload_dir/$LAUNCHERNAME.exe"
 	cp "$guard_out" "$payload_dir/$GUARDNAME.exe"
 	cp "build/windows/installer/$WINDOWS_CLINAME.exe" "$payload_dir/$WINDOWS_CLINAME.exe"
-	cp "build/windows/installer/reasonix-uninstall.exe" "$payload_dir/reasonix-uninstall.exe"
+	cp "build/windows/installer/patty-code-uninstall.exe" "$payload_dir/patty-code-uninstall.exe"
 	"$ROOT/scripts/package-windows-desktop.sh" "$arch" "$payload_dir"
 	;;
 linux)
 	for desktop_contract in \
-		'Exec=reasonix-launcher' \
-		'Icon=reasonix-desktop' \
-		'StartupWMClass=reasonix-desktop'; do
-		grep -F -x -q "$desktop_contract" build/linux/reasonix.desktop || { echo "Linux desktop entry missing: $desktop_contract" >&2; exit 1; }
+		'Exec=patty-code-launcher' \
+		'Icon=patty-desktop' \
+		'StartupWMClass=patty-desktop'; do
+		grep -F -x -q "$desktop_contract" build/linux/patty-code.desktop || { echo "Linux desktop entry missing: $desktop_contract" >&2; exit 1; }
 	done
 	# Portable Linux tarball: desktop + thin launcher + one-shot migrator
-	# (compat name reasonix-guard) + CLI. After migrator runs, Guard self-deletes.
+	# (compat name patty-code-guard) + CLI. After migrator runs, Guard self-deletes.
 	tar -czf "$ROOT/dist/${APPNAME}-linux-${arch}.tar.gz" -C build/bin \
 		"$BINNAME" "$LAUNCHERNAME" "$GUARDNAME" "$CLINAME"
 	# Build the privileged update helper shipped inside the .deb. Portable tarball
 	# installs do not need it; only the dpkg package installs helper + Polkit policy.
-	echo "==> go build reasonix-update-helper"
+	echo "==> go build patty-code-update-helper"
 	GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$VERSION" \
-		-o "build/bin/reasonix-update-helper" ./cmd/update-helper
+		-o "build/bin/patty-code-update-helper" ./cmd/update-helper
 	# .deb for Debian/Ubuntu. Portable updater still uses the tarball under
 	# platforms[]; .deb is published under native_packages. Debian versions use
 	# "~" for prereleases so 1.18.0~rc.1 < 1.18.0 (policy version ordering).
@@ -326,11 +326,11 @@ linux)
 		--target "$ROOT/dist/${APPNAME}-linux-${arch}.deb"
 	# Contract smoke: helper, policy, package identity, and pkexec dependency.
 	deb_path="$ROOT/dist/${APPNAME}-linux-${arch}.deb"
-	dpkg-deb --field "$deb_path" Package | grep -x 'reasonix-desktop' >/dev/null
+	dpkg-deb --field "$deb_path" Package | grep -x 'patty-desktop' >/dev/null
 	dpkg-deb --field "$deb_path" Version | grep -x "$deb_version" >/dev/null
 	dpkg-deb --field "$deb_path" Depends | grep -F 'pkexec' >/dev/null
-	dpkg-deb --contents "$deb_path" | grep -E 'usr/lib/reasonix/reasonix-update-helper' >/dev/null
-	dpkg-deb --contents "$deb_path" | grep -E 'usr/share/polkit-1/actions/io.reasonix.desktop.update.policy' >/dev/null
+	dpkg-deb --contents "$deb_path" | grep -E 'usr/lib/patty/patty-code-update-helper' >/dev/null
+	dpkg-deb --contents "$deb_path" | grep -E 'usr/share/polkit-1/actions/io.patty-code.desktop.update.policy' >/dev/null
 	;;
 *)
 	echo "unsupported os: $os" >&2

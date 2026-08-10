@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/fileutil"
+	"patty/internal/fileutil"
 )
 
 const (
@@ -55,7 +55,7 @@ type LauncherLock struct {
 }
 
 // LaunchGrant is durable consent to start one exact project-provided MCP.
-// Scope remains in the JSON solely so previous Reasonix versions can read new
+// Scope remains in the JSON solely so previous Patty Code versions can read new
 // writes; new code only creates workspace-scoped grants.
 type LaunchGrant struct {
 	Scope                string    `json:"scope"`
@@ -86,21 +86,21 @@ var managerRegistry struct {
 	items map[string]*Manager
 }
 
-func StatePath(reasonixHome string) string {
-	if strings.TrimSpace(reasonixHome) == "" {
+func StatePath(pattyHome string) string {
+	if strings.TrimSpace(pattyHome) == "" {
 		return ""
 	}
-	return filepath.Join(reasonixHome, StateFilename)
+	return filepath.Join(pattyHome, StateFilename)
 }
 
 func NewManager(path, workspace string) *Manager {
 	return &Manager{path: path, workspaceFingerprint: WorkspaceFingerprint(workspace)}
 }
 
-// ForWorkspace returns the process-shared manager for one Reasonix home and
+// ForWorkspace returns the process-shared manager for one patty home and
 // workspace so sibling tabs observe one launch authorization state.
-func ForWorkspace(reasonixHome, workspace string) *Manager {
-	path := StatePath(reasonixHome)
+func ForWorkspace(pattyHome, workspace string) *Manager {
+	path := StatePath(pattyHome)
 	workspaceFP := WorkspaceFingerprint(workspace)
 	key := path + "\x00" + workspaceFP
 	managerRegistry.Lock()

@@ -1,6 +1,6 @@
--- Reasonix registry: published skills/MCP servers, their versions, and the
+-- Patty Code registry: published skills/MCP servers, their versions, and the
 -- activity/install event log. Apply:
---   wrangler d1 migrations apply reasonix-registry --local   (or --remote)
+--   wrangler d1 migrations apply patty-registry --local   (or --remote)
 
 -- One row per published capability. The registry stores only metadata and a
 -- source pointer; it never fetches or executes the content — install happens

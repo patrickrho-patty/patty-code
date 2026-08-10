@@ -3,8 +3,8 @@ package control
 import (
 	"context"
 
-	"reasonix/internal/event"
-	"reasonix/internal/extension"
+	"patty/internal/event"
+	"patty/internal/extension"
 )
 
 // admissionResult classifies what runGuarded did with a turn body.

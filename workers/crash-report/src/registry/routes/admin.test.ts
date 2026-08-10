@@ -56,14 +56,14 @@ function approvalDB(current: PackageRow, approved: PackageRow | null) {
 function bindings(db: D1Database): Bindings {
   return {
     DB: db,
-    ACCOUNTS_ORIGIN: "https://id.reasonix.test",
-    APP_ORIGIN: "https://reasonix.test",
-    ALLOWED_ORIGINS: "https://reasonix.test",
+    ACCOUNTS_ORIGIN: "https://id.patty.test",
+    APP_ORIGIN: "https://patty-code.test",
+    ALLOWED_ORIGINS: "https://patty-code.test",
   };
 }
 
 function approvalRequest(body: object): Request {
-  return new Request("https://registry.reasonix.test/v1/admin/packages/publisher/devkit/approve", {
+  return new Request("https://registry.patty.test/v1/admin/packages/publisher/devkit/approve", {
     method: "POST",
     headers: { cookie: "rxid=test", "content-type": "application/json" },
     body: JSON.stringify(body),

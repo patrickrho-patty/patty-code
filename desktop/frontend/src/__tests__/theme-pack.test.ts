@@ -53,8 +53,6 @@ const experienceSource = readFileSync(resolve(testDir, "../lib/themeExperience.t
 const bridgeSource = readFileSync(resolve(testDir, "../lib/bridge.ts"), "utf8");
 const viteSource = readFileSync(resolve(testDir, "../../vite.config.ts"), "utf8");
 const localeEn = readFileSync(resolve(testDir, "../locales/en.ts"), "utf8");
-const localeZh = readFileSync(resolve(testDir, "../locales/zh.ts"), "utf8");
-const localeZhTW = readFileSync(resolve(testDir, "../locales/zh-TW.ts"), "utf8");
 
 let passed = 0;
 let failed = 0;
@@ -242,7 +240,7 @@ ok(
   "base stylesheet installs complete root and Creation code palettes",
 );
 
-ok(isSafeBackgroundURL("/__reasonix_theme_asset/my-theme/abc/background.png"), "asset URL allowed");
+ok(isSafeBackgroundURL("/__patty_theme_asset/my-theme/abc/background.png"), "asset URL allowed");
 ok(isSafeBackgroundURL("data:image/png;base64,aaa"), "data URL allowed");
 ok(!isSafeBackgroundURL("https://evil.example/bg.png"), "remote URL rejected");
 const bundledOfficialBackground = "http://127.0.0.1:5197/@fs/workspace/desktop/themes/official/official-rose-dawn/background.webp";
@@ -265,7 +263,7 @@ const draft = draftPackView({
     overlayStrength: 0.5,
     paneOpacity: 0.50,
   },
-  backgroundUrl: "/__reasonix_theme_asset/preview-pack/deadbeef/background.png",
+  backgroundUrl: "/__patty_theme_asset/preview-pack/deadbeef/background.png",
 });
 
 const tokenOnlyPreview = draftPackView({
@@ -282,15 +280,15 @@ applyThemePack(draft);
 ok(attrs.get("data-theme-pack") === "preview-pack", "sets data-theme-pack");
 ok(attrs.get("data-theme-has-bg") === "true", "marks background present");
 ok(styleProps.has("--theme-bg-image"), "sets background image var");
-ok(styleText("reasonix-theme-pack-overlay").includes("--accent:#ff0000"), "injects dark accent override");
-ok(styleText("reasonix-theme-pack-overlay").includes("--code-bg:#101115"), "injects an opaque code readability island");
-ok(styleText("reasonix-theme-pack-overlay").includes("--hl-comment:"), "injects contrast-checked syntax roles");
-ok(styleText("reasonix-theme-pack-overlay").includes("--r:14px"), "applies round corners recipe");
+ok(styleText("patty-theme-pack-overlay").includes("--accent:#ff0000"), "injects dark accent override");
+ok(styleText("patty-theme-pack-overlay").includes("--code-bg:#101115"), "injects an opaque code readability island");
+ok(styleText("patty-theme-pack-overlay").includes("--hl-comment:"), "injects contrast-checked syntax roles");
+ok(styleText("patty-theme-pack-overlay").includes("--r:14px"), "applies round corners recipe");
 
 const twoSceneDraft = draftPackView({
   ...draft,
   taskBackground: { focusX: 0.8, focusY: 0.3, safeArea: "right", opacity: 0.35, overlayStrength: 0.7, paneOpacity: 0.68 },
-  taskBackgroundUrl: "/__reasonix_theme_asset/preview-pack/deadbeef/background-task.png",
+  taskBackgroundUrl: "/__patty_theme_asset/preview-pack/deadbeef/background-task.png",
 });
 applyThemePack(twoSceneDraft);
 ok(styleProps.get("--theme-bg-task-image")?.includes("background-task.png") === true, "sets independent task image var");
@@ -335,7 +333,7 @@ ok(
   ].every((property) => !styleProps.has(property)),
   "clearing a pack removes every extended pane opacity tier",
 );
-ok(styleText("reasonix-base-code-readability").includes("--code-add-bg:"), "applyTheme installs the base code readability stylesheet");
+ok(styleText("patty-base-code-readability").includes("--code-add-bg:"), "applyTheme installs the base code readability stylesheet");
 beginThemePreview(draft);
 ok(attrs.get("data-theme-pack") === "preview-pack", "preview applies pack");
 cancelThemePreview();
@@ -434,7 +432,7 @@ ok(
 );
 
 // Density recipe must land in overlay CSS and have stylesheet consumers.
-ok(styleText("reasonix-theme-pack-overlay").includes("--theme-density-pad") || packSource.includes("--theme-density-pad:6px"), "compact density vars defined in pack builder");
+ok(styleText("patty-theme-pack-overlay").includes("--theme-density-pad") || packSource.includes("--theme-density-pad:6px"), "compact density vars defined in pack builder");
 const compactDraft = draftPackView({
   id: "dense",
   name: "Dense",
@@ -443,8 +441,8 @@ const compactDraft = draftPackView({
   recipes: { density: "compact", corners: "soft" },
 });
 applyThemePack(compactDraft);
-ok(styleText("reasonix-theme-pack-overlay").includes("--theme-density-pad:6px"), "compact density injected");
-ok(styleText("reasonix-theme-pack-overlay").includes("--theme-row-h:28px"), "compact row height injected");
+ok(styleText("patty-theme-pack-overlay").includes("--theme-density-pad:6px"), "compact density injected");
+ok(styleText("patty-theme-pack-overlay").includes("--theme-row-h:28px"), "compact row height injected");
 ok(stylesSource.includes("padding: var(--theme-density-pad"), "density pad consumed by cards");
 ok(stylesSource.includes("gap: var(--theme-density-gap"), "density gap consumed");
 ok(stylesSource.includes("--list-row-height: var(--theme-row-h)"), "density maps to list row height");
@@ -482,18 +480,18 @@ ok(
 );
 ok(librarySource.includes("needsReplace"), "import handles needsReplace result");
 
-// Theme confirmations stay inside the Reasonix UI instead of opening native
+// Theme confirmations stay inside the Patty Code UI instead of opening native
 // browser/system prompts.
 ok(!gallerySource.includes("window.confirm"), "ThemeGallery does not use native confirm dialogs");
 ok(!librarySource.includes("window.confirm"), "ThemeLibrary does not use native confirm dialogs");
-ok(gallerySource.includes("useConfirmDialog") && librarySource.includes("useConfirmDialog"), "theme flows share the Reasonix confirm dialog");
+ok(gallerySource.includes("useConfirmDialog") && librarySource.includes("useConfirmDialog"), "theme flows share the Patty Code confirm dialog");
 ok(confirmDialogSource.includes('role="dialog"') && confirmDialogSource.includes('aria-modal="true"'), "confirm dialog exposes accessible modal semantics");
 ok(confirmDialogSource.includes('request.tone === "danger"') && confirmDialogSource.includes("btn--danger"), "destructive confirmations use danger styling");
 ok(confirmDialogSource.includes('event.key === "Escape"') && confirmDialogSource.includes("restoreFocusRef"), "confirm dialog supports Escape and focus restoration");
 ok(gallerySource.includes("moreActionsRef") && gallerySource.includes("moreActionsRef.current?.focus()"), "gallery cancellation restores focus after closing its overflow menu");
 
 // Source contracts
-ok(packSource.includes("reasonix-theme-pack-overlay"), "overlay style id stable");
+ok(packSource.includes("patty-theme-pack-overlay"), "overlay style id stable");
 ok(packSource.includes("appendChild(el)"), "overlay style appended last for priority");
 ok(packSource.includes("baseAppearance"), "tracks base appearance for restore");
 ok(stylesSource.includes(".theme-bg"), "background layer CSS present");
@@ -618,8 +616,6 @@ for (const id of OFFICIAL_IDS) {
   for (const suffix of ["name", "description"]) {
     const key = `settings.themes.official.${id}.${suffix}`;
     ok(localeEn.includes(`"${key}"`), `en has ${key}`);
-    ok(localeZh.includes(`"${key}"`), `zh has ${key}`);
-    ok(localeZhTW.includes(`"${key}"`), `zh-TW has ${key}`);
   }
 }
 for (const key of [
@@ -639,7 +635,7 @@ for (const key of [
   "settings.themeLibrary.exportRightsTitle",
   "settings.themeLibrary.exportConfirm",
 ]) {
-  ok(localeEn.includes(`"${key}"`) && localeZh.includes(`"${key}"`) && localeZhTW.includes(`"${key}"`), `gallery key ${key} in all locales`);
+  ok(localeEn.includes(`"${key}"`), `gallery key ${key} in en`);
 }
 
 // Mock parity: 6 base + 8 official mock packs so browser dev matches the shell.
@@ -659,19 +655,10 @@ ok(stylesSource.includes(".theme-editor__setting-row .set-seg__btn { flex: 1; mi
 ok(stylesSource.includes("grid-template-columns: repeat(3, minmax(0, 1fr))"), "base appearance options wrap at narrow editor widths");
 ok(stylesSource.includes(".theme-gallery__preview-control"), "preview dimensions have labeled layout styling");
 ok(gallerySource.includes("settings.themeGallery.scenePreviewHint") && gallerySource.includes("theme-gallery__preview-help"), "scene preview explains home and workspace behavior");
-ok(localeZh.includes('"settings.themeGallery.sceneHome": "首页展示"') && localeZh.includes('"settings.themeGallery.sceneTask": "工作区展示"'), "scene options use explicit Chinese labels");
-ok(localeZh.includes('"settings.themeGallery.subtitle": "点击主题即可全局预览，应用后才会保存"'), "gallery explains click-to-preview and apply-to-save semantics");
 ok(
   localeEn.includes('"settings.themeGallery.restoreGraphite": "Restore Graphite appearance"') &&
     localeEn.includes("detailed typography are preserved"),
   "English restore copy names Graphite and preserves detailed typography",
-);
-ok(
-  localeZh.includes('"settings.themeGallery.restoreGraphite": "恢复石墨基础外观"') &&
-    localeZh.includes("保留明暗模式、字体、字号及详细排版设置") &&
-    localeZhTW.includes('"settings.themeGallery.restoreGraphite": "恢復石墨基礎外觀"') &&
-    localeZhTW.includes("保留明暗模式、字型、字號及詳細排版設定"),
-  "Chinese restore copy localizes Graphite as 石墨 and preserves detailed typography",
 );
 ok(stylesSource.includes(".theme-gallery__detail-user-actions") && stylesSource.includes("grid-template-columns: repeat(2, minmax(0, 1fr))"), "user theme edit and export actions share a balanced row");
 ok(stylesSource.includes(".theme-gallery__rail-section-head") && stylesSource.includes(".theme-gallery__rail-section-items"), "immersive rail groups have lightweight headings and item stacks");
@@ -685,7 +672,6 @@ ok(
     stylesSource.includes("background: var(--tp-code-del-bg)"),
   "live and preview diff rows consume the same pre-composited safe backgrounds",
 );
-ok(localeZh.includes('"settings.themeEditor.safeArea": "界面内容区域"') && localeZh.includes('"settings.themeEditor.safeAreaHint": "选择文字和卡片主要显示的位置；建议避开图片主体。"'), "Chinese content-area copy explains foreground placement");
 
 // Pack overlay stays at :root — Workbench/Creation element-scoped auto-light
 // selectors must keep winning in their subtree (theme never overrides them).

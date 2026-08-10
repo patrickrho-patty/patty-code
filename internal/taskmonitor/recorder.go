@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"reasonix/internal/jobs"
+	"patty/internal/jobs"
 )
 
 // TaskRecorder bridges jobs.Manager lifecycle events into the Task Store. It

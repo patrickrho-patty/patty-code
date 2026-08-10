@@ -15,11 +15,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"reasonix/internal/config"
-	"reasonix/internal/pluginpkg"
-	"reasonix/internal/skill"
-	"reasonix/internal/testenv"
-	"reasonix/internal/tool"
+	"patty/internal/config"
+	"patty/internal/pluginpkg"
+	"patty/internal/skill"
+	"patty/internal/testenv"
+	"patty/internal/tool"
 )
 
 func TestMain(m *testing.M) {
@@ -34,11 +34,7 @@ func TestPluginGitCommandDisablesLineEndingConversion(t *testing.T) {
 	}
 }
 
-// shared helpers
 
-// execInstall marshals args, calls Execute, and unmarshals the response.
-// Failures in Execute bubble up as t.Fatal; the response is returned so the
-// caller can assert on the JSON shape.
 func execInstall(t *testing.T, tl tool.Tool, args map[string]any) response {
 	t.Helper()
 	raw, err := json.Marshal(args)
@@ -76,9 +72,6 @@ func registeredRoots(actions []action) []string {
 	return roots
 }
 
-// stubConnector returns a ConnectMCP closure that records every entry and
-// returns the configured tool count + Disconnect. disconnectCalls counts
-// rollback invocations so tests can assert on ghost-install behavior.
 type stubConnector struct {
 	connected       []config.PluginEntry
 	toolCount       int
@@ -103,7 +96,6 @@ func (s *stubConnector) connector() MCPConnector {
 	}
 }
 
-// apply: skill paths
 
 func TestApplyLocalSkillRootRegistersPath(t *testing.T) {
 	project := t.TempDir()
@@ -131,7 +123,7 @@ func TestApplyLocalSkillRootRegistersPath(t *testing.T) {
 	if resp.PlanID == "" {
 		t.Error("PlanID should be populated on apply")
 	}
-	cfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	cfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if len(cfg.Skills.Paths) != 1 || cfg.Skills.Paths[0] != root {
 		t.Fatalf("skills.paths = %v, want %q", cfg.Skills.Paths, root)
 	}
@@ -174,7 +166,7 @@ func TestApplyLocalCodexPluginPackage(t *testing.T) {
 	if !done.OK || done.Status != "done" {
 		t.Fatalf("apply response = %+v", done)
 	}
-	statePath := filepath.Join(home, ".reasonix", "plugin-packages.json")
+	statePath := filepath.Join(home, ".patty", "plugin-packages.json")
 	raw, err := os.ReadFile(statePath)
 	if err != nil {
 		t.Fatalf("state file missing: %v", err)
@@ -182,7 +174,7 @@ func TestApplyLocalCodexPluginPackage(t *testing.T) {
 	if !strings.Contains(string(raw), `"name": "superpowers"`) || !strings.Contains(string(raw), `"manifestKind": "codex"`) {
 		t.Fatalf("state file = %s", raw)
 	}
-	if _, err := os.Stat(filepath.Join(home, ".reasonix", "plugins", "superpowers", ".codex-plugin", "plugin.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(home, ".patty", "plugins", "superpowers", ".codex-plugin", "plugin.json")); err != nil {
 		t.Fatalf("installed plugin missing: %v", err)
 	}
 }
@@ -220,7 +212,7 @@ func TestApplyLocalClaudePluginPackage(t *testing.T) {
 	if !done.OK || done.Status != "done" {
 		t.Fatalf("apply response = %+v", done)
 	}
-	statePath := filepath.Join(home, ".reasonix", "plugin-packages.json")
+	statePath := filepath.Join(home, ".patty", "plugin-packages.json")
 	raw, err := os.ReadFile(statePath)
 	if err != nil {
 		t.Fatalf("state file missing: %v", err)
@@ -228,7 +220,7 @@ func TestApplyLocalClaudePluginPackage(t *testing.T) {
 	if !strings.Contains(string(raw), `"name": "ui-ux-pro-max"`) || !strings.Contains(string(raw), `"manifestKind": "claude"`) {
 		t.Fatalf("state file = %s", raw)
 	}
-	if _, err := os.Stat(filepath.Join(home, ".reasonix", "plugins", "ui-ux-pro-max", ".claude-plugin", "plugin.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(home, ".patty", "plugins", "ui-ux-pro-max", ".claude-plugin", "plugin.json")); err != nil {
 		t.Fatalf("installed plugin missing: %v", err)
 	}
 }
@@ -256,7 +248,7 @@ func TestApplyCopiedPluginPreservesExecutableHookCommand(t *testing.T) {
 	if !resp.OK {
 		t.Fatalf("response = %+v", resp)
 	}
-	installed := filepath.Join(home, ".reasonix", "plugins", "executable-plugin", "bin", "hook")
+	installed := filepath.Join(home, ".patty", "plugins", "executable-plugin", "bin", "hook")
 	info, err := os.Stat(installed)
 	if err != nil {
 		t.Fatal(err)
@@ -273,17 +265,17 @@ func TestPlanClaudeCompatibilityReportsAgentsHooksAndMCP(t *testing.T) {
 	writeFile(t, filepath.Join(src, ".claude-plugin", "plugin.json"), `{"name":"claude-compat"}`)
 	writeFile(t, filepath.Join(src, "agents", "reviewer.md"), "---\ndescription: Review work\ntools: [Read, Grep]\n---\nReview carefully.")
 	writeFile(t, filepath.Join(src, "hooks", "hooks.json"), `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"${CLAUDE_PLUGIN_ROOT}/bin/critter","args":["--hook"],"async":true}]}]}}`)
-	writeFile(t, filepath.Join(src, ".mcp.json"), `{"mcpServers":{"法律检索":{"command":"uvx","args":["legal-search"]}}}`)
+	writeFile(t, filepath.Join(src, ".mcp.json"), `{"mcpServers":{"법률검색":{"command":"uvx","args":["legal-search"]}}}`)
 
 	planned := execInstall(t, NewTool(Options{ProjectRoot: project, HomeDir: home}), map[string]any{"source": src, "kind": "plugin"})
 	if len(planned.Actions) != 1 {
 		t.Fatalf("actions = %+v", planned.Actions)
 	}
 	a := planned.Actions[0]
-	// A Stop hook is imported best-effort, but Reasonix's Stop hook is
-	// observation-only and can't block the turn the way Claude's contract
-	// does, so this must report "partial" rather than silently claiming full
-	// compatibility for semantics it doesn't honor.
+// A Stop hook is imported best-effort, but Patty Codes Stop hook is
+// observation-only and can't block the turn the way Claude's contract
+// does, so this must report "partial" rather than silently claiming full
+// compatibility for semantics it doesnt honor.
 	if a.AgentCount != 1 || a.HookCount != 1 || a.ToolCount != 1 || a.Compatibility != "partial" {
 		t.Fatalf("compatibility action = %+v", a)
 	}
@@ -328,7 +320,7 @@ func TestApplyLocalSkillFileCopiesToProject(t *testing.T) {
 	if resp.Actions[0].RiskLevel != RiskLow {
 		t.Errorf("copy of a single file should be RiskLow, got %q", resp.Actions[0].RiskLevel)
 	}
-	target := filepath.Join(project, ".reasonix", "skills", "beta", "SKILL.md")
+	target := filepath.Join(project, ".patty", "skills", "beta", "SKILL.md")
 	if raw, err := os.ReadFile(target); err != nil || !strings.Contains(string(raw), "Beta helper") {
 		t.Fatalf("copied skill = %q err=%v", raw, err)
 	}
@@ -340,7 +332,7 @@ func TestApplyLocalSkillFileCopiesToProject(t *testing.T) {
 func TestApplyLocalSkillFileDoesNotShadowFlatCompatInstall(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
-	existing := filepath.Join(project, ".reasonix", "skills", "beta.md")
+	existing := filepath.Join(project, ".patty", "skills", "beta.md")
 	writeFile(t, existing, "---\nname: beta\ndescription: Existing beta\n---\nold")
 	src := filepath.Join(t.TempDir(), "beta.md")
 	writeFile(t, src, "---\nname: beta\ndescription: New beta\n---\nnew")
@@ -383,14 +375,14 @@ func TestApplyLocalSKILLFileCopiesSiblingResources(t *testing.T) {
 	if resp.Actions[0].RiskLevel != RiskMedium {
 		t.Fatalf("directory package copy should be RiskMedium, got %q", resp.Actions[0].RiskLevel)
 	}
-	target := filepath.Join(project, ".reasonix", "skills", "frontend-design", "SKILL.md")
+	target := filepath.Join(project, ".patty", "skills", "frontend-design", "SKILL.md")
 	if resp.Actions[0].CanonicalPath != target {
 		t.Fatalf("canonicalPath = %q, want %q", resp.Actions[0].CanonicalPath, target)
 	}
-	if _, err := os.Stat(filepath.Join(project, ".reasonix", "skills", "frontend-design", "references", "style.md")); err != nil {
+	if _, err := os.Stat(filepath.Join(project, ".patty", "skills", "frontend-design", "references", "style.md")); err != nil {
 		t.Fatalf("reference file should be copied with SKILL.md source: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(project, ".reasonix", "skills", "frontend-design", "scripts", "lint.sh")); err != nil {
+	if _, err := os.Stat(filepath.Join(project, ".patty", "skills", "frontend-design", "scripts", "lint.sh")); err != nil {
 		t.Fatalf("script file should be copied with SKILL.md source: %v", err)
 	}
 	st := skill.New(skill.Options{HomeDir: home, ProjectRoot: project, DisableBuiltins: true})
@@ -427,7 +419,7 @@ func TestApplyLocalSkillLinkMode(t *testing.T) {
 	if resp.Actions[0].RiskLevel != RiskMedium && resp.Actions[0].RiskLevel != RiskHigh {
 		t.Errorf("link mode should be at least RiskMedium, got %q", resp.Actions[0].RiskLevel)
 	}
-	target := filepath.Join(project, ".reasonix", "skills", "gamma", "SKILL.md")
+	target := filepath.Join(project, ".patty", "skills", "gamma", "SKILL.md")
 	if fi, err := os.Lstat(target); err != nil || fi.Mode()&os.ModeSymlink == 0 {
 		t.Fatalf("target should be a symlink: lstat err=%v mode=%v", err, fi.Mode())
 	}
@@ -503,8 +495,7 @@ func TestApplyLinkSkillRejectsEscape(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
 
-	// Synthesize a candidate that points at /etc/passwd by calling the
-	// private helper directly. The link check runs before any disk write.
+// Synthesize a candidate that points at /etc/passwd by calling the
 	if isLinkTargetSafe("/etc/passwd", home, project) {
 		t.Fatal("/etc/passwd should be considered unsafe")
 	}
@@ -533,9 +524,6 @@ func TestApplyLinkSkillRejectsEscape(t *testing.T) {
 }
 
 func TestParseSkillContentStrictAllowsMissingDescription(t *testing.T) {
-	// strict=false lets us install a raw SKILL.md that lacks a description.
-	// The model should still be told the description is empty so the
-	// Skills index entry is honest.
 	cand, err := parseSkillContent("---\nname: raw\n---\nBody without desc", "raw", "in-memory", false)
 	if err != nil {
 		t.Fatalf("strict=false should accept missing description: %v", err)
@@ -594,7 +582,7 @@ func TestApplyStrictFalseWarnsWhenDescriptionMissing(t *testing.T) {
 	}
 }
 
-// plan / apply: MCP paths
+// plan  apply: MCP paths
 
 func TestPlanLocalMCPJSON(t *testing.T) {
 	project := t.TempDir()
@@ -661,7 +649,7 @@ func TestPlanProjectMCPJSONDefaultsProject(t *testing.T) {
 	if !resp.OK || len(resp.Actions) != 1 {
 		t.Fatalf("response = %+v", resp)
 	}
-	wantPath := filepath.Join(project, "reasonix.toml")
+	wantPath := filepath.Join(project, "patty.toml")
 	if resp.Scope != "project" || resp.Actions[0].Scope != "project" || resp.Actions[0].ConfigPath != wantPath {
 		t.Fatalf("project .mcp.json scope/path = response %q action %q path %q, want project %q", resp.Scope, resp.Actions[0].Scope, resp.Actions[0].ConfigPath, wantPath)
 	}
@@ -825,7 +813,7 @@ func TestApplyRemoteMCPURLConnectsAndPersists(t *testing.T) {
 	if resp.Actions[0].RiskLevel != RiskHigh {
 		t.Errorf("auth headers should produce RiskHigh, got %q", resp.Actions[0].RiskLevel)
 	}
-	cfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	cfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if len(cfg.Plugins) != 1 || cfg.Plugins[0].Headers["Authorization"] != "Bearer ${TOKEN}" {
 		t.Fatalf("plugins = %+v", cfg.Plugins)
 	}
@@ -858,7 +846,7 @@ func TestApplyRemoteMCPURLDefaultsGlobal(t *testing.T) {
 	if len(stub.connected) != 1 || stub.connected[0].Source != config.MCPSourceUserConfig {
 		t.Fatalf("global install live source = %+v, want source %q", stub.connected, config.MCPSourceUserConfig)
 	}
-	projectCfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	projectCfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if _, ok := findPlugin(projectCfg.Plugins, "global-default"); ok {
 		t.Fatalf("project config should not receive default-global MCP: %+v", projectCfg.Plugins)
 	}
@@ -867,12 +855,11 @@ func TestApplyRemoteMCPURLDefaultsGlobal(t *testing.T) {
 func TestApplyMCPRejectsDuplicateByDefault(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
-	// Seed an existing entry the same way the first install would have.
-	cfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	cfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if err := cfg.UpsertPlugin(config.PluginEntry{Name: "dup", Command: "x"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := cfg.SaveTo(filepath.Join(project, "reasonix.toml")); err != nil {
+	if err := cfg.SaveTo(filepath.Join(project, "patty.toml")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -898,11 +885,11 @@ func TestApplyMCPRejectsDuplicateByDefault(t *testing.T) {
 func TestApplyMCPReplaceOverwritesExisting(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
-	cfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	cfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if err := cfg.UpsertPlugin(config.PluginEntry{Name: "editable", Command: "old"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := cfg.SaveTo(filepath.Join(project, "reasonix.toml")); err != nil {
+	if err := cfg.SaveTo(filepath.Join(project, "patty.toml")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -921,7 +908,7 @@ func TestApplyMCPReplaceOverwritesExisting(t *testing.T) {
 	if !resp.OK {
 		t.Fatalf("response = %+v", resp)
 	}
-	reloaded := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	reloaded := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if reloaded.Plugins[0].Command != "" || reloaded.Plugins[0].URL != "https://mcp.example.com/mcp" {
 		t.Errorf("replace did not update entry: %+v", reloaded.Plugins[0])
 	}
@@ -930,11 +917,11 @@ func TestApplyMCPReplaceOverwritesExisting(t *testing.T) {
 func TestApplyMCPReplaceDisconnectsLiveServerBeforeConnect(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
-	cfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	cfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if err := cfg.UpsertPlugin(config.PluginEntry{Name: "live", Command: "old"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := cfg.SaveTo(filepath.Join(project, "reasonix.toml")); err != nil {
+	if err := cfg.SaveTo(filepath.Join(project, "patty.toml")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -983,7 +970,7 @@ func TestApplyMCPReplaceDisconnectsLiveServerBeforeConnect(t *testing.T) {
 func TestApplyMCPRollsBackOnSaveFailure(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
-	configPath := filepath.Join(project, "reasonix.toml")
+	configPath := filepath.Join(project, "patty.toml")
 	if err := os.WriteFile(configPath, []byte("# valid before connect\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -998,8 +985,6 @@ func TestApplyMCPRollsBackOnSaveFailure(t *testing.T) {
 			if err != nil {
 				return result, err
 			}
-			// Simulate an external destructive change after the live connection
-			// succeeds but before the strict commit-time reload.
 			if err := os.Remove(configPath); err != nil {
 				t.Fatal(err)
 			}
@@ -1048,7 +1033,7 @@ func TestApplyConnectFailureDoesNotPersist(t *testing.T) {
 	if resp.OK {
 		t.Fatalf("expected connect failure, got %+v", resp)
 	}
-	cfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	cfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if len(cfg.Plugins) != 0 {
 		t.Errorf("no plugin should be persisted on connect failure, got %+v", cfg.Plugins)
 	}
@@ -1151,10 +1136,8 @@ func TestPlanUnsupportedKindReturnsTypedError(t *testing.T) {
 }
 
 func TestPlanGitHubRepoProbesMainAndMaster(t *testing.T) {
-	// We can't easily stand up a fake github.com, so we exercise the URL
-	// rewriting and probe selection separately. The hostname check is
-	// `strings.EqualFold(u.Hostname(), "github.com")` — anything else is
-	// treated as a remote URL, not a repo probe.
+// We cant easily stand up a fake github.com, so we exercise the URL
+// `strings.EqualFold(u.Hostname(), "github.com")` — anything else is
 	if got := rawGitHubBlobURL("https://github.com/foo/bar/blob/main/path/SKILL.md"); got != "https://raw.githubusercontent.com/foo/bar/main/path/SKILL.md" {
 		t.Errorf("blob rewrite = %q", got)
 	}
@@ -1189,7 +1172,7 @@ func TestParseGitHubRepoSourceAcceptsCanonicalRepositoryPaths(t *testing.T) {
 func TestParseGitHubRepoSourceRejectsPagesAndUnsafePaths(t *testing.T) {
 	for _, source := range []string{
 		"https://github.com/o/r/issues/1",
-		"https://github.com/o/r/blob/main/reasonix-plugin.json",
+		"https://github.com/o/r/blob/main/patty-plugin.json",
 		"https://github.com/o/r/pull/1",
 		"https://github.com/o/r/tree/main/../evil",
 		"https://github.com/o/r/tree/main/%2e%2e/evil",
@@ -1304,9 +1287,7 @@ func TestPlanGitHubRepoDiscoversMultipleSkills(t *testing.T) {
 }
 
 func TestFetchTextAppliesTimeoutAndUA(t *testing.T) {
-	// Use a context with a tiny deadline to assert timeout behavior. We
-	// can't easily test the UA from inside a HandlerFunc, so we just check
-	// that a cancelled context propagates as ErrSourceUnreadable.
+// cant easily test the UA from inside a HandlerFunc, so we just check
 	project := t.TempDir()
 	home := t.TempDir()
 	tl := NewTool(Options{ProjectRoot: project, HomeDir: home}).(*installSourceTool)
@@ -1318,12 +1299,12 @@ func TestFetchTextAppliesTimeoutAndUA(t *testing.T) {
 	}
 }
 
-func TestGlobalSkillInstallRootUsesReasonixHome(t *testing.T) {
+func TestGlobalSkillInstallRootUsesPattyCodeHome(t *testing.T) {
 	home := t.TempDir()
-	reasonixHome := filepath.Join(t.TempDir(), "rx-home")
+	pattyHome := filepath.Join(t.TempDir(), "rx-home")
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	t.Setenv("REASONIX_HOME", reasonixHome)
+	t.Setenv("PATTY_HOME", pattyHome)
 	oldUserHomeDir := userHomeDir
 	userHomeDir = func() (string, error) { return home, nil }
 	t.Cleanup(func() { userHomeDir = oldUserHomeDir })
@@ -1333,7 +1314,7 @@ func TestGlobalSkillInstallRootUsesReasonixHome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("skillInstallRoot: %v", err)
 	}
-	want := filepath.Join(reasonixHome, skill.SkillsDirname)
+	want := filepath.Join(pattyHome, skill.SkillsDirname)
 	if root != want {
 		t.Fatalf("global skill root = %q, want %q", root, want)
 	}
@@ -1354,9 +1335,8 @@ func TestFetchTextAuthMapsToErrAuthRequired(t *testing.T) {
 }
 
 func TestFetchTextRefusesInternalAddress(t *testing.T) {
-	// SSRF guard: an install source pointed at cloud-metadata / internal IPs must
-	// be refused at dial time, not fetched. These are IP literals so no real
-	// network or DNS is involved — the guard blocks before connecting.
+// SSRF guard: an install source pointed at cloud-metadata  internal IPs must
+// network or DNS is involved  the guard blocks before connecting.
 	tl := NewTool(Options{ProjectRoot: t.TempDir(), HomeDir: t.TempDir()}).(*installSourceTool)
 	for _, target := range []string{
 		"http://169.254.169.254/latest/meta-data/", // cloud metadata
@@ -1389,12 +1369,11 @@ func TestPlanMarkdownSkillURL(t *testing.T) {
 	}
 }
 
-// uninstall
 
 func TestUninstallRemovesSkillByName(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
-	target := filepath.Join(project, ".reasonix", "skills", "doomed.md")
+	target := filepath.Join(project, ".patty", "skills", "doomed.md")
 	writeFile(t, target, "---\nname: doomed\ndescription: Doomed\n---\nbody")
 
 	tl := NewTool(Options{ProjectRoot: project, HomeDir: home})
@@ -1441,7 +1420,7 @@ func TestUninstallRemovesRegisteredSkillRootByContainedSkillName(t *testing.T) {
 	if resp.Actions[0].SkillCount != 2 {
 		t.Errorf("SkillCount = %d, want 2", resp.Actions[0].SkillCount)
 	}
-	cfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	cfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if len(cfg.Skills.Paths) != 0 {
 		t.Fatalf("skills.paths should be empty after root uninstall, got %v", cfg.Skills.Paths)
 	}
@@ -1450,11 +1429,11 @@ func TestUninstallRemovesRegisteredSkillRootByContainedSkillName(t *testing.T) {
 func TestUninstallRemovesMCPAndDisconnects(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
-	cfg := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	cfg := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if err := cfg.UpsertPlugin(config.PluginEntry{Name: "ed", Type: "http", URL: "https://mcp.example.com/mcp"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := cfg.SaveTo(filepath.Join(project, "reasonix.toml")); err != nil {
+	if err := cfg.SaveTo(filepath.Join(project, "patty.toml")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1479,7 +1458,7 @@ func TestUninstallRemovesMCPAndDisconnects(t *testing.T) {
 	if disconnects.Load() != 1 {
 		t.Errorf("OnDisconnect should fire once, got %d", disconnects.Load())
 	}
-	reloaded := config.LoadForEdit(filepath.Join(project, "reasonix.toml"))
+	reloaded := config.LoadForEdit(filepath.Join(project, "patty.toml"))
 	if len(reloaded.Plugins) != 0 {
 		t.Errorf("plugin should be removed, got %+v", reloaded.Plugins)
 	}
@@ -1488,8 +1467,8 @@ func TestUninstallRemovesMCPAndDisconnects(t *testing.T) {
 func TestUninstallWithoutScopePrefersProjectSkill(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
-	projectTarget := filepath.Join(project, ".reasonix", "skills", "dupe.md")
-	globalTarget := filepath.Join(home, ".reasonix", "skills", "dupe.md")
+	projectTarget := filepath.Join(project, ".patty", "skills", "dupe.md")
+	globalTarget := filepath.Join(home, ".patty", "skills", "dupe.md")
 	writeFile(t, projectTarget, "---\nname: dupe\ndescription: Project\n---\nbody")
 	writeFile(t, globalTarget, "---\nname: dupe\ndescription: Global\n---\nbody")
 
@@ -1577,7 +1556,6 @@ func TestUninstallRequiresName(t *testing.T) {
 	}
 }
 
-// approval hook
 
 func TestApprovalHookDeniesApply(t *testing.T) {
 	project := t.TempDir()
@@ -1641,7 +1619,7 @@ func TestPlanIDIncludesActionDetails(t *testing.T) {
 		Scope:  "project",
 		Mode:   "auto",
 	}
-	a := action{Kind: "mcp", Action: "install_mcp_server", Name: "same", URL: "https://mcp.one.example/mcp", Transport: "http", ConfigPath: "/repo/reasonix.toml"}
+	a := action{Kind: "mcp", Action: "install_mcp_server", Name: "same", URL: "https://mcp.one.example/mcp", Transport: "http", ConfigPath: "/repo/patty.toml"}
 	b := a
 	b.URL = "https://mcp.two.example/mcp"
 	if computePlanID(req, []action{a}) == computePlanID(req, []action{b}) {
@@ -1649,7 +1627,7 @@ func TestPlanIDIncludesActionDetails(t *testing.T) {
 	}
 }
 
-// sanitizers / parsers
+// sanitizers  parsers
 
 func TestSanitizeNameEdges(t *testing.T) {
 	cases := map[string]string{
@@ -1735,7 +1713,6 @@ func TestPlanIDUsesResolvedActionScope(t *testing.T) {
 	}
 }
 
-// local executable
 
 func TestPlanLocalExecutableDetected(t *testing.T) {
 	project := t.TempDir()
@@ -1818,7 +1795,6 @@ func writeLocalExecutable(t *testing.T, dir, name string) string {
 	return path
 }
 
-// plan-only: RiskLevel surfacing
 
 func TestLinkRiskIsMedium(t *testing.T) {
 	if level, _ := skillActionRisk("link", skillCandidate{SourcePath: "x"}); level != RiskMedium {
@@ -1836,12 +1812,7 @@ func TestEagerTierEscalatesRisk(t *testing.T) {
 	}
 }
 
-// helpers
 
-// ExampleNewTool is a godoc example that exercises the public surface
-// without touching the filesystem. It also serves as smoke coverage that
-// the Schema() output is valid JSON and the tool does not panic on a
-// well-formed call.
 func ExampleNewTool() {
 	tl := NewTool(Options{
 		ProjectRoot: "/tmp/example",
@@ -1853,14 +1824,9 @@ func ExampleNewTool() {
 	_ = json.Unmarshal([]byte(out), &resp)
 	fmt.Printf("status=%s kind=%s skill=%d mcp=%d\n",
 		resp.Status, resp.Kind, resp.Kinds.Skill, resp.Kinds.MCP)
-	// Output: status=planned kind=mcp skill=0 mcp=1
 }
 
-// TestGitHubPluginPlanMatchesApply pins the approval contract: the plan the
-// user approves must describe exactly the capability set apply installs. Both
-// phases resolve the source through pluginSource, so convention-discovered
 // capabilities (skills/, commands/ — including nested namespaces) appear in
-// the plan, not only after installation.
 func TestGitHubPluginPlanMatchesApply(t *testing.T) {
 	src := t.TempDir()
 	writeFile(t, filepath.Join(src, ".claude-plugin", "plugin.json"), `{"name": "pwf", "version": "1.0.0"}`)
@@ -1905,9 +1871,6 @@ func TestGitHubPluginPlanMatchesApply(t *testing.T) {
 	}
 }
 
-// TestGitHubClaudeMarketplacePlansAndAppliesRelativePlugins pins the desktop
-// workflow reported by users: entering a GitHub marketplace root should plan
-// each relative-path plugin, then install all approved entries from one clone.
 func TestGitHubClaudeMarketplacePlansAndAppliesRelativePlugins(t *testing.T) {
 	marketplaceRoot := t.TempDir()
 	writeFile(t, filepath.Join(marketplaceRoot, ".claude-plugin", "marketplace.json"), `{
@@ -1967,7 +1930,7 @@ func TestGitHubClaudeMarketplacePlansAndAppliesRelativePlugins(t *testing.T) {
 		t.Fatalf("preview+apply clone/cleanup calls = %d/%d, want 2/2 (one clone per phase)", cloneCalls, cleanupCalls)
 	}
 	for _, name := range []string{"alpha-legal", "beta-legal"} {
-		if _, ok, err := pluginpkg.FindInstalled(filepath.Join(home, ".reasonix"), name); err != nil || !ok {
+		if _, ok, err := pluginpkg.FindInstalled(filepath.Join(home, ".patty"), name); err != nil || !ok {
 			t.Fatalf("installed plugin %q missing: ok=%v err=%v", name, ok, err)
 		}
 	}
@@ -2090,10 +2053,8 @@ func TestGitHubClaudeMarketplaceCleansPreparedPinnedEntryWhenLaterEntryFails(t *
 	}
 }
 
-// TestGitHubClaudeMarketplaceAcceptsBarePathsAndSkipsUnsupported pins the
 // widened source subset: bare relative paths ("plugins/alpha") plan like
 // "./"-prefixed ones, while object sources, external URLs, and invalid names
-// skip with a warning instead of failing the whole plan.
 func TestGitHubClaudeMarketplaceAcceptsBarePathsAndSkipsUnsupported(t *testing.T) {
 	marketplaceRoot := t.TempDir()
 	writeFile(t, filepath.Join(marketplaceRoot, ".claude-plugin", "marketplace.json"), `{
@@ -2143,9 +2104,7 @@ func TestGitHubClaudeMarketplaceAcceptsBarePathsAndSkipsUnsupported(t *testing.T
 	}
 }
 
-// TestGitHubClaudeMarketplaceSelectedUnsupportedSourceFails pins the selection
-// contract: skipping is only for bulk installs — when the user names exactly
-// one plugin and its source shape is unsupported, the plan must fail loudly.
+// contract: skipping is only for bulk installs  when the user names exactly
 func TestGitHubClaudeMarketplaceSelectedUnsupportedSourceFails(t *testing.T) {
 	marketplaceRoot := t.TempDir()
 	writeFile(t, filepath.Join(marketplaceRoot, ".claude-plugin", "marketplace.json"), `{
@@ -2205,10 +2164,6 @@ func TestGitHubClaudeMarketplaceAcceptsPinnedGitHubURLObject(t *testing.T) {
 	}
 }
 
-// TestGitHubClaudeMarketplacePlanIDStableAcrossPlanAndApply pins the approval
-// contract the desktop host relies on: the planId returned by the preview must
-// match the planId recomputed by the apply call, or every marketplace apply
-// with an echoed planId would be refused.
 func TestGitHubClaudeMarketplacePlanIDStableAcrossPlanAndApply(t *testing.T) {
 	marketplaceRoot := t.TempDir()
 	writeFile(t, filepath.Join(marketplaceRoot, ".claude-plugin", "marketplace.json"), `{
@@ -2250,16 +2205,12 @@ func TestGitHubClaudeMarketplacePlanIDStableAcrossPlanAndApply(t *testing.T) {
 		t.Fatalf("plan ID drifted between plan (%s) and apply (%s)", plan.PlanID, applied.PlanID)
 	}
 	for _, name := range []string{"alpha-legal", "beta-legal"} {
-		if _, ok, err := pluginpkg.FindInstalled(filepath.Join(home, ".reasonix"), name); err != nil || !ok {
+		if _, ok, err := pluginpkg.FindInstalled(filepath.Join(home, ".patty"), name); err != nil || !ok {
 			t.Fatalf("installed plugin %q missing: ok=%v err=%v", name, ok, err)
 		}
 	}
 }
 
-// TestGitHubPluginApplyRefusesUnpinnableDrift pins the snapshot contract: when
-// the source resolves to a different commit than the plan approved and the
-// approved snapshot cannot be restored, apply must refuse instead of
-// installing content the approval never covered.
 func TestGitHubPluginApplyRefusesUnpinnableDrift(t *testing.T) {
 	tree1 := t.TempDir()
 	writeFile(t, filepath.Join(tree1, ".claude-plugin", "plugin.json"), `{"name": "pwf", "version": "1.0.0"}`)
@@ -2296,14 +2247,11 @@ func TestGitHubPluginApplyRefusesUnpinnableDrift(t *testing.T) {
 	if !strings.Contains(resp.Actions[0].Error, "approved commit cafe0001") {
 		t.Fatalf("action error = %q, want the approved-commit drift refusal", resp.Actions[0].Error)
 	}
-	if _, ok, _ := pluginpkg.FindInstalled(filepath.Join(home, ".reasonix"), "pwf"); ok {
+	if _, ok, _ := pluginpkg.FindInstalled(filepath.Join(home, ".patty"), "pwf"); ok {
 		t.Fatal("drifted plugin must not be installed")
 	}
 }
 
-// TestCopyMaterializesInRootSymlinkedCommands pins that a command alias
-// symlinked to a file inside the package survives copy-mode installs: the
-// installed tree must resolve to the same capability set the plan counted.
 func TestCopyMaterializesInRootSymlinkedCommands(t *testing.T) {
 	src := t.TempDir()
 	writeFile(t, filepath.Join(src, ".claude-plugin", "plugin.json"), `{"name": "aliases"}`)
@@ -2332,7 +2280,7 @@ func TestCopyMaterializesInRootSymlinkedCommands(t *testing.T) {
 	if resp.Actions[0].CommandCount != 2 {
 		t.Fatalf("planned commands = %d, want 2 (alias followed)", resp.Actions[0].CommandCount)
 	}
-	installedRoot := filepath.Join(home, ".reasonix", "plugins", "aliases")
+	installedRoot := filepath.Join(home, ".patty", "plugins", "aliases")
 	pkg, _, err := pluginpkg.ParseDir(installedRoot)
 	if err != nil {
 		t.Fatalf("ParseDir installed: %v", err)
@@ -2342,10 +2290,6 @@ func TestCopyMaterializesInRootSymlinkedCommands(t *testing.T) {
 	}
 }
 
-// TestCopyRefusesUnmaterializableSymlinkCommands pins the fail-closed path: a
-// command symlinked to a file OUTSIDE the package counts during planning but
-// cannot be materialized by copy mode, so apply must refuse (and clean up)
-// rather than silently install fewer commands than approved.
 func TestCopyRefusesUnmaterializableSymlinkCommands(t *testing.T) {
 	outside := t.TempDir()
 	writeFile(t, filepath.Join(outside, "evil.md"), "---\ndescription: evil\n---\nEvil")
@@ -2375,19 +2319,15 @@ func TestCopyRefusesUnmaterializableSymlinkCommands(t *testing.T) {
 	if !strings.Contains(resp.Actions[0].Error, "approved plan counted") {
 		t.Fatalf("action error = %q, want the capability-verification refusal", resp.Actions[0].Error)
 	}
-	if _, err := os.Stat(filepath.Join(home, ".reasonix", "plugins", "escapes")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(home, ".patty", "plugins", "escapes")); !os.IsNotExist(err) {
 		t.Fatal("failed install must not leave the copied tree behind")
 	}
-	if _, ok, _ := pluginpkg.FindInstalled(filepath.Join(home, ".reasonix"), "escapes"); ok {
+	if _, ok, _ := pluginpkg.FindInstalled(filepath.Join(home, ".patty"), "escapes"); ok {
 		t.Fatal("failed install must not be registered")
 	}
 }
 
-// TestFailedReplaceKeepsExistingPluginInstall pins the update-safety contract:
-// when a replace=true update fails capability verification (e.g. the new
-// version ships an unmaterializable symlink), the previously installed
-// version must survive on disk and stay registered — a failed update may
-// never leave an enabled plugin pointing at a missing or gutted root.
+// version must survive on disk and stay registered  a failed update may
 func TestFailedReplaceKeepsExistingPluginInstall(t *testing.T) {
 	v1 := t.TempDir()
 	writeFile(t, filepath.Join(v1, ".claude-plugin", "plugin.json"), `{"name": "pwf", "version": "1.0.0"}`)
@@ -2430,7 +2370,7 @@ func TestFailedReplaceKeepsExistingPluginInstall(t *testing.T) {
 		t.Fatalf("update = %+v, want a failed apply for the unmaterializable symlink", update)
 	}
 
-	installedRoot := filepath.Join(home, ".reasonix", "plugins", "pwf")
+	installedRoot := filepath.Join(home, ".patty", "plugins", "pwf")
 	if _, err := os.Stat(filepath.Join(installedRoot, "commands", "plan.md")); err != nil {
 		t.Fatalf("previous install must survive a failed update: %v", err)
 	}
@@ -2441,7 +2381,7 @@ func TestFailedReplaceKeepsExistingPluginInstall(t *testing.T) {
 	if pkg.Manifest.Version != "1.0.0" {
 		t.Fatalf("installed version = %q, want the previous 1.0.0 kept", pkg.Manifest.Version)
 	}
-	if p, ok, _ := pluginpkg.FindInstalled(filepath.Join(home, ".reasonix"), "pwf"); !ok || !p.Enabled {
+	if p, ok, _ := pluginpkg.FindInstalled(filepath.Join(home, ".patty"), "pwf"); !ok || !p.Enabled {
 		t.Fatal("previous registration must survive a failed update")
 	}
 	if _, err := os.Stat(installedRoot + ".pre-replace"); !os.IsNotExist(err) {
@@ -2458,10 +2398,7 @@ func TestFailedReplaceKeepsExistingPluginInstall(t *testing.T) {
 	}
 }
 
-// TestBackupPathCannotCollideWithSiblingPlugin pins the backup-naming
-// contract: plugin names may legally contain dots, so a plugin literally
 // named "foo.pre-replace" must survive an update of plugin "foo" — the swap
-// backup must use a name no valid plugin can occupy.
 func TestBackupPathCannotCollideWithSiblingPlugin(t *testing.T) {
 	fooV1 := t.TempDir()
 	writeFile(t, filepath.Join(fooV1, ".claude-plugin", "plugin.json"), `{"name": "foo", "version": "1.0.0"}`)
@@ -2503,14 +2440,14 @@ func TestBackupPathCannotCollideWithSiblingPlugin(t *testing.T) {
 		t.Fatalf("update = %+v", update)
 	}
 
-	siblingRoot := filepath.Join(home, ".reasonix", "plugins", "foo.pre-replace")
+	siblingRoot := filepath.Join(home, ".patty", "plugins", "foo.pre-replace")
 	if _, err := os.Stat(filepath.Join(siblingRoot, "commands", "keep.md")); err != nil {
 		t.Fatalf("sibling plugin's files must survive the update of foo: %v", err)
 	}
-	if _, ok, _ := pluginpkg.FindInstalled(filepath.Join(home, ".reasonix"), "foo.pre-replace"); !ok {
+	if _, ok, _ := pluginpkg.FindInstalled(filepath.Join(home, ".patty"), "foo.pre-replace"); !ok {
 		t.Fatal("sibling plugin must stay registered")
 	}
-	pkg, _, err := pluginpkg.ParseDir(filepath.Join(home, ".reasonix", "plugins", "foo"))
+	pkg, _, err := pluginpkg.ParseDir(filepath.Join(home, ".patty", "plugins", "foo"))
 	if err != nil {
 		t.Fatalf("ParseDir foo: %v", err)
 	}

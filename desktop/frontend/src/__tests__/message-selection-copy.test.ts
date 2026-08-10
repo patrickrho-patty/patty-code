@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import ReactMarkdown from "react-markdown";
 import { JSDOM } from "jsdom";
 
-import { reasonixRehypePlugins, reasonixRemarkPlugins } from "../components/markdownRemarkPlugins";
+import { pattyRehypePlugins, pattyRemarkPlugins } from "../components/markdownRemarkPlugins";
 import { normalizeMath } from "../components/mathNormalize";
 import {
   messageSelectionContextText,
@@ -191,8 +191,8 @@ function inlineKatex(source: string, rendered: string): string {
 {
   const rendered = renderToStaticMarkup(
     createElement(ReactMarkdown, {
-      remarkPlugins: reasonixRemarkPlugins,
-      rehypePlugins: reasonixRehypePlugins,
+      remarkPlugins: pattyRemarkPlugins,
+      rehypePlugins: pattyRehypePlugins,
       children: normalizeMath("before $|x|$ then $x = 50%$ after"),
     }),
   );
@@ -214,8 +214,8 @@ function inlineKatex(source: string, rendered: string): string {
 {
   const rendered = renderToStaticMarkup(
     createElement(ReactMarkdown, {
-      remarkPlugins: reasonixRemarkPlugins,
-      rehypePlugins: reasonixRehypePlugins,
+      remarkPlugins: pattyRemarkPlugins,
+      rehypePlugins: pattyRehypePlugins,
       children: normalizeMath("before $\\alpha $ then $  x  $ after"),
     }),
   );
@@ -237,8 +237,8 @@ function inlineKatex(source: string, rendered: string): string {
 {
   const rendered = renderToStaticMarkup(
     createElement(ReactMarkdown, {
-      remarkPlugins: reasonixRemarkPlugins,
-      rehypePlugins: reasonixRehypePlugins,
+      remarkPlugins: pattyRemarkPlugins,
+      rehypePlugins: pattyRehypePlugins,
       children: normalizeMath("before $V=\\yng(2,1) | x$ then $$\\young(ab,c)$$ after"),
     }),
   );

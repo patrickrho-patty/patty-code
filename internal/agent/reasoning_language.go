@@ -9,13 +9,10 @@ import (
 type reasoningLanguageContextKey struct{}
 type responseLanguageContextKey struct{}
 
-// NormalizeReasoningLanguage returns one of auto|zh|en for runtime-only visible
-// reasoning preferences. Keep this local to agent so sub-agents can inherit the
-// preference without depending on config.
 func NormalizeReasoningLanguage(lang string) string {
 	switch strings.ToLower(strings.TrimSpace(lang)) {
-	case "zh", "cn", "chinese", "中文":
-		return "zh"
+	case "ko-kr", "ko":
+		return "ko-KR"
 	case "en", "english":
 		return "en"
 	default:
@@ -23,12 +20,10 @@ func NormalizeReasoningLanguage(lang string) string {
 	}
 }
 
-// NormalizeResponseLanguage returns one of auto|zh|en for final-answer language
-// preferences. Auto keeps the stable same-as-user language policy.
 func NormalizeResponseLanguage(lang string) string {
 	switch strings.ToLower(strings.TrimSpace(lang)) {
-	case "zh", "cn", "chinese", "中文":
-		return "zh"
+	case "ko-kr", "ko":
+		return "ko-KR"
 	case "en", "english":
 		return "en"
 	default:
@@ -36,13 +31,10 @@ func NormalizeResponseLanguage(lang string) string {
 	}
 }
 
-// ResponseLanguageBlock is transient user-turn context for final answers. It
-// stays out of the stable system prompt so changing the preference between turns
-// does not churn the cached prefix.
 func ResponseLanguageBlock(lang string) string {
 	switch NormalizeResponseLanguage(lang) {
-	case "zh":
-		return "<response-language>\nFinal answer language preference: use Simplified Chinese for user-facing replies unless the user explicitly asks for another language. Keep code, identifiers, file paths, shell commands, and untranslated technical terms in their original form.\n</response-language>"
+	case "ko-KR":
+		return "<response-language>\nFinal answer language preference: use Standard Korean for user-facing replies unless the user explicitly asks for another language. Keep code, identifiers, file paths, shell commands, and untranslated technical terms in their original form.\n</response-language>"
 	case "en":
 		return "<response-language>\nFinal answer language preference: use English for user-facing replies unless the user explicitly asks for another language. Keep code, identifiers, file paths, shell commands, and untranslated technical terms in their original form.\n</response-language>"
 	default:
@@ -50,16 +42,10 @@ func ResponseLanguageBlock(lang string) string {
 	}
 }
 
-// ReasoningLanguageBlock is transient user-turn context. It deliberately does
-// not belong in the stable system prompt or tool schemas.
 func ReasoningLanguageBlock(lang string) string {
 	switch NormalizeReasoningLanguage(lang) {
-	case "zh":
-		// Imperative wording measured against soft "偏好……请使用" phrasing:
-		// the soft form loses the first reasoning segment on Chinese prompts
-		// that embed English logs/code, and the first segment anchors the
-		// whole turn once providers round-trip prior reasoning.
-		return "<reasoning-language>\n必须使用简体中文书写全部可见思考/推理文本：从第一个字开始就用中文，并在整轮内保持中文，即使系统提示词、工具说明、工具输出或引用的代码是英文。代码、标识符、文件路径、shell 命令和未翻译的技术术语保持原文。此要求只约束可见思考文本，不覆盖用户对最终回答语言的明确要求。\n</reasoning-language>"
+	case "ko-KR":
+		return "<reasoning-language>\n모든 보이는 사고/추론 텍스트는 반드시 한국어로 작성해야 합니다: 첫 글자부터 한국어를 사용하고, 전체 턴 동안 한국어를 유지해야 합니다. 시스템 프롬프트, 도구 설명, 도구 출력 또는 참조된 코드가 영어인 경우에도 마찬가지입니다. 코드, 식별자, 파일 경로, 셸 명령 및 번역되지 않은 기술 용어는 원문을 유지합니다. 이 요구 사항은 보이는 사고 텍스트에만 적용되며, 사용자가 최종 답변 언어에 대해 명시적으로 요청한 내용을 덮어쓰지 않습니다.\n</reasoning-language>"
 	case "en":
 		return "<reasoning-language>\nVisible reasoning/thinking text preference: use English when the provider exposes reasoning text. Keep code, identifiers, file paths, shell commands, and untranslated technical terms in their original form. This preference does not override an explicit user request for the final answer language.\n</reasoning-language>"
 	default:
@@ -67,10 +53,6 @@ func ReasoningLanguageBlock(lang string) string {
 	}
 }
 
-// ResolveReasoningLanguage returns the concrete visible-reasoning language for
-// a turn. Explicit zh/en settings win; auto anchors clear Chinese user prompts
-// and otherwise stays provider-default to preserve the historical no-injection
-// behaviour for English and ambiguous turns.
 func ResolveReasoningLanguage(lang, source string) string {
 	mode := NormalizeReasoningLanguage(lang)
 	if mode != "auto" {
@@ -79,11 +61,6 @@ func ResolveReasoningLanguage(lang, source string) string {
 	return InferReasoningLanguageFromText(source)
 }
 
-// InferReasoningLanguageFromText conservatively detects Chinese user-authored
-// turns for auto reasoning-language mode. It strips Reasonix-injected context
-// wrappers first so large @file payloads or transient XML blocks do not drown
-// out the user's actual prompt. English and ambiguous turns intentionally return
-// auto, preserving the old no-extra-instruction behaviour.
 func InferReasoningLanguageFromText(source string) string {
 	source = reasoningLanguageSourceText(source)
 	if source == "" {
@@ -92,9 +69,9 @@ func InferReasoningLanguageFromText(source string) string {
 	han, cjkPunct := reasoningLanguageScriptCounts(source)
 	switch {
 	case han >= 4:
-		return "zh"
+		return "ko-KR"
 	case han >= 2 && (cjkPunct > 0 || hasChineseReasoningCue(source)):
-		return "zh"
+		return "ko-KR"
 	default:
 		return "auto"
 	}
@@ -164,18 +141,16 @@ func hasChineseReasoningCue(source string) bool {
 }
 
 var chineseReasoningLanguageCues = []string{
-	"你好", "请", "帮我", "帮忙", "看看", "看下", "解释", "说明", "总结", "分析",
-	"修复", "实现", "优化", "排查", "处理", "继续", "为什么", "怎么",
-	"是否", "能否", "支持", "设置", "中文", "思考", "问题", "报错",
-	"代码", "文件", "这个", "那个",
+	"안녕", "부탁", "도와줘", "도움", "봐 줘", "확인해 줘", "설명", "요약", "분석",
+	"복구", "구현", "최적화", "추적", "처리", "계속", "왜", "어떻게",
+	"여부", "가능한지", "지원", "설정", "사고", "문제", "오류 보고",
+	"코드", "파일", "이것", "저것",
 }
 
 func reasoningLanguageBlockForSource(lang, source string) string {
 	return ReasoningLanguageBlock(ResolveReasoningLanguage(lang, source))
 }
 
-// WithResponseLanguage prefixes content with the transient response-language
-// block unless the turn already starts with one.
 func WithResponseLanguage(content, lang string) string {
 	block := ResponseLanguageBlock(lang)
 	if block == "" || hasLeadingInjectedBlock(content, "response-language") {
@@ -184,18 +159,10 @@ func WithResponseLanguage(content, lang string) string {
 	return block + "\n\n" + content
 }
 
-// WithReasoningLanguage prefixes content with the transient reasoning-language
-// block unless the turn already starts with an injected reasoning-language
-// block. User-authored mentions of the tag later in the prompt must not suppress
-// the configured preference.
 func WithReasoningLanguage(content, lang string) string {
 	return WithReasoningLanguageForSource(content, lang, content)
 }
 
-// WithReasoningLanguageForSource prefixes content using source as the language
-// signal for auto mode. Callers that expand @references should pass the raw
-// user prompt as source so referenced English code or logs do not override the
-// user's actual conversation language.
 func WithReasoningLanguageForSource(content, lang, source string) string {
 	block := reasoningLanguageBlockForSource(lang, source)
 	if block == "" || hasLeadingInjectedBlock(content, "reasoning-language") {
@@ -204,12 +171,6 @@ func WithReasoningLanguageForSource(content, lang, source string) string {
 	return block + "\n\n" + content
 }
 
-// hasLeadingInjectedBlock reports whether target is already among the transient
-// blocks leading content, skipping past any other injected block on the way.
-// It walks TransientUserBlockTags rather than a list of its own: when the two
-// disagreed, a block the host had started injecting was treated as user prose
-// and stopped the walk early, so an already-present target went undetected and
-// was injected a second time.
 func hasLeadingInjectedBlock(content, target string) bool {
 	s := strings.TrimLeft(content, " \t\r\n")
 	for {
@@ -234,8 +195,6 @@ func hasLeadingInjectedBlock(content, target string) bool {
 	}
 }
 
-// hasOpenTag reports whether s opens with tag, with or without attributes
-// (hook-context and capability-route carry them).
 func hasOpenTag(s, tag string) bool {
 	return strings.HasPrefix(s, "<"+tag+">") || strings.HasPrefix(s, "<"+tag+" ")
 }
@@ -249,8 +208,6 @@ func trimLeadingTransientBlock(content, tag string) (string, bool) {
 	return strings.TrimLeft(after, " \t\r\n"), true
 }
 
-// WithResponseLanguagePreference carries the runtime final-answer language
-// preference to spawned tools and sub-agents.
 func WithResponseLanguagePreference(ctx context.Context, lang string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -258,7 +215,6 @@ func WithResponseLanguagePreference(ctx context.Context, lang string) context.Co
 	return context.WithValue(ctx, responseLanguageContextKey{}, NormalizeResponseLanguage(lang))
 }
 
-// ResponseLanguageFromContext returns auto|zh|en.
 func ResponseLanguageFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return "auto"
@@ -269,10 +225,6 @@ func ResponseLanguageFromContext(ctx context.Context) string {
 	return "auto"
 }
 
-// WithReasoningLanguagePreference carries the runtime preference to spawned
-// tools, especially sub-agents whose first user turn is created outside the
-// parent controller. It stores auto explicitly so live zh/en -> auto changes
-// clear stale boot-time preferences in child paths.
 func WithReasoningLanguagePreference(ctx context.Context, lang string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -280,7 +232,6 @@ func WithReasoningLanguagePreference(ctx context.Context, lang string) context.C
 	return context.WithValue(ctx, reasoningLanguageContextKey{}, NormalizeReasoningLanguage(lang))
 }
 
-// ReasoningLanguageFromContext returns auto|zh|en.
 func ReasoningLanguageFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return "auto"

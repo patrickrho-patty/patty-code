@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/repair"
+	"patty/internal/repair"
 )
 
 func TestParseWebView2ProcessFailure(t *testing.T) {

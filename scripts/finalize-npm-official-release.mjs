@@ -21,10 +21,10 @@ if (!Number.isSafeInteger(verifyAttempts) || verifyAttempts < 1) {
 }
 
 const packages = [
-  "reasonix",
-  "@reasonix/cli-darwin-arm64", "@reasonix/cli-darwin-x64",
-  "@reasonix/cli-linux-arm64", "@reasonix/cli-linux-x64",
-  "@reasonix/cli-win32-arm64", "@reasonix/cli-win32-x64",
+  "patty",
+  "@patty/cli-darwin-arm64", "@patty/cli-darwin-x64",
+  "@patty/cli-linux-arm64", "@patty/cli-linux-x64",
+  "@patty/cli-win32-arm64", "@patty/cli-win32-x64",
 ];
 
 const OFFICIAL_ALIASES = ["latest", "canary", "next"];
@@ -38,7 +38,7 @@ const stagingTag = "latest-staging";
 function metadata(name) {
   const output = execFileSync(
     "npm",
-    ["view", `${name}@${version}`, "name", "version", "gitHead", "reasonixCandidateSha", "--json"],
+    ["view", `${name}@${version}`, "name", "version", "gitHead", "pattyCandidateSha", "--json"],
     { encoding: "utf8" },
   );
   return JSON.parse(output);
@@ -83,8 +83,8 @@ for (const name of packages) {
   if (expectedSha && actual.gitHead !== expectedSha) {
     throw new Error(`${name}@${version} gitHead ${actual.gitHead || "<missing>"} does not match ${expectedSha}`);
   }
-  if (expectedSha && actual.reasonixCandidateSha !== expectedSha) {
-    throw new Error(`${name}@${version} reasonixCandidateSha ${actual.reasonixCandidateSha || "<missing>"} does not match ${expectedSha}`);
+  if (expectedSha && actual.pattyCandidateSha !== expectedSha) {
+    throw new Error(`${name}@${version} pattyCandidateSha ${actual.pattyCandidateSha || "<missing>"} does not match ${expectedSha}`);
   }
 }
 

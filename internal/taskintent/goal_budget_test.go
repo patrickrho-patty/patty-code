@@ -3,12 +3,10 @@ package taskintent
 import "testing"
 
 func TestGoalNeedsWriteBudgetMatrix(t *testing.T) {
-	// User-reported Chinese bare fault statement must land on the write budget.
-	const userReported = "数据模型管理器又出现历史 BUG 了……"
+	const userReported = "데이터 모델 관리자에 또 이전 버그가 생겼어…"
 	if !GoalNeedsWriteBudget(userReported) {
 		t.Fatalf("GoalNeedsWriteBudget(%q) = false, want write", userReported)
 	}
-	// Ordinary Delivery must still treat the same bare fault as non-mutation
 	// (observable read / evidence, not write-required).
 	if NeedsMutation(userReported) {
 		t.Fatalf("NeedsMutation(%q) changed; ordinary Delivery must stay non-mutation", userReported)
@@ -16,14 +14,14 @@ func TestGoalNeedsWriteBudgetMatrix(t *testing.T) {
 
 	writeCases := []string{
 		userReported,
-		"应用打开设置时崩溃",
+		"설정을 열 때 앱이 충돌해",
 		"the auth service crashes on login",
 		"parser throws an exception on empty input",
 		"fix the crash in a.go",
-		"帮我修复wps的崩溃问题",
+		"wps의 충돌 문제를 수정해 줘",
 		"why does it fail and fix it",
-		"为什么失败然后修复它",
-		"解释失败原因并修复",
+		"왜 실패했는지, 수정해 줘",
+		"실패 원인을 설명하고 수정해 줘",
 	}
 	for _, input := range writeCases {
 		if !GoalNeedsWriteBudget(input) {
@@ -32,10 +30,10 @@ func TestGoalNeedsWriteBudgetMatrix(t *testing.T) {
 	}
 
 	simpleCases := []string{
-		"为什么会出现这个 BUG？",
-		"只分析原因，不要修改代码。",
-		"诊断数据库连接失败原因。",
-		"复现并定位问题，但不要修复。",
+		"왜 이 버그가 생기는 거야?",
+		"원인만 분석하고, 코드는 건드리지 마세요.",
+		"데이터베이스 연결 실패 원인을 진단해 줘.",
+		"문제를 재현하고 위치를 파악하되, 복구하지 마세요.",
 		"why does this bug happen?",
 		"explain the crash without changing code",
 		"reproduce the crash and identify the root cause",
@@ -51,13 +49,12 @@ func TestGoalNeedsWriteBudgetMatrix(t *testing.T) {
 
 func TestGoalBareFaultDoesNotChangeDeliveryClassification(t *testing.T) {
 	// Pin ordinary Delivery consultation/diagnosis so Goal write inference
-	// cannot drift the shared delivery gates.
 	readonly := []string{
-		"为什么会出现这个 BUG？",
-		"诊断数据库连接失败原因。",
+		"왜 이 버그가 생기는 거야?",
+		"데이터베이스 연결 실패 원인을 진단해 줘.",
 		"reproduce the crash and identify the root cause",
-		"应用打开设置时崩溃",
-		"数据模型管理器又出现历史 BUG 了……",
+		"설정을 열 때 앱이 충돌해",
+		"데이터 모델 관리자에 또 이전 버그가 생겼어…",
 	}
 	for _, input := range readonly {
 		if NeedsMutation(input) {
@@ -66,7 +63,7 @@ func TestGoalBareFaultDoesNotChangeDeliveryClassification(t *testing.T) {
 	}
 	mutation := []string{
 		"fix the crash in a.go",
-		"为什么失败然后修复它",
+		"왜 실패했는지, 수정해 줘",
 	}
 	for _, input := range mutation {
 		if !NeedsMutation(input) {
@@ -76,15 +73,12 @@ func TestGoalBareFaultDoesNotChangeDeliveryClassification(t *testing.T) {
 }
 
 func TestTaskFaultSignalsSharedWithGoalClassification(t *testing.T) {
-	// Shared fault list must keep task recognition and Goal classification
-	// aligned for bare problem statements.
-	for _, phrase := range []string{"bug", "crash", "崩溃", "异常", "报错", "失败"} {
+	for _, phrase := range []string{"bug", "crash", "충돌", "이상", "오류 발생", "실패"} {
 		input := "something " + phrase + " happened"
 		if !taskInputHasFaultSignal(input) {
 			t.Errorf("taskInputHasFaultSignal missing %q", phrase)
 		}
 		if !heuristicInputIsTask(input) && !stringsContainsCJK(phrase) {
-			// English bare fault remains a task signal.
 			if !heuristicInputIsTask("the service has a " + phrase) {
 				t.Errorf("heuristic task signal missing for fault %q", phrase)
 			}

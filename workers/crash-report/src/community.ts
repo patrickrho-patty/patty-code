@@ -88,7 +88,7 @@ export function renderCommunity(viewer: User, packages: PackageRow[], status: st
         .join("")
     : `<tr><td colspan="6"><div class="empty">No ${esc(status)} packages</div></td></tr>`;
   return page(
-    "Reasonix · Community",
+    "Patty Code · Community",
     "community",
     `<h1>Community</h1><p class="sub">Review user-published skills, plugins, and MCP servers — approve to publish, verify to badge, hide to take down</p>
 <div class="filter-tabs">${tabs}</div>

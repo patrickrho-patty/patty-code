@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
+	"patty/internal/event"
 )
 
 // TestToWireExtensionSurfacePayloads covers the stage-8a extension surface

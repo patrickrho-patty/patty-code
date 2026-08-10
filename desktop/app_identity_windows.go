@@ -5,8 +5,8 @@ package main
 import (
 	"os"
 
-	"reasonix/internal/appidentity"
-	"reasonix/internal/installlayout"
+	"patty/internal/appidentity"
+	"patty/internal/installlayout"
 )
 
 func init() {

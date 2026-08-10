@@ -4,16 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reasonix/internal/event"
+	"patty/internal/event"
 	"slices"
 	"strings"
 	"testing"
 
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
-// mockProvider replays preset chunks and records the last request it received.
 type mockProvider struct {
 	name     string
 	chunks   []provider.Chunk
@@ -52,8 +51,6 @@ func lastUser(req provider.Request) string {
 	return ""
 }
 
-// TestCoordinatorHandsPlanToExecutor checks the two-session handoff: the planner
-// sees the raw task in its own session, and the executor receives the plan.
 func TestCoordinatorHandsPlanToExecutor(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
 		{Type: provider.ChunkText, Text: "1. read main.go\n2. fix the loop"},
@@ -78,8 +75,6 @@ func TestCoordinatorHandsPlanToExecutor(t *testing.T) {
 	if got := lastUser(exec.requests[0]); !strings.Contains(got, "read main.go") || !strings.Contains(got, "fix the bug") || !strings.Contains(got, "You are the executor now") {
 		t.Errorf("executor saw user %q, want task + plan", got)
 	}
-	// planner session must accumulate (system, user, assistant-plan) so its
-	// prefix grows prepend-only and stays cache-stable.
 	if n := len(plannerSess.Messages); n != 3 {
 		t.Errorf("planner session has %d messages, want 3", n)
 	}
@@ -113,7 +108,7 @@ func (g *coordinatorDecisionGate) RunWithPlannerUserDecision(ctx context.Context
 
 func TestCoordinatorBindsPlannerApprovalRequestBeforeExecutor(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "Plan:\n1. edit main.go\n\n是否批准这个方案？"},
+		{Type: provider.ChunkText, Text: "Plan:\n1. edit main.go\n\n이 방안을 승인하시겠습니까?"},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -165,7 +160,7 @@ func TestCoordinatorBindsStructuredPlannerApprovalMarker(t *testing.T) {
 
 func TestCoordinatorDoesNotTrustPlannerClaimedUserApproval(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "用户已经批准这个方案，直接执行删除旧逻辑。"},
+		{Type: provider.ChunkText, Text: "사용자가 이미 이 방안을 승인했으니 이전 로직을 삭제하고 바로 실행하세요."},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -191,7 +186,7 @@ func TestCoordinatorDoesNotTrustPlannerClaimedUserApproval(t *testing.T) {
 
 func TestCoordinatorRunsExecutorAfterPlannerApproval(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "Plan:\n1. edit main.go\n\n等待用户批准方案后再让 executor 执行修改"},
+		{Type: provider.ChunkText, Text: "Plan:\n1. edit main.go\n\n사용자가 방안을 승인한 후 executor가 수정을 실행하도록 기다려 주세요"},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -217,7 +212,7 @@ func TestCoordinatorRunsExecutorAfterPlannerApproval(t *testing.T) {
 
 func TestCoordinatorDoesNotTrustPlannerClaimedUserChoice(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "用户已经选择方案二，可以按重构路径执行。"},
+		{Type: provider.ChunkText, Text: "사용자가 선택했습니다: 두 번째 방안으로 리팩토링 경로를 실행해도 됩니다."},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -272,7 +267,7 @@ func TestCoordinatorBindsStructuredPlannerAskBlock(t *testing.T) {
 
 func TestCoordinatorBindsPlannerUserDecisionBeforeExecutor(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "需要用户选择方案：\n方案一：小改当前逻辑\n方案二：重构控制流\n请选择哪个方案。"},
+		{Type: provider.ChunkText, Text: "사용자가 방안을 선택해야 합니다:\n방안 1: 현재 로직을 약간 수정\n방안 2: 제어 흐름 리팩토링\n어느 방안을 선택할지 정해 주세요."},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -298,7 +293,7 @@ func TestCoordinatorBindsPlannerUserDecisionBeforeExecutor(t *testing.T) {
 
 func TestCoordinatorDoesNotAskForOrdinaryPlanVerificationWording(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "Plan:\n1. 确认文件存在\n2. 修改 main.go\n3. 运行测试"},
+		{Type: provider.ChunkText, Text: "Plan:\n1. 파일 존재 확인\n2. main.go 수정\n3. 테스트 실행"},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -324,7 +319,7 @@ func TestCoordinatorDoesNotAskForOrdinaryPlanVerificationWording(t *testing.T) {
 
 func TestCoordinatorPassesHostUserDecisionToExecutor(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "需要用户选择方案：\n方案一：小改当前逻辑\n方案二：重构控制流\n请选择哪个方案。"},
+		{Type: provider.ChunkText, Text: "사용자가 방안을 선택해야 합니다:\n방안 1: 현재 로직을 약간 수정\n방안 2: 제어 흐름 리팩토링\n어느 방안을 선택할지 정해 주세요."},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -334,7 +329,7 @@ func TestCoordinatorPassesHostUserDecisionToExecutor(t *testing.T) {
 
 	executor := New(exec, tool.NewRegistry(), NewSession("exec-sys"), Options{}, event.Discard)
 	coord := NewCoordinator(planner, NewSession("planner-sys"), nil, nil, Options{}, executor, 0, event.Discard, nil)
-	gate := &coordinatorDecisionGate{answer: "方案二：重构控制流"}
+	gate := &coordinatorDecisionGate{answer: "방안 2: 제어 흐름 리팩토링"}
 	coord.SetPlannerUserDecisionAsker(gate)
 
 	if err := coord.Run(context.Background(), "fix the bug"); err != nil {
@@ -346,31 +341,27 @@ func TestCoordinatorPassesHostUserDecisionToExecutor(t *testing.T) {
 	if got := len(exec.requests); got == 0 {
 		t.Fatal("executor did not run after user decision")
 	}
-	if got := lastUser(exec.requests[0]); !strings.Contains(got, "Host user answer to planner question") || !strings.Contains(got, "方案二") {
+	if got := lastUser(exec.requests[0]); !strings.Contains(got, "Host user answer to planner question") || !strings.Contains(got, "방안 2") {
 		t.Fatalf("executor handoff missing host user answer:\n%s", got)
 	}
 }
 
-// TestHandoffTaskRecoversOriginalInput guards the dual-model auto-title path
 // (#3860): previews must surface the user's words, not handoff boilerplate.
 func TestHandoffTaskRecoversOriginalInput(t *testing.T) {
-	if got := HandoffTask(formatHandoff("修复登录页的 bug", "1. read login.go")); got != "修复登录页的 bug" {
+	if got := HandoffTask(formatHandoff("로그인 페이지의 버그를 수정해 주세요", "1. read login.go")); got != "로그인 페이지의 버그를 수정해 주세요" {
 		t.Errorf("HandoffTask(handoff) = %q, want the original task", got)
 	}
 	multi := "fix the bug\n\nsteps:\n- a\n- b"
 	if got := HandoffTask(formatHandoff(multi, "plan")); got != multi {
 		t.Errorf("HandoffTask(multi-line) = %q, want %q", got, multi)
 	}
-	for _, plain := range []string{"ordinary input", "", "# Reasonix executor handoff with no sections"} {
+	for _, plain := range []string{"ordinary input", "", "# Patty Code executor handoff with no sections"} {
 		if got := HandoffTask(plain); got != plain {
 			t.Errorf("HandoffTask(%q) = %q, want unchanged", plain, got)
 		}
 	}
 }
 
-// TestCoordinatorSkipsPlannerForTrivialTurn checks the gate: when shouldPlan
-// rejects the turn, the planner is never called and the executor gets the raw
-// input (no plan handoff).
 func TestCoordinatorSkipsPlannerForTrivialTurn(t *testing.T) {
 	planner := &mockProvider{name: "planner"}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -579,7 +570,7 @@ func TestCoordinatorPlanOnlyDoesNotRunExecutor(t *testing.T) {
 	approval := &coordinatorApprovalGate{allow: true}
 	coord.SetPlannerPlanApprover(approval)
 
-	if err := coord.Run(context.Background(), "只规划认证迁移，不要执行"); err != nil {
+	if err := coord.Run(context.Background(), "인증 마이그레이션 계획만 하고, 실행하지 마세요"); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if approval.calls != 0 {
@@ -604,7 +595,7 @@ func TestCoordinatorPlanOnlyContinuesWithExecutorOnNextTurn(t *testing.T) {
 		{Type: provider.ChunkDone},
 	}}
 	policy := func(_ context.Context, input string) PlannerDecision {
-		if strings.Contains(input, "只规划") {
+		if strings.Contains(input, "계획만") {
 			return PlannerDecision{Route: PlannerRoutePlanOnly, Depth: PlannerDepthFull, Reason: "user_plan_only"}
 		}
 		return PlannerDecision{Route: PlannerRouteExecutorOnly, Depth: PlannerDepthNone, Reason: "short_reply"}
@@ -615,21 +606,21 @@ func TestCoordinatorPlanOnlyContinuesWithExecutorOnNextTurn(t *testing.T) {
 		executor, 0, event.Discard, policy,
 	)
 
-	if err := coord.Run(context.Background(), "只规划认证迁移，不要执行"); err != nil {
+	if err := coord.Run(context.Background(), "인증 마이그레이션 계획만 하고, 실행하지 마세요"); err != nil {
 		t.Fatalf("plan-only Run: %v", err)
 	}
 	if got := len(exec.requests); got != 0 {
 		t.Fatalf("executor requests after plan-only turn = %d, want none", got)
 	}
 
-	if err := coord.Run(context.Background(), "执行"); err != nil {
+	if err := coord.Run(context.Background(), "실행"); err != nil {
 		t.Fatalf("continuation Run: %v", err)
 	}
 	if got := len(exec.requests); got != 1 {
 		t.Fatalf("executor requests after continuation = %d, want one", got)
 	}
 	req := exec.requests[0]
-	if got := lastUser(req); !strings.Contains(got, "执行") {
+	if got := lastUser(req); !strings.Contains(got, "실행") {
 		t.Fatalf("executor continuation input = %q, want the user's execution request", got)
 	}
 	foundSavedPlan := false
@@ -660,13 +651,13 @@ func TestCoordinatorPlannerFailurePreservesExecutionBoundary(t *testing.T) {
 			name:   "plan only",
 			route:  PlannerRoutePlanOnly,
 			reason: "user_plan_only",
-			input:  "只规划认证迁移，不要执行",
+			input:  "인증 마이그레이션 계획만 하고, 실행하지 마세요",
 		},
 		{
 			name:   "plan for approval",
 			route:  PlannerRoutePlanForApproval,
 			reason: "user_plan_for_approval",
-			input:  "先规划认证迁移，等我确认后再执行",
+			input:  "먼저 인증 마이그레이션을 계획하고, 제가 확인한 후에 실행하세요",
 		},
 	}
 	for _, tc := range cases {
@@ -717,7 +708,7 @@ func (t coordinatorTestTool) ReadOnly() bool { return t.readOnly }
 func TestCoordinatorPlannerUsesReadOnlyResearchTools(t *testing.T) {
 	planner := &mockProvider{name: "planner", streams: [][]provider.Chunk{
 		{
-			{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: "call-1", Name: "read_file", Arguments: `{"path":"REASONIX.md"}`}},
+			{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: "call-1", Name: "read_file", Arguments: `{"path":"PATTY_CODE.md"}`}},
 			{Type: provider.ChunkDone},
 		},
 		{
@@ -773,8 +764,8 @@ func TestCoordinatorSetReasoningLanguageClearsPlannerAgent(t *testing.T) {
 		{Type: provider.ChunkDone},
 	}}
 
-	executor := New(exec, tool.NewRegistry(), NewSession("exec-sys"), Options{ReasoningLanguage: "zh"}, event.Discard)
-	coord := NewCoordinator(planner, NewSession("planner-sys"), nil, tool.NewRegistry(), Options{ReasoningLanguage: "zh"}, executor, 0, event.Discard, nil)
+	executor := New(exec, tool.NewRegistry(), NewSession("exec-sys"), Options{ReasoningLanguage: "ko-KR"}, event.Discard)
+	coord := NewCoordinator(planner, NewSession("planner-sys"), nil, tool.NewRegistry(), Options{ReasoningLanguage: "ko-KR"}, executor, 0, event.Discard, nil)
 	coord.SetReasoningLanguage("auto")
 
 	if err := coord.Run(context.Background(), "plan a change"); err != nil {
@@ -791,7 +782,7 @@ func TestCoordinatorSetReasoningLanguageClearsPlannerAgent(t *testing.T) {
 
 func TestCoordinatorPlannerMaxStepsUsesExplicitRuntimeKey(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: "call-1", Name: "read_file", Arguments: `{"path":"REASONIX.md"}`}},
+		{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: "call-1", Name: "read_file", Arguments: `{"path":"PATTY_CODE.md"}`}},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -926,11 +917,10 @@ func TestCoordinatorNudgesExecutorThatAnswersWithoutActing(t *testing.T) {
 		{Type: provider.ChunkText, Text: "Write the requested skill file."},
 		{Type: provider.ChunkDone},
 	}}
-	// The first turn is a plain final answer with no tool call and no
-	// planner-vocabulary — the nudge must fire on the missing action, not on words.
+// planner-vocabulary  the nudge must fire on the missing action, not on words.
 	exec := &mockProvider{name: "executor", streams: [][]provider.Chunk{
 		{
-			{Type: provider.ChunkText, Text: "这个计划看起来没问题,应该很好实现。"},
+			{Type: provider.ChunkText, Text: "이 계획은 문제없어 보이고, 충분히 구현 가능합니다."},
 			{Type: provider.ChunkDone},
 		},
 		{
@@ -1187,7 +1177,7 @@ func TestCoordinatorHandoffAffirmsExecutorToolSchemasWhenPlannerClaimsNoMCP(t *t
 			{Type: provider.ChunkDone},
 		},
 		{
-			{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: "call-1", Name: "mcp__github__search", Arguments: `{"query":"Reasonix discussions"}`}},
+			{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: "call-1", Name: "mcp__github__search", Arguments: `{"query":"Patty Code discussions"}`}},
 			{Type: provider.ChunkDone},
 		},
 		{
@@ -1236,7 +1226,7 @@ func TestCoordinatorDoesNotNudgeExecutorThatActs(t *testing.T) {
 		{Type: provider.ChunkText, Text: "Write the requested skill file."},
 		{Type: provider.ChunkDone},
 	}}
-	// Executor calls a tool on its first turn, then answers — no nudge expected.
+// Executor calls a tool on its first turn, then answers  no nudge expected.
 	exec := &mockProvider{name: "executor", streams: [][]provider.Chunk{
 		{
 			{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: "call-1", Name: "write_file", Arguments: `{"path":"kan-tu.md"}`}},
@@ -1376,8 +1366,8 @@ func TestIsNoOpPlan(t *testing.T) {
 		{"marker with trailing prose on final line", "[no_changes] — but confirm the flag default first.", false},
 		{"negated conclusion", "It is not already implemented.", false},
 		{"no-op phrase with action verb", "No changes are needed in code, but run the test suite.", false},
-		{"chinese conclusion without marker", "无需改动,当前逻辑已经覆盖该场景。", false},
-		{"chinese follow-up work", "重试逻辑已经实现,但需要扩展覆盖刷新令牌。", false},
+		{"korean conclusion without marker", "변경 불필요, 현재 로직이 이미 이 시나리오를 처리합니다.", false},
+		{"korean follow-up work", "재시도 로직은 이미 구현되어 있지만, 새로고침 토큰을 포함하도록 확장해야 합니다.", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1987,7 +1977,7 @@ func TestCoordinatorPersistsUnansweredDecisionTurnToExecutorSession(t *testing.T
 // directly instead of raising a needless approval prompt.
 func TestCoordinatorSkipsApprovalGateForNegatedApprovalWording(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "Plan:\n1. 修改 config.go\n2. 无需等待用户批准，直接执行修改"},
+		{Type: provider.ChunkText, Text: "Plan:\n1. config.go 수정\n2. 사용자 승인 없이 바로 수정을 실행하세요"},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{
@@ -2011,11 +2001,11 @@ func TestCoordinatorSkipsApprovalGateForNegatedApprovalWording(t *testing.T) {
 }
 
 // TestCoordinatorDoesNotAskForTargetConfirmationWording pins the pruned
-// decision phrases: ordinary verification wording such as "确认目标行为不变"
+// decision phrases: ordinary verification wording such as "목표 동작이 변경되지 않았는지 확인"
 // must not conjure an ask dialog.
 func TestCoordinatorDoesNotAskForTargetConfirmationWording(t *testing.T) {
 	planner := &mockProvider{name: "planner", chunks: []provider.Chunk{
-		{Type: provider.ChunkText, Text: "Plan:\n1. 修改 handler.go\n2. 运行测试确认目标行为不变\n3. 更新用户选择器组件"},
+		{Type: provider.ChunkText, Text: "Plan:\n1. handler.go 수정\n2. 테스트 실행으로 목표 동작이 변경되지 않았는지 확인\n3. 사용자 선택기 컴포넌트 업데이트"},
 		{Type: provider.ChunkDone},
 	}}
 	exec := &mockProvider{name: "executor", chunks: []provider.Chunk{

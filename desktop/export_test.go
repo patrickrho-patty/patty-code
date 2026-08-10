@@ -18,14 +18,14 @@ func TestSaveExportFileWritesTextAndBinaryPayloads(t *testing.T) {
 	dir := t.TempDir()
 
 	textPath := filepath.Join(dir, "session.md")
-	if err := app.SaveExportFile(textPath, "# 会话\n", false); err != nil {
+	if err := app.SaveExportFile(textPath, "# 세션\n", false); err != nil {
 		t.Fatalf("save text export: %v", err)
 	}
 	text, err := os.ReadFile(textPath)
 	if err != nil {
 		t.Fatalf("read text export: %v", err)
 	}
-	if got, want := string(text), "# 会话\n"; got != want {
+	if got, want := string(text), "# 세션\n"; got != want {
 		t.Fatalf("text export = %q, want %q", got, want)
 	}
 
@@ -171,7 +171,7 @@ func TestSaveExportImageFilesMatchesNormalExportPermissions(t *testing.T) {
 	if got, want := partInfo.Mode().Perm(), referenceInfo.Mode().Perm(); got != want {
 		t.Fatalf("multipart permissions = %v, want normal export permissions %v", got, want)
 	}
-	if matches, err := filepath.Glob(filepath.Join(dir, ".reasonix-export-*")); err != nil || len(matches) != 0 {
+	if matches, err := filepath.Glob(filepath.Join(dir, ".patty-export-*")); err != nil || len(matches) != 0 {
 		t.Fatalf("staged files remain after successful export: matches=%v err=%v", matches, err)
 	}
 }
@@ -216,7 +216,7 @@ func TestSaveExportImageFilesDecodesAllPartsBeforeWriting(t *testing.T) {
 			t.Fatalf("invalid payload should leave no image part %d, stat error = %v", i, statErr)
 		}
 	}
-	if matches, globErr := filepath.Glob(filepath.Join(dir, ".reasonix-export-*")); globErr != nil || len(matches) != 0 {
+	if matches, globErr := filepath.Glob(filepath.Join(dir, ".patty-export-*")); globErr != nil || len(matches) != 0 {
 		t.Fatalf("invalid payload left staged files: matches=%v err=%v", matches, globErr)
 	}
 }
@@ -321,7 +321,7 @@ func TestConcurrentMultipartExportsHaveSingleCompleteWinner(t *testing.T) {
 			t.Fatalf("winning part %d = %q, want %q from one batch", i, got, want)
 		}
 	}
-	if matches, globErr := filepath.Glob(filepath.Join(dir, ".reasonix-export-*")); globErr != nil || len(matches) != 0 {
+	if matches, globErr := filepath.Glob(filepath.Join(dir, ".patty-export-*")); globErr != nil || len(matches) != 0 {
 		t.Fatalf("concurrent export left staged files: matches=%v err=%v", matches, globErr)
 	}
 }

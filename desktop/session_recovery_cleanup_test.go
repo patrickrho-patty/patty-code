@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/config"
-	"reasonix/internal/provider"
-	"reasonix/internal/store"
+	"patty/internal/agent"
+	"patty/internal/config"
+	"patty/internal/provider"
+	"patty/internal/store"
 )
 
 func saveSnapshotTurns(t *testing.T, path string, turns int) *agent.Session {
@@ -89,8 +89,6 @@ func TestMergeSessionInfosCountsRecoveryActivity(t *testing.T) {
 	if summary.turns != 3 {
 		t.Fatalf("turns = %d, want 3 (recovery copies must not double-count)", summary.turns)
 	}
-	// The copy is the live transcript after recovery: its newer activity must
-	// drive topic recency, unread state, and time filters.
 	if summary.lastActivityAt != now.UnixMilli() {
 		t.Fatalf("lastActivityAt = %d, want recovery activity %d", summary.lastActivityAt, now.UnixMilli())
 	}
@@ -216,7 +214,6 @@ func TestTopicHiddenAsRecoveryOnly(t *testing.T) {
 		{"pinned stays visible", recoveryOnly, true, nil, false},
 		{"single open runtime", recoveryOnly, false, []runtimeSessionStatus{{open: true}}, false},
 		// topicRuntimeStatus reports open/running only for single-session
-		// topics; the hide rule must still see a two-session topic as live.
 		{"two runtime sessions one open", recoveryOnly, false, []runtimeSessionStatus{{open: true}, {running: false}}, false},
 		{"detached running runtime", recoveryOnly, false, []runtimeSessionStatus{{running: true}, {}}, false},
 		{"idle runtime entries only", recoveryOnly, false, []runtimeSessionStatus{{}, {}}, true},
@@ -233,8 +230,6 @@ func TestTrashSessionMatchesLiveSeesEventLogDivergence(t *testing.T) {
 	live := filepath.Join(dir, "session.jsonl")
 	s := saveSnapshotTurns(t, live, 1)
 
-	// Simulate an old trash copy taken at checkpoint time: same anchor bytes,
-	// same event log state.
 	trashDir := filepath.Join(dir, "trash")
 	if err := os.MkdirAll(trashDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -261,8 +256,6 @@ func TestTrashSessionMatchesLiveSeesEventLogDivergence(t *testing.T) {
 		t.Fatal("identical live/trash reported as different")
 	}
 
-	// The live session keeps chatting: growth lands in the event log only, so
-	// the two .jsonl checkpoints stay byte-identical. Byte comparison would
 	// call this a duplicate and delete the live session's newer history.
 	s.Add(provider.Message{Role: provider.RoleUser, Content: "newer work"})
 	if err := s.SaveSnapshot(live); err != nil {
@@ -288,8 +281,6 @@ func TestTrashPathsBlockedWhileLeaseHeld(t *testing.T) {
 	saveSnapshotTurns(t, path, 1)
 
 	// A live owner (any runtime — this process or another) holds the lease
-	// lock on an open handle for its whole hold. Every destructive path must
-	// refuse while it is held: probing once and deleting later would let the
 	// owner's freshly locked lease file be unlinked out from under it.
 	lease, err := agent.TryAcquireSessionLease(path)
 	if err != nil {
@@ -321,8 +312,6 @@ func TestTrashPathsBlockedWhileLeaseHeld(t *testing.T) {
 		t.Fatalf("lease lock deleted while held: %v", err)
 	}
 
-	// Once the owner releases, the same trash call succeeds and the lock
-	// sidecars are gone with it.
 	lease.Release()
 	released = true
 	if err := trashSessionArtifactsBeforeMove(dir, path, "session.jsonl", nil); err != nil {
@@ -388,15 +377,12 @@ func TestTopicTitleUserTurnsSkipHostFraming(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "session.jsonl")
 	s := agent.NewSession("sys")
-	// Delivery-mode first turn: user text with the trailing runtime marker.
 	// Built from the exported constant — the preview strip is byte-exact, so a
-	// paraphrased marker would (correctly) not be stripped.
-	s.Add(provider.Message{Role: provider.RoleUser, Content: "你是谁？\n\n" + agent.DeliveryRuntimeMarker})
+	s.Add(provider.Message{Role: provider.RoleUser, Content: "당신은 누구세요?\n\n" + agent.DeliveryRuntimeMarker})
 	s.Add(provider.Message{Role: provider.RoleAssistant, Content: "reply"})
-	// Host-injected readiness nudge, persisted as role user.
 	s.Add(provider.Message{Role: provider.RoleUser, Content: "Host final-answer readiness check failed. Before giving a final answer, address the missing host-observable receipts: x"})
 	s.Add(provider.Message{Role: provider.RoleAssistant, Content: "reply"})
-	s.Add(provider.Message{Role: provider.RoleUser, Content: "帮我写一个魂斗罗游戏"})
+	s.Add(provider.Message{Role: provider.RoleUser, Content: "콘트라 게임을 만들어 줘"})
 	if err := s.SaveSnapshot(path); err != nil {
 		t.Fatalf("SaveSnapshot: %v", err)
 	}
@@ -405,7 +391,7 @@ func TestTopicTitleUserTurnsSkipHostFraming(t *testing.T) {
 	if len(users) != 2 {
 		t.Fatalf("user turns = %d, want 2 (readiness nudge must not count)", len(users))
 	}
-	if users[0] != "你是谁？" {
+	if users[0] != "당신은 누구세요?" {
 		t.Fatalf("first turn = %q, want the marker stripped", users[0])
 	}
 	if title := topicTitleFromText(users[0]); strings.Contains(title, "<delivery") || strings.Contains(title, "delivery-run") {

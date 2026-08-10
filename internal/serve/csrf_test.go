@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/config"
-	"reasonix/internal/control"
+	"patty/internal/config"
+	"patty/internal/control"
 )
 
 // TestServeRejectsNonJSONPost guards the CSRF defense: a state-changing POST that

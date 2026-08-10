@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"reasonix/internal/control"
+	"patty/internal/control"
 )
 
 // TestControllerAccessorIsRaceSafe guards the switchModel concurrency contract:

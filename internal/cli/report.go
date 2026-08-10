@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"reasonix/internal/config"
-	"reasonix/internal/crashreport"
-	"reasonix/internal/i18n"
+	"patty/internal/config"
+	"patty/internal/crashreport"
+	"patty/internal/i18n"
 )
 
 var sendCLIReport = crashreport.Send
@@ -22,7 +22,7 @@ func reportCommand(args []string) int {
 }
 
 func reportCommandWithIO(args []string, interactive bool, in io.Reader, out, errOut io.Writer) int {
-	home := config.ReasonixHomeDir()
+	home := config.PattyHomeDir()
 	action := ""
 	id := ""
 	if len(args) > 0 {

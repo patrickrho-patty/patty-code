@@ -1,0 +1,90 @@
+# GongCode / 공코드 — Derived Product Profile
+# Extends the patty base harness with governance enforcement modules and
+# control-plane coordinates. Resolved via the inheritance engine: this file
+# overrides identity and adds enforcement modules on top of products/patty.
+
+extends: patty
+
+harnessID: gongcode
+editionID: "1.0.0"
+
+displayName:
+  ko: "공코드"
+  en: "GongCode"
+
+artifactName: gongcode
+executableName: gongcode
+
+userRoot: .gongcode
+configFilename: gongcode.toml
+envPrefix: GONGCODE_
+protocolHandler: gongcode
+keychainService: GONGCODE_KEYCHAIN
+desktopEntryName: gongcode
+
+colorPalette:
+  name: gong-control
+  foreground: "#E9E7E2"
+  background: "#14161B"
+  accentBlue: "#3D7BDF"
+  accentRed: "#C8443C"
+  monochrome: [7, 0]
+
+bannerArtwork:
+  path: assets/banner.txt
+  digest: ""
+
+defaultLocale: ko
+supportedLocales:
+  - ko
+  - en
+
+# Harness-enforced modules: cannot be disabled through any API. These carry the
+# governance trust chain (identity, auditable transport, policy, scanner, audit).
+requiredModules:
+  - id: core.identity
+    version: ">=1.0.0"
+    signed: true
+  - id: core.transport
+    version: ">=1.0.0"
+    signed: true
+  - id: core.policy
+    version: ">=1.0.0"
+    signed: true
+  - id: core.scanner
+    version: ">=1.0.0"
+    signed: true
+  - id: core.audit
+    version: ">=1.0.0"
+    signed: true
+
+optionalModules: []
+
+prohibitedModules:
+  - feature.autoresearch
+  - feature.bot
+
+trustRoots: []
+acceptedPublishers: []
+
+securityBaseline:
+  degradedMode: blockAll
+  protectedOperations:
+    - name: governed_edit
+      description:
+        ko: "거버넌스 보호 편집 작업 — 필수 서비스 필요"
+        en: "Governance-protected edit — requires mandatory services"
+      failClosed: true
+    - name: export_sensitive
+      description:
+        ko: "민감 데이터 내보내기 — 필수 서비스 필요"
+        en: "Sensitive data export — requires mandatory services"
+      failClosed: true
+
+storageNamespace: gongcode
+
+# Control-plane coordinates (release-blocked until owned domains exist).
+governanceURL: ""
+auditURL: ""
+scannerURL: ""
+modelApprovalURL: ""

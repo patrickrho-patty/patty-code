@@ -25,9 +25,9 @@ const REGION_KEYS: Record<TypographyRegion, Parameters<ReturnType<typeof useT>>[
 const FONT_OPTIONS: Array<{ value: RegionFontFamily; key: Parameters<ReturnType<typeof useT>>[0] }> = [
   { value: "inherit", key: "settings.typography.font.inherit" },
   { value: "system", key: "settings.fontFamilySystem" },
-  { value: "yahei", key: "settings.fontFamilyYaHei" },
-  { value: "pingfang", key: "settings.fontFamilyPingFang" },
-  { value: "noto", key: "settings.fontFamilyNoto" },
+  { value: "malgun", key: "settings.fontFamilyMalgun" },
+  { value: "applesdgothic", key: "settings.fontFamilyAppleSDGothic" },
+  { value: "notokr", key: "settings.fontFamilyNotoKR" },
   { value: "cascadia", key: "settings.monoFontFamilyCascadia" },
   { value: "jetbrains", key: "settings.monoFontFamilyJetBrains" },
   { value: "sfmono", key: "settings.monoFontFamilySFMono" },

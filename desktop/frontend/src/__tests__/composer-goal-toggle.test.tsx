@@ -397,7 +397,7 @@ console.log("\ncomposer goal toggle");
   // Attachment-only first Goal: no text, no skill — attachment refs are valid task context.
   const dom = installDom();
   mockApp({
-    SavePastedFile: async () => ".reasonix/attachments/notes.txt",
+    SavePastedFile: async () => ".patty/attachments/notes.txt",
   });
   const { root, calls } = await renderComposer({ collaborationMode: "goal", goal: "" });
   const textarea = document.querySelector("textarea") as HTMLTextAreaElement | null;
@@ -416,7 +416,7 @@ console.log("\ncomposer goal toggle");
   });
   eq(calls.send.length, 1, "attachment-only input can become the initial Goal");
   ok(
-    calls.submit[0]?.includes("@.reasonix/attachments/notes.txt") === true,
+    calls.submit[0]?.includes("@.patty/attachments/notes.txt") === true,
     "attachment-only initial Goal submits the attachment ref",
   );
   eq(calls.structured[0], undefined, "attachment-only initial Goal is not a structured skill submit");
@@ -788,7 +788,7 @@ console.log("\ncomposer goal toggle");
 {
   const dom = installDom();
   mockApp({
-    SavePastedFile: async () => ".reasonix/attachments/notes.txt",
+    SavePastedFile: async () => ".patty/attachments/notes.txt",
   });
   const { root } = await renderComposer();
 
@@ -865,7 +865,7 @@ console.log("\ncomposer goal toggle");
   mockApp({
     AttachDropped: async () => ({
       kind: "attachment",
-      path: ".reasonix/attachments/report.pdf",
+      path: ".patty/attachments/report.pdf",
     }),
   });
   const { root } = await renderComposer();
@@ -899,7 +899,7 @@ console.log("\ncomposer goal toggle");
   mockApp({
     AttachDropped: async () => ({
       kind: "workspace",
-      path: "__reasonix_external_folder/mock/Folder-With-Spaces",
+      path: "__patty_external_folder/mock/Folder-With-Spaces",
       isDir: true,
       displayPath: "/Users/example/Folder With Spaces",
     }),
@@ -924,7 +924,7 @@ console.log("\ncomposer goal toggle");
   });
 
   eq(calls.send.join(","), "inspect @/Users/example/Folder With Spaces/", "external folder display text uses the real folder path");
-  eq(calls.submit.join(","), "inspect @__reasonix_external_folder/mock/Folder-With-Spaces/", "external folder submit text uses the session ref token");
+  eq(calls.submit.join(","), "inspect @__patty_external_folder/mock/Folder-With-Spaces/", "external folder submit text uses the session ref token");
 
   await act(async () => {
     root.unmount();
@@ -933,7 +933,7 @@ console.log("\ncomposer goal toggle");
 }
 
 {
-  const externalToken = "__reasonix_external_folder/mock/Folder-With-Spaces/src/outside.txt";
+  const externalToken = "__patty_external_folder/mock/Folder-With-Spaces/src/outside.txt";
   const externalDisplayPath = "/Users/example/Folder With Spaces/src/outside.txt";
   const picked = composerPickFileEntry("ask @outside", "outside", "", {
     name: "src/outside.txt",
@@ -2034,7 +2034,7 @@ console.log("\ncomposer goal toggle");
           <UserMessage
             id="h2"
             text="Format this file"
-            submitText={"以下是用户引用的历史会话上下文：\n\n[会话：Earlier]\n...\n\n---\n\n当前用户问题：\n/my-formatter Format this file"}
+            submitText={"Referenced session context from earlier history:\n\n[session: Earlier]\n...\n\n---\n\nCurrent user question:\n/my-formatter Format this file"}
           />
         </InvocationMetadataContext.Provider>
       </LocaleProvider>,
@@ -2051,13 +2051,13 @@ console.log("\ncomposer goal toggle");
         <UserMessage
           id="h3"
           text={"Compare these commands\n/other-command"}
-          submitText={"/reasonix-develop Compare these commands\n/other-command"}
+          submitText={"/patty-develop Compare these commands\n/other-command"}
         />
       </LocaleProvider>,
     );
     await flushTimers();
   });
-  ok(document.querySelector(".invocation-display--message")?.textContent?.includes("Reasonix Develop") === true, "history recovery ignores slash-prefixed lines inside the task body");
+  ok(document.querySelector(".invocation-display--message")?.textContent?.includes("Patty Develop") === true, "history recovery ignores slash-prefixed lines inside the task body");
 
   await act(async () => {
     root.render(
@@ -2065,7 +2065,7 @@ console.log("\ncomposer goal toggle");
         <UserMessage
           id="h4"
           text={"Compare these commands\n/other-command"}
-          submitText={"以下是用户引用的历史会话上下文：\n\n[会话：Earlier]\n...\n\n---\n\n当前用户问题：\nCompare these commands\n/other-command"}
+          submitText={"Referenced session context from earlier history:\n\n[session: Earlier]\n...\n\n---\n\nCurrent user question:\nCompare these commands\n/other-command"}
         />
       </LocaleProvider>,
     );
@@ -2087,7 +2087,7 @@ console.log("\ncomposer goal toggle");
     ListSessions: async () => [{ path: "/sessions/recent.jsonl", title: "Recent session", current: false }],
     SavePastedFile: async () => {
       savedFiles += 1;
-      return ".reasonix/attachments/notes.txt";
+      return ".patty/attachments/notes.txt";
     },
   });
   const { root, rerender } = await renderComposer();

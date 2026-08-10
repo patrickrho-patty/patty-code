@@ -5,9 +5,7 @@ import (
 	"testing"
 )
 
-// Every tag the host prepends must strip cleanly, whatever else precedes it.
-// A tag missing from TransientUserBlockTags used to reach the UI verbatim —
-// <autoresearch-runtime> showed up in session titles and the rewind picker.
+// A tag missing from TransientUserBlockTags used to reach the UI verbatim
 func TestStripTransientUserBlocksCoversEveryDeclaredTag(t *testing.T) {
 	const prompt = "refactor the parser"
 	for _, tag := range TransientUserBlockTags {
@@ -23,11 +21,8 @@ func TestStripTransientUserBlocksCoversEveryDeclaredTag(t *testing.T) {
 	}
 }
 
-// The blocks arrive stacked (active-goal then autoresearch-runtime then the
-// language blocks), so stripping has to consume the whole run, not just the
-// first one.
 func TestStripTransientUserBlocksConsumesStackedBlocks(t *testing.T) {
-	const prompt = "继续执行计划"
+	const prompt = "계획을 계속 실행해 주세요"
 	stacked := "<active-goal>\ngoal: ship it\n</active-goal>\n\n" +
 		"<autoresearch-runtime>\nstatus: running\n</autoresearch-runtime>\n\n" +
 		"<response-language>\nprefer zh\n</response-language>\n\n" +
@@ -37,7 +32,6 @@ func TestStripTransientUserBlocksConsumesStackedBlocks(t *testing.T) {
 	}
 }
 
-// Attribute-carrying open tags (hook-context, capability-route) must strip too.
 func TestStripTransientUserBlocksHandlesAttributedTags(t *testing.T) {
 	const prompt = "run the tests"
 	in := `<capability-route version="1">` + "\nroute: test\n</capability-route>\n\n" + prompt
@@ -46,8 +40,6 @@ func TestStripTransientUserBlocksHandlesAttributedTags(t *testing.T) {
 	}
 }
 
-// hasLeadingInjectedBlock walks the same list, so a block already present
-// behind other injected blocks is detected instead of being added twice.
 func TestHasLeadingInjectedBlockSkipsEveryDeclaredTag(t *testing.T) {
 	const target = "reasoning-language"
 	for _, tag := range TransientUserBlockTags {

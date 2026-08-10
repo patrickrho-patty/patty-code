@@ -7,14 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/agent/testutil"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/tool"
+	"patty/internal/agent/testutil"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/tool"
 )
 
-// steerThenCancelTool queues a steer while the turn is running, then cancels
-// the turn so Run exits before the loop's per-iteration consume can deliver it.
+// the turn so Run exits before the loops per-iteration consume can deliver it.
 type steerThenCancelTool struct {
 	agent     *Agent
 	cancel    context.CancelFunc
@@ -34,10 +33,6 @@ func (t *steerThenCancelTool) Execute(context.Context, json.RawMessage) (string,
 	return "ok", nil
 }
 
-// TestRunFlushesUnconsumedSteersOnCancel proves a steer that is still queued
-// when the turn is cancelled survives in local history but not the next model
-// context, and emits an explicit warning instead of presenting it as
-// successfully applied guidance.
 func TestRunFlushesUnconsumedSteersOnCancel(t *testing.T) {
 	mp := testutil.NewMock("m",
 		testutil.Turn{ToolCalls: []provider.ToolCall{{ID: "call-1", Name: "steer_then_cancel", Arguments: `{}`}}},
@@ -99,9 +94,6 @@ func TestRunFlushesUnconsumedSteersOnCancel(t *testing.T) {
 	}
 }
 
-// TestCloseSteerIntakeIfIdleMakesAdmissionLinearizable pins the normal turn
-// exit boundary: once the final queue check observes no pending guidance, a
-// later steer must be rejected rather than accepted and flushed as unapplied.
 func TestCloseSteerIntakeIfIdleMakesAdmissionLinearizable(t *testing.T) {
 	a := New(nil, tool.NewRegistry(), NewSession(""), Options{}, event.Discard)
 	a.steerMu.Lock()
@@ -119,17 +111,12 @@ func TestCloseSteerIntakeIfIdleMakesAdmissionLinearizable(t *testing.T) {
 	}
 }
 
-// TestSteerTextSurvivesTurnPreferenceWrapping pins replay: steers are
-// persisted through withTurnPreferences, which prepends transient language
-// blocks (for Chinese text even in auto mode, and for any text under an
-// explicit language) ahead of the steer prefix. SteerText must skip the
-// wrapping and return the user's exact original text, or replay degrades the
-// steer into a plain user message.
+// wrapping and return the users exact original text, or replay degrades the
 func TestSteerTextSurvivesTurnPreferenceWrapping(t *testing.T) {
 	plain := New(nil, nil, NewSession(""), Options{}, event.Discard)
 	explicit := New(nil, nil, NewSession(""), Options{}, event.Discard)
-	explicit.SetReasoningLanguage("zh")
-	explicit.SetResponseLanguage("zh")
+	explicit.SetReasoningLanguage("ko-KR")
+	explicit.SetResponseLanguage("ko-KR")
 
 	cases := []struct {
 		name  string
@@ -137,7 +124,7 @@ func TestSteerTextSurvivesTurnPreferenceWrapping(t *testing.T) {
 		text  string
 	}{
 		{"english auto (no blocks)", plain, "use plan B"},
-		{"chinese auto (reasoning block)", plain, "请改用方案B"},
+		{"chinese auto (reasoning block)", plain, "계획 B로 바꿔 주세요"},
 		{"explicit zh (both blocks)", explicit, "switch to plan B"},
 		{"exact text preserved", plain, "  spaced\ttext  "},
 	}
@@ -152,14 +139,11 @@ func TestSteerTextSurvivesTurnPreferenceWrapping(t *testing.T) {
 		}
 	}
 
-	if _, ok := SteerText(plain.withTurnPreferences("请总结一下这个文件")); ok {
+	if _, ok := SteerText(plain.withTurnPreferences("이 파일을 요약해 주세요")); ok {
 		t.Fatalf("a wrapped ordinary user message must not be detected as a steer")
 	}
 }
 
-// TestSteerRejectedWithoutActiveTurn proves a steer arriving when no turn is
-// running is rejected instead of parked in a queue no loop will consume, so
-// the controller can convert it into a regular turn.
 func TestSteerRejectedWithoutActiveTurn(t *testing.T) {
 	a := New(testutil.NewMock("m", testutil.Turn{Text: "done"}), tool.NewRegistry(), NewSession(""), Options{}, event.Discard)
 	if a.Steer("early") {

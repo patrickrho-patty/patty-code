@@ -28,20 +28,20 @@ const aliases: Readonly<Record<string, DecisionSurfaceKind>> = {
   ) as Record<string, DecisionSurfaceKind>,
   "/approve-preview": "tool_approval",
   "approve preview": "tool_approval",
-  "approve预览": "tool_approval",
+  "approve-preview": "tool_approval",
   "/plan-approve-preview": "plan_approval",
   "plan approve preview": "plan_approval",
-  "plan approve预览": "plan_approval",
+  "plan-approve-preview": "plan_approval",
   "/ask-preview": "ask",
   "ask preview": "ask",
-  "ask预览": "ask",
-  "mock 工具审批": "tool_approval",
-  "mock 计划审批": "plan_approval",
-  "mock 提问": "ask",
-  "mock 工作区冲突": "workspace_conflict",
-  "mock 模式切换": "mode_jobs",
-  "mock 关闭任务": "close_active",
-  "mock 清空上下文": "clear_context",
+  "ask-preview": "ask",
+  "mock tool approval": "tool_approval",
+  "mock plan approval": "plan_approval",
+  "mock ask": "ask",
+  "mock workspace conflict": "workspace_conflict",
+  "mock mode switch": "mode_jobs",
+  "mock close task": "close_active",
+  "mock clear context": "clear_context",
 };
 
 export function decisionSurfaceMockFromInput(input: string): DecisionSurfaceKind | null {
@@ -50,5 +50,5 @@ export function decisionSurfaceMockFromInput(input: string): DecisionSurfaceKind
 
 export function isLongDecisionOptionsMockInput(input: string): boolean {
   const normalized = input.trim().toLowerCase();
-  return normalized === LONG_DECISION_OPTIONS_MOCK_TRIGGER || normalized === "mock 长文案选项";
+  return normalized === LONG_DECISION_OPTIONS_MOCK_TRIGGER || normalized === "mock long option text";
 }

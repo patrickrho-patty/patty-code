@@ -1,4 +1,4 @@
-export const FONT_FAMILIES = ["system", "yahei", "pingfang", "noto", "custom"] as const;
+export const FONT_FAMILIES = ["system", "malgun", "applesdgothic", "notokr", "custom"] as const;
 export const MONO_FONT_FAMILIES = ["system", "cascadia", "jetbrains", "sfmono", "custom"] as const;
 
 export type FontFamily = (typeof FONT_FAMILIES)[number];
@@ -7,10 +7,10 @@ export type MonoFontFamily = (typeof MONO_FONT_FAMILIES)[number];
 export const DEFAULT_FONT_FAMILY: FontFamily = "system";
 export const DEFAULT_MONO_FONT_FAMILY: MonoFontFamily = "system";
 
-const FONT_FAMILY_KEY = "reasonix-font-family";
-const CUSTOM_FONT_KEY = "reasonix-font-family-custom";
-const MONO_FONT_FAMILY_KEY = "reasonix-mono-font-family";
-const CUSTOM_MONO_FONT_KEY = "reasonix-mono-font-family-custom";
+const FONT_FAMILY_KEY = "patty-font-family";
+const CUSTOM_FONT_KEY = "patty-font-family-custom";
+const MONO_FONT_FAMILY_KEY = "patty-mono-font-family";
+const CUSTOM_MONO_FONT_KEY = "patty-mono-font-family-custom";
 
 export function isFontFamily(value: unknown): value is FontFamily {
   return typeof value === "string" && (FONT_FAMILIES as readonly string[]).includes(value);

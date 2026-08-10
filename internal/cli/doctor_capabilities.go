@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"reasonix/internal/capdiag"
+	"patty/internal/capdiag"
 )
 
 func doctorCapabilitiesCommand(args []string) int {
@@ -22,7 +22,7 @@ func doctorCapabilitiesCommand(args []string) int {
 		return code
 	}
 	if fs.NArg() != 0 {
-		fmt.Fprintln(os.Stderr, "usage: reasonix doctor capabilities [--root PATH] [--json] [--live] [--timeout 5s]")
+		fmt.Fprintln(os.Stderr, "usage: patcode doctor capabilities [--root PATH] [--json] [--live] [--timeout 5s]")
 		return 2
 	}
 

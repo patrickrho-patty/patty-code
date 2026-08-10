@@ -24,7 +24,7 @@ interface ContextPanelProps {
   refreshKey?: number;
   // Monotonic counter bumped by EVERY usage event (executor and subagent).
   // The executor-gated `usage` prop freezes during sub-agent runs, which used
-  // to pin 会话指标/用量分析 for minutes; this keeps the snapshot ticking.
+  // to pin session metrics / usage analysis for minutes; this keeps the snapshot ticking.
   usageSeq?: number;
 }
 
@@ -123,7 +123,7 @@ export function contextCostDisplay({
   sessionCurrency?: string;
   usage?: Pick<WireUsage, "cost" | "costUsd" | "currency">;
 }): { amount: number; currency?: string } {
-  // Session-scoped sources only: this value renders under the 会话费用 label,
+  // Session-scoped sources only: this value renders under the session-cost label,
   // and falling back to a single request's usage.cost silently displayed one
   // turn's spend as the whole session's. usage now contributes currency only.
   if (info?.sessionCost && info.sessionCost > 0) {

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"reasonix/internal/agent"
+	"patty/internal/agent"
 )
 
 type cliCompletionValueKind uint8
@@ -90,7 +90,7 @@ func cliCompletionRootSpec() cliCompletionSpec {
 		help,
 	}
 
-	root := cliCompletionSpec{name: "reasonix", flags: append([]cliCompletionFlag{
+	root := cliCompletionSpec{name: "patty", flags: append([]cliCompletionFlag{
 		model,
 		completionFlag("--max-steps", cliCompletionStaticValue),
 		completionFlag("--print -p", cliCompletionNoValue),
@@ -273,7 +273,6 @@ func cliCompletionRootSpec() cliCompletionSpec {
 				completionSpec("approve", []cliCompletionFlag{help}),
 				completionSpecWithAliases("reject", []string{"deny"}, []cliCompletionFlag{help}),
 			),
-			completionSpec("weixin-login", []cliCompletionFlag{completionFlag("--timeout", cliCompletionStaticValue), help}),
 		),
 		completionSpecWithAliases("upgrade", []string{"update"}, []cliCompletionFlag{
 			completionFlag("--check --force", cliCompletionNoValue), completionFlag("--channel", cliCompletionStaticValue), help,
@@ -412,9 +411,9 @@ func completionCommand(args []string) int {
 
 func completionUsage(w *os.File) {
 	fmt.Fprintln(w, `Usage:
-  reasonix completion bash
-  reasonix completion zsh
-  reasonix completion fish
+  patcode completion bash
+  patcode completion zsh
+  patcode completion fish
 
 The command prints a completion script to stdout. Source it directly or save it
 in your shell's completion directory.`)
@@ -621,35 +620,35 @@ func stableUniqueCompletionValues(values []string) []string {
 	return out
 }
 
-const bashCompletionScript = `# bash completion for reasonix
-_reasonix_completion() {
+const bashCompletionScript = `# bash completion for patty
+_patty_completion() {
   local line
   COMPREPLY=()
   while IFS= read -r line; do
     COMPREPLY+=("$line")
-  done < <(command reasonix completion __complete "$COMP_CWORD" "${COMP_WORDS[@]}" 2>/dev/null)
+  done < <(command patcode completion __complete "$COMP_CWORD" "${COMP_WORDS[@]}" 2>/dev/null)
 }
-complete -o default -F _reasonix_completion reasonix
+complete -o default -F _patty_completion patty
 `
 
-const zshCompletionScript = `#compdef reasonix
-_reasonix_completion() {
+const zshCompletionScript = `#compdef patty
+_patty_completion() {
   local -a candidates
-  candidates=("${(@f)$(command reasonix completion __complete "$((CURRENT - 1))" "${words[@]}" 2>/dev/null)}")
+  candidates=("${(@f)$(command patcode completion __complete "$((CURRENT - 1))" "${words[@]}" 2>/dev/null)}")
   if (( ${#candidates[@]} )); then
     compadd -- "${candidates[@]}"
   else
     _default
   fi
 }
-compdef _reasonix_completion reasonix
+compdef _patty_completion patty
 `
 
-const fishCompletionScript = `function __reasonix_completion
+const fishCompletionScript = `function __patty_completion
     set -l tokens (commandline -opc)
     set -a tokens (commandline -ct)
     set -l current_index (math (count $tokens) - 1)
-    command reasonix completion __complete $current_index $tokens 2>/dev/null
+    command patcode completion __complete $current_index $tokens 2>/dev/null
 end
-complete -c reasonix -a '(__reasonix_completion)'
+complete -c patty -a '(__patty_completion)'
 `

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"reasonix/internal/event"
-	"reasonix/internal/eventwire"
+	"patty/internal/event"
+	"patty/internal/eventwire"
 )
 
 type runOutputFormat string

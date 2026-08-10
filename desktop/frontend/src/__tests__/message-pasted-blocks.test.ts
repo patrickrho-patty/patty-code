@@ -23,8 +23,6 @@ function wrapped(label: string, content: string): string {
 console.log("\nmessage pasted blocks");
 
 for (const [label, name] of [
-  ["[已粘贴文本 #2 · 31 行]", "Simplified Chinese"],
-  ["[已貼上文字 #2 · 31 行]", "Traditional Chinese"],
   ["[Pasted text #2 · 31 lines]", "English"],
 ] as const) {
   eq(
@@ -32,6 +30,9 @@ for (const [label, name] of [
     [{ label, content: "line 1\nline 2\n" }],
     `${name} pasted text labels are parsed from submit text`,
   );
+}
+for (const label of ["[已粘贴文本 #2 · 31 行]", "[已貼上文字 #2 · 31 行]"]) {
+  eq(parsePastedBlocks(`before\n${label}\nafter`, wrapped(label, "line 1\nline 2")), [], "legacy Chinese paste labels are no longer parsed");
 }
 
 eq(parsePastedBlocks("[unknown paste #1]", "--- Begin [unknown paste #1] ---\nnope\n--- End [unknown paste #1] ---"), [], "unknown labels are ignored");

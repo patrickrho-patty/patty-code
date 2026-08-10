@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/config"
+	"patty/internal/config"
 )
 
 func TestBuildAppendsWorkPracticePolicyToCustomSystemPrompt(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	writeFile(t, dir, "reasonix.toml", `
+	writeFile(t, dir, "patty.toml", `
 default_model = "test-model"
 
 [agent]
@@ -22,7 +22,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "REASONIX_TEST_KEY_UNSET"
+api_key_env = "PATTY_TEST_KEY_UNSET"
 `)
 
 	ctrl, err := Build(context.Background(), Options{})
@@ -56,7 +56,7 @@ func TestBuildInjectsOfflineNoteOnlyWhenEnvironmentDeclaresIt(t *testing.T) {
 		t.Helper()
 		dir := robustTempDir(t)
 		t.Chdir(dir)
-		writeFile(t, dir, "reasonix.toml", `
+		writeFile(t, dir, "patty.toml", `
 default_model = "test-model"
 
 [agent]
@@ -67,7 +67,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "REASONIX_TEST_KEY_UNSET"
+api_key_env = "PATTY_TEST_KEY_UNSET"
 `+environmentSection)
 
 		ctrl, err := Build(context.Background(), Options{})

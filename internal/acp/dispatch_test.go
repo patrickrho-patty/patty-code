@@ -10,14 +10,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
+	"patty/internal/agent"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
 )
 
-// fakeNotifier captures Notify calls and answers Request via an injectable hook,
-// standing in for *Conn in adapter unit tests.
+// standing in for Conn in adapter unit tests.
 type fakeNotifier struct {
 	mu       sync.Mutex
 	notifs   []capturedNotif
@@ -51,7 +50,7 @@ func (f *fakeNotifier) Request(ctx context.Context, method string, params any) (
 	return nil, nil
 }
 
-// updateMap marshals the i-th captured notification's params and decodes the
+// updateMap marshals the i-th captured notifications params and decodes the
 // nested "update" object into a generic map for shape assertions.
 func (f *fakeNotifier) updateMap(t *testing.T, i int) map[string]any {
 	t.Helper()
@@ -116,7 +115,6 @@ func TestUpdateSinkMapsEvents(t *testing.T) {
 		t.Fatalf("emitted %d notifications, want 5", got)
 	}
 
-	// agent_thought_chunk
 	u := fn.updateMap(t, 0)
 	if u["sessionUpdate"] != "agent_thought_chunk" {
 		t.Errorf("update 0 = %v, want agent_thought_chunk", u["sessionUpdate"])
@@ -125,13 +123,11 @@ func TestUpdateSinkMapsEvents(t *testing.T) {
 		t.Errorf("update 0 content text = %v", content)
 	}
 
-	// agent_message_chunk
 	u = fn.updateMap(t, 1)
 	if u["sessionUpdate"] != "agent_message_chunk" {
 		t.Errorf("update 1 = %v, want agent_message_chunk", u["sessionUpdate"])
 	}
 
-	// tool_call (pending, with kind + rawInput)
 	u = fn.updateMap(t, 2)
 	if u["sessionUpdate"] != "tool_call" || u["status"] != "pending" {
 		t.Errorf("update 2 = %v", u)
@@ -146,13 +142,11 @@ func TestUpdateSinkMapsEvents(t *testing.T) {
 		t.Errorf("update 2 rawInput = %v", u["rawInput"])
 	}
 
-	// tool_call_update completed
 	u = fn.updateMap(t, 3)
 	if u["sessionUpdate"] != "tool_call_update" || u["status"] != "completed" {
 		t.Errorf("update 3 = %v", u)
 	}
 
-	// tool_call_update failed surfaces the error text
 	u = fn.updateMap(t, 4)
 	if u["status"] != "failed" {
 		t.Errorf("update 4 status = %v, want failed", u["status"])
@@ -172,7 +166,6 @@ func TestUpdateSinkDropsAndWarns(t *testing.T) {
 	fn := &fakeNotifier{}
 	sink := newUpdateSink(fn, "sess-1")
 
-	// Dropped kinds: TurnStarted, Message, Usage, Phase, and empty deltas.
 	sink.Emit(event.Event{Kind: event.TurnStarted})
 	sink.Emit(event.Event{Kind: event.Message, Text: "full", Reasoning: "chain"})
 	sink.Emit(event.Event{Kind: event.Usage})
@@ -182,7 +175,6 @@ func TestUpdateSinkDropsAndWarns(t *testing.T) {
 		t.Fatalf("dropped kinds produced %d notifications, want 0", got)
 	}
 
-	// Warn-level notices are surfaced as a message chunk; info notices are not.
 	sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: "fyi"})
 	if got := len(fn.notifs); got != 0 {
 		t.Fatalf("info notice produced %d notifications, want 0", got)
@@ -200,7 +192,6 @@ func TestUpdateSinkDropsAndWarns(t *testing.T) {
 	}
 }
 
-// approveCall records one approve(id, allow, session, persist) callback.
 type approveCall struct {
 	id      string
 	allow   bool
@@ -209,9 +200,7 @@ type approveCall struct {
 }
 
 func invalidACPv1PermissionOptionKind(options []PermissionOption) (PermissionOption, bool) {
-	// ACP v1 schema only accepts these four PermissionOptionKind values. ACP hosts
-	// own cross-session persistence, so Reasonix-specific persistent approvals must
-	// not appear in session/request_permission options.
+// not appear in sessionrequest_permission options.
 	valid := map[PermissionOptionKind]bool{
 		OptAllowOnce:    true,
 		OptAllowAlways:  true,
@@ -287,7 +276,7 @@ func TestUpdateSinkPermissionCarriesStructuredContext(t *testing.T) {
 		if len(p.ToolCall.Locations) != 1 || !strings.HasSuffix(filepath.ToSlash(p.ToolCall.Locations[0].Path), "/src/main.go") {
 			t.Fatalf("locations = %+v", p.ToolCall.Locations)
 		}
-		meta, ok := p.ToolCall.Meta["reasonix.io"].(map[string]any)
+		meta, ok := p.ToolCall.Meta["patty.io"].(map[string]any)
 		if !ok || meta["tool"] != "write_file" || meta["approvalId"] != "structured" || meta["reason"] != "write requested by the active goal" {
 			t.Fatalf("metadata = %#v", p.ToolCall.Meta)
 		}
@@ -331,8 +320,6 @@ func TestUpdateSinkApprovalBashPrefix(t *testing.T) {
 		if err := json.Unmarshal(raw, &p); err != nil {
 			t.Fatalf("permission params: %v", err)
 		}
-		// ACP permission options stay within the official spec kinds, and ACP
-		// mode leaves cross-session persistence to the host.
 		assertACPv1PermissionOptionKinds(t, p.Options)
 		var hasOnce, hasSession, hasReject bool
 		for _, opt := range p.Options {
@@ -390,7 +377,7 @@ func TestPermissionMetaOnlyTrustsForegroundStaticBash(t *testing.T) {
 		{name: "expansion", rawInput: `{"command":"go test $PACKAGE"}`},
 		{name: "glob expansion", rawInput: `{"command":"go test ./*.go"}`},
 		{name: "brace expansion", rawInput: `{"command":"printf '%s' {a,b}"}`},
-		{name: "tilde expansion", rawInput: `{"command":"test -f ~/.config/reasonix.toml"}`},
+		{name: "tilde expansion", rawInput: `{"command":"test -f ~/.config/patty.toml"}`},
 		{name: "control syntax", rawInput: `{"command":"go test ./... && git status"}`},
 		{name: "background", rawInput: `{"command":"go test ./...","run_in_background":true}`},
 		{name: "preserved descendants", rawInput: `{"command":"go test ./...","preserve_background_processes":true}`},
@@ -399,11 +386,11 @@ func TestPermissionMetaOnlyTrustsForegroundStaticBash(t *testing.T) {
 			meta := sink.permissionMeta(event.Approval{
 				ID: "command", Tool: "bash", Subject: "command", RawInput: json.RawMessage(tc.rawInput),
 			})
-			reasonix, ok := meta["reasonix.io"].(map[string]any)
+			patty, ok := meta["patty.io"].(map[string]any)
 			if !ok {
-				t.Fatalf("reasonix metadata = %#v", meta)
+				t.Fatalf("patty metadata = %#v", meta)
 			}
-			argv, present := reasonix["argv"]
+			argv, present := patty["argv"]
 			if len(tc.wantArgv) == 0 {
 				if present {
 					t.Fatalf("unsafe command received trusted argv: %#v", argv)
@@ -414,8 +401,8 @@ func TestPermissionMetaOnlyTrustsForegroundStaticBash(t *testing.T) {
 			if !ok || strings.Join(got, "\x00") != strings.Join(tc.wantArgv, "\x00") {
 				t.Fatalf("argv = %#v, want %#v", argv, tc.wantArgv)
 			}
-			if reasonix["commandSchemaVersion"] != 1 || reasonix["cwd"] != filepath.Clean(cwd) {
-				t.Fatalf("trusted command metadata = %#v", reasonix)
+			if patty["commandSchemaVersion"] != 1 || patty["cwd"] != filepath.Clean(cwd) {
+				t.Fatalf("trusted command metadata = %#v", patty)
 			}
 		})
 	}
@@ -472,7 +459,7 @@ func TestUpdateSinkSandboxEscapeApprovalOffersSessionGrant(t *testing.T) {
 }
 
 func TestUpdateSinkApprovalDenied(t *testing.T) {
-	// Both a "cancelled" outcome and a transport error must deny the call.
+// Both a "cancelled" outcome and a transport error must deny the call.
 	for _, tc := range []struct {
 		name string
 		resp func() (json.RawMessage, error)
@@ -640,7 +627,7 @@ func TestApprovalOptionsFreshDynamicToolOnlyAllowOnceOrReject(t *testing.T) {
 }
 
 func TestDynamicBashApprovalOptionsUseExactSessionLiteral(t *testing.T) {
-	const command = "git status $(touch /tmp/reasonix-dynamic-approval)"
+	const command = "git status $(touch /tmp/patty-dynamic-approval)"
 	options := approvalOptions("bash", command, false)
 	if len(options) != 3 || options[1].Kind != OptAllowAlways {
 		t.Fatalf("dynamic Bash options = %+v, want ordinary options with session grant", options)
@@ -652,7 +639,7 @@ func TestDynamicBashApprovalOptionsUseExactSessionLiteral(t *testing.T) {
 }
 
 func TestClipKeepsValidUTF8(t *testing.T) {
-	text := strings.Repeat("a", maxResultChars-1) + "界" + strings.Repeat("b", 20)
+	text := strings.Repeat("a", maxResultChars-1) + "계" + strings.Repeat("b", 20)
 	got := clip(text)
 	if !utf8.ValidString(got) {
 		t.Fatalf("clip returned invalid UTF-8")
@@ -676,16 +663,14 @@ func TestClip(t *testing.T) {
 	}
 }
 
-// Replay must show the user-authored view, not the persisted wire form:
-// injected transient blocks and protocol markers stay in history for parsing
-// but never reach the client (#6882).
+// but never reach the client (6882).
 func TestUpdateSinkReplayStripsInjectedWrappers(t *testing.T) {
 	fn := &fakeNotifier{}
 	sink := newUpdateSink(fn, "sess-1")
 	sink.replay([]provider.Message{
 		{
 			Role: provider.RoleUser,
-			Content: "<response-language>\nFinal answer language preference: use Simplified Chinese.\n</response-language>\n" +
+			Content: "<response-language>\nFinal answer language preference: use Standard Korean.\n</response-language>\n" +
 				"Introduce yourself",
 		},
 		{
@@ -706,9 +691,6 @@ func TestUpdateSinkReplayStripsInjectedWrappers(t *testing.T) {
 	}
 }
 
-// TestUpdateSinkDropsSubagentProgress locks the ACP policy for the reserved
-// sub-agent progress ToolProgress channels: every body stays out of ACP
-// notifications, exactly like ordinary ToolProgress (which has no handler).
 func TestUpdateSinkDropsSubagentProgress(t *testing.T) {
 	fn := &fakeNotifier{}
 	sink := newUpdateSink(fn, "sess-1")

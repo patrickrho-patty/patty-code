@@ -18,11 +18,11 @@ import (
 // <dir>/<task-id>/events.jsonl.  It is read-only in TM-02; write support
 // is added in TM-04.
 type FileStore struct {
-	baseDir string // projectDir → task data root (e.g. ".reasonix/tasks")
+	baseDir string // projectDir → task data root (e.g. ".patty/tasks")
 }
 
 // NewFileStore returns a FileStore rooted at baseDir.  baseDir is typically
-// ".reasonix/tasks" relative to the project root.
+// ".patty/tasks" relative to the project root.
 func NewFileStore(baseDir string) *FileStore {
 	return &FileStore{baseDir: baseDir}
 }

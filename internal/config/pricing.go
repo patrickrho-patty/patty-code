@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"reasonix/internal/provider"
+	"patty/internal/provider"
 )
 
 func deepSeekV4FlashPriceCNY() *provider.Pricing {
@@ -50,7 +50,7 @@ func DeepSeekV4PricesForCurrency(currency string) map[string]*provider.Pricing {
 // DeepSeekV4PricesForLanguage is retained for compatibility with older call
 // sites. New desktop code should pass an explicit pricing currency.
 func DeepSeekV4PricesForLanguage(lang string) map[string]*provider.Pricing {
-	if normalizeDeepSeekPricingLanguage(lang) == "zh" {
+	if normalizeDeepSeekPricingLanguage(lang) == "ko-KR" {
 		return DeepSeekV4PricesForCurrency("CNY")
 	}
 	return DeepSeekV4PricesForCurrency("USD")
@@ -72,13 +72,13 @@ func (c *Config) DeepSeekOfficialPricingCurrency() string {
 		if currency := c.DesktopCurrency(); currency != "" {
 			return currency
 		}
-		if normalizeDeepSeekPricingLanguage(c.Desktop.Language) == "zh" {
+		if normalizeDeepSeekPricingLanguage(c.Desktop.Language) == "ko-KR" {
 			return "CNY"
 		}
 		if normalizeDeepSeekPricingLanguage(c.Desktop.Language) == "en" {
 			return "USD"
 		}
-		if normalizeDeepSeekPricingLanguage(c.Language) == "zh" {
+		if normalizeDeepSeekPricingLanguage(c.Language) == "ko-KR" {
 			return "CNY"
 		}
 	}
@@ -111,7 +111,7 @@ func (c *Config) ApplyRuntimeAutoPricingCurrency(currency string) {
 // sites that still express the pricing region as a language.
 func (c *Config) DeepSeekOfficialPricingLanguage() string {
 	if c.DeepSeekOfficialPricingCurrency() == "CNY" {
-		return "zh"
+		return "ko-KR"
 	}
 	return "en"
 }
@@ -129,8 +129,8 @@ func normalizeDeepSeekPricingCurrency(currency string) string {
 
 func normalizeDeepSeekPricingLanguage(lang string) string {
 	switch strings.ToLower(strings.TrimSpace(lang)) {
-	case "zh", "zh-cn", "zh-hans", "cn", "chinese", "中文", "zh-tw", "zh-hant", "zh-hk", "zh-mo":
-		return "zh"
+	case "ko-kr", "ko":
+		return "ko-KR"
 	case "en", "en-us", "en-gb", "english":
 		return "en"
 	default:
@@ -407,7 +407,7 @@ func IsOfficialDeepSeekProvider(p *ProviderEntry) bool {
 	return officialProviderKind(p) == "deepseek"
 }
 
-// IsKnownDeepSeekOfficialPricing reports whether price is one of Reasonix's
+// IsKnownDeepSeekOfficialPricing reports whether price is one of Patty Code's
 // built-in DeepSeek regional defaults for model.
 func IsKnownDeepSeekOfficialPricing(model string, price *provider.Pricing) bool {
 	return isKnownDeepSeekOfficialPricing(model, price)

@@ -1,5 +1,5 @@
--- Reasonix accounts: users, sessions, email tokens.
--- Apply: wrangler d1 migrations apply reasonix-accounts --local   (or --remote)
+-- Patty Code accounts: users, sessions, email tokens.
+-- Apply: wrangler d1 migrations apply patty-accounts --local   (or --remote)
 
 CREATE TABLE IF NOT EXISTS users (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,

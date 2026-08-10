@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"reasonix/internal/event"
+	"patty/internal/event"
 )
 
 func TestWireEventTabPreservesSharedRetryingFields(t *testing.T) {

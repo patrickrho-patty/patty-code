@@ -8,8 +8,8 @@ import (
 	"slices"
 	"strings"
 
-	fileencoding "reasonix/internal/fileutil/encoding"
-	"reasonix/internal/hook"
+	fileencoding "patty/internal/fileutil/encoding"
+	"patty/internal/hook"
 )
 
 type HookConfigView struct {

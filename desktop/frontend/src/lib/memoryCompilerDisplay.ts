@@ -10,7 +10,7 @@ const DANGLING_BLOCK_RE = /<memory-compiler-execution>[\s\S]*$/;
  * planning metadata that REPLACED the user turn, and the backend unwraps it to
  * the original prompt (`source_event`) for display. This is the display-boundary
  * safety net for those old sessions: a corrupted/accreted contract from the
- * pre-fix goal loop (#5342) could otherwise surface as raw JSON "乱码" after
+ * pre-fix goal loop (#5342) could otherwise surface as raw JSON garbage after
  * switching between conversations (#5361). Complete blocks are removed, then any
  * dangling (unclosed/truncated) block is cut from its opening tag onward so raw
  * contract JSON is never shown.

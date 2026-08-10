@@ -2,7 +2,7 @@
 -- tables. This migration is additive and idempotent: it is safe before or
 -- after deploying the surface-aware Worker, and safe to rerun.
 -- Apply with:
---   wrangler d1 execute reasonix-crash --remote --file=migrate-client-surface.sql
+--   wrangler d1 execute patty-crash --remote --file=migrate-client-surface.sql
 
 CREATE TABLE IF NOT EXISTS cli_pings (
   date TEXT NOT NULL,

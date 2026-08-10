@@ -1,14 +1,14 @@
 const STABLE_TAG = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
-const DESKTOP_DOWNLOAD_PAGE = "https://reasonix.io/?download=desktop#start";
+const DESKTOP_DOWNLOAD_PAGE = "https://patty-code.io/?download=desktop#start";
 const DESKTOP_ASSETS = [
-  ["platforms", "darwin-arm64", "Reasonix-darwin-arm64.zip"],
-  ["platforms", "darwin-amd64", "Reasonix-darwin-amd64.zip"],
-  ["platforms", "windows-amd64", "Reasonix-windows-amd64-installer.exe"],
-  ["platforms", "windows-arm64", "Reasonix-windows-arm64-installer.exe"],
-  ["platforms", "linux-amd64", "Reasonix-linux-amd64.tar.gz"],
-  ["native_packages", "linux-amd64", "Reasonix-linux-amd64.deb"],
-  ["downloads", "Reasonix-darwin-universal.dmg", "Reasonix-darwin-universal.dmg"],
-  ["downloads", "Reasonix-windows-amd64.zip", "Reasonix-windows-amd64.zip"],
+  ["platforms", "darwin-arm64", "Patty Code-darwin-arm64.zip"],
+  ["platforms", "darwin-amd64", "Patty Code-darwin-amd64.zip"],
+  ["platforms", "windows-amd64", "Patty Code-windows-amd64-installer.exe"],
+  ["platforms", "windows-arm64", "Patty Code-windows-arm64-installer.exe"],
+  ["platforms", "linux-amd64", "Patty Code-linux-amd64.tar.gz"],
+  ["native_packages", "linux-amd64", "Patty Code-linux-amd64.deb"],
+  ["downloads", "Patty Code-darwin-universal.dmg", "Patty Code-darwin-universal.dmg"],
+  ["downloads", "Patty Code-windows-amd64.zip", "Patty Code-windows-amd64.zip"],
 ];
 const DESKTOP_ASSET_NAMES = new Set(DESKTOP_ASSETS.map(([, , name]) => name));
 const OFFICIAL_DESKTOP_RELEASE_TAG = /^(?:desktop-)?(v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*))$/;
@@ -17,12 +17,12 @@ const MAX_RELEASE_ASSET_SIZE = 1 << 30;
 
 // Keep in lockstep with workers/crash-report CLI asset gate.
 export const CLI_RELEASE_ASSETS = [
-  "reasonix-darwin-amd64.tar.gz",
-  "reasonix-darwin-arm64.tar.gz",
-  "reasonix-linux-amd64.tar.gz",
-  "reasonix-linux-arm64.tar.gz",
-  "reasonix-windows-amd64.zip",
-  "reasonix-windows-arm64.zip",
+  "patty-code-darwin-amd64.tar.gz",
+  "patty-code-darwin-arm64.tar.gz",
+  "patty-code-linux-amd64.tar.gz",
+  "patty-code-linux-arm64.tar.gz",
+  "patty-code-windows-amd64.zip",
+  "patty-code-windows-arm64.zip",
   "SHA256SUMS",
 ];
 const CLI_RELEASE_ASSET_NAMES = new Set(CLI_RELEASE_ASSETS);
@@ -34,7 +34,7 @@ export function normalizePublicReleaseChannel(_value) {
 }
 
 export function cliUpgradeCommand(_value) {
-  return "reasonix upgrade";
+  return "patcode upgrade";
 }
 
 export function releaseVersionLabel(model) {
@@ -81,7 +81,7 @@ function safeHTTPSURL(value) {
 function expectedCLIAssetURL(value, tag, name) {
   if (typeof value !== "string") return null;
   const url = safeHTTPSURL(value);
-  const path = `/esengine/DeepSeek-Reasonix/releases/download/${tag}/${name}`;
+  const path = `/patty-io/patty-code/releases/download/${tag}/${name}`;
   return url &&
     url.href === value &&
     url.hostname.toLowerCase() === "github.com" &&
@@ -148,11 +148,11 @@ export function cliReleaseModel(releases, requestedChannel) {
   if (!parsed) return null;
   const assets = releaseAssetMap(release);
   if (!assets) return null;
-  const releaseURL = `https://github.com/esengine/DeepSeek-Reasonix/releases/tag/${parsed.tag}`;
-  const exactChangelogURL = `https://reasonix.io/changelog/${parsed.tag}/`;
+  const releaseURL = `https://github.com/patty-io/patty-code/releases/tag/${parsed.tag}`;
+  const exactChangelogURL = `https://patty-code.io/changelog/${parsed.tag}/`;
   const changelogURL = release.release_notes_url === exactChangelogURL
     ? exactChangelogURL
-    : "https://reasonix.io/changelog/";
+    : "https://patty-code.io/changelog/";
   return {
     channel,
     version: parsed.tag,
@@ -166,9 +166,9 @@ export function cliReleaseModel(releases, requestedChannel) {
 function desktopAssetBases(parsed) {
   const tag = `desktop-${parsed.tag}`;
   return [
-    `https://dl.reasonix.io/${tag}/`,
-    `https://github.com/esengine/DeepSeek-Reasonix/releases/download/${tag}/`,
-    `https://github.com/esengine/DeepSeek-Reasonix/releases/download/${parsed.tag}/`,
+    `https://dl.patty-code.io/${tag}/`,
+    `https://github.com/patty-io/patty-code/releases/download/${tag}/`,
+    `https://github.com/patty-io/patty-code/releases/download/${parsed.tag}/`,
   ];
 }
 
@@ -206,7 +206,9 @@ function normalizeDesktopManifest(manifest, requestedChannel) {
     if (
       !url ||
       !base ||
-      url.href !== rawURL ||
+      // Asset names may contain spaces ("Patty Code-*"); URL.href percent-encodes
+      // them, so compare against the encoded form as well.
+      (url.href !== rawURL && url.href !== encodeURI(rawURL)) ||
       asset.sig !== `${rawURL}.minisig` ||
       (selectedBase && selectedBase !== base)
     ) {
@@ -230,9 +232,9 @@ export function desktopReleaseModel(manifest, requestedChannel) {
     version: parsed.tag,
     displayVersion: parsed.tag.slice(1),
     assets,
-    changelogURL: manifest.release_notes_url === `https://reasonix.io/changelog/${parsed.tag}/`
+    changelogURL: manifest.release_notes_url === `https://patty-code.io/changelog/${parsed.tag}/`
       ? manifest.release_notes_url
-      : "https://reasonix.io/changelog/",
+      : "https://patty-code.io/changelog/",
   };
 }
 
@@ -253,10 +255,10 @@ export function desktopGitHubReleaseModel(release) {
     seen.add(name);
     const rawURL = typeof asset?.browser_download_url === "string" ? asset.browser_download_url : "";
     const url = safeHTTPSURL(rawURL);
-    const expected = `https://github.com/esengine/DeepSeek-Reasonix/releases/download/${tag}/${name}`;
+    const expected = `https://github.com/patty-io/patty-code/releases/download/${tag}/${name}`;
     if (
       !url ||
-      url.href !== rawURL ||
+      (url.href !== rawURL && url.href !== encodeURI(rawURL)) ||
       rawURL !== expected ||
       !Number.isSafeInteger(asset?.size) ||
       asset.size <= 0 ||
@@ -273,7 +275,7 @@ export function desktopGitHubReleaseModel(release) {
     version: match[1],
     displayVersion: match[1].slice(1),
     assets: Object.fromEntries(DESKTOP_ASSETS.map(([, , name]) => [name, found[name]])),
-    changelogURL: "https://reasonix.io/changelog/",
+    changelogURL: "https://patty-code.io/changelog/",
   };
 }
 

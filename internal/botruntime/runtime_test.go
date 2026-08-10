@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"reasonix/internal/bot"
-	"reasonix/internal/config"
+	"patty/internal/bot"
+	"patty/internal/config"
 )
 
 func TestAllowlistUserCountIncludesRoles(t *testing.T) {
 	allowlist := config.BotAllowlist{
-		FeishuApprovers: []string{"ou-approver"},
-		FeishuAdmins:    []string{"ou-admin"},
+		Approvers: []string{"ou-approver"},
+		Admins:    []string{"ou-admin"},
 	}
 
 	if got := AllowlistUserCount(allowlist); got != 2 {
@@ -25,7 +25,7 @@ func TestRemoteRemembererKeepsDistinctGroupUsers(t *testing.T) {
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{
-		{ID: "feishu-lark", Provider: "feishu", Domain: "lark", Label: "Lark", Enabled: true, Status: "connected"},
+		{ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -33,30 +33,30 @@ func TestRemoteRemembererKeepsDistinctGroupUsers(t *testing.T) {
 
 	remember := NewRemoteRememberer(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	remember(bot.InboundMessage{
-		Platform:     bot.PlatformFeishu,
-		ConnectionID: "feishu-lark",
-		Domain:       "lark",
+		Platform:     bot.Platform("custom"),
+		ConnectionID: "custom-conn",
+		Domain:       "custom",
 		ChatType:     bot.ChatGroup,
-		ChatID:       "oc-group-1",
-		UserID:       "ou-user-1",
+		ChatID:       "group-1",
+		UserID:       "user-1",
 	})
 	remember(bot.InboundMessage{
-		Platform:     bot.PlatformFeishu,
-		ConnectionID: "feishu-lark",
-		Domain:       "lark",
+		Platform:     bot.Platform("custom"),
+		ConnectionID: "custom-conn",
+		Domain:       "custom",
 		ChatType:     bot.ChatGroup,
-		ChatID:       "oc-group-1",
-		UserID:       "ou-user-2",
+		ChatID:       "group-1",
+		UserID:       "user-2",
 	})
 
 	got := config.LoadForEdit(config.UserConfigPath())
-	if users := got.Bot.Allowlist.FeishuUsers; len(users) != 2 || users[0] != "ou-user-1" || users[1] != "ou-user-2" {
+	if users := got.Bot.Allowlist.Users; len(users) != 2 || users[0] != "user-1" || users[1] != "user-2" {
 		t.Fatalf("feishu users = %+v, want both group users", users)
 	}
-	if groups := got.Bot.Allowlist.FeishuGroups; len(groups) != 1 || groups[0] != "oc-group-1" {
+	if groups := got.Bot.Allowlist.Groups; len(groups) != 1 || groups[0] != "group-1" {
 		t.Fatalf("feishu groups = %+v, want group once", groups)
 	}
-	if mappings := got.Bot.Connections[0].SessionMappings; len(mappings) != 2 || mappings[0].RemoteID != "oc-group-1" || mappings[0].UserID != "ou-user-1" || mappings[1].RemoteID != "oc-group-1" || mappings[1].UserID != "ou-user-2" {
+	if mappings := got.Bot.Connections[0].SessionMappings; len(mappings) != 2 || mappings[0].RemoteID != "group-1" || mappings[0].UserID != "user-1" || mappings[1].RemoteID != "group-1" || mappings[1].UserID != "user-2" {
 		t.Fatalf("session mappings = %+v, want distinct group-user mappings", mappings)
 	}
 }
@@ -65,19 +65,19 @@ func TestRememberInboundSessionFillsExistingMappingSessionID(t *testing.T) {
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{
-		{ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected"},
+		{ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
 	msg := bot.InboundMessage{
-		Platform:     bot.PlatformWeixin,
-		ConnectionID: "weixin-weixin",
-		Domain:       "weixin",
+		Platform:     bot.Platform("custom"),
+		ConnectionID: "custom-conn",
+		Domain:       "custom",
 		ChatType:     bot.ChatDM,
-		ChatID:       "wx-chat-1",
-		UserID:       "wx-user-1",
+		ChatID:       "chat-1",
+		UserID:       "user-1",
 	}
 	if err := RememberInbound(msg); err != nil {
 		t.Fatalf("remember inbound: %v", err)
@@ -91,7 +91,7 @@ func TestRememberInboundSessionFillsExistingMappingSessionID(t *testing.T) {
 	if len(mappings) != 1 {
 		t.Fatalf("mappings = %+v, want one mapping", mappings)
 	}
-	if mappings[0].RemoteID != "wx-chat-1" || mappings[0].SessionID != "path:/sessions/20260614-120000.000000000-deepseek.jsonl" || mappings[0].SessionSource != "auto" {
+	if mappings[0].RemoteID != "chat-1" || mappings[0].SessionID != "path:/sessions/20260614-120000.000000000-deepseek.jsonl" || mappings[0].SessionSource != "auto" {
 		t.Fatalf("mapping = %+v, want remote chat with session id", mappings[0])
 	}
 }
@@ -100,26 +100,26 @@ func TestRememberInboundSessionCreatesMappingWithSessionID(t *testing.T) {
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{
-		{ID: "feishu-lark", Provider: "feishu", Domain: "lark", Label: "Lark", Enabled: true, Status: "connected"},
+		{ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
 	if err := RememberInboundSession(bot.InboundMessage{
-		Platform:     bot.PlatformFeishu,
-		ConnectionID: "feishu-lark",
-		Domain:       "lark",
+		Platform:     bot.Platform("custom"),
+		ConnectionID: "custom-conn",
+		Domain:       "custom",
 		ChatType:     bot.ChatDM,
-		ChatID:       "oc-chat-1",
-		UserID:       "ou-user-1",
+		ChatID:       "chat-1",
+		UserID:       "user-1",
 	}, "path:/sessions/topic-bot.jsonl"); err != nil {
 		t.Fatalf("remember inbound session: %v", err)
 	}
 
 	got := config.LoadForEdit(config.UserConfigPath())
 	mappings := got.Bot.Connections[0].SessionMappings
-	if len(mappings) != 1 || mappings[0].RemoteID != "oc-chat-1" || mappings[0].SessionID != "path:/sessions/topic-bot.jsonl" || mappings[0].SessionSource != "auto" {
+	if len(mappings) != 1 || mappings[0].RemoteID != "chat-1" || mappings[0].SessionID != "path:/sessions/topic-bot.jsonl" || mappings[0].SessionSource != "auto" {
 		t.Fatalf("mappings = %+v, want mapping with session id", mappings)
 	}
 }
@@ -128,14 +128,14 @@ func TestRememberInboundSessionKeepsDistinctGroupUsers(t *testing.T) {
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{
-		{ID: "feishu-lark", Provider: "feishu", Domain: "lark", Label: "Lark", Enabled: true, Status: "connected"},
+		{ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
-	msg1 := bot.InboundMessage{Platform: bot.PlatformFeishu, ConnectionID: "feishu-lark", Domain: "lark", ChatType: bot.ChatGroup, ChatID: "oc-group-1", UserID: "ou-user-1"}
-	msg2 := bot.InboundMessage{Platform: bot.PlatformFeishu, ConnectionID: "feishu-lark", Domain: "lark", ChatType: bot.ChatGroup, ChatID: "oc-group-1", UserID: "ou-user-2"}
+	msg1 := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatGroup, ChatID: "group-1", UserID: "user-1"}
+	msg2 := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatGroup, ChatID: "group-1", UserID: "user-2"}
 	if err := RememberInboundSession(msg1, "path:/sessions/user-1.jsonl"); err != nil {
 		t.Fatalf("remember user 1: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestRememberInboundSessionKeepsDistinctGroupUsers(t *testing.T) {
 	if len(mappings) != 2 {
 		t.Fatalf("mappings = %+v, want two group-user mappings", mappings)
 	}
-	if mappings[0].UserID != "ou-user-1" || mappings[0].SessionID != "path:/sessions/user-1.jsonl" || mappings[1].UserID != "ou-user-2" || mappings[1].SessionID != "path:/sessions/user-2.jsonl" {
+	if mappings[0].UserID != "user-1" || mappings[0].SessionID != "path:/sessions/user-1.jsonl" || mappings[1].UserID != "user-2" || mappings[1].SessionID != "path:/sessions/user-2.jsonl" {
 		t.Fatalf("mappings = %+v, want user-specific session ids", mappings)
 	}
 }
@@ -157,14 +157,14 @@ func TestRememberInboundSessionSharesThreadMappingAcrossUsers(t *testing.T) {
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{
-		{ID: "feishu-lark", Provider: "feishu", Domain: "lark", Label: "Lark", Enabled: true, Status: "connected"},
+		{ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
-	msg1 := bot.InboundMessage{Platform: bot.PlatformFeishu, ConnectionID: "feishu-lark", Domain: "lark", ChatType: bot.ChatThread, ChatID: "oc-group-1", ThreadID: "thread-1", UserID: "ou-user-1"}
-	msg2 := bot.InboundMessage{Platform: bot.PlatformFeishu, ConnectionID: "feishu-lark", Domain: "lark", ChatType: bot.ChatThread, ChatID: "oc-group-1", ThreadID: "thread-1", UserID: "ou-user-2"}
+	msg1 := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatThread, ChatID: "group-1", ThreadID: "thread-1", UserID: "user-1"}
+	msg2 := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatThread, ChatID: "group-1", ThreadID: "thread-1", UserID: "user-2"}
 	if err := RememberInboundSession(msg1, "path:/sessions/thread-old.jsonl"); err != nil {
 		t.Fatalf("remember user 1: %v", err)
 	}
@@ -186,14 +186,14 @@ func TestRememberInboundSessionPreservesExplicitMappingTarget(t *testing.T) {
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{{
-		ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected",
-		SessionMappings: []config.BotConnectionSessionMapping{{RemoteID: "wx-chat-1", SessionID: "topic:manual-topic"}},
+		ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected",
+		SessionMappings: []config.BotConnectionSessionMapping{{RemoteID: "chat-1", SessionID: "topic:manual-topic"}},
 	}}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
-	msg := bot.InboundMessage{Platform: bot.PlatformWeixin, ConnectionID: "weixin-weixin", Domain: "weixin", ChatType: bot.ChatDM, ChatID: "wx-chat-1", UserID: "wx-user-1"}
+	msg := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatDM, ChatID: "chat-1", UserID: "user-1"}
 	if err := RememberInboundSession(msg, "path:/sessions/auto.jsonl"); err != nil {
 		t.Fatalf("remember inbound session: %v", err)
 	}
@@ -209,14 +209,14 @@ func TestRememberInboundSessionPreservesBareExplicitMappingTarget(t *testing.T) 
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{{
-		ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected",
-		SessionMappings: []config.BotConnectionSessionMapping{{RemoteID: "wx-chat-1", SessionID: "manual-topic"}},
+		ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected",
+		SessionMappings: []config.BotConnectionSessionMapping{{RemoteID: "chat-1", SessionID: "manual-topic"}},
 	}}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
-	msg := bot.InboundMessage{Platform: bot.PlatformWeixin, ConnectionID: "weixin-weixin", Domain: "weixin", ChatType: bot.ChatDM, ChatID: "wx-chat-1", UserID: "wx-user-1"}
+	msg := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatDM, ChatID: "chat-1", UserID: "user-1"}
 	if err := RememberInboundSession(msg, "path:/sessions/auto.jsonl"); err != nil {
 		t.Fatalf("remember inbound session: %v", err)
 	}
@@ -233,13 +233,13 @@ func TestRememberInboundSessionUsesActualWorkspaceWhenConnectionIsGlobal(t *test
 	workspace := filepath.Join(t.TempDir(), "workspace")
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{
-		{ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected"},
+		{ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
-	msg := bot.InboundMessage{Platform: bot.PlatformWeixin, ConnectionID: "weixin-weixin", Domain: "weixin", ChatType: bot.ChatDM, ChatID: "wx-chat-1", UserID: "wx-user-1"}
+	msg := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatDM, ChatID: "chat-1", UserID: "user-1"}
 	if err := RememberInboundSessionWorkspace(msg, "path:/sessions/auto.jsonl", workspace); err != nil {
 		t.Fatalf("remember inbound session: %v", err)
 	}
@@ -257,13 +257,13 @@ func TestRememberInboundSessionKeepsConfiguredWorkspaceOverActualWorkspace(t *te
 	actual := filepath.Join(t.TempDir(), "actual")
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{{
-		ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected", WorkspaceRoot: configured,
+		ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected", WorkspaceRoot: configured,
 	}}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
-	msg := bot.InboundMessage{Platform: bot.PlatformWeixin, ConnectionID: "weixin-weixin", Domain: "weixin", ChatType: bot.ChatDM, ChatID: "wx-chat-1", UserID: "wx-user-1"}
+	msg := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatDM, ChatID: "chat-1", UserID: "user-1"}
 	if err := RememberInboundSessionWorkspace(msg, "path:/sessions/auto.jsonl", actual); err != nil {
 		t.Fatalf("remember inbound session: %v", err)
 	}
@@ -279,14 +279,14 @@ func TestRememberInboundSessionUpdatesAutoMappingTarget(t *testing.T) {
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{{
-		ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected",
-		SessionMappings: []config.BotConnectionSessionMapping{{RemoteID: "wx-chat-1", SessionID: "path:/sessions/old.jsonl", SessionSource: "auto"}},
+		ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected",
+		SessionMappings: []config.BotConnectionSessionMapping{{RemoteID: "chat-1", SessionID: "path:/sessions/old.jsonl", SessionSource: "auto"}},
 	}}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
-	msg := bot.InboundMessage{Platform: bot.PlatformWeixin, ConnectionID: "weixin-weixin", Domain: "weixin", ChatType: bot.ChatDM, ChatID: "wx-chat-1", UserID: "wx-user-1"}
+	msg := bot.InboundMessage{Platform: bot.Platform("custom"), ConnectionID: "custom-conn", Domain: "custom", ChatType: bot.ChatDM, ChatID: "chat-1", UserID: "user-1"}
 	if err := RememberInboundSession(msg, "path:/sessions/new.jsonl"); err != nil {
 		t.Fatalf("remember inbound session: %v", err)
 	}
@@ -304,7 +304,7 @@ func TestForgetAutoSessionMappingsForPathRemovesOnlyAutoPathTargets(t *testing.T
 	other := filepath.Join(t.TempDir(), "other-channel.jsonl")
 	cfg := config.Default()
 	cfg.Bot.Connections = []config.BotConnectionConfig{{
-		ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Label: "微信", Enabled: true, Status: "connected",
+		ID: "custom-conn", Provider: "custom", Domain: "custom", Label: "테스트 채널", Enabled: true, Status: "connected",
 		SessionMappings: []config.BotConnectionSessionMapping{
 			{RemoteID: "remove-path-prefix", SessionID: "path:" + target, SessionSource: "auto"},
 			{RemoteID: "remove-raw-path", SessionID: target, SessionSource: "auto"},
@@ -342,41 +342,41 @@ func TestForgetAutoSessionMappingsForPathRemovesOnlyAutoPathTargets(t *testing.T
 
 func TestConnectionChannelConfigsPreserveToolApprovalMode(t *testing.T) {
 	connections := []config.BotConnectionConfig{
-		{ID: "feishu-feishu", Provider: "feishu", Domain: "feishu", Enabled: true, ToolApprovalMode: "auto"},
-		{ID: "feishu-lark", Provider: "feishu", Domain: "lark", Enabled: true, ToolApprovalMode: "yolo"},
-		{ID: "weixin-weixin", Provider: "weixin", Domain: "weixin", Enabled: true, ToolApprovalMode: "ask"},
+		{ID: "feishu-feishu", Provider: "chan-a", Domain: "feishu", Enabled: true, ToolApprovalMode: "auto"},
+		{ID: "custom-conn", Provider: "chan-b", Domain: "custom", Enabled: true, ToolApprovalMode: "yolo"},
+		{ID: "custom-conn2", Provider: "chan-c", Domain: "custom2", Enabled: true, ToolApprovalMode: "ask"},
 	}
 
 	byConnection := ConnectionChannelConfigs(connections, true, true)
 	if got := byConnection["feishu-feishu"].ToolApprovalMode; got != "auto" {
-		t.Fatalf("feishu tool approval mode = %q, want auto", got)
+		t.Fatalf("channel tool approval mode = %q, want auto", got)
 	}
-	if got := byConnection["feishu-lark"].ToolApprovalMode; got != "yolo" {
-		t.Fatalf("lark tool approval mode = %q, want yolo", got)
+	if got := byConnection["custom-conn"].ToolApprovalMode; got != "yolo" {
+		t.Fatalf("custom tool approval mode = %q, want yolo", got)
 	}
-	if got := byConnection["weixin-weixin"].ToolApprovalMode; got != "ask" {
-		t.Fatalf("weixin tool approval mode = %q, want explicit ask override", got)
+	if got := byConnection["custom-conn2"].ToolApprovalMode; got != "ask" {
+		t.Fatalf("custom tool approval mode = %q, want explicit ask override", got)
 	}
 
 	byPlatform := ChannelConfigs(connections, true, true)
-	if got := byPlatform[bot.PlatformFeishu].ToolApprovalMode; got != "yolo" {
-		t.Fatalf("platform feishu tool approval mode = %q, want last enabled Feishu/Lark override", got)
+	if got := byPlatform[bot.Platform("chan-b")].ToolApprovalMode; got != "yolo" {
+		t.Fatalf("platform channel tool approval mode = %q, want per-provider override", got)
 	}
 }
 
 func TestConnectionChannelConfigsCarrySessionMappingsOnlyPerConnection(t *testing.T) {
 	connections := []config.BotConnectionConfig{
 		{
-			ID:            "weixin-weixin",
-			Provider:      "weixin",
-			Domain:        "weixin",
+			ID:            "custom-conn",
+			Provider:      "custom",
+			Domain:        "custom",
 			Enabled:       true,
 			WorkspaceRoot: "/connection",
 			SessionMappings: []config.BotConnectionSessionMapping{{
 				RemoteID:      "wx-group-1",
-				SessionID:     "path:/tmp/reasonix-session.jsonl",
+				SessionID:     "path:/tmp/patty-session.jsonl",
 				ChatType:      string(bot.ChatGroup),
-				UserID:        "wx-user-1",
+				UserID:        "user-1",
 				Scope:         "project",
 				WorkspaceRoot: "/mapped",
 				UpdatedAt:     "2026-07-04T12:00:00Z",
@@ -385,35 +385,35 @@ func TestConnectionChannelConfigsCarrySessionMappingsOnlyPerConnection(t *testin
 	}
 
 	byConnection := ConnectionChannelConfigs(connections, true, true)
-	mappings := byConnection["weixin-weixin"].SessionMappings
+	mappings := byConnection["custom-conn"].SessionMappings
 	if len(mappings) != 1 {
 		t.Fatalf("connection mappings = %+v, want one mapping", mappings)
 	}
-	if got := mappings[0]; got.RemoteID != "wx-group-1" || got.SessionID != "path:/tmp/reasonix-session.jsonl" || got.ChatType != string(bot.ChatGroup) || got.UserID != "wx-user-1" || got.WorkspaceRoot != "/mapped" || got.UpdatedAt == "" {
+	if got := mappings[0]; got.RemoteID != "wx-group-1" || got.SessionID != "path:/tmp/patty-session.jsonl" || got.ChatType != string(bot.ChatGroup) || got.UserID != "user-1" || got.WorkspaceRoot != "/mapped" || got.UpdatedAt == "" {
 		t.Fatalf("connection mapping = %+v, want copied routing fields", got)
 	}
 
 	byPlatform := ChannelConfigs(connections, true, true)
-	if got := byPlatform[bot.PlatformWeixin].SessionMappings; len(got) != 0 {
+	if got := byPlatform[bot.Platform("custom")].SessionMappings; len(got) != 0 {
 		t.Fatalf("platform mappings = %+v, want none to avoid cross-connection routing", got)
 	}
 
 	noWorkspace := ConnectionChannelConfigs(connections, true, false)
-	if got := noWorkspace["weixin-weixin"].SessionMappings; len(got) != 0 {
+	if got := noWorkspace["custom-conn"].SessionMappings; len(got) != 0 {
 		t.Fatalf("connection mappings with includeWorkspaceRoot=false = %+v, want none", got)
 	}
 }
 
 func TestRouteConfigsPreserveRemoteOverrides(t *testing.T) {
 	routes := RouteConfigs([]config.BotRouteConfig{
-		{ConnectionID: "feishu-lark", Platform: "feishu", ChatType: "group", ChatID: "group-1", Model: "route-model", WorkspaceRoot: "/route", ToolApprovalMode: "full-access"},
+		{ConnectionID: "custom-conn", Platform: "custom", ChatType: "group", ChatID: "group-1", Model: "route-model", WorkspaceRoot: "/route", ToolApprovalMode: "full-access"},
 		{ConnectionID: "empty-route"},
 	}, true, true)
 	if len(routes) != 1 {
 		t.Fatalf("routes = %+v, want one non-empty route", routes)
 	}
 	got := routes[0]
-	if got.ConnectionID != "feishu-lark" || got.Platform != bot.PlatformFeishu || got.ChatType != bot.ChatGroup || got.ChatID != "group-1" {
+	if got.ConnectionID != "custom-conn" || got.Platform != bot.Platform("custom") || got.ChatType != bot.ChatGroup || got.ChatID != "group-1" {
 		t.Fatalf("route match fields = %+v, want trimmed remote match", got)
 	}
 	if got.Channel.Model != "route-model" || got.Channel.WorkspaceRoot != "/route" || got.Channel.ToolApprovalMode != "yolo" {

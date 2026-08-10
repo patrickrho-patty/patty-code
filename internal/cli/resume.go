@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/i18n"
+	"patty/internal/agent"
+	"patty/internal/i18n"
 )
 
 const resumeListCap = 10
@@ -219,7 +219,7 @@ func (m *chatTUI) runResumeCommand(input string) {
 // the picker because both window through recentSessions.
 func (m *chatTUI) resumeArgItems(val string) ([]compItem, int, bool) {
 	cmdEnd := strings.IndexAny(val, " \t")
-	if cmdEnd < 0 || val[:cmdEnd] != "/resume" {
+	if cmdEnd < 0 || canonicalBuiltinSlashCommand(val[:cmdEnd]) != "/resume" {
 		return nil, 0, false
 	}
 	from := strings.LastIndexAny(val, " \t") + 1

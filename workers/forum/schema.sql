@@ -1,12 +1,12 @@
--- Reasonix Community forum. Identity comes from id.reasonix.io; this DB holds
+-- Patty Code Community forum. Identity comes from id.patty.io; this DB holds
 -- forum content plus the anti-abuse state (trust levels, flags, silences).
--- Apply: wrangler d1 execute reasonix-forum --remote --file=schema.sql
+-- Apply: wrangler d1 execute patty-forum --remote --file=schema.sql
 
 -- A member is a signed-in identity that has interacted with the forum. Trust
 -- level is the primary anti-spam lever: new members (trust 0) are throttled and
 -- can't post links/images; trust rises with real participation.
 CREATE TABLE IF NOT EXISTS members (
-  email          TEXT PRIMARY KEY,              -- lowercased id.reasonix.io identity
+  email          TEXT PRIMARY KEY,              -- lowercased id.patty.io identity
   handle         TEXT NOT NULL,
   trust          INTEGER NOT NULL DEFAULT 0,    -- 0 new · 1 basic · 2 member · 3 regular · 4 leader
   role           TEXT NOT NULL DEFAULT 'member',-- member · moderator · admin

@@ -21,8 +21,9 @@ type composerSelection struct {
 	value        string
 }
 
-// composerPromptWidth is reserved by textarea on every visual row. The first
-// row paints "❯ "; continuation rows use the same-width blank gutter.
+// composerPromptWidth is reserved by textarea on every visual row. Every row
+// paints the same quiet blank gutter so text, selections, and the terminal
+// cursor stay aligned without a borrowed chevron prompt.
 const composerPromptWidth = 2
 
 const composerWheelRows = 3
@@ -236,9 +237,10 @@ func (m chatTUI) mouseOverComposer(screenX, screenY int) bool {
 	if !ok {
 		return false
 	}
-	// Include both horizontal border rows so a wheel gesture anywhere over the
-	// visible composer card has the same target.
-	return screenY >= contentY-1 && screenY <= contentY+m.input.Height()
+	// Include the heading and every localized hint row so a wheel gesture
+	// anywhere over the complete composer chrome has the same target.
+	lastHintY := contentY + m.input.Height() + composerHintRowCount(max(m.width, 10)) - 1
+	return screenY >= contentY-1 && screenY <= lastHintY
 }
 
 // composerCursor maps the textarea's real insertion cursor into the manually
@@ -348,7 +350,7 @@ func (m chatTUI) selectedComposerText() string {
 }
 
 // composerOrigin returns the terminal cell occupied by textarea content (after
-// the input box's top border, left padding, and prompt gutter). Deriving it from
+// the heading, left padding, and blank prompt gutter). Deriving it from
 // the two cursor positions keeps hit-testing aligned with every optional panel
 // above the box.
 func (m chatTUI) composerOrigin() (x, y int, ok bool) {

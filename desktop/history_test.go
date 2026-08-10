@@ -11,13 +11,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"reasonix/internal/agent"
-	"reasonix/internal/boot"
-	"reasonix/internal/control"
-	"reasonix/internal/event"
-	"reasonix/internal/provider"
-	"reasonix/internal/store"
-	"reasonix/internal/tool"
+	"patty/internal/agent"
+	"patty/internal/boot"
+	"patty/internal/control"
+	"patty/internal/event"
+	"patty/internal/provider"
+	"patty/internal/store"
+	"patty/internal/tool"
 )
 
 func TestHistoryMessagesIncludeAssistantReasoning(t *testing.T) {
@@ -118,7 +118,7 @@ func TestHistoryMessagesPreferPersistedRawUserContent(t *testing.T) {
 }
 
 func TestHistoryMessagesRecoverLegacyExpandedPasteWithoutSidecar(t *testing.T) {
-	const label = "[已粘贴文本 #1 · 3 行]"
+	const label = "[붙여넣은 텍스트 #1 · 3줄]"
 	const display = "review this\n\n" + label
 	const expanded = display + "\n\n--- Begin " + label + " ---\nfirst\nsecond\nthird\n--- End " + label + " ---"
 	const rendered = "<active-goal>\nship the release\n</active-goal>\n\n" + expanded
@@ -143,9 +143,6 @@ func TestHistoryMessagesExpandedRawSupportsSidecarAndPreviousClients(t *testing.
 	const rendered = "<capability-route version=\"1\">\nuse review\n</capability-route>\n\n" + expanded
 	msgs := []provider.Message{{Role: provider.RoleUser, Content: rendered, RawContent: expanded}}
 
-	// Previous desktop releases use RawContent as their replay source. Keeping
-	// the expanded markers there lets them reconstruct the same inline card
-	// instead of rendering an opaque label with no accessible payload.
 	previousReplay := agent.UserMessageText(msgs[0])
 	if !strings.Contains(previousReplay, "--- Begin "+label+" ---") || !strings.Contains(previousReplay, "--- End "+label+" ---") {
 		t.Fatalf("previous-client replay lost pasted payload markers: %q", previousReplay)
@@ -200,14 +197,14 @@ func TestHistoryMessagesDoNotReplayMemoryCompilerContract(t *testing.T) {
 }
 
 func TestHistoryMessagesRestoreCompiledSkillInvocationWithoutContract(t *testing.T) {
-	raw := historyMemoryCompilerContract(t, "/reasonix-develop ship the refactor")
+	raw := historyMemoryCompilerContract(t, "/patty-develop ship the refactor")
 	msgs := []provider.Message{{Role: provider.RoleUser, Content: raw}}
 
 	got := historyMessages(msgs, func(string) string { return "ship the refactor" })
 	if len(got) != 1 {
 		t.Fatalf("history length = %d, want 1: %+v", len(got), got)
 	}
-	if got[0].Content != "ship the refactor" || got[0].SubmitText != "/reasonix-develop ship the refactor" {
+	if got[0].Content != "ship the refactor" || got[0].SubmitText != "/patty-develop ship the refactor" {
 		t.Fatalf("compiled skill history = %+v", got[0])
 	}
 	assertNoHistoryMemoryContract(t, got[0].Content)
@@ -384,7 +381,7 @@ func TestHistoryForTabRestoresPlannerDisplayAfterReload(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "session.jsonl")
 	handoff := strings.Join([]string{
-		"# Reasonix executor handoff",
+		"# Patty Code executor handoff",
 		"",
 		"You are the executor now.",
 		"",
@@ -823,10 +820,10 @@ func TestHistoryMessagesKeepBoundedToolErrors(t *testing.T) {
 }
 
 func TestHistoryMessagesClipToolErrorsAtUTF8Boundary(t *testing.T) {
-	largeError := "error: " + strings.Repeat("权限不足", 1000)
+	largeError := "error: " + strings.Repeat("권한 부족", 1000)
 	msgs := []provider.Message{
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{
-			ID: "call_unicode_error", Name: "bash", Arguments: `{"command":"rm 受保护文件"}`,
+			ID: "call_unicode_error", Name: "bash", Arguments: `{"command":"rm 보호된 파일"}`,
 		}}},
 		{Role: provider.RoleTool, Name: "bash", ToolCallID: "call_unicode_error", Content: largeError},
 	}
@@ -949,7 +946,6 @@ func TestPreviewSessionMessagesUpgradesContentOnlyExpandedPaste(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "content-only.jsonl")
 	session := agent.NewSession("")
-	// Releases before Context Engine v2 persisted user turns without RawContent.
 	session.Add(provider.Message{Role: provider.RoleUser, Content: expanded})
 	if err := session.Save(path); err != nil {
 		t.Fatalf("Save content-only session: %v", err)

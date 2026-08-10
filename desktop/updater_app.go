@@ -12,16 +12,14 @@ import (
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"reasonix/desktop/internal/update"
-	"reasonix/internal/installlayout"
-	"reasonix/internal/repair"
+	"patty/desktop/internal/update"
+	"patty/internal/installlayout"
+	"patty/internal/repair"
 )
 
 // updater_app.go is the auto-updater's bound command surface — the App methods the
 // frontend calls — mirroring settings_app.go's "one file per concern" split. The
-// transport-free logic lives in updater.go; this file is the Wails glue: it streams
 // download progress as "updater:progress" events and routes macOS to the manual
-// download path unless the macOS build was Developer ID signed and notarized.
 
 var errUpdateManualRequired = errors.New("update: manual update required")
 var errUpdateInProgress = errors.New("update: another download or install is already in progress")
@@ -77,13 +75,8 @@ func ensureExpectedUpdateVersion(selectedChannel, expectedVersion, actualVersion
 	)
 }
 
-// Version returns the build version injected via -ldflags (see main.go). The
-// frontend displays it; CheckUpdate compares against it.
 func (a *App) Version() string { return version }
 
-// CheckUpdate fetches the manifest (R2, then GitHub) and reports whether a newer
-// build is available for this platform. Safe to call on startup: a network error
-// surfaces in UpdateInfo.Err rather than failing, so the UI can stay quiet.
 func (a *App) CheckUpdate(selectedChannel string) (*UpdateInfo, error) {
 	selectedChannel = targetUpdateChannel(selectedChannel)
 	profile := detectInstallProfile()
@@ -124,8 +117,7 @@ func (a *App) CheckUpdate(selectedChannel string) (*UpdateInfo, error) {
 	return &info, nil
 }
 
-// OpenDownloadPage opens the install page in the browser — the macOS manual-update
-// path and a fallback link elsewhere.
+// OpenDownloadPage opens the install page in the browser  the macOS manual-update
 func (a *App) OpenDownloadPage() {
 	a.openDownloadPage(targetUpdateChannel(""))
 }
@@ -146,8 +138,6 @@ func (a *App) openDownloadPage(selectedChannel string) {
 	}
 }
 
-// downloadUpdateRequest downloads, verifies, and caches the exact version bound
-// to a request. Used only by ApplyUpdateRequest; not exposed as a Wails binding.
 func (a *App) downloadUpdateRequest(selectedChannel, expectedVersion, requestID string) (*UpdateDownloadResult, error) {
 	requestID, selectedChannel, expectedVersion, err := validateUpdaterRequest(requestID, selectedChannel, expectedVersion)
 	if err != nil {
@@ -199,8 +189,7 @@ func (a *App) downloadUpdateRequest(selectedChannel, expectedVersion, requestID 
 	}, nil
 }
 
-// installUpdateRequest applies the exact cached, verified update bound to a
-// request and then exits/relaunches. Used only by ApplyUpdateRequest.
+// request and then exitsrelaunches. Used only by ApplyUpdateRequest.
 func (a *App) installUpdateRequest(selectedChannel, expectedVersion, requestID string) error {
 	requestID, selectedChannel, expectedVersion, err := validateUpdaterRequest(requestID, selectedChannel, expectedVersion)
 	if err != nil {
@@ -221,8 +210,6 @@ func (a *App) installUpdateRequest(selectedChannel, expectedVersion, requestID s
 			expectedVersion,
 		))
 	}
-	// Re-detect install type at install time so a path change between download
-	// and install cannot apply the wrong artifact kind.
 	if c, err := httpClient(); err == nil {
 		ctx, cancel := context.WithTimeout(a.reqCtx(), httpTimeout)
 		defer cancel()
@@ -241,8 +228,6 @@ func (a *App) installUpdateRequest(selectedChannel, expectedVersion, requestID s
 	if err := ensureDebCacheMatchesProfile(meta, profile); err != nil {
 		return a.failUpdate(requestID, selectedChannel, expectedVersion, err)
 	}
-	// Portable cache vs deb profile (and the reverse) are also rejected when
-	// artifact kinds disagree with the active mode.
 	wantKind := profile.ArtifactKind
 	if wantKind == "" {
 		wantKind = artifactKindTarball
@@ -262,25 +247,15 @@ func (a *App) installUpdateRequest(selectedChannel, expectedVersion, requestID s
 	}
 }
 
-// reconcilePendingUpdateForRequest runs before download and again before
-// install-mode dispatch. The early pass avoids paying download and verification
-// costs for a blocked update; the second pass prevents a profile change or a
-// concurrent process from bypassing an unfinished release-unit transaction.
 func (a *App) reconcilePendingUpdateForRequest(requestID string, meta *cachedUpdate) error {
 	if pendingUpdateExistsForInstall() {
 		a.emitProgress(requestID, meta.Channel, meta.Version, "recovering", meta.Size, meta.Size, "")
-		// A user-initiated update proves the desktop reached a usable UI. Retire
-		// an eligible superseded app-bundle or flat-layout transaction here as
-		// well as in the delayed post-DOM health task, so an immediate click never
-		// has to fail once and ask the user to retry.
 		if archived, archiveErr := archiveSupersededPendingUpdateForInstall(); archiveErr != nil {
 			slog.Debug("desktop: superseded update was not eligible for automatic archival", "err", archiveErr)
 		} else if archived {
 			slog.Info("desktop: archived superseded update before install")
 		}
-		// Visible UI at the pending target is health evidence — heal before
-		// reconcile so a missed post-DOM task does not block the next update.
-		// Exact and probationary commits are independent best-effort paths.
+// Visible UI at the pending target is health evidence  heal before
 		refreshPendingUpdateHealthIdentity(a)
 		if err := a.commitPendingUpdateHealth(); err != nil {
 			slog.Debug("desktop: commit healthy update before install", "err", err)
@@ -293,7 +268,6 @@ func (a *App) reconcilePendingUpdateForRequest(requestID string, meta *cachedUpd
 	}
 	if _, err := reconcilePendingUpdateForInstall(version); err != nil {
 		if errors.Is(err, repair.ErrPendingUpdateAwaitingHealth) {
-			// Retry heal after identity refresh, then always re-reconcile.
 			refreshPendingUpdateHealthIdentity(a)
 			if commitErr := a.commitPendingUpdateHealth(); commitErr != nil {
 				slog.Debug("desktop: commit healthy update on awaiting-health retry", "err", commitErr)
@@ -319,10 +293,6 @@ func (a *App) reconcilePendingUpdateForRequest(requestID string, meta *cachedUpd
 	return nil
 }
 
-// AbandonPendingUpdate is a user-facing recovery action for stuck in-app
-// updates. It commits a still-running probationary target when possible,
-// otherwise cancels or rolls back the unfinished transaction, and as a last
-// resort force-retires a probationary marker that already owns the install.
 func (a *App) AbandonPendingUpdate() error {
 	if !pendingUpdateExistsForInstall() {
 		return nil
@@ -343,9 +313,6 @@ func (a *App) AbandonPendingUpdate() error {
 }
 
 func (a *App) installDebUpdate(requestID string, meta *cachedUpdate) error {
-	// authorizing = Polkit password dialog. The helper streams
-	// REASONIX_UPDATE_PHASE=installing on stderr after validation and before
-	// apt-get, so the UI can leave authorizing while the package manager runs.
 	a.emitProgress(requestID, meta.Channel, meta.Version, "authorizing", meta.Size, meta.Size, "")
 	err := applyDebLinux(meta.Path, meta.SignaturePath, func(phase string) {
 		if phase == "installing" {
@@ -353,20 +320,17 @@ func (a *App) installDebUpdate(requestID string, meta *cachedUpdate) error {
 		}
 	})
 	if isAuthCancelled(err) {
-		// User dismissed the Polkit dialog: keep the verified cache and return to
-		// the downloaded state so they can retry. Do not count as an update error.
 		a.recordUpdateEvent("authorization_cancelled")
 		a.emitProgress(requestID, meta.Channel, meta.Version, "downloaded", meta.Size, meta.Size, "")
 		return nil
 	}
 	if err != nil {
 		if errors.Is(err, errUpdateAuthFailed) {
-			// Surface a manual-install hint without writing /usr/bin ourselves.
+// Surface a manual-install hint without writing /usr/bin ourselves.
 			return a.failUpdate(requestID, meta.Channel, meta.Version, fmt.Errorf("%w. %s", err, manualDebInstallHint()))
 		}
 		return a.failUpdate(requestID, meta.Channel, meta.Version, err)
 	}
-	// Ensure installing was shown even if a phase line was missed (older helper).
 	a.emitProgress(requestID, meta.Channel, meta.Version, "installing", meta.Size, meta.Size, "")
 	a.emitProgress(requestID, meta.Channel, meta.Version, "done", meta.Size, meta.Size, "")
 	a.shutdown(a.ctx)
@@ -380,10 +344,7 @@ func (a *App) installPortableUpdate(requestID string, meta *cachedUpdate, data [
 	var preparedUpdate *repair.UpdateTransaction
 	versionedPortable := (runtime.GOOS == "windows" || runtime.GOOS == "linux") && installlayout.HasCurrent(currentInstallDir())
 	if (runtime.GOOS == "windows" || runtime.GOOS == "linux") && !versionedPortable {
-		// Back up the complete legacy release unit (main binary plus launcher
-		// and migration siblings) so rollback never leaves a mixed-version
-		// install. Deb installs deliberately skip this because package-manager
-		// state owns /usr/bin.
+// state owns /usr/bin.
 		var err error
 		preparedUpdate, err = repair.PrepareFileUpdate(version, meta.Version, currentExecutablePath(), updateSiblingArtifacts()...)
 		if err != nil {
@@ -407,10 +368,7 @@ func (a *App) installPortableUpdate(requestID string, meta *cachedUpdate, data [
 	}
 	if err != nil {
 		if runtime.GOOS == "linux" {
-			// applyLinux replaces the legacy migration member before the main
-			// binary swap, so a failure can already have produced a mixed
-			// install. Restore the recorded release unit immediately; if that
-			// fails, retain the transaction for explicit repair/reconciliation.
+// fails, retain the transaction for explicit repairreconciliation.
 			if preparedUpdate != nil {
 				if _, rollbackErr := repair.RollbackPendingUpdateExact(preparedUpdate); rollbackErr != nil {
 					err = errors.Join(err, fmt.Errorf("restore prepared release unit: %w", rollbackErr))
@@ -419,8 +377,6 @@ func (a *App) installPortableUpdate(requestID string, meta *cachedUpdate, data [
 				}
 			}
 		} else if runtime.GOOS == "windows" {
-			// The helper may fail to start after another same-version attempt
-			// has prepared a newer transaction. Cancel only this attempt.
 			if preparedUpdate != nil {
 				if cancelErr := repair.CancelPendingUpdateExact(preparedUpdate); cancelErr != nil {
 					err = errors.Join(err, fmt.Errorf("cancel prepared update: %w", cancelErr))
@@ -438,9 +394,7 @@ func (a *App) installPortableUpdate(requestID string, meta *cachedUpdate, data [
 
 	a.emitProgress(requestID, meta.Channel, meta.Version, "done", meta.Size, meta.Size, "")
 
-	// Persist the conversation and stop subprocesses before handing off (same as
-	// shutdown). On Linux the binary is now replaced, so relaunch it; on Windows and
-	// macOS the installer/helper we launched takes over once we exit.
+// macOS the installerhelper we launched takes over once we exit.
 	a.shutdown(a.ctx)
 	if runtime.GOOS == "linux" {
 		_ = relaunchThroughLauncher()
@@ -449,10 +403,8 @@ func (a *App) installPortableUpdate(requestID string, meta *cachedUpdate, data [
 	return nil
 }
 
-// ApplyUpdateRequest downloads, verifies, installs, and relaunches the exact
-// version bound to a frontend request. This is the v1.20+ single-action update
-// path ("更新并重启"); there is no durable cross-restart pending state when the
-// operation fails — the user simply retries.
+// path (); there is no durable cross-restart pending state when the
+// operation fails  the user simply retries.
 func (a *App) ApplyUpdateRequest(selectedChannel, expectedVersion, requestID string) error {
 	requestID, selectedChannel, expectedVersion, err := validateUpdaterRequest(requestID, selectedChannel, expectedVersion)
 	if err != nil {
@@ -462,8 +414,6 @@ func (a *App) ApplyUpdateRequest(selectedChannel, expectedVersion, requestID str
 	if err != nil {
 		return err
 	}
-	// One owner covers the complete download -> verify -> install -> relaunch
-	// sequence, so another request cannot slip into the former phase gap.
 	defer finish()
 
 	if err := a.reconcilePendingUpdateForRequest(requestID, &cachedUpdate{
@@ -483,9 +433,6 @@ func (a *App) ApplyUpdateRequest(selectedChannel, expectedVersion, requestID str
 	return nil
 }
 
-// downloadVerify downloads the asset (streaming progress), verifies its minisign
-// signature against the embedded public key, then its sha256. It returns the
-// verified bytes and the raw signature (needed for deb helper re-verification).
 func (a *App) downloadVerify(requestID, selectedChannel, expectedVersion string, asset update.Asset) (data, sig []byte, err error) {
 	c, err := httpClient()
 	if err != nil {
@@ -519,8 +466,7 @@ func (a *App) downloadVerify(requestID, selectedChannel, expectedVersion string,
 	return data, sig, nil
 }
 
-// reqCtx is the context for updater HTTP calls — the Wails context once startup has
-// run, else Background (CheckUpdate may, in theory, be reached before startup).
+// reqCtx is the context for updater HTTP calls  the Wails context once startup has
 func (a *App) reqCtx() context.Context {
 	if a.ctx != nil {
 		return a.ctx
@@ -540,17 +486,12 @@ func (a *App) emitProgress(requestID, selectedChannel, expectedVersion, phase st
 	})
 }
 
-// failUpdate emits an error progress event and returns the error to the caller.
 func (a *App) failUpdate(requestID, selectedChannel, expectedVersion string, err error) error {
 	a.recordUpdateError(err)
 	a.emitProgress(requestID, selectedChannel, expectedVersion, "error", 0, 0, err.Error())
 	return err
 }
 
-// requireManualUpdate moves the frontend out of its busy state before opening
-// the download page. Install mode and manifest availability are re-checked at
-// each updater boundary, so either can legitimately change after the frontend
-// started downloading or authorizing.
 func (a *App) requireManualUpdate(requestID, selectedChannel, expectedVersion string, profile installProfile) error {
 	err := a.failUpdate(requestID, selectedChannel, expectedVersion, manualUpdateRequiredError(profile))
 	a.openDownloadPage(selectedChannel)
@@ -567,7 +508,6 @@ func (a *App) recordUpdateError(err error) {
 		return
 	}
 	if isAuthCancelled(err) {
-		// Cancellation is an expected user action, not a failure rate signal.
 		return
 	}
 	if m := a.metrics.Load(); m != nil {
@@ -575,7 +515,6 @@ func (a *App) recordUpdateError(err error) {
 	}
 }
 
-// recordUpdateEvent records a non-failure updater signal (e.g. auth cancelled).
 func (a *App) recordUpdateEvent(bucket string) {
 	if version == "dev" {
 		return
