@@ -23,8 +23,13 @@ function isObject(value) {
 
 function validateLocalized(value, path) {
   invariant(isObject(value), `${path} must be an object`);
-  for (const lang of ["en", "zh"]) {
-    invariant(typeof value[lang] === "string" && value[lang].trim(), `${path}.${lang} must be a non-empty string`);
+  invariant(typeof value.en === "string" && value.en.trim(), `${path}.en must be a non-empty string`);
+  const allowed = new Set(["en", "ko-KR"]);
+  for (const key of Object.keys(value)) {
+    invariant(allowed.has(key), `${path}.${key} is not supported`);
+  }
+  if (value["ko-KR"] !== undefined) {
+    invariant(typeof value["ko-KR"] === "string" && value["ko-KR"].trim(), `${path}.ko-KR must be a non-empty string`);
   }
 }
 
@@ -187,23 +192,23 @@ function renderItems(items, lang) {
     .join("\n");
 }
 
-export function renderGitHubRelease(release, lang = "zh") {
-  const isZh = lang === "zh";
+export function renderGitHubRelease(release, lang = "ko-KR") {
+  const isKorean = lang === "ko-KR";
   const isPreview = release.channel === "prerelease";
-  const channelLabel = isPreview ? (isZh ? "预览版" : "Preview") : (isZh ? "稳定版" : "Stable");
+  const channelLabel = isPreview ? (isKorean ? "프리뷰" : "Preview") : (isKorean ? "안정판" : "Stable");
   const lines = [
     `> ${localized(release.summary, lang)}`,
     "",
-    `**${isZh ? "发布渠道" : "Release channel"}：${channelLabel} · v${release.version}**`,
+    `**${isKorean ? "배포 채널" : "Release channel"}: ${channelLabel} · v${release.version}**`,
     "",
-    isZh
-      ? `[English →](https://patty-code.io/changelog/v${release.version}/?lang=en) · [网页版完整更新日志 →](https://patty-code.io/changelog/v${release.version}/)`
-      : `[한국어 →](https://patty-code.io/changelog/v${release.version}/?lang=zh) · [Full release notes →](https://patty-code.io/changelog/v${release.version}/?lang=en)`,
+    isKorean
+      ? `[English →](https://patty-code.io/changelog/v${release.version}/?lang=en) · [전체 릴리스 노트 →](https://patty-code.io/changelog/v${release.version}/?lang=ko-KR)`
+      : `[한국어 →](https://patty-code.io/changelog/v${release.version}/?lang=ko-KR) · [Full release notes →](https://patty-code.io/changelog/v${release.version}/?lang=en)`,
     "",
   ];
 
   if (release.guides.length) {
-    lines.push(`## ${isZh ? "使用攻略" : "Guides"}`, "");
+    lines.push(`## ${isKorean ? "사용 가이드" : "Guides"}`, "");
     for (const guide of release.guides) {
       lines.push(`- [**${localized(guide.title, lang)}**](${guide.href}) — ${localized(guide.body, lang)}`);
     }
@@ -211,24 +216,24 @@ export function renderGitHubRelease(release, lang = "zh") {
   }
 
   lines.push(
-    `## ${isZh ? "概览" : "Overview"}`,
+    `## ${isKorean ? "개요" : "Overview"}`,
     "",
     `**Patty Code v${release.version} — ${localized(release.title, lang)}**`,
     "",
     localized(release.summary, lang),
     "",
-    `${isZh ? "发布日期" : "Released"}：${release.date}`,
+    `${isKorean ? "배포일" : "Released"}: ${release.date}`,
     "",
-    `## ${isZh ? "重点内容" : "Highlights"}`,
+    `## ${isKorean ? "주요 내용" : "Highlights"}`,
     "",
     renderItems(release.highlights, lang),
     "",
   );
 
   const headings = {
-    new: isZh ? "新功能" : "New",
-    improved: isZh ? "改进" : "Improved",
-    fixed: isZh ? "修复" : "Fixed",
+    new: isKorean ? "신규" : "New",
+    improved: isKorean ? "개선" : "Improved",
+    fixed: isKorean ? "수정" : "Fixed",
   };
   for (const kind of changeKinds) {
     const items = release.changes[kind];
@@ -236,32 +241,32 @@ export function renderGitHubRelease(release, lang = "zh") {
     lines.push(`## ${headings[kind]}`, "", renderItems(items, lang), "");
   }
 
-  lines.push(`## ${isZh ? "升级提醒" : "Upgrade notes"}`, "");
+  lines.push(`## ${isKorean ? "업그레이드 안내" : "Upgrade notes"}`, "");
   if (release.upgrade.length) lines.push(renderItems(release.upgrade, lang));
-  else lines.push(isZh ? "本版本无需手动迁移。" : "No manual migration is required.");
+  else lines.push(isKorean ? "이 버전에서 수동 마이그레이션은 필요하지 않습니다." : "No manual migration is required.");
   lines.push("");
 
-  lines.push(`## ${isZh ? "风险提示" : "Risk notes"}`, "");
+  lines.push(`## ${isKorean ? "위험 안내" : "Risk notes"}`, "");
   if (release.risks.length) lines.push(renderItems(release.risks, lang));
-  else lines.push(isZh ? "当前没有需要额外操作的已知风险。" : "There are no known risks requiring extra action.");
+  else lines.push(isKorean ? "추가 조치가 필요한 알려진 위험은 없습니다." : "There are no known risks requiring extra action.");
   lines.push("");
 
   if (release.contributors.length) {
     lines.push(
-      `## ${isZh ? "致谢" : "Thanks"}`,
+      `## ${isKorean ? "감사" : "Thanks"}`,
       "",
-      `${isZh ? "感谢本版本的贡献者" : "Thanks to the contributors in this release"}：${release.contributors
+      `${isKorean ? "이번 릴리스의 기여자" : "Thanks to the contributors in this release"}: ${release.contributors
         .map((name) => `[@${name}](https://github.com/${name})`)
-        .join("、")}`,
+        .join(isKorean ? " · " : ", ")}`,
       "",
     );
   }
 
   lines.push(
-    `## ${isZh ? "下载与安装" : "Download and install"}`,
+    `## ${isKorean ? "다운로드 및 설치" : "Download and install"}`,
     "",
-    `- [${isZh ? "官网按平台下载" : "Platform downloads"}](${release.links.download})`,
-    `- [${isZh ? "查看完整差异" : "Full comparison"}](${release.links.compare})`,
+    `- [${isKorean ? "플랫폼별 다운로드" : "Platform downloads"}](${release.links.download})`,
+    `- [${isKorean ? "전체 비교 보기" : "Full comparison"}](${release.links.compare})`,
     "",
   );
   return `${lines.join("\n").trim()}\n`;
@@ -304,7 +309,7 @@ async function main() {
   invariant(args.output, "render requires --output");
   const release = releaseForVersion(catalog, args.version);
   const output = resolve(args.output);
-  await writeFile(output, renderGitHubRelease(release, args.lang === "en" ? "en" : "zh"));
+  await writeFile(output, renderGitHubRelease(release, args.lang === "en" ? "en" : "ko-KR"));
   console.log(`Rendered v${release.version} release notes to ${output}`);
 }
 

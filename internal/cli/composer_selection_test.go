@@ -555,7 +555,7 @@ func TestComposerCode8BackspaceDeletesStandaloneHangulJamoAtCursor(t *testing.T)
 	m.input.SetValue("안ㄴ")
 	m.setComposerCursor(len([]rune("안ㄴ")))
 
-	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 8})
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 8, Text: "\b"})
 
 	if got := m.input.Value(); got != "안" {
 		t.Fatalf("code-8 backspace over standalone Hangul jamo produced %q, want %q", got, "안")

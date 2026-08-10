@@ -885,7 +885,7 @@ func TestComposerFrameOffsetsTerminalCursorAfterEnglishCharacter(t *testing.T) {
 	}
 }
 
-func TestComposerEmptyPlaceholderCursorAlignsWithInputTitle(t *testing.T) {
+func TestComposerEmptyPlaceholderCursorMatchesFirstTypedCharacterCell(t *testing.T) {
 	previousLanguage := i18n.CurrentLanguage()
 	defer i18n.DetectLanguage(previousLanguage)
 	i18n.DetectLanguage("ko")
@@ -905,23 +905,40 @@ func TestComposerEmptyPlaceholderCursorAlignsWithInputTitle(t *testing.T) {
 	titleRow := -1
 	inputRow := -1
 	for i, line := range lines {
-		if strings.Contains(line, "메시지 입력") {
-			titleRow = i
-		}
 		if strings.Contains(line, "명령 또는 질문을 입력해보세요") {
 			inputRow = i
+		}
+	}
+	for i, line := range lines {
+		if strings.Contains(line, "메시지 입력") {
+			titleRow = i
 		}
 	}
 	if titleRow < 0 || inputRow < 0 {
 		t.Fatalf("rendered view missing title/input rows:\n%s", strings.Join(lines, "\n"))
 	}
-	titleX := visibleWidth(lines[titleRow][:strings.Index(lines[titleRow], "메시지 입력")])
 	placeholderX := visibleWidth(lines[inputRow][:strings.Index(lines[inputRow], "명령 또는 질문을 입력해보세요")])
-	if got, want := view.Cursor.X, max(titleX-1, 0); got != want {
-		t.Fatalf("empty composer cursor X = %d, want one cell left of title text X %d; input row %q", got, want, lines[inputRow])
-	}
 	if placeholderX <= view.Cursor.X {
 		t.Fatalf("placeholder should remain to the right of the empty cursor: cursor=%d placeholder=%d row=%q", view.Cursor.X, placeholderX, lines[inputRow])
+	}
+
+	emptyCursorX := view.Cursor.X
+	m.input.SetValue("a")
+	view = m.View()
+	if view.Cursor == nil {
+		t.Fatal("focused composer with first typed character should expose the real terminal cursor")
+	}
+	lines = strings.Split(ansi.Strip(view.Content), "\n")
+	if view.Cursor.Y < 0 || view.Cursor.Y >= len(lines) {
+		t.Fatalf("typed cursor Y %d outside rendered content with %d rows", view.Cursor.Y, len(lines))
+	}
+	charX := strings.Index(lines[view.Cursor.Y], "a")
+	if charX < 0 {
+		t.Fatalf("typed composer row does not contain first character:\n%s", strings.Join(lines, "\n"))
+	}
+	firstTypedCell := visibleWidth(lines[view.Cursor.Y][:charX])
+	if emptyCursorX != firstTypedCell {
+		t.Fatalf("empty cursor X = %d, want first typed character cell %d; row before %q row after %q", emptyCursorX, firstTypedCell, lines[inputRow], lines[view.Cursor.Y])
 	}
 }
 

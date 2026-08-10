@@ -18,17 +18,17 @@ test("tag namespaces resolve to the same product release", async () => {
 
 test("GitHub rendering keeps product sections and source PR links", async () => {
   const catalog = await loadCatalog();
-  const markdown = renderGitHubRelease(releaseForVersion(catalog, "1.17.13"), "zh");
-  assert.match(markdown, /## 使用攻略/);
-  assert.match(markdown, /## 重点内容/);
-  assert.match(markdown, /## 升级提醒/);
-  assert.match(markdown, /## 风险提示/);
-  assert.match(markdown, /## 致谢/);
+  const markdown = renderGitHubRelease(releaseForVersion(catalog, "1.17.13"), "ko-KR");
+  assert.match(markdown, /## 사용 가이드/);
+  assert.match(markdown, /## 주요 내용/);
+  assert.match(markdown, /## 업그레이드 안내/);
+  assert.match(markdown, /## 위험 안내/);
+  assert.match(markdown, /## 감사/);
   assert.match(markdown, /\/pull\/6460/);
-  assert.match(markdown, /patty.io\/changelog\/v1\.17\.13/);
+  assert.match(markdown, /patty-code.io\/changelog\/v1\.17\.13/);
 });
 
-test("validation rejects bilingual drift", () => {
+test("validation rejects unsupported locale fields", () => {
   assert.throws(
     () =>
       validateCatalog({
@@ -38,12 +38,12 @@ test("validation rejects bilingual drift", () => {
             version: "1.0.0",
             date: "2026-01-01",
             channel: "stable",
-            title: { en: "Title", zh: "" },
-            summary: { en: "Summary", zh: "摘要" },
+            title: { en: "Title", extra: "제목" },
+            summary: { en: "Summary", extra: "요약" },
           },
         ],
       }),
-    /title\.zh/,
+    /title\.extra/,
   );
 });
 
@@ -61,14 +61,14 @@ test("managed Preview records bind every surface to one exact ordinal", () => {
       desktop: "v1.19.0-preview.3",
       npm: "1.19.0-canary.3",
     },
-    title: { en: "Preview", zh: "预览版" },
-    summary: { en: "Preview summary", zh: "预览版摘要" },
+    title: { en: "Preview", "ko-KR": "프리뷰" },
+    summary: { en: "Preview summary", "ko-KR": "프리뷰 요약" },
     surfaces: ["cli"],
     guides: [],
     highlights: [{
       kind: "fixed",
-      title: { en: "Fix", zh: "修复" },
-      body: { en: "A fix.", zh: "一项修复。" },
+      title: { en: "Fix", "ko-KR": "수정" },
+      body: { en: "A fix.", "ko-KR": "수정 사항입니다." },
       refs: [1],
     }],
     changes: { new: [], improved: [], fixed: [] },

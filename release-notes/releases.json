@@ -31,7 +31,7 @@
           "body": {
             "en": "Learn how to configure a custom OpenAI-compatible gateway to use the Kimi K3 reasoning protocol."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/e2ef3f43a50ed5a645df9fa6a7e558f157431eb9/docs/REASONING_PROVIDERS.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/e2ef3f43a50ed5a645df9fa6a7e558f157431eb9/docs/REASONING_PROVIDERS.ko-KR.md"
         }
       ],
       "highlights": [
@@ -256,7 +256,7 @@
           "body": {
             "en": "Chinese version of the ACP guide."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/ACP.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/ACP.ko-KR.md"
         },
         {
           "title": {
@@ -265,7 +265,7 @@
           "body": {
             "en": "Guide for configuring and using desktop hooks."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/DESKTOP_HOOKS.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/DESKTOP_HOOKS.ko-KR.md"
         },
         {
           "title": {
@@ -283,7 +283,7 @@
           "body": {
             "en": "Chinese version of the user guide."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -301,7 +301,7 @@
           "body": {
             "en": "Chinese version of the plugin packages documentation."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/PLUGIN_PACKAGES.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/PLUGIN_PACKAGES.ko-KR.md"
         },
         {
           "title": {
@@ -319,7 +319,7 @@
           "body": {
             "en": "Chinese version of the recovery guide."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/RECOVERY.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/c2526217b992c31bbbbeac4506d70c3153d65ac3/docs/RECOVERY.ko-KR.md"
         },
         {
           "title": {
@@ -960,7 +960,7 @@
               "en": "Documentation and i18n consolidation"
             },
             "body": {
-              "en": "Consolidated documentation updates including Simplified Chinese reasoning-provider reference, removed unused i18n keys, and completed locale translations."
+              "en": "Consolidated documentation updates including Korean reasoning-provider reference, removed unused i18n keys, and completed locale translations."
             },
             "refs": [
               7764
@@ -1076,7 +1076,7 @@
           "body": {
             "en": "Read the Chinese guide to the new update_goal tool and fail-closed completion flow."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/73bc4e0c1a8fd859b2b1c648d1f2c019e4a5c448/docs/GOAL_ENFORCEMENT.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/73bc4e0c1a8fd859b2b1c648d1f2c019e4a5c448/docs/GOAL_ENFORCEMENT.ko-KR.md"
         },
         {
           "title": {
@@ -1457,7 +1457,7 @@
           "body": {
             "en": "Learn how to use Patty Code effectively."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/93243ab14b95c8235cf21ddae455ac9e453cb1b6/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/93243ab14b95c8235cf21ddae455ac9e453cb1b6/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -1484,7 +1484,7 @@
           "body": {
             "en": "Details of the tool contract used by Patty Code."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/93243ab14b95c8235cf21ddae455ac9e453cb1b6/docs/TOOL_CONTRACT.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/93243ab14b95c8235cf21ddae455ac9e453cb1b6/docs/TOOL_CONTRACT.ko-KR.md"
         }
       ],
       "highlights": [
@@ -2730,7 +2730,7 @@
           "body": {
             "en": "Refer to the Chinese version of the Patty Code specification."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/26e004f4bad2a51b635793dc7f0531222c6700f3/docs/SPEC.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/26e004f4bad2a51b635793dc7f0531222c6700f3/docs/SPEC.ko-KR.md"
         }
       ],
       "highlights": [
@@ -3040,12 +3040,12 @@
         },
         {
           "title": {
-            "en": "User Guide (Simplified Chinese)"
+            "en": "User Guide (Korean)"
           },
           "body": {
-            "en": "Comprehensive guide for using Patty Code in Simplified Chinese."
+            "en": "Comprehensive guide for using Patty Code in Korean."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/427fba0f27078da287dfdb2baca1ff417ecbb0a5/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/427fba0f27078da287dfdb2baca1ff417ecbb0a5/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -3058,12 +3058,12 @@
         },
         {
           "title": {
-            "en": "CLI Guide (Simplified Chinese)"
+            "en": "CLI Guide (Korean)"
           },
           "body": {
-            "en": "Documentation for the Patty Code command-line interface in Simplified Chinese."
+            "en": "Documentation for the Patty Code command-line interface in Korean."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/427fba0f27078da287dfdb2baca1ff417ecbb0a5/docs/CLI.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/427fba0f27078da287dfdb2baca1ff417ecbb0a5/docs/CLI.ko-KR.md"
         },
         {
           "title": {
@@ -3076,12 +3076,12 @@
         },
         {
           "title": {
-            "en": "Migration Guide (Simplified Chinese)"
+            "en": "Migration Guide (Korean)"
           },
           "body": {
-            "en": "Instructions for migrating from older versions in Simplified Chinese."
+            "en": "Instructions for migrating from older versions in Korean."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/427fba0f27078da287dfdb2baca1ff417ecbb0a5/docs/MIGRATING.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/427fba0f27078da287dfdb2baca1ff417ecbb0a5/docs/MIGRATING.ko-KR.md"
         },
         {
           "title": {
@@ -3094,12 +3094,12 @@
         },
         {
           "title": {
-            "en": "Recovery Guide (Simplified Chinese)"
+            "en": "Recovery Guide (Korean)"
           },
           "body": {
-            "en": "Steps to recover from installation or update issues in Simplified Chinese."
+            "en": "Steps to recover from installation or update issues in Korean."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/427fba0f27078da287dfdb2baca1ff417ecbb0a5/docs/RECOVERY.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/427fba0f27078da287dfdb2baca1ff417ecbb0a5/docs/RECOVERY.ko-KR.md"
         }
       ],
       "highlights": [
@@ -3530,7 +3530,7 @@
           "body": {
             "en": "Documentation on diagnosing and understanding capability status."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ede7ceef0011f8cf389d269c83fc16d9cfefd827/docs/CAPABILITY_DIAGNOSTICS.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ede7ceef0011f8cf389d269c83fc16d9cfefd827/docs/CAPABILITY_DIAGNOSTICS.ko-KR.md"
         },
         {
           "title": {
@@ -3548,7 +3548,7 @@
           "body": {
             "en": "General user guide for Patty Code."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ede7ceef0011f8cf389d269c83fc16d9cfefd827/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ede7ceef0011f8cf389d269c83fc16d9cfefd827/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -3566,7 +3566,7 @@
           "body": {
             "en": "Technical specification for Patty Code."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ede7ceef0011f8cf389d269c83fc16d9cfefd827/docs/SPEC.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ede7ceef0011f8cf389d269c83fc16d9cfefd827/docs/SPEC.ko-KR.md"
         }
       ],
       "highlights": [
@@ -3942,7 +3942,7 @@
           "body": {
             "en": "Command-line interface usage and options in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/CLI.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/CLI.ko-KR.md"
         },
         {
           "title": {
@@ -3960,7 +3960,7 @@
           "body": {
             "en": "General usage guide in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -3996,7 +3996,7 @@
           "body": {
             "en": "Guide for using Remote Workbench in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/REMOTE_WORKBENCH.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/REMOTE_WORKBENCH.ko-KR.md"
         },
         {
           "title": {
@@ -4023,7 +4023,7 @@
           "body": {
             "en": "Technical specification in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/SPEC.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/SPEC.ko-KR.md"
         },
         {
           "title": {
@@ -4041,7 +4041,7 @@
           "body": {
             "en": "Documentation for tool approval modes in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/TOOL_APPROVAL_MODES.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/TOOL_APPROVAL_MODES.ko-KR.md"
         }
       ],
       "highlights": [
@@ -4773,7 +4773,7 @@
           "body": {
             "en": "Command-line interface usage and options in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/CLI.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/CLI.ko-KR.md"
         },
         {
           "title": {
@@ -4791,7 +4791,7 @@
           "body": {
             "en": "General usage guide in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -4827,7 +4827,7 @@
           "body": {
             "en": "Guide for using Remote Workbench in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/REMOTE_WORKBENCH.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/REMOTE_WORKBENCH.ko-KR.md"
         },
         {
           "title": {
@@ -4854,7 +4854,7 @@
           "body": {
             "en": "Technical specification in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/SPEC.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/SPEC.ko-KR.md"
         },
         {
           "title": {
@@ -4872,7 +4872,7 @@
           "body": {
             "en": "Documentation for tool approval modes in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/TOOL_APPROVAL_MODES.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ee2ace1dbd3967d387ff50247e15e7fb53feaa0f/docs/TOOL_APPROVAL_MODES.ko-KR.md"
         }
       ],
       "highlights": [
@@ -5350,7 +5350,7 @@
           "body": {
             "en": "Comprehensive guide for using Patty Code in Chinese."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ba2c4d31b7ad39cd635b153dc015f454ed14ee1a/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/ba2c4d31b7ad39cd635b153dc015f454ed14ee1a/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -5639,7 +5639,7 @@
           "body": {
             "en": "The Chinese user guide for Patty Code Desktop."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/dcca564ec87e96632a65a8332455ee3f6c1370d7/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/dcca564ec87e96632a65a8332455ee3f6c1370d7/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -5657,7 +5657,7 @@
           "body": {
             "en": "The Chinese Patty Code specification."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/dcca564ec87e96632a65a8332455ee3f6c1370d7/docs/SPEC.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/dcca564ec87e96632a65a8332455ee3f6c1370d7/docs/SPEC.ko-KR.md"
         }
       ],
       "highlights": [
@@ -6807,7 +6807,7 @@
           "body": {
             "en": "Guide to collaboration modes."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/993cee10f24a1277f2c7d5802b2b27cd8bb7ce8e/docs/COLLABORATION_MODES.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/993cee10f24a1277f2c7d5802b2b27cd8bb7ce8e/docs/COLLABORATION_MODES.ko-KR.md"
         },
         {
           "title": {
@@ -7081,7 +7081,7 @@
           "body": {
             "en": "Chinese guide for Remote SSH host setup, connections, files, and port forwarding."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/43993f5a10cd4afa46febf53ed9f7ab2a1ceab5b/docs/GUIDE.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/43993f5a10cd4afa46febf53ed9f7ab2a1ceab5b/docs/GUIDE.ko-KR.md"
         },
         {
           "title": {
@@ -7534,7 +7534,7 @@
           "body": {
             "en": "Chinese guide for creating and distributing Theme Pack V2 themes."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/8a36da8db87fc688d854f59b6897268995190bf7/docs/THEME_PACK.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/8a36da8db87fc688d854f59b6897268995190bf7/docs/THEME_PACK.ko-KR.md"
         },
         {
           "title": {
@@ -7552,7 +7552,7 @@
           "body": {
             "en": "Chinese reference for the updated CLI workflow."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/8a36da8db87fc688d854f59b6897268995190bf7/docs/CLI.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/8a36da8db87fc688d854f59b6897268995190bf7/docs/CLI.ko-KR.md"
         }
       ],
       "highlights": [
@@ -7820,7 +7820,7 @@
           "body": {
             "en": "Guide for creating and using hooks in Patty Code Desktop."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/cc9b1f52e6bc787719b78e70db8d7e487fe2fdd1/docs/DESKTOP_HOOKS.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/cc9b1f52e6bc787719b78e70db8d7e487fe2fdd1/docs/DESKTOP_HOOKS.ko-KR.md"
         },
         {
           "title": {
@@ -7838,7 +7838,7 @@
           "body": {
             "en": "Chinese guide for creating, configuring, and distributing Patty Code plugins."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/cc9b1f52e6bc787719b78e70db8d7e487fe2fdd1/docs/PLUGIN_PACKAGES.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/cc9b1f52e6bc787719b78e70db8d7e487fe2fdd1/docs/PLUGIN_PACKAGES.ko-KR.md"
         },
         {
           "title": {
@@ -8011,7 +8011,7 @@
           "body": {
             "en": "Use patty-code-guard to diagnose configuration and installation failures, restore a snapshot, or start in Safe Mode."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/main-v2/docs/RECOVERY.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/main-v2/docs/RECOVERY.ko-KR.md"
         },
         {
           "title": {
@@ -8020,7 +8020,7 @@
           "body": {
             "en": "Learn how plugin packages bundle skills, hooks, and MCP servers while preserving explicit trust boundaries."
           },
-          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/main-v2/docs/PLUGIN_PACKAGES.zh-CN.md"
+          "href": "https://github.com/esengine/DeepSeek-Patty Code/blob/main-v2/docs/PLUGIN_PACKAGES.ko-KR.md"
         }
       ],
       "highlights": [

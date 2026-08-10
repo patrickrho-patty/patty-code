@@ -3646,9 +3646,6 @@ func (m chatTUI) View() tea.View {
 }
 
 func (m chatTUI) composerCursorChromeOffset() int {
-	if m.input.Value() == "" {
-		return max(composerCursorChromeOffset-2, 0)
-	}
 	return composerCursorChromeOffset
 }
 

@@ -128,16 +128,16 @@ async function askDeepSeek(payload, retry = true) {
       messages: [
         {
           role: "system",
-          content: `You are Patty Code's release editor. Return one JSON object with a \"release\" property. Write factual, user-facing product release notes in equivalent English and Simplified Chinese. Group changes by user outcome, not by commit. Never invent capabilities, migrations, risks, PR numbers, contributors, URLs, or metrics. Every highlight and change must cite one or more supplied PR numbers. Use this exact release shape:
+          content: `You are Patty Code's release editor. Return one JSON object with a \"release\" property. Write factual, user-facing product release notes in equivalent English and Korean. Group changes by user outcome, not by commit. Never invent capabilities, migrations, risks, PR numbers, contributors, URLs, or metrics. Every highlight and change must cite one or more supplied PR numbers. Use this exact release shape:
 {
   \"version\": \"semver\", \"date\": \"YYYY-MM-DD\", \"channel\": \"stable|prerelease\",
-  \"title\": {\"en\":\"\",\"zh\":\"\"}, \"summary\": {\"en\":\"\",\"zh\":\"\"},
+  \"title\": {\"en\":\"\",\"ko-KR\":\"\"}, \"summary\": {\"en\":\"\",\"ko-KR\":\"\"},
   \"surfaces\": [\"desktop\"],
-  \"guides\": [{\"title\":{\"en\":\"\",\"zh\":\"\"},\"body\":{\"en\":\"\",\"zh\":\"\"},\"href\":\"https://...\"}],
-  \"highlights\": [{\"kind\":\"new|improved|fixed|security\",\"title\":{\"en\":\"\",\"zh\":\"\"},\"body\":{\"en\":\"\",\"zh\":\"\"},\"refs\":[123]}],
+  \"guides\": [{\"title\":{\"en\":\"\",\"ko-KR\":\"\"},\"body\":{\"en\":\"\",\"ko-KR\":\"\"},\"href\":\"https://...\"}],
+  \"highlights\": [{\"kind\":\"new|improved|fixed|security\",\"title\":{\"en\":\"\",\"ko-KR\":\"\"},\"body\":{\"en\":\"\",\"ko-KR\":\"\"},\"refs\":[123]}],
   \"changes\": {\"new\":[],\"improved\":[],\"fixed\":[]},
-  \"upgrade\": [{\"level\":\"info|warning\",\"title\":{\"en\":\"\",\"zh\":\"\"},\"body\":{\"en\":\"\",\"zh\":\"\"},\"refs\":[123]}],
-  \"risks\": [{\"title\":{\"en\":\"\",\"zh\":\"\"},\"body\":{\"en\":\"\",\"zh\":\"\"},\"refs\":[123]}],
+  \"upgrade\": [{\"level\":\"info|warning\",\"title\":{\"en\":\"\",\"ko-KR\":\"\"},\"body\":{\"en\":\"\",\"ko-KR\":\"\"},\"refs\":[123]}],
+  \"risks\": [{\"title\":{\"en\":\"\",\"ko-KR\":\"\"},\"body\":{\"en\":\"\",\"ko-KR\":\"\"},\"refs\":[123]}],
   \"contributors\": [], \"links\": {\"github\":\"https://...\",\"compare\":\"https://...\",\"download\":\"https://...\"}
 }
 Return guides only for supplied documentation URLs. Mention upgrade action or risk only when explicitly supported; otherwise use empty arrays. Output JSON only.`,

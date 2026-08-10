@@ -2,7 +2,7 @@ import source from '../../../release-notes/releases.json';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export type LocalizedText = { en: string; zh: string };
+export type LocalizedText = { en: string; "ko-KR"?: string };
 
 export type ReleaseItem = {
   title: LocalizedText;

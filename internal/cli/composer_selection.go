@@ -527,7 +527,7 @@ func (m *chatTUI) handleComposerGraphemeKey(msg tea.KeyPressMsg) bool {
 }
 
 func composerBackspaceKey(msg tea.KeyPressMsg, keyMap textarea.KeyMap) bool {
-	return key.Matches(msg, keyMap.DeleteCharacterBackward) || (msg.Code == 8 && msg.Text == "")
+	return key.Matches(msg, keyMap.DeleteCharacterBackward) || msg.Code == 8
 }
 
 func normalizeComposerKeyPress(msg tea.KeyPressMsg) tea.KeyPressMsg {
@@ -614,6 +614,9 @@ func (m chatTUI) renderComposerInput() string {
 		visualStart = m.composerViewOffset()
 	}
 	if !m.validComposerSelection() || m.composerSel.empty() {
+		if m.input.Value() == "" && !m.composerScrollDetached {
+			return shiftEmptyComposerPlaceholder(view)
+		}
 		return view
 	}
 	start, end := m.composerSel.ordered()
@@ -631,6 +634,14 @@ func (m chatTUI) renderComposerInput() string {
 				selStyle,
 			))
 		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func shiftEmptyComposerPlaceholder(view string) string {
+	lines := strings.Split(view, "\n")
+	for i := range lines {
+		lines[i] = " " + lines[i]
 	}
 	return strings.Join(lines, "\n")
 }
