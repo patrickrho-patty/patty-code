@@ -288,6 +288,7 @@ func TestEffortTagExplicitValueUsesThemeInfo(t *testing.T) {
 
 func TestRefreshEffortStatusUsesCurrentModel(t *testing.T) {
 	isolateUserConfig(t)
+	writeDeepSeekTestUserConfig(t)
 
 	ctrl := control.New(control.Options{})
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)

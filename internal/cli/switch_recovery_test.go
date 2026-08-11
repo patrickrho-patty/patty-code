@@ -238,6 +238,7 @@ func TestModelSwitchCarriesRecoveryPathAfterSnapshotConflict(t *testing.T) {
 // contract for the TUI /effort rebuild path.
 func TestEffortSwitchCarriesRecoveryPathAfterSnapshotConflict(t *testing.T) {
 	isolateUserConfig(t)
+	writeDeepSeekTestUserConfig(t)
 	dir := t.TempDir()
 	originalPath := filepath.Join(dir, "effort-switch-conflict.jsonl")
 
@@ -560,6 +561,7 @@ func TestModelSwitchMovesLeaseToRecoveryPathBeforeRebuild(t *testing.T) {
 // lease-before-bind order for the /effort rebuild path.
 func TestEffortSwitchMovesLeaseToRecoveryPathBeforeRebuild(t *testing.T) {
 	isolateUserConfig(t)
+	writeDeepSeekTestUserConfig(t)
 	dir := t.TempDir()
 	active := filepath.Join(dir, "effort-switch-lease-order.jsonl")
 

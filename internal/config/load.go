@@ -334,6 +334,15 @@ func ConfigFileDefinesCompactRatio(path string) bool {
 	return tomlFileDefinesKey(path, "agent", "compact_ratio")
 }
 
+// legacyDeepSeekProviderEntries is the pre-Patty stock catalog retained only
+// for importing and repairing configurations written by older releases.
+func legacyDeepSeekProviderEntries() []ProviderEntry {
+	return []ProviderEntry{
+		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY", BalanceURL: "https://api.deepseek.com/user/balance", ContextWindow: 1_000_000, Price: deepSeekV4FlashPriceUSD()},
+		{Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", APIKeyEnv: "DEEPSEEK_API_KEY", BalanceURL: "https://api.deepseek.com/user/balance", ContextWindow: 1_000_000, Price: deepSeekV4ProPriceUSD()},
+	}
+}
+
 // backfillDeepSeekPro restores deepseek-pro for configs the pre-fix setup wizard
 // wrote with only deepseek-v4-flash: a keyless /models probe used to drop the Pro
 // SKU, leaving users unable to switch to it. In-memory only — the user's file is
@@ -366,18 +375,19 @@ func backfillDeepSeekPro(c *Config) {
 	if len(flash.Models) > 0 {
 		return
 	}
-	for _, bp := range Default().Providers {
-		if bp.Name == "deepseek-pro" {
-			bp.APIKeyEnv = flash.APIKeyEnv
-			currency := c.DeepSeekOfficialPricingCurrency()
-			if c.DesktopCurrency() == "" && flash.persistedOfficialCurrency != "" {
-				currency = flash.persistedOfficialCurrency
-				bp.persistedOfficialCurrency = currency
-			}
-			bp.Price = deepSeekV4PriceForModel(currency, proModel)
-			c.Providers = append(c.Providers, bp)
-			return
+	for _, pro := range legacyDeepSeekProviderEntries() {
+		if pro.Name != "deepseek-pro" {
+			continue
 		}
+		pro.APIKeyEnv = flash.APIKeyEnv
+		currency := c.DeepSeekOfficialPricingCurrency()
+		if c.DesktopCurrency() == "" && flash.persistedOfficialCurrency != "" {
+			currency = flash.persistedOfficialCurrency
+			pro.persistedOfficialCurrency = currency
+		}
+		pro.Price = deepSeekV4PriceForModel(currency, proModel)
+		c.Providers = append(c.Providers, pro)
+		return
 	}
 }
 

@@ -2596,8 +2596,22 @@ func isolateUserConfig(t *testing.T) {
 	t.Chdir(root)
 }
 
+func writeDeepSeekTestUserConfig(t *testing.T) {
+	t.Helper()
+	cfg := config.Default()
+	cfg.DefaultModel = "deepseek-flash/deepseek-v4-flash"
+	cfg.Providers = []config.ProviderEntry{{
+		Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com",
+		Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY", ContextWindow: 1_000_000,
+	}}
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save DeepSeek test config: %v", err)
+	}
+}
+
 func TestEffortCommandWritesCurrentDeepSeekProvider(t *testing.T) {
 	isolateUserConfig(t)
+	writeDeepSeekTestUserConfig(t)
 
 	m := newTestChatTUI()
 	m.ctrl = control.New(control.Options{Label: "deepseek-flash"})
@@ -2641,6 +2655,7 @@ func TestEffortCommandRejectsUnsupportedProvider(t *testing.T) {
 
 func TestEffortCommandAutoClearsProviderEffort(t *testing.T) {
 	isolateUserConfig(t)
+	writeDeepSeekTestUserConfig(t)
 
 	m := newTestChatTUI()
 	m.ctrl = control.New(control.Options{Label: "deepseek-flash"})

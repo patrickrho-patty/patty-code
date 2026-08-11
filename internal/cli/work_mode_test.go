@@ -251,6 +251,7 @@ func TestWorkModeSwitchRejectsRunningTurn(t *testing.T) {
 
 func TestRuntimeRebuildCommandsCarryCurrentWorkMode(t *testing.T) {
 	isolateUserConfig(t)
+	writeDeepSeekTestUserConfig(t)
 	m := newTestChatTUI()
 	m.ctrl = control.New(control.Options{Label: "deepseek-flash"})
 	m.modelRef = "deepseek-flash/deepseek-v4-flash"

@@ -1896,6 +1896,8 @@ func familyOf(name string) providerFamily {
 	switch {
 	case strings.HasPrefix(name, "deepseek"):
 		return providerFamily{key: "deepseek", name: "DeepSeek", desc: "fast & cheap, plus a stronger Pro SKU"}
+	case name == "patty":
+		return providerFamily{key: "patty", name: "Patty", desc: "Patty Code managed model access"}
 	default:
 		return providerFamily{key: name, name: name}
 	}
@@ -2135,7 +2137,7 @@ func groupByFamily(providers []config.ProviderEntry) ([]string, map[string][]int
 	return order, members, info
 }
 
-// withBuiltinFamilies guarantees the wizard always offers the built-in DeepSeek
+// withBuiltinFamilies guarantees the wizard always offers the stock provider
 // family even when the loaded config replaced the defaults.
 // Built-in entries whose exact name already exists in the user's config are
 // kept as-is (preserving customizations); missing built-in entries within an

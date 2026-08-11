@@ -19,6 +19,7 @@ func TestCLIHotRebuildPathsKeepSessionTemp(t *testing.T) {
 	for _, command := range []string{"model", "effort", "reload"} {
 		t.Run(command, func(t *testing.T) {
 			isolateUserConfig(t)
+			writeDeepSeekTestUserConfig(t)
 
 			oldCtrl := control.New(control.Options{Label: "deepseek-flash"})
 			t.Cleanup(oldCtrl.Close)

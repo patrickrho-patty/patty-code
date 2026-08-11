@@ -123,6 +123,7 @@ func MigrateLegacyIfNeededForRoot(root string) (*MigrationResult, error) {
 	}
 
 	cfg := Default()
+	cfg.Providers = legacyDeepSeekProviderEntries()
 	res := &MigrationResult{From: src, To: dest}
 	if legacy.Lang != "" {
 		cfg.Language = legacy.Lang
@@ -378,7 +379,7 @@ func migrateLegacyCredentialsIfNeededForRoot(root string) error {
 			}
 		}
 	}
-	keys := credentialEnvNamesForRoot(root)
+	keys := mergeUniqueTrimmed(credentialEnvNamesForRoot(root), "DEEPSEEK_API_KEY")
 	needKeyring := make([]string, 0, len(keys))
 	for _, key := range keys {
 		if skipStore(key) {

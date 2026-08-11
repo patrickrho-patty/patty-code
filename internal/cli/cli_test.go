@@ -847,7 +847,7 @@ func TestConfigCompactRatioQueryReportsBuiltInDefault(t *testing.T) {
 			t.Fatalf("config compact-ratio query rc = %d, want 0", rc)
 		}
 	})
-	if out != "compact_ratio = 80% (built-in default)\n" {
+	if out != "compact_ratio = 95.97% (built-in default)\n" {
 		t.Fatalf("config compact-ratio query output = %q", out)
 	}
 }
@@ -975,21 +975,21 @@ func TestConfigCurrencyRejectsProjectScope(t *testing.T) {
 
 func TestProvidersWithMissingKeysOnlyChecksActiveDefaultModel(t *testing.T) {
 	cfg := config.Default()
-	t.Setenv("DEEPSEEK_API_KEY", "")
+	t.Setenv("AGENTS_PATTY_API_KEY", "")
 	t.Setenv("MIMO_API_KEY", "")
 
 	missing := providersWithMissingKeys(cfg)
 	if len(missing) != 1 {
 		t.Fatalf("missing providers = %+v, want only active default model provider", missing)
 	}
-	if missing[0].APIKeyEnv != "DEEPSEEK_API_KEY" {
-		t.Fatalf("missing key env = %q, want DEEPSEEK_API_KEY", missing[0].APIKeyEnv)
+	if missing[0].APIKeyEnv != "AGENTS_PATTY_API_KEY" {
+		t.Fatalf("missing key env = %q, want AGENTS_PATTY_API_KEY", missing[0].APIKeyEnv)
 	}
 }
 
 func TestProvidersWithMissingKeysIgnoresUnusedBuiltInPresets(t *testing.T) {
 	cfg := config.Default()
-	t.Setenv("DEEPSEEK_API_KEY", "test-key")
+	t.Setenv("AGENTS_PATTY_API_KEY", "test-key")
 	t.Setenv("MIMO_API_KEY", "")
 
 	if missing := providersWithMissingKeys(cfg); len(missing) != 0 {
@@ -1008,7 +1008,7 @@ func TestProvidersWithMissingKeysIncludesReferencedSecondaryModels(t *testing.T)
 	cfg.Agent.SubagentModels = map[string]string{
 		"review": "mimo-pro/mimo-v2.5-pro",
 	}
-	t.Setenv("DEEPSEEK_API_KEY", "test-key")
+	t.Setenv("AGENTS_PATTY_API_KEY", "test-key")
 	t.Setenv("MIMO_API_KEY", "")
 
 	missing := providersWithMissingKeys(cfg)
@@ -1416,17 +1416,17 @@ func TestSetupOverwritePromptShowsYNDefault(t *testing.T) {
 // TestConfigureKeys verifies that a shared api_key_env (each vendors SKUs use
 func TestConfigureKeys(t *testing.T) {
 	// by the new "reuse existing" path and the prompt would be skipped,
-	t.Setenv("DEEPSEEK_API_KEY", "")
+	t.Setenv("AGENTS_PATTY_API_KEY", "")
 
 	selected := config.Default().Providers
 
-	input := "ds-key\n"
+	input := "patty-key\n"
 	env := configureKeys(selected, strings.NewReader(input), io.Discard)
 
 	if len(env) != 1 {
-		t.Fatalf("env = %v (want 1: DeepSeek asked once)", env)
+		t.Fatalf("env = %v (want 1: Patty asked once)", env)
 	}
-	if env[0] != "DEEPSEEK_API_KEY=ds-key" {
+	if env[0] != "AGENTS_PATTY_API_KEY=patty-key" {
 		t.Errorf("env[0] = %q", env[0])
 	}
 }
@@ -1436,48 +1436,48 @@ func TestConfigureKeys(t *testing.T) {
 // must NOT consume from the input stream — otherwise the user's next typed
 // line bleeds into the next providers prompt. It also must include the
 func TestConfigureKeysReusesExistingEnv(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "preset-ds-key")
+	t.Setenv("AGENTS_PATTY_API_KEY", "preset-patty-key")
 
 	selected := config.Default().Providers
 	var output bytes.Buffer
 	env := configureKeys(selected, strings.NewReader("\n"), &output)
 
 	if len(env) != 1 {
-		t.Fatalf("env = %v (want 1: DeepSeek reused)", env)
+		t.Fatalf("env = %v (want 1: Patty reused)", env)
 	}
-	if env[0] != "DEEPSEEK_API_KEY=preset-ds-key" {
+	if env[0] != "AGENTS_PATTY_API_KEY=preset-patty-key" {
 		t.Errorf("env[0] = %q, want re-pinned existing value", env[0])
 	}
-	if !strings.Contains(output.String(), "DEEPSEEK_API_KEY") {
-		t.Errorf("expected a 'reusing' confirmation for DEEPSEEK_API_KEY, got:\n%s", output.String())
+	if !strings.Contains(output.String(), "AGENTS_PATTY_API_KEY") {
+		t.Errorf("expected a 'reusing' confirmation for AGENTS_PATTY_API_KEY, got:\n%s", output.String())
 	}
 }
 
 func TestConfigureKeysCanResetExistingEnv(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "stale-ds-key")
+	t.Setenv("AGENTS_PATTY_API_KEY", "stale-patty-key")
 
 	selected := config.Default().Providers
 	var output bytes.Buffer
-	env := configureKeys(selected, strings.NewReader("y\nfresh-ds-key\n"), &output)
+	env := configureKeys(selected, strings.NewReader("y\nfresh-patty-key\n"), &output)
 
 	if len(env) != 1 {
-		t.Fatalf("env = %v (want 1: DeepSeek reset)", env)
+		t.Fatalf("env = %v (want 1: Patty reset)", env)
 	}
-	if env[0] != "DEEPSEEK_API_KEY=fresh-ds-key" {
+	if env[0] != "AGENTS_PATTY_API_KEY=fresh-patty-key" {
 		t.Errorf("env[0] = %q, want freshly entered value", env[0])
 	}
-	if !strings.Contains(output.String(), "[y/N]:") || !strings.Contains(output.String(), "DEEPSEEK_API_KEY") {
-		t.Errorf("expected a reset confirmation for DEEPSEEK_API_KEY, got:\n%s", output.String())
+	if !strings.Contains(output.String(), "[y/N]:") || !strings.Contains(output.String(), "AGENTS_PATTY_API_KEY") {
+		t.Errorf("expected a reset confirmation for AGENTS_PATTY_API_KEY, got:\n%s", output.String())
 	}
 }
 
 func TestConfigureKeysAllSetDefaultsToReusingInput(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "ds")
+	t.Setenv("AGENTS_PATTY_API_KEY", "patty")
 
 	selected := config.Default().Providers
 	env := configureKeys(selected, strings.NewReader("\n"), io.Discard)
 	if len(env) != 1 {
-		t.Errorf("env = %v, want 1 (DeepSeek reused)", env)
+		t.Errorf("env = %v, want 1 (Patty reused)", env)
 	}
 }
 
@@ -1513,18 +1513,18 @@ func TestAppendEnvUpsertHandlesExportPrefix(t *testing.T) {
 	}
 }
 
-// "deepseek" (flash + pro), preserving the order each family first appears in.
+// "patty" (medium), preserving the order each family first appears in.
 func TestGroupByFamily(t *testing.T) {
 	order, members, info := groupByFamily(config.Default().Providers)
 
-	if got := order; !reflect.DeepEqual(got, []string{"deepseek"}) {
-		t.Fatalf("family order = %v, want [deepseek]", got)
+	if got := order; !reflect.DeepEqual(got, []string{"patty"}) {
+		t.Fatalf("family order = %v, want [patty]", got)
 	}
-	if got := members["deepseek"]; !reflect.DeepEqual(got, []int{0, 1}) {
-		t.Errorf("deepseek members = %v, want [0 1]", got)
+	if got := members["patty"]; !reflect.DeepEqual(got, []int{0}) {
+		t.Errorf("patty members = %v, want [0]", got)
 	}
-	if info["deepseek"].name != "DeepSeek" {
-		t.Errorf("display name = %q", info["deepseek"].name)
+	if info["patty"].name != "Patty" {
+		t.Errorf("display name = %q", info["patty"].name)
 	}
 }
 
@@ -2013,6 +2013,9 @@ func TestWithBuiltinFamiliesDoesNotAddMissingMimo(t *testing.T) {
 	if !seen["DeepSeek"] {
 		t.Fatalf("wizard families = %v, want DeepSeek", order)
 	}
+	if !seen["Patty"] {
+		t.Fatalf("wizard families = %v, want Patty", order)
+	}
 	if seen["MiMo (Xiaomi)"] {
 		t.Fatalf("wizard families = %v, should not inject MiMo", order)
 	}
@@ -2022,50 +2025,31 @@ func TestWithBuiltinFamiliesDoesNotAddMissingMimo(t *testing.T) {
 	}
 }
 
-func TestWithBuiltinFamiliesForLanguageUsesDeepSeekPricing(t *testing.T) {
+func TestWithBuiltinFamiliesUsesPattyMedium(t *testing.T) {
 	providers := withBuiltinFamiliesForLanguage(nil, "ko-KR")
-	var flash *config.ProviderEntry
-	for i := range providers {
-		if providers[i].Name == "deepseek-flash" {
-			flash = &providers[i]
-			break
-		}
-	}
-	if flash == nil {
-		t.Fatal("deepseek-flash provider missing")
-	}
-	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "¥" {
-		t.Fatalf("flash price = %+v, want CNY preset", flash.Price)
+	if len(providers) != 1 || providers[0].Name != "patty" || providers[0].Model != "medium" {
+		t.Fatalf("built-in providers = %+v, want Patty medium", providers)
 	}
 }
 
 // with a single model). Re-running `patcode setup` must still surface the
-func TestWithBuiltinFamiliesRestoresSiblingEntries(t *testing.T) {
+func TestWithBuiltinFamiliesPreservesUserDeepSeekAndAddsPatty(t *testing.T) {
 	cfg := []config.ProviderEntry{
 		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", Models: []string{"deepseek-v4-flash"}, APIKeyEnv: "DEEPSEEK_API_KEY"},
 	}
 	got := withBuiltinFamilies(cfg)
 
-	var found bool
+	var foundPatty bool
 	for _, p := range got {
+		if p.Name == "patty" {
+			foundPatty = true
+		}
 		if p.Name == "deepseek-pro" {
-			found = true
-			break
+			t.Fatalf("withBuiltinFamilies unexpectedly restored a non-stock DeepSeek sibling: %v", namesOf(got))
 		}
 	}
-	if !found {
-		t.Fatalf("withBuiltinFamilies(%+v) = %v, want deepseek-pro sibling restored", cfg, namesOf(got))
-	}
-
-	_, members, _ := groupByFamily(got)
-	deepseekIdxs := members["deepseek"]
-	models := familyStaticModels(got, deepseekIdxs)
-	wantModels := map[string]bool{"deepseek-v4-flash": true, "deepseek-v4-pro": true}
-	for _, m := range models {
-		delete(wantModels, m)
-	}
-	if len(wantModels) > 0 {
-		t.Errorf("familyStaticModels = %v, missing %v", models, wantModels)
+	if !foundPatty {
+		t.Fatalf("withBuiltinFamilies(%+v) = %v, want Patty stock entry", cfg, namesOf(got))
 	}
 }
 
@@ -2129,7 +2113,7 @@ func captureCLIOutput(t *testing.T, fn func()) (stdout, stderr string) {
 }
 
 func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "")
+	t.Setenv("AGENTS_PATTY_API_KEY", "")
 	t.Setenv("MIMO_API_KEY", "")
 	cfg := config.Default()
 
@@ -2138,7 +2122,7 @@ func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
 	for _, p := range got {
 		envs[p.APIKeyEnv] = true
 	}
-	if !envs["DEEPSEEK_API_KEY"] {
+	if !envs["AGENTS_PATTY_API_KEY"] {
 		t.Errorf("the default model's missing key must be prompted, got %v", got)
 	}
 	if envs["MIMO_API_KEY"] {
@@ -2147,7 +2131,7 @@ func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
 }
 
 func TestProvidersWithMissingKeysIncludesPlannerModel(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "set")
+	t.Setenv("AGENTS_PATTY_API_KEY", "set")
 	t.Setenv("MIMO_API_KEY", "")
 	cfg := config.Default()
 	cfg.Providers = append(cfg.Providers, config.ProviderEntry{Name: "mimo-pro", Kind: "openai", BaseURL: "https://token-plan-cn.xiaomimimo.com/v1", Model: "mimo-v2.5-pro", APIKeyEnv: "MIMO_API_KEY"})

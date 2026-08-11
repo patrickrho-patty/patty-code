@@ -19,11 +19,11 @@ import (
 
 func TestSetDefaultModel(t *testing.T) {
 	c := Default()
-	if err := c.SetDefaultModel("deepseek-pro"); err != nil {
+	if err := c.SetDefaultModel("patty"); err != nil {
 		t.Fatalf("set valid default: %v", err)
 	}
-	if c.DefaultModel != "deepseek-pro" {
-		t.Errorf("default = %q, want deepseek-pro", c.DefaultModel)
+	if c.DefaultModel != "patty" {
+		t.Errorf("default = %q, want patty", c.DefaultModel)
 	}
 	if err := c.SetDefaultModel("nope"); err == nil {
 		t.Error("expected error for unknown provider")
@@ -31,13 +31,13 @@ func TestSetDefaultModel(t *testing.T) {
 	// "provider/model" form is also accepted: the /model picker stores the
 	// full ref so a user can land on a non-default model under the same
 	// provider across restarts.
-	if err := c.SetDefaultModel("deepseek-pro/deepseek-v4-pro"); err != nil {
+	if err := c.SetDefaultModel("patty/medium"); err != nil {
 		t.Fatalf("set provider/model default: %v", err)
 	}
-	if c.DefaultModel != "deepseek-pro/deepseek-v4-pro" {
-		t.Errorf("default = %q, want deepseek-pro/deepseek-v4-pro", c.DefaultModel)
+	if c.DefaultModel != "patty/medium" {
+		t.Errorf("default = %q, want patty/medium", c.DefaultModel)
 	}
-	if err := c.SetDefaultModel("deepseek-pro/missing"); err == nil {
+	if err := c.SetDefaultModel("patty/missing"); err == nil {
 		t.Error("expected error for unknown model under known provider")
 	}
 	if err := c.SetDefaultModel(""); err == nil {
@@ -205,6 +205,10 @@ func TestSetDesktopTerminalThemeValidatesPreference(t *testing.T) {
 
 func TestDesktopCurrencyNormalizesAndRefreshesOfficialPricing(t *testing.T) {
 	c := Default()
+	c.Providers = []ProviderEntry{
+		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY", Price: deepSeekV4FlashPriceUSD()},
+		{Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", APIKeyEnv: "DEEPSEEK_API_KEY", Price: deepSeekV4ProPriceUSD()},
+	}
 	c.Desktop.Language = "ko-KR"
 	if err := c.SetDesktopCurrency("usd"); err != nil {
 		t.Fatalf("SetDesktopCurrency USD: %v", err)
@@ -421,10 +425,10 @@ func TestSetUICloseBehavior(t *testing.T) {
 
 func TestSetPlannerModel(t *testing.T) {
 	c := Default()
-	if err := c.SetPlannerModel("deepseek-pro"); err != nil {
+	if err := c.SetPlannerModel("patty"); err != nil {
 		t.Fatalf("set planner: %v", err)
 	}
-	if c.Agent.PlannerModel != "deepseek-pro" {
+	if c.Agent.PlannerModel != "patty" {
 		t.Errorf("planner = %q", c.Agent.PlannerModel)
 	}
 	if err := c.SetPlannerModel(""); err != nil || c.Agent.PlannerModel != "" {
@@ -563,6 +567,7 @@ func TestUpsertProvider(t *testing.T) {
 
 func TestSetProviderEffort(t *testing.T) {
 	c := Default()
+	c.Providers = legacyDeepSeekProviderEntries()
 	if err := c.SetProviderEffort("deepseek-flash", "MAX"); err != nil {
 		t.Fatalf("SetProviderEffort: %v", err)
 	}
@@ -936,6 +941,7 @@ func TestResolveModelAppliesModelOverrides(t *testing.T) {
 
 func TestRemoveProvider(t *testing.T) {
 	c := Default()
+	c.Providers = append(c.Providers, legacyDeepSeekProviderEntries()...)
 	c.Agent.PlannerModel = "deepseek-pro"
 
 	// Cannot remove the default model when no configured fallback is available.
@@ -949,8 +955,8 @@ func TestRemoveProvider(t *testing.T) {
 	if err := c.RemoveProvider("deepseek-pro"); err != nil {
 		t.Fatalf("remove planner provider: %v", err)
 	}
-	if c.Agent.PlannerModel != "" {
-		t.Errorf("planner should be cleared, got %q", c.Agent.PlannerModel)
+	if c.Agent.PlannerModel != "patty" {
+		t.Errorf("planner should move to the configured fallback, got %q", c.Agent.PlannerModel)
 	}
 	if _, ok := c.Provider("deepseek-pro"); ok {
 		t.Error("provider not actually removed")
@@ -1208,10 +1214,10 @@ func TestClearPluginAuthentication(t *testing.T) {
 // re-decodes the file to confirm the changes survived a write/read cycle.
 func TestSaveToRoundTrips(t *testing.T) {
 	c := Default()
-	if err := c.SetDefaultModel("deepseek-pro"); err != nil {
+	if err := c.SetDefaultModel("patty/medium"); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.SetPlannerModel("deepseek-pro"); err != nil {
+	if err := c.SetPlannerModel("patty"); err != nil {
 		t.Fatal(err)
 	}
 	if err := c.UpsertProvider(ProviderEntry{Name: "local", Kind: "openai", BaseURL: "http://localhost:1234/v1", Model: "llama"}); err != nil {
@@ -1247,10 +1253,10 @@ func TestSaveToRoundTrips(t *testing.T) {
 	if _, err := toml.DecodeFile(path, &got); err != nil {
 		t.Fatalf("saved file does not parse: %v", err)
 	}
-	if got.DefaultModel != "deepseek-pro" {
+	if got.DefaultModel != "patty/medium" {
 		t.Errorf("default_model = %q", got.DefaultModel)
 	}
-	if got.Agent.PlannerModel != "deepseek-pro" {
+	if got.Agent.PlannerModel != "patty" {
 		t.Errorf("planner_model = %q", got.Agent.PlannerModel)
 	}
 	if _, ok := got.Provider("local"); !ok {
@@ -1992,6 +1998,7 @@ func TestSaveToExistingProjectPersistsTopLevelDelta(t *testing.T) {
 	}
 	cfg := Default()
 	cfg.ConfigVersion = 2
+	cfg.Providers = append(cfg.Providers, legacyDeepSeekProviderEntries()...)
 	if err := cfg.SetDefaultModel("deepseek-pro"); err != nil {
 		t.Fatal(err)
 	}
