@@ -12,6 +12,10 @@ GOEXE := $(shell go env GOEXE)
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/patcode$(GOEXE) ./cmd/patcode
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/patty-plugin-example$(GOEXE) ./cmd/patty-plugin-example
+	@if [ "$$(go env GOOS)" = darwin ]; then \
+		/usr/bin/codesign --force --sign - bin/patcode$(GOEXE); \
+		/usr/bin/codesign --force --sign - bin/patty-plugin-example$(GOEXE); \
+	fi
 
 vet:
 	go vet ./...
