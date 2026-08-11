@@ -1,196 +1,177 @@
 <p align="center">
-  <img src="docs/logo-ghost-wave-effect.svg" alt="Patty Code" width="360"/>
+  <img src="docs/logo.svg" alt="Patty Code — Korean-first coding agent" width="680"/>
 </p>
 
 <p align="center">
+  <a href="./README.md">한국어</a>
+  &nbsp;·&nbsp;
   <strong>English</strong>
   &nbsp;·&nbsp;
-  <a href="./README.md">한국어</a>
+  <a href="https://code.patty.io">Website</a>
   &nbsp;·&nbsp;
   <a href="./docs/GUIDE.md">Guide</a>
   &nbsp;·&nbsp;
-  <a href="./docs/ACP.md">ACP</a>
-  &nbsp;·&nbsp;
-  <a href="./docs/EXTENSIONS.md">Extensions</a>
-  &nbsp;·&nbsp;
-  <a href="./docs/SPEC.md">Spec</a>
-  &nbsp;·&nbsp;
-  <a href="https://pattycorp.github.io/DeepSeek-PattyCode/">Website</a>
-  &nbsp;·&nbsp;
-  <strong><a href="https://discord.gg/XF78rEME2D">Discord</a></strong>
+  <a href="https://github.com/patrickrho-patty/patty-code/releases">Releases</a>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/patty"><img src="https://img.shields.io/npm/v/patty-code.svg?style=flat-square&color=cb3837&labelColor=161b22&logo=npm&logoColor=white" alt="npm version"/></a>
-  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/pattycorp/DeepSeek-PattyCode/ci.yml?style=flat-square&label=ci&labelColor=161b22&logo=githubactions&logoColor=white" alt="CI"/></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/patty-code.svg?style=flat-square&color=8b949e&labelColor=161b22" alt="license"/></a>
-  <a href="https://www.npmjs.com/package/patty"><img src="https://img.shields.io/npm/dm/patty-code.svg?style=flat-square&color=3fb950&labelColor=161b22&label=downloads" alt="downloads"/></a>
-  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/stargazers"><img src="https://img.shields.io/github/stars/pattycorp/DeepSeek-PattyCode.svg?style=flat-square&color=dbab09&labelColor=161b22&logo=github&logoColor=white" alt="GitHub stars"/></a>
-  <a href="https://atomgit.com/pattycorp/DeepSeek-PattyCode"><img src="https://atomgit.com/pattycorp/DeepSeek-PattyCode/star/badge.svg" alt="AtomGit stars"/></a>
-  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors"><img src="https://img.shields.io/github/contributors/pattycorp/DeepSeek-PattyCode.svg?style=flat-square&color=bc8cff&labelColor=161b22&logo=github&logoColor=white" alt="contributors"/></a>
-  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/discussions"><img src="https://img.shields.io/github/discussions/pattycorp/DeepSeek-PattyCode.svg?style=flat-square&color=58a6ff&labelColor=161b22&logo=github&logoColor=white" alt="Discussions"/></a>
-  <a href="https://discord.gg/XF78rEME2D"><img src="https://img.shields.io/badge/discord-join-5865F2.svg?style=flat-square&labelColor=161b22&logo=discord&logoColor=white" alt="Discord"/></a>
+  <a href="https://github.com/patrickrho-patty/patty-code/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/patrickrho-patty/patty-code/ci.yml?style=flat-square&label=CI&labelColor=111827" alt="CI status"/></a>
+  <a href="https://www.npmjs.com/package/patty-code"><img src="https://img.shields.io/npm/v/patty-code.svg?style=flat-square&label=npm&labelColor=111827" alt="npm version"/></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-d6a84b.svg?style=flat-square&labelColor=111827" alt="MIT license"/></a>
 </p>
+
+<h3 align="center">Think in Korean. Finish the work in your terminal.</h3>
 
 <p align="center">
-  <a href="https://trendshift.io/repositories/27020?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-27020" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/27020/monthly?language=Go" alt="Patty Code | Trendshift" width="250" height="55"/></a>
-  <a href="https://trendshift.io/repositories/27020?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-27020" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/27020" alt="Patty Code | Trendshift" width="250" height="55"/></a>
+  Patty Code is an open-source coding-agent harness designed with Korean as its default language.<br/>
+  It combines a deliberate TUI, controllable autonomy, and replaceable models and tools in one local runtime.
 </p>
 
-<br/>
+```text
+╭─ Patty Code ────────────────────────────────────────────────────╮
+│ [ WORK auto ] [ MODEL medium ] [ REASONING auto ] [ FREE 100% ] │
+╰─────────────────────────────────────────────────────────────────╯
 
-<p align="center"><strong>Open source · MIT · Korea's first and #1 Korean-first commercial coding agent harness</strong></p>
-<h3 align="center">The coding agent that finally feels native in Korean.</h3>
-<p align="center">Patty Code, from <strong>Patty Co., Ltd.</strong> (<strong>주식회사 패티</strong>), is the first commercial Korean-specific coding agent harness built so Korean developers can stop adapting themselves to tools designed for someone else. From HWPX parsing and Korean reasoning support to IME-safe composition, caret-safe input, 초성 slash commands, and long autonomous runs you can actually trust, Patty Code feels native from the very first prompt.</p>
+             TAEGEUKGI  ·  PATTY WORKFLOW
 
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/ab2f3878-e224-4931-8254-060e7695cfb9" controls preload="metadata" width="560"></video>
-</div>
-
-<br/>
-
-> [!IMPORTANT]
-> **Community** — See how Korean developers are using Patty Code in the real world, get setup help fast, and swap workflow ideas with the teams already pushing it hard. → **<https://discord.gg/XF78rEME2D>**
-
-<br/>
-
-## Why developers switch to Patty Code
-
-- **It feels native in Korean.** Patty Code does not treat Korean as a late localization pass. The runtime, docs, reasoning-language controls, and command system already treat `ko-KR` as a first-class path.
-- **Your IME finally stops breaking your flow.** Composition is preserved, Enter does not destroy confirmation, and the caret lands where Korean users expect after a commit.
-- **초성 command UX is ridiculously fast.** Built-ins resolve through Korean canonical names, 초성 aliases, and English names, while ambiguous input stays safe instead of firing the wrong command.
-- **Korean document workflows stay inside the loop.** HWPX parsing means Korean teams can keep document-heavy work inside the agent instead of dropping out to manual side flows.
-- **Autonomy feels powerful, not reckless.** Plan mode, approvals, sandboxing, checkpoints, rewind, branches, and session history make long autonomous runs usable in real work.
-- **It fits your stack instead of trapping you in ours.** Run one local engine across desktop, CLI, browser, and ACP, use DeepSeek or any OpenAI-compatible provider, and extend the whole thing with MCP and plugins.
-
-## What you get on day one
-
-- **One engine, four entry points.** Desktop, CLI, browser, and ACP all sit on the same local Patty Code runtime.
-- **A Korean-first interaction model.** Korean reasoning support, mixed-language-safe input handling, 초성 command access, and Korean-native workflow design are built in.
-- **Real model freedom.** Providers, tools, agent behavior, and plugins are configured in `patty.toml` instead of hardcoded into the product.
-- **Controlled autonomy.** You get planning, approvals, workspace sandboxing, rewind, checkpoints, and branches from the start.
-- **An extensible harness.** MCP servers and Extension Protocol sidecars can add tools, prompts, providers, resources, and structured UI.
-- **Fast deployment.** `CGO_ENABLED=0` single binary, desktop builds, and six-target cross-compilation keep rollout simple.
-
-## Install
-
-Choose the path that matches how you want to use Patty Code. The CLI/TUI, desktop app, and VS Code extension all use the same local Patty Code engine.
-
-### Path A: CLI / TUI
-
-Install the native binary through npm on any supported platform, or use Homebrew on macOS:
-
-```sh
-npm i -g patty code                  # any OS; pulls the prebuilt native binary
-brew install pattycorp/patty/patty code   # macOS
+╭─ MESSAGE INPUT ────────────────────────────────────────────────╮
+│   Type a command or question                                   │
+╰────────────────────────────────────────────────────────────────╯
+             READY · Shift+Tab GENERAL/AUTO/PLAN · Ctrl+Y YOLO
 ```
 
-Prebuilt archives (`darwin|linux|windows × amd64|arm64`) and `SHA256SUMS` are on every [GitHub release](https://github.com/pattycorp/DeepSeek-PattyCode/releases).
+## What makes Patty Code different
 
-### Path B: Desktop app
-
-Use the [official download page](https://patty-code.io/?download=desktop#start) for the latest desktop build.
-
-| Platform | Package | Architecture |
-| --- | --- | --- |
-| macOS | Universal `.dmg` or `.zip` | Apple Silicon / Intel |
-| Windows | Installer `.exe` or portable `.zip` | x64 / ARM64 |
-| Linux | `.deb` or `.tar.gz` | x64 |
-
-Windows installers are code-signed through [SignPath.io](https://signpath.io/) with a free certificate provided by the [SignPath Foundation](https://signpath.org/).
-
-### Path C: VS Code extension
-
-Complete Path A first. The extension does not bundle the CLI; it starts your local `patty code acp` backend and adds native chat, editor context, tool-call approvals, model selection, and workspace sessions.
-
-- **VS Code:** [install from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SivanLiu.patty-agent)
-- **VSCodium / Eclipse Theia:** [install from Open VSX Registry](https://open-vsx.org/extension/SivanLiu/patty-code-agent)
-- **Extension ID:** `SivanLiu.patty-agent` · [source and usage guide](https://github.com/SivanCola/patty-code-vscode)
-
-### Path D: Build from source
-
-```sh
-git clone https://github.com/pattycorp/DeepSeek-PattyCode.git
-cd DeepSeek-PattyCode
-make build      # -> bin/patty(.exe)
-make cross      # -> dist/ (darwin|linux|windows × amd64|arm64)
-```
+- **Korean is the default, not an add-on.** The TUI, help, errors, setup flow, and built-in commands are written to feel natural in Korean first.
+- **Korean input is treated as product behavior.** CJK grapheme boundaries, IME composition, cursor movement, and deletion have dedicated compatibility paths and regression coverage.
+- **The terminal interface has its own identity.** A title bar, clearly bounded status indicators, centered Taegeukgi and Patty marks, a rounded composer, natural startup height, and semantic color themes form one coherent shell.
+- **Korean commands are quick to reach.** The palette searches Korean command names, English names, and initial-consonant (초성) aliases without executing ambiguous input.
+- **You choose the autonomy boundary.** General, Auto, and Plan modes work with permission rules, sandboxing, checkpoints, rewind, and session recovery to keep long runs under control.
+- **The harness can outlive any one model.** Providers, MCP servers, Skills, plugins, subagents, and ACP clients connect to the same runtime.
+- **Capabilities arrive through a marketplace.** Browse and install packages from the plugin marketplace, including the HWPX plugin for reading and analyzing Korean documents inside the same workflow.
 
 ## Quick start
 
-### CLI / TUI
+### Install with npm
 
-These commands are for the CLI/TUI installed through Path A:
+Node.js 18 or newer is required. Installation downloads the native `patcode` binary for your operating system and architecture.
 
 ```sh
-patty code setup
-patty code
-patty code run "implement the TODOs in main.go"
+npm i -g patty-code
+patcode setup
+patcode
 ```
 
-In an interactive session, run `/init` when you want Patty Code to create project instructions.
+### Use a release binary
 
-### Desktop app
+[GitHub Releases](https://github.com/patrickrho-patty/patty-code/releases) provides archives and checksums for macOS, Linux, and Windows.
 
-Download the installer for your platform from the [official download page](https://patty-code.io/?download=desktop#start), install and launch Patty Code, then configure a provider and model in the app. The CLI commands above are not required for the desktop app.
+### Build from source
 
-For advanced CLI usage and configuration, see the **[CLI reference](./docs/CLI.md)**, **[Guide](./docs/GUIDE.md)**, and **[configuration paths](./docs/CONFIG_PATHS.md)**.
+```sh
+git clone https://github.com/patrickrho-patty/patty-code.git
+cd patty-code
+make build
+./bin/patcode setup
+./bin/patcode
+```
+
+`make cross` produces six CLI builds under `dist/`: `darwin|linux|windows × amd64|arm64`.
+
+## Stock runtime
+
+A new installation starts with one Patty-managed model configuration.
+
+| Setting | Default |
+| --- | --- |
+| Model reference | `patty/medium` |
+| Display name | `medium` |
+| API | `https://omni.agents.patty.io/v1` |
+| Context window | `248124` tokens |
+| Automatic compaction | `238123` tokens (`95.96935403266109%`) |
+| Forced compaction | `98%` |
+| Credential name | `AGENTS_PATTY_API_KEY` |
+
+`patcode setup` stores the key in Patty Code's credential store. The stock model picker contains only `medium`; you can explicitly add other OpenAI-compatible providers when needed.
+
+## Ways to run it
+
+```sh
+patcode                                         # interactive TUI
+patcode -p "summarize this repository"          # print one result
+patcode run "find the cause of the failing test" # headless task
+patcode run --auto "fix and verify the issue"    # explicitly allow unattended writes
+patcode acp                                     # connect an ACP host or editor
+patcode serve                                   # start the HTTP + SSE server
+```
+
+The interactive TUI exposes Korean commands such as `/모델전환`, `/작업모드`, `/테마전환`, `/언어설정`, and `/도움말`, alongside their English names. Type `/` for the command palette, `@` for files, or `!` for shell input.
+
+## One runtime, multiple surfaces
+
+| Surface | Use it for |
+| --- | --- |
+| CLI / TUI | Conversational repository work with visible tool approvals |
+| Headless | Scripts, CI, and repeatable automation through `run` and `-p` |
+| Desktop | A graphical workspace and settings UI backed by the local runtime |
+| ACP | Compatible editors and hosts that drive Patty Code sessions over stdio |
+| Serve | Browser and remote clients connecting over HTTP + SSE |
+
+Every surface shares the same provider configuration, permission model, session history, and extension system.
+
+## Plugin marketplace and HWPX
+
+A plugin package can add Skills, agents, slash commands, hooks, MCP tools, and themes as one installable unit. The marketplace shows package compatibility and included capabilities before installation; installed packages can be disabled, re-enabled, and diagnosed.
+
+The HWPX plugin is an official Patty Code extension available through the marketplace. It turns `.hwpx` documents into context Patty Code can read and analyze, keeping Korean document work inside the agent instead of a separate conversion flow.
+
+```sh
+patcode plugin list
+patcode plugin show <name>
+patcode plugin install <source> --dry-run
+patcode plugin install <source> --yes
+patcode plugin disable <name>
+patcode plugin enable <name>
+patcode plugin doctor <name>
+```
+
+Use `/플러그인` in the interactive TUI or open the plugin marketplace in Desktop to manage the same installed state.
+
+## Themes
+
+Keep the interface structure while changing its palette. Configure the theme in `~/.patty/config.toml`, or override it for one run through the environment.
+
+```toml
+[ui]
+theme = "auto"                 # auto | dark | light
+theme_style = "seoul-night"    # seoul-night | ink-night | hanji-light | jade-night
+```
 
 ## Documentation
 
-- **Getting started:** [Guide](./docs/GUIDE.md) · [CLI reference](./docs/CLI.md) · [Configuration paths](./docs/CONFIG_PATHS.md) · [ACP editor integration](./docs/ACP.md)
-- **Features & troubleshooting:** [Reasoning language](./docs/REASONING_LANGUAGE.md) · [Subagent profiles](./docs/SUBAGENT_PROFILES.md) · [Context Engine v2](./docs/SESSION_MEMORY_RETRIEVAL.md) · [Capability diagnostics](./docs/CAPABILITY_DIAGNOSTICS.md) · [Recovery and updates](./docs/RECOVERY.md) · [Checkpoints & rewind](./docs/CHECKPOINTS.md)
-- **Engineering & migration:** [Spec](./docs/SPEC.md) · [Task contracts & pause policy](./docs/TASK_CONTRACT.md) · [Tool contract](./docs/TOOL_CONTRACT.md) · [Migrating from 0.x](./docs/MIGRATING.md)
-- **Extension development:** [Extensions](./docs/EXTENSIONS.md) · [Plugin packages and Manifest v1](./docs/PLUGIN_PACKAGES.md) · [Extension Protocol](./docs/EXTENSION_PROTOCOL.md) · [Go SDK and starter](./sdk/go/README.md)
+- [Guide](./docs/GUIDE.md)
+- [CLI reference](./docs/CLI.md)
+- [Configuration and credential paths](./docs/CONFIG_PATHS.md)
+- [ACP editor integration](./docs/ACP.md)
+- [Extensions and plugins](./docs/EXTENSIONS.md)
+- [Product specification](./docs/SPEC.md)
+- [Migration guide](./docs/MIGRATING.md)
 
-## Star History
+## Development
 
-<a href="https://www.star-history.com/?repos=pattycorp%2FDeepSeek-PattyCode&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pattycorp/DeepSeek-PattyCode/star-history/assets/star-history/star-history-dark.svg" />
-   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/pattycorp/DeepSeek-PattyCode/star-history/assets/star-history/star-history-light.svg" />
-   <img alt="Star History Chart" src="https://raw.githubusercontent.com/pattycorp/DeepSeek-PattyCode/star-history/assets/star-history/star-history-light.svg" />
- </picture>
-</a>
+```sh
+make test
+make vet
+make cross
+```
 
-<br/>
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before proposing a change. Report security issues through the process in [SECURITY.md](./SECURITY.md).
 
-## Acknowledgments
+## License
 
-A small list of folks whose work has shaped Patty Code the most — the current top 20 contributors by commit count. The full contributor graph is on [GitHub](https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors?all=1).
-
-<!-- patty-code-top-contributors:start -->
-| Contributor | Contributor | Contributor | Contributor |
-| --- | --- | --- | --- |
-| [**SivanCola**](https://github.com/SivanCola) | [**pattycorp**](https://github.com/pattycorp) | [**ttmouse**](https://github.com/ttmouse) | [**lifu963**](https://github.com/lifu963) |
-| **patty** | [**HUQIANTAO**](https://github.com/HUQIANTAO) | [**GTC2080**](https://github.com/GTC2080) | [**light-front-theory**](https://github.com/light-front-theory) |
-| **merge-order-check** | [**Li-Charles-One**](https://github.com/Li-Charles-One) | [**eghrhegpe**](https://github.com/eghrhegpe) | **wufengfan** |
-| [**CVEngineer66**](https://github.com/CVEngineer66) | [**dependabot[bot]**](https://github.com/apps/dependabot) | [**lanshi17**](https://github.com/lanshi17) | [**SuMuxi66**](https://github.com/SuMuxi66) |
-| [**CnsMaple**](https://github.com/CnsMaple) | [**cyq1017**](https://github.com/cyq1017) | [**JesonChou**](https://github.com/JesonChou) | [**XTLine**](https://github.com/XTLine) |
-<!-- patty-code-top-contributors:end -->
-
-Special thanks to [**Bernardxu123**](https://github.com/Bernardxu123) for designing the project logo and intro video.
+Patty Code is released under the [MIT License](./LICENSE).
 
 <p align="center">
-  <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=pattycorp/DeepSeek-PattyCode&max=100&columns=12" alt="Contributors to Patty Code" width="860"/>
-  </a>
+  <strong>Patty Code</strong><br/>
+  <sub>Korean-first · terminal-native · user-controlled agency</sub>
 </p>
-
-<br/>
-
----
-
-<p align="center">
-  <sub>MIT — see <a href="./LICENSE">LICENSE</a></sub>
-  <br/>
-  <sub>Built by <strong>Patty Co., Ltd.</strong> (<strong>주식회사 패티</strong>) with the <a href="https://github.com/pattycorp/DeepSeek-PattyCode/graphs/contributors">Patty Code community</a></sub>
-</p>
-
----
-
-<p align="center"><sub><strong>Support this project</strong></sub></p>
-
-If Patty Code has been useful and you'd like to say thanks, you can. It stays a coffee, not a contract — donations don't buy feature priority or change how issues get triaged.
-
-- **PayPal** — [paypal.me/yuhuahui](https://paypal.me/yuhuahui)

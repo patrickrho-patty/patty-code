@@ -1,6 +1,6 @@
 # Patty Code
 
-기본 한국어 README는 이제 [README.md](./README.md)입니다.
+한국어가 기본 README입니다.
 
-- [기본 한국어 README](./README.md)
-- [English README](./README.en.md)
+- [한국어 README 열기](./README.md)
+- [Open the English README](./README.en.md)
