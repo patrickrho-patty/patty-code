@@ -116,15 +116,17 @@ func (m *chatTUI) openModelPicker() {
 	for _, ref := range refs {
 		parts := strings.SplitN(ref, "/", 2)
 		description := ""
+		label := ref
 		if len(parts) == 2 {
 			description = "Provider: " + parts[0]
+			label = parts[1]
 		}
 		status := ""
 		if ref == m.modelRef {
 			status = "active"
 			selected = len(items)
 		}
-		items = append(items, quickPickerItem{ID: ref, Label: ref, Description: description, Status: status})
+		items = append(items, quickPickerItem{ID: ref, Label: label, Description: description, Status: status})
 	}
 	m.quickPick = &quickPicker{kind: quickPickerModel, title: "Select model", items: items, selected: selected}
 }

@@ -16,34 +16,27 @@ import (
 // only those whose provider API key is set.
 func TestModelRefsFromConfig(t *testing.T) {
 	isolateUserConfig(t) // no patty.toml -> built-in default providers
-	// Only DeepSeek keyed → MiMo refs must be filtered out.
-	if _, err := config.SetCredential("DEEPSEEK_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
-	t.Setenv("MIMO_API_KEY", "")
 	refs := modelRefs()
-	if len(refs) == 0 {
-		t.Fatal("expected default provider/model refs, got none")
-	}
-	for _, r := range refs {
-		if !strings.Contains(r, "/") {
-			t.Errorf("ref %q should be provider/model", r)
-		}
-		if strings.HasPrefix(r, "mimo") {
-			t.Errorf("ref %q from a provider without an API key should be filtered out", r)
-		}
+	if got, want := strings.Join(refs, ","), "patty/medium"; got != want {
+		t.Fatalf("default model refs = %q, want %q", got, want)
 	}
 }
 
 func TestBareModelOpensKeyboardPicker(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("DEEPSEEK_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
 		t.Fatal(err)
 	}
 	m := newTestChatTUI()
 	m.runModelSubcommand("/model")
 	if m.quickPick == nil || m.quickPick.kind != quickPickerModel {
 		t.Fatalf("bare /model picker = %+v", m.quickPick)
+	}
+	if len(m.quickPick.items) != 1 || m.quickPick.items[0].ID != "patty/medium" || m.quickPick.items[0].Label != "medium" {
+		t.Fatalf("picker items = %+v", m.quickPick.items)
 	}
 	if m.renderQuickPicker() == "" || !m.hideComposer() {
 		t.Fatal("model picker should render as a modal panel")
@@ -58,8 +51,7 @@ func TestBareModelOpensKeyboardPicker(t *testing.T) {
 // picker offers nothing rather than listing models the user can't select.
 func TestModelRefsSkipsUnconfigured(t *testing.T) {
 	isolateUserConfig(t)
-	t.Setenv("DEEPSEEK_API_KEY", "")
-	t.Setenv("MIMO_API_KEY", "")
+	t.Setenv("AGENTS_PATTY_API_KEY", "")
 	if refs := modelRefs(); len(refs) != 0 {
 		t.Errorf("no keys set → no refs, got %v", refs)
 	}
@@ -69,7 +61,7 @@ func TestModelRefsSkipsUnconfigured(t *testing.T) {
 // through the shared completion path.
 func TestModelArgCompletion(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("DEEPSEEK_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 	m := newTestChatTUI()
@@ -86,19 +78,18 @@ func TestModelArgCompletion(t *testing.T) {
 // next startup read the global default.
 func TestPersistModelWritesDefaultModel(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("DEEPSEEK_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
-	t.Setenv("MIMO_API_KEY", "")
 
 	m := newTestChatTUI()
-	m.persistModel("deepseek-flash/deepseek-v4-flash")
+	m.persistModel("patty/medium")
 
 	body, err := os.ReadFile(config.UserConfigPath())
 	if err != nil {
 		t.Fatalf("read saved config: %v", err)
 	}
-	if !strings.Contains(string(body), `default_model = "deepseek-flash/deepseek-v4-flash"`) {
+	if !strings.Contains(string(body), `default_model = "patty/medium"`) {
 		t.Fatalf("saved config missing default_model ref:\n%s", body)
 	}
 }
@@ -111,7 +102,7 @@ func TestPersistModelWritesDefaultModel(t *testing.T) {
 // memory switch still goes through.
 func TestPersistModelRejectsUnknownRef(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("DEEPSEEK_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 
@@ -128,7 +119,7 @@ func TestPersistModelRejectsUnknownRef(t *testing.T) {
 // boot's merged resolver gates it at the next launch.
 func TestPersistModelAcceptsPluginRef(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("DEEPSEEK_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 
