@@ -18,7 +18,10 @@ import (
 	"patty/internal/secrets"
 )
 
-const imeTraceEnv = "PATTY_IME_TRACE"
+const (
+	imeTraceEnv             = "PATTY_IME_TRACE"
+	korean2SetInputSourceID = "com.apple.inputmethod.Korean.2SetKorean"
+)
 
 type imeTraceMode uint8
 
@@ -40,40 +43,77 @@ func configuredIMETraceMode(getenv func(string) string) imeTraceMode {
 }
 
 var (
-	kittyCompatibilityOnce sync.Once
-	kittyCompatibility     bool
+	kittyCompatibilityOnce       sync.Once
+	kittyCompatibility           bool
+	kittyCompatibilityBehindTmux bool
 )
 
-func detectKittyHangulIMECompatibility() bool {
+func detectKittyHangulIMEEnvironment() (compatible, behindTmux bool) {
 	kittyCompatibilityOnce.Do(func() {
-		kittyCompatibility = kittyHangulIMECompatibilityFor(
-			runtime.GOOS,
-			term.IsTerminal(int(os.Stdin.Fd())),
-			os.Getenv,
-			func() string {
-				ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
-				defer cancel()
-				cmd := exec.CommandContext(ctx, "tmux", "display-message", "-p", "#{client_termname}")
-				cmd.Env = secrets.ProcessEnv()
-				clientTerm, err := cmd.Output()
-				if err != nil {
-					return ""
-				}
-				return string(clientTerm)
-			},
-		)
+		kittyCompatibility, kittyCompatibilityBehindTmux, _ = probeKittyHangulIMEEnvironment()
 	})
-	return kittyCompatibility
+	return kittyCompatibility, kittyCompatibilityBehindTmux
 }
 
-func kittyHangulIMECompatibilityFor(
+type kittyHangulIMEEnvironmentMsg struct {
+	compatible bool
+	behindTmux bool
+	generation uint64
+	determined bool
+}
+
+func probeKittyHangulIMEEnvironment() (compatible, behindTmux, determined bool) {
+	return kittyHangulIMEEnvironmentFor(
+		runtime.GOOS,
+		term.IsTerminal(int(os.Stdin.Fd())),
+		os.Getenv,
+		currentTmuxClientTerminal,
+	)
+}
+
+func currentTmuxClientTerminal() string {
+	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "tmux", "display-message", "-p", "#{client_termname}")
+	cmd.Env = secrets.ProcessEnv()
+	clientTerm, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return string(clientTerm)
+}
+
+func refreshKittyHangulIMEEnvironment(generation uint64) tea.Cmd {
+	return func() tea.Msg {
+		compatible, behindTmux, determined := probeKittyHangulIMEEnvironment()
+		return kittyHangulIMEEnvironmentMsg{
+			compatible: compatible,
+			behindTmux: behindTmux,
+			generation: generation,
+			determined: determined,
+		}
+	}
+}
+
+func kittyHangulIMEEnvironmentFor(
 	goos string,
 	stdinTTY bool,
 	getenv func(string) string,
 	tmuxClientTerm func() string,
-) bool {
+) (compatible, behindTmux, determined bool) {
 	if goos != "darwin" || !stdinTTY {
-		return false
+		return false, false, true
+	}
+	insideTmux := getenv("TMUX") != ""
+	if insideTmux {
+		// Pane environment survives detach/reattach. The current tmux client is
+		// authoritative; inherited TERM_PROGRAM/KITTY_WINDOW_ID may be stale.
+		clientTerm := strings.TrimSpace(tmuxClientTerm())
+		if clientTerm == "" {
+			return false, false, false
+		}
+		isKitty := strings.Contains(strings.ToLower(clientTerm), "kitty")
+		return isKitty, isKitty, true
 	}
 	for _, value := range []string{
 		getenv("TERM_PROGRAM"),
@@ -81,30 +121,30 @@ func kittyHangulIMECompatibilityFor(
 		getenv("KITTY_WINDOW_ID"),
 	} {
 		if strings.Contains(strings.ToLower(value), "kitty") {
-			return true
+			return true, false, true
 		}
 	}
-	if getenv("TMUX") == "" {
-		return false
-	}
-	return strings.Contains(strings.ToLower(tmuxClientTerm()), "kitty")
+	return false, false, true
 }
 
-func (m *chatTUI) shouldSuppressKittyHangulResidualCommit(msg tea.KeyPressMsg) bool {
+func (m *chatTUI) shouldSuppressKittyHangulResidualCommit(msg tea.KeyPressMsg, physicalBackspaceEvidence bool) bool {
 	if !m.kittyHangulIMECompatibility || m.validComposerSelection() {
 		return false
 	}
+	if !isKittyHangulResidualCandidate(msg) {
+		return false
+	}
 	key := msg.Key()
-	if key.Code != tea.KeyBackspace || key.Mod != 0 {
-		return false
+	if key.Code == tea.KeyBackspace {
+		return true
 	}
-	text := []rune(key.Text)
-	if len(text) != 1 || text[0] < '\u3131' || text[0] > '\u314e' {
-		return false
-	}
-	offset := m.composerCursorOffset()
-	runes := []rune(m.input.Value())
-	return offset > 0 && offset <= len(runes) && runes[offset-1] >= '\uac00' && runes[offset-1] <= '\ud7a3'
+	// Kitty's legacy macOS IME stream sends only the residual jamo. Tmux then
+	// has no Backspace identity to preserve, so use the physical key edge
+	// recorded before terminal transport erased it. Deliberate jamo input keeps
+	// working because its physical key is a two-set letter, not Backspace.
+	return m.kittyHangulIMEBehindTmux && physicalBackspaceEvidence &&
+		m.keyboardInputSourceID != nil &&
+		isKoreanKeyboardInputSource(m.keyboardInputSourceID())
 }
 
 func applyKittyHangulKeyboardEnhancements(view *tea.View, enabled bool) {

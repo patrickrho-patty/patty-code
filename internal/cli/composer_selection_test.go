@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	uv "github.com/charmbracelet/ultraviolet"
@@ -27,6 +28,19 @@ func updateComposerMouseTestTUI(t *testing.T, m chatTUI, msg tea.Msg) chatTUI {
 	t.Helper()
 	next, _ := m.Update(msg)
 	return next.(chatTUI)
+}
+
+func enableKittyTmuxHangulCompatibility(
+	m *chatTUI,
+	inputSource string,
+	sample func() bool,
+) *physicalBackspaceMonitor {
+	m.kittyHangulIMECompatibility = true
+	m.kittyHangulIMEBehindTmux = true
+	m.keyboardInputSourceID = func() string { return inputSource }
+	monitor := newPhysicalBackspaceMonitor(sample, time.Hour)
+	m.physicalBackspaceMonitor = monitor
+	return monitor
 }
 
 func overflowingComposerMouseTestTUI(t *testing.T) chatTUI {
@@ -805,6 +819,75 @@ func TestKittyAssociatedTextSequencePreservesBackspaceIdentity(t *testing.T) {
 	}
 }
 
+func TestKittyTmuxSuppressesJamoAfterPhysicalBackspaceWasReleased(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	monitor := enableKittyTmuxHangulCompatibility(&m, korean2SetInputSourceID, func() bool { return false })
+	m.input.SetValue("안")
+	m.setComposerCursor(1)
+	monitor.observe(true)
+	monitor.observe(false)
+
+	// In Kitty's legacy stream the final Backspace is replaced by the residual
+	// pre-edit jamo. Reproduce transport delay by releasing Backspace before the
+	// terminal event reaches Update; the recorded down edge must survive it.
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("physical Backspace residual produced %q, want 안", got)
+	}
+}
+
+func TestKittyTmuxSuppressesDecodedLegacyJamoAfterBackspaceRelease(t *testing.T) {
+	var decoder uv.EventDecoder
+	raw := []byte("ㄴ")
+	n, event := decoder.Decode(raw)
+	if n != len(raw) {
+		t.Fatalf("decoded %d bytes, want %d", n, len(raw))
+	}
+	keyEvent, ok := event.(uv.KeyPressEvent)
+	if !ok {
+		t.Fatalf("legacy PTY event type = %T, want ultraviolet.KeyPressEvent", event)
+	}
+
+	m := newComposerMouseTestTUI(t, 40, 12)
+	monitor := enableKittyTmuxHangulCompatibility(&m, korean2SetInputSourceID, func() bool { return false })
+	m.input.SetValue("안")
+	m.setComposerCursor(1)
+	monitor.observe(true)
+	monitor.observe(false)
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg(keyEvent))
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("decoded Kitty/tmux legacy replay produced %q, want 안", got)
+	}
+}
+
+func TestKittyTmuxSuppressesJamoWhilePhysicalBackspaceIsStillDown(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	enableKittyTmuxHangulCompatibility(&m, korean2SetInputSourceID, func() bool { return true })
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+
+	if got := m.input.Value(); got != "" {
+		t.Fatalf("live physical Backspace residual produced %q, want empty input", got)
+	}
+}
+
+func TestKittyTmuxDoesNotSuppressPhysicalBackspaceJamoOutsideKoreanInput(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	monitor := enableKittyTmuxHangulCompatibility(&m, "com.apple.keylayout.ABC", func() bool { return false })
+	m.input.SetValue("안")
+	m.setComposerCursor(1)
+	monitor.observe(true)
+	monitor.observe(false)
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+
+	if got := m.input.Value(); got != "안ㄴ" {
+		t.Fatalf("non-Korean input source produced %q, want 안ㄴ", got)
+	}
+}
+
 func TestKittyMacOSCompatibilityPreservesChosungInput(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
 	m.kittyHangulIMECompatibility = true
@@ -820,7 +903,7 @@ func TestKittyMacOSCompatibilityPreservesChosungInput(t *testing.T) {
 
 func TestKittyMacOSCompatibilityPreservesStandaloneJamoAfterSyllable(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
-	m.kittyHangulIMECompatibility = true
+	enableKittyTmuxHangulCompatibility(&m, korean2SetInputSourceID, func() bool { return false })
 	m.input.SetValue("안")
 	m.setComposerCursor(1)
 
@@ -831,13 +914,88 @@ func TestKittyMacOSCompatibilityPreservesStandaloneJamoAfterSyllable(t *testing.
 	}
 }
 
+func TestKittyTmuxDoesNotReuseSuppressedBackspaceForIntentionalJamo(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	down := true
+	monitor := enableKittyTmuxHangulCompatibility(&m, korean2SetInputSourceID, func() bool { return down })
+
+	// Update sees the live level before the polling goroutine records the edge.
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+	monitor.observe(true)
+	down = false
+	monitor.observe(false)
+
+	// The monitor's late edge belongs to the already-suppressed Backspace. It
+	// must not erase the next deliberate two-set jamo.
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+	if got := m.input.Value(); got != "ㄴ" {
+		t.Fatalf("late Backspace edge changed deliberate jamo to %q, want ㄴ", got)
+	}
+}
+
+func TestKittyTmuxDoesNotSuppressJamoFromExpiredBackspaceEvidence(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	monitor := enableKittyTmuxHangulCompatibility(&m, korean2SetInputSourceID, func() bool { return false })
+	monitor.observe(true)
+	monitor.observe(false)
+	monitor.lastPressUnixNano.Store(time.Now().Add(-physicalBackspaceEvidenceTTL - time.Second).UnixNano())
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+	if got := m.input.Value(); got != "ㄴ" {
+		t.Fatalf("expired Backspace evidence changed deliberate jamo to %q, want ㄴ", got)
+	}
+}
+
+func TestPasteConsumesUnmatchedPhysicalBackspaceEvidence(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	monitor := enableKittyTmuxHangulCompatibility(&m, korean2SetInputSourceID, func() bool { return false })
+	monitor.observe(true)
+	monitor.observe(false)
+
+	m = updateComposerMouseTestTUI(t, m, tea.PasteMsg{Content: "붙여넣기"})
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+	if got := m.input.Value(); got != "붙여넣기ㄴ" {
+		t.Fatalf("paste left stale Backspace evidence, composer = %q", got)
+	}
+}
+
+func TestChooserFreeTextSuppressesDelayedKittyTmuxResidualJamo(t *testing.T) {
+	m := newComposerMouseTestTUI(t, 40, 12)
+	monitor := enableKittyTmuxHangulCompatibility(&m, korean2SetInputSourceID, func() bool { return false })
+	m.chooser = newChooser(event.Ask{
+		ID: "ask-1",
+		Questions: []event.AskQuestion{{
+			ID: "q1", Prompt: "답변", Options: []event.AskOption{{Label: "선택"}},
+		}},
+	})
+	m.chooser.typing = true
+	m.input.SetValue("안")
+	m.setComposerCursor(1)
+	monitor.observe(true)
+	monitor.observe(false)
+
+	m = updateComposerMouseTestTUI(t, m, tea.KeyPressMsg{Code: 'ㄴ', Text: "ㄴ"})
+	if got := m.input.Value(); got != "안" {
+		t.Fatalf("chooser residual replay produced %q, want 안", got)
+	}
+}
+
 func TestKittyMacOSViewRequestsLosslessKeyboardIdentity(t *testing.T) {
 	m := newComposerMouseTestTUI(t, 40, 12)
 	m.kittyHangulIMECompatibility = true
 
 	view := m.View()
+	if !view.ReportFocus {
+		t.Fatal("chat view must report focus so global Backspace capture pauses while blurred")
+	}
 	if !view.KeyboardEnhancements.ReportAllKeysAsEscapeCodes || !view.KeyboardEnhancements.ReportAssociatedText {
 		t.Fatalf("Kitty compatibility keyboard enhancements = %+v", view.KeyboardEnhancements)
+	}
+
+	m.kittyHangulIMEBehindTmux = true
+	view = m.View()
+	if view.KeyboardEnhancements.ReportAllKeysAsEscapeCodes || view.KeyboardEnhancements.ReportAssociatedText {
+		t.Fatalf("tmux view requested enhancements whose associated text tmux discards: %+v", view.KeyboardEnhancements)
 	}
 
 	m.kittyHangulIMECompatibility = false
@@ -862,12 +1020,14 @@ func TestOtherTerminalsKeepStandaloneJamoAfterHangulSyllable(t *testing.T) {
 
 func TestKittyHangulIMECompatibilityDetection(t *testing.T) {
 	tests := []struct {
-		name       string
-		goos       string
-		stdinTTY   bool
-		env        map[string]string
-		clientTerm string
-		want       bool
+		name         string
+		goos         string
+		stdinTTY     bool
+		env          map[string]string
+		clientTerm   string
+		want         bool
+		wantTmux     bool
+		undetermined bool
 	}{
 		{
 			name: "direct Kitty on macOS", goos: "darwin", stdinTTY: true,
@@ -876,7 +1036,19 @@ func TestKittyHangulIMECompatibilityDetection(t *testing.T) {
 		{
 			name: "Kitty client behind tmux with stale outer metadata", goos: "darwin", stdinTTY: true,
 			env:        map[string]string{"TERM": "tmux-256color", "TERM_PROGRAM": "WarpTerminal", "TMUX": "/tmp/tmux"},
-			clientTerm: "xterm-kitty", want: true,
+			clientTerm: "xterm-kitty", want: true, wantTmux: true,
+		},
+		{
+			name: "non-Kitty tmux client overrides stale Kitty pane metadata", goos: "darwin", stdinTTY: true,
+			env: map[string]string{
+				"TERM": "tmux-256color", "TERM_PROGRAM": "kitty", "KITTY_WINDOW_ID": "7", "TMUX": "/tmp/tmux",
+			},
+			clientTerm: "xterm-ghostty", want: false, wantTmux: false,
+		},
+		{
+			name: "tmux client probe failure is not a negative detection", goos: "darwin", stdinTTY: true,
+			env:          map[string]string{"TERM": "tmux-256color", "TMUX": "/tmp/tmux"},
+			undetermined: true,
 		},
 		{
 			name: "non-Kitty macOS terminal", goos: "darwin", stdinTTY: true,
@@ -893,7 +1065,7 @@ func TestKittyHangulIMECompatibilityDetection(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := kittyHangulIMECompatibilityFor(
+			got, gotTmux, determined := kittyHangulIMEEnvironmentFor(
 				tc.goos,
 				tc.stdinTTY,
 				func(key string) string { return tc.env[key] },
@@ -901,6 +1073,12 @@ func TestKittyHangulIMECompatibilityDetection(t *testing.T) {
 			)
 			if got != tc.want {
 				t.Fatalf("compatibility detection = %v, want %v", got, tc.want)
+			}
+			if gotTmux != tc.wantTmux {
+				t.Fatalf("tmux detection = %v, want %v", gotTmux, tc.wantTmux)
+			}
+			if determined == tc.undetermined {
+				t.Fatalf("determined = %v, want %v", determined, !tc.undetermined)
 			}
 		})
 	}

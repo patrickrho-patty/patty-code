@@ -1253,6 +1253,9 @@ func chatREPL(args []string, version string) int {
 	}
 
 	m := newChatTUI(ctrl, missing, eventCh, termW)
+	if m.physicalBackspaceMonitor != nil {
+		defer m.physicalBackspaceMonitor.stop()
+	}
 	m.diagnostics = diagnostics
 	m.updateWatchdogStatusProvider()
 	m.planMode = permissions.plan
@@ -1342,6 +1345,7 @@ func chatREPL(args []string, version string) int {
 	// subprocesses — operations that corrupt bubbletea's terminal raw mode
 	// when executed while the TUI is alive.
 	if fm, ok := final.(chatTUI); ok {
+		fm.physicalBackspaceMonitor.stop()
 		for _, oc := range fm.oldControllers {
 			if c, ok := oc.(*control.Controller); ok {
 				reporter.RecordRecovery(c.DrainRecoveryMetrics())

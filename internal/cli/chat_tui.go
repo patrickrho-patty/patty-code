@@ -77,7 +77,13 @@ type chatTUI struct {
 	// kittyHangulIMECompatibility suppresses a macOS Kitty pre-edit residual:
 	// Kitty can commit the final standalone jamo instead of forwarding the
 	// Backspace that removed it. Other terminals and platforms stay native.
-	kittyHangulIMECompatibility bool
+	kittyHangulIMECompatibility      bool
+	kittyHangulIMEBehindTmux         bool
+	keyboardInputSourceID            func() string
+	physicalBackspaceMonitor         *physicalBackspaceMonitor
+	physicalBackspaceConsumed        uint64
+	physicalBackspaceAwaitingRelease bool
+	kittyHangulIMEProbeGeneration    uint64
 	// composerScrollOffset is an independent view offset used after the user
 	// wheels inside an overflowing composer. The textarea keeps ownership of the
 	// real insertion cursor; a subsequent edit or cursor key reattaches the view
@@ -628,9 +634,10 @@ func newChatTUI(ctrl control.SessionAPI, missing string, eventCh chan event.Even
 
 	commitBuf := []string{}
 	nativeScrollback := detectTermuxTerminal()
+	kittyCompatibility, kittyBehindTmux := detectKittyHangulIMEEnvironment()
 	history := ctrl.History()
 	nextPasteID, usedPasteIDs := pasteIDStateForHistory(history)
-	return chatTUI{
+	m := chatTUI{
 		ctrl:                        ctrl,
 		label:                       ctrl.Label(),
 		modelRef:                    ctrl.ModelRef(),
@@ -638,7 +645,8 @@ func newChatTUI(ctrl control.SessionAPI, missing string, eventCh chan event.Even
 		nativeScrollback:            nativeScrollback,
 		mouseCaptureOff:             mouseCaptureOffByDefault(),
 		imeTraceMode:                configuredIMETraceMode(os.Getenv),
-		kittyHangulIMECompatibility: detectKittyHangulIMECompatibility(),
+		kittyHangulIMECompatibility: kittyCompatibility,
+		kittyHangulIMEBehindTmux:    kittyBehindTmux,
 		input:                       ti,
 		spinner:                     sp,
 		submittedInputCursor:        -1,
@@ -669,6 +677,19 @@ func newChatTUI(ctrl control.SessionAPI, missing string, eventCh chan event.Even
 		viewport:                    viewport.New(viewport.WithWidth(termW)),
 		statusLineCount:             0,
 	}
+	if kittyBehindTmux {
+		// Load the native bridges before the first terminal event so the
+		// compatibility decision never pays Dlopen latency after Backspace.
+		prewarmKeyboardCompatibilityAPIs()
+		if physicalBackspaceStateAvailable() {
+			m.keyboardInputSourceID = currentKeyboardInputSourceID
+			m.physicalBackspaceMonitor = newPhysicalBackspaceMonitor(
+				currentPhysicalBackspaceDown,
+				physicalBackspacePollInterval,
+			)
+		}
+	}
+	return m
 }
 
 func transcriptContentWidth(termW int, nativeScrollback bool) int {
@@ -874,6 +895,7 @@ func (m chatTUI) Init() tea.Cmd {
 			fetchBalance(m.ctrl),
 			m.runStatusline(), // nil (no-op) unless a custom status line is configured
 			m.refreshGitStatus(),
+			m.physicalBackspaceMonitor.command(),
 		),
 	)
 }
@@ -1041,6 +1063,15 @@ func batchCmds(cmds ...tea.Cmd) tea.Cmd {
 func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var inputBeforeSelection string
+	physicalBackspaceEvidence := false
+	if keyMsg, ok := msg.(tea.KeyPressMsg); ok && m.physicalBackspaceMonitor != nil {
+		physicalBackspaceEvidence = m.capturePhysicalBackspaceEvidence(keyMsg)
+	} else {
+		switch msg.(type) {
+		case tea.MouseWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg, tea.PasteMsg:
+			m.discardPhysicalBackspaceEvidence()
+		}
+	}
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -1060,12 +1091,38 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.ResumeMsg:
 		// Restoring Bubble Tea's renderer re-enables modifyOtherKeys. Reset it
 		// again so IME Backspace keeps the same behavior after Ctrl+Z/resume.
-		return m, imeKeyboardCompatibilityCommand()
+		m.physicalBackspaceMonitor.setActive(true)
+		m.discardPhysicalBackspaceEvidence()
+		m.kittyHangulIMEProbeGeneration++
+		return m, tea.Batch(
+			imeKeyboardCompatibilityCommand(),
+			refreshKittyHangulIMEEnvironment(m.kittyHangulIMEProbeGeneration),
+		)
 
 	case tea.FocusMsg:
 		// Terminal regained focus — ConPTY may have dropped mouse tracking
 		// while the pane was unfocused (#7583). Re-enable is issued from Update.
+		// Refresh the current tmux client asynchronously because pane environment
+		// is stale after detach/reattach.
+		m.physicalBackspaceMonitor.setActive(true)
+		m.discardPhysicalBackspaceEvidence()
+		m.kittyHangulIMEProbeGeneration++
+		return m, refreshKittyHangulIMEEnvironment(m.kittyHangulIMEProbeGeneration)
+
+	case tea.BlurMsg:
+		m.kittyHangulIMEProbeGeneration++
+		m.physicalBackspaceMonitor.setActive(false)
+		m.discardPhysicalBackspaceEvidence()
 		return m, nil
+
+	case kittyHangulIMEEnvironmentMsg:
+		if msg.generation != m.kittyHangulIMEProbeGeneration {
+			return m, nil
+		}
+		if !msg.determined {
+			return m, nil
+		}
+		return m, m.applyKittyHangulIMEEnvironment(msg.compatible, msg.behindTmux)
 
 	case tea.MouseWheelMsg:
 		if m.mouseOverComposer(msg.X, msg.Y) {
@@ -1351,7 +1408,10 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// custom answer, Esc backs out of typing — so input/IME work as usual.
 		if m.chooser != nil {
 			if m.chooser.typing {
-				switch msg.String() {
+				keyMsg := normalizeComposerKeyPress(msg)
+				beforeInput := m.input.Value()
+				beforeLine, beforeColumn := m.input.Line(), m.input.Column()
+				switch keyMsg.String() {
 				case "enter":
 					val := strings.TrimSpace(m.input.Value())
 					m.input.Reset()
@@ -1369,14 +1429,10 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.refreshInputPlaceholder()
 					return m, finalize(m, cmds)
 				}
-				beforeInput := m.input.Value()
-				var ic tea.Cmd
-				m.input, ic = m.input.Update(msg)
-				cmds = append(cmds, ic)
-				m.growInputToFit()
-				if shouldClearWideInputChange(beforeInput, m.input.Value()) {
-					cmds = append(cmds, tea.ClearScreen)
-				}
+				cmds = m.editComposerKey(cmds,
+					keyMsg, beforeInput, beforeLine, beforeColumn,
+					physicalBackspaceEvidence, false,
+				)
 				return m, finalize(m, cmds)
 			}
 			return m.handleChooserKey(msg)
@@ -1844,6 +1900,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tuiShutdownMsg:
+		m.physicalBackspaceMonitor.stop()
 		if m.ctrl != nil {
 			_ = m.ctrl.Snapshot()
 			m.followSessionLease()
@@ -2038,21 +2095,11 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
 		keyMsg = normalizeComposerKeyPress(keyMsg)
-		if m.shouldSuppressKittyHangulResidualCommit(keyMsg) {
-			m.traceComposerInputTransition(keyMsg, beforeInput, beforeInputLine, beforeInputColumn, true)
-			cmds = append(cmds, tea.ClearScreen)
-			return m, finalize(m, cmds)
-		}
-		if m.handleComposerGraphemeKey(keyMsg) {
-			m.traceComposerInputTransition(keyMsg, beforeInput, beforeInputLine, beforeInputColumn, true)
-			m.growInputToFit()
-			m.updateCompletion()
-			if shouldClearWideInputChange(beforeInput, m.input.Value()) {
-				cmds = append(cmds, tea.ClearScreen)
-			}
-			return m, finalize(m, cmds)
-		}
-		msg = keyMsg
+		cmds = m.editComposerKey(cmds,
+			keyMsg, beforeInput, beforeInputLine, beforeInputColumn,
+			physicalBackspaceEvidence, true,
+		)
+		return m, finalize(m, cmds)
 	}
 	var ic tea.Cmd
 	m.input, ic = m.input.Update(msg)
@@ -2068,6 +2115,43 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, finalize(m, cmds)
+}
+
+func (m *chatTUI) editComposerKey(
+	cmds []tea.Cmd,
+	keyMsg tea.KeyPressMsg,
+	beforeInput string,
+	beforeLine, beforeColumn int,
+	physicalBackspaceEvidence bool,
+	updateCompletion bool,
+) []tea.Cmd {
+	if m.shouldSuppressKittyHangulResidualCommit(keyMsg, physicalBackspaceEvidence) {
+		m.traceComposerInputTransition(keyMsg, beforeInput, beforeLine, beforeColumn, true)
+		return append(cmds, tea.ClearScreen)
+	}
+	if m.handleComposerGraphemeKey(keyMsg) {
+		m.traceComposerInputTransition(keyMsg, beforeInput, beforeLine, beforeColumn, true)
+		m.growInputToFit()
+		if updateCompletion {
+			m.updateCompletion()
+		}
+		if shouldClearWideInputChange(beforeInput, m.input.Value()) {
+			cmds = append(cmds, tea.ClearScreen)
+		}
+		return cmds
+	}
+	var inputCmd tea.Cmd
+	m.input, inputCmd = m.input.Update(keyMsg)
+	m.traceComposerInputTransition(keyMsg, beforeInput, beforeLine, beforeColumn, false)
+	m.growInputToFit()
+	if updateCompletion {
+		m.updateCompletion()
+	}
+	cmds = append(cmds, inputCmd)
+	if shouldClearWideInputChange(beforeInput, m.input.Value()) {
+		cmds = append(cmds, tea.ClearScreen)
+	}
+	return cmds
 }
 
 var clearWideInputChanges = runtime.GOOS == "windows"
@@ -3549,7 +3633,8 @@ func (m chatTUI) View() tea.View {
 				v.MouseMode = tea.MouseModeCellMotion
 			}
 		}
-		applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility)
+		applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility && !m.kittyHangulIMEBehindTmux)
+		v.ReportFocus = true
 		return v
 	}
 	boxW := max(m.width, 10)
@@ -3653,7 +3738,8 @@ func (m chatTUI) View() tea.View {
 				v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 			}
 		}
-		applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility)
+		applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility && !m.kittyHangulIMEBehindTmux)
+		v.ReportFocus = true
 		return v
 	}
 
@@ -3699,7 +3785,8 @@ func (m chatTUI) View() tea.View {
 			v.Cursor = clampCursorToTerminal(cur, m.width, m.height)
 		}
 	}
-	applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility)
+	applyKittyHangulKeyboardEnhancements(&v, m.kittyHangulIMECompatibility && !m.kittyHangulIMEBehindTmux)
+	v.ReportFocus = true
 	return v
 }
 
