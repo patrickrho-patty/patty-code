@@ -1735,7 +1735,7 @@ export const en = {
   "settings.compactRatioCustomValue": "{percent}% · Custom",
   "settings.compactRatioApply": "Apply",
   "settings.compactRatioCustomAria": "Custom compaction threshold percentage",
-  "settings.compactRatioCustomHint": "Set 65%–85%. Tool output is trimmed at 60%; 90% forces compaction. Press Enter to apply or Esc to cancel.",
+  "settings.compactRatioCustomHint": "Set 65%–97%. Tool output is trimmed at 60%; 98% forces compaction. Press Enter to apply or Esc to cancel.",
   "settings.compactRatioPreset.70": "70% · Earlier",
   "settings.compactRatioPreset.80": "80% · Balanced",
   "settings.compactRatioPreset.85": "85% · Cache first",

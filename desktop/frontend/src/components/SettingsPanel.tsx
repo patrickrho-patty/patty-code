@@ -3363,10 +3363,10 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
   const compactRatioCustomInputRef = useRef<HTMLInputElement>(null);
   const compactRatioPreset = COMPACT_RATIO_PRESETS.find(([ratio]) => Math.abs(compactRatio - ratio) < 0.0001);
   const compactRatioDraftPercent = Number(compactRatioDraft);
-  const compactRatioDraftValid = compactRatioDraft !== ""
-    && Number.isFinite(compactRatioDraftPercent)
-    && compactRatioDraftPercent >= 65
-    && compactRatioDraftPercent <= 85;
+	const compactRatioDraftValid = compactRatioDraft !== ""
+		&& Number.isFinite(compactRatioDraftPercent)
+		&& compactRatioDraftPercent >= 65
+		&& compactRatioDraftPercent <= 97;
   const compactRatioDraftDirty = compactRatioDraftValid
     && Math.abs(compactRatioDraftPercent / 100 - compactRatio) > 0.0001;
   const defaultModel = defaultRef.startsWith(`${defaultProvider}/`) ? defaultRef.slice(defaultProvider.length + 1) : "";
@@ -3709,8 +3709,8 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
                         id="settings-compact-ratio-custom"
                         className="mem-input set-narrow"
                         type="number"
-                        min={65}
-                        max={85}
+						min={65}
+						max={97}
                         step={0.1}
                         inputMode="decimal"
                         value={compactRatioDraft}

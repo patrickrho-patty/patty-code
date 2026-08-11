@@ -2679,7 +2679,7 @@ func formatCompactRatioPercent(ratio float64) string {
 func configUsage() {
 	fmt.Print(`Usage:
   patcode config reasoning-language [--local] [auto|ko-KR|en]
-  patcode config compact-ratio [--local] [65..85]
+  patcode config compact-ratio [--local] [65..97]
   patcode config currency [auto|CNY|USD]
   patcode config telemetry [auto|on|off]
 `)
@@ -2693,7 +2693,7 @@ func configTelemetryUsage() {
 
 func configCompactRatioUsage() {
 	fmt.Print(`Usage:
-  patcode config compact-ratio [--local] [65..85]
+  patcode config compact-ratio [--local] [65..97]
 `)
 }
 

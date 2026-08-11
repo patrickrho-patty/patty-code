@@ -354,7 +354,7 @@ let customCompactInput = compactRootEl.querySelector('input[aria-label="Custom c
 if (!customCompactInput) throw new Error("custom compaction threshold input did not open");
 eq(customCompactInput.value, "80", "custom compaction threshold defaults older backends to 80 percent");
 ok(compactRootEl.textContent?.includes("Tool output is trimmed at 60%") === true, "custom compact ratio explains the lower guard rail");
-ok(compactRootEl.textContent?.includes("90% forces compaction") === true, "custom compact ratio explains the upper guard rail");
+ok(compactRootEl.textContent?.includes("98% forces compaction") === true, "custom compact ratio explains the upper guard rail");
 ok(document.activeElement === customCompactInput, "opening the custom compact ratio moves focus to its input");
 ok(customCompactButton.getAttribute("aria-expanded") === "true", "custom compact ratio exposes its expanded state");
 ok(balancedCompactButton.getAttribute("aria-pressed") === "true", "opening custom editing preserves the saved preset selection");
@@ -375,7 +375,7 @@ await act(async () => {
 ok(customCompactApply.disabled, "out-of-range custom compact ratio cannot be applied");
 eq(compactRatioCalls.length, 0, "editing a custom compact ratio does not save eagerly");
 await act(async () => {
-  setCustomCompactInput(customCompactInput, "75");
+  setCustomCompactInput(customCompactInput, "95.9");
   await flushPromises();
 });
 ok(!customCompactApply.disabled, "valid custom compact ratio enables explicit apply");
@@ -384,9 +384,9 @@ await act(async () => {
   await flushPromises();
 });
 eq(compactRatioCalls.length, 1, "custom compact ratio mutation is invoked once after apply");
-eq(compactRatioCalls[0], 0.75, "custom compact ratio converts percentage to fraction");
+ok(Math.abs((compactRatioCalls[0] ?? 0) - 0.959) < 1e-12, "custom compact ratio converts percentage to fraction");
 ok(compactRootEl.querySelector('input[aria-label="Custom compaction threshold percentage"]') === null, "successful custom compact ratio apply collapses the editor");
-ok(compactRootEl.textContent?.includes("Current threshold: 75% · Custom") === true, "saved custom compact ratio is summarized independently from the disclosure");
+ok(compactRootEl.textContent?.includes("Current threshold: 95.9% · Custom") === true, "saved custom compact ratio is summarized independently from the disclosure");
 ok(customCompactButton.textContent?.includes("Custom threshold…") === true, "custom disclosure keeps an action label after saving");
 await act(async () => {
   customCompactButton.click();
