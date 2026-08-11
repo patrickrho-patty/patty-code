@@ -1378,7 +1378,7 @@ const LanguagePolicy = `Reply in the same language the user is using in their mo
 func Default() *Config {
 	return &Config{
 		ConfigVersion:    5,
-		DefaultModel:     "deepseek-flash",
+		DefaultModel:     "patty/medium",
 		CredentialsStore: CredentialsStoreAuto,
 		UI:               UIConfig{Theme: "auto", ShowTurnUsage: true},
 		Desktop:          DesktopConfig{DefaultToolApprovalMode: "auto", ConversationWidth: "standard"},
@@ -1395,8 +1395,8 @@ func Default() *Config {
 			AutoPlan:               "off",
 			SoftCompactRatio:       0.5,
 			ToolResultSnipRatio:    0.6,
-			CompactRatio:           0.8,
-			CompactForceRatio:      0.9,
+			CompactRatio:           float64(238123) / float64(248124),
+			CompactForceRatio:      0.98,
 			MaxSubagentDepth:       2,
 			MaxSubagentConcurrency: 6,
 			MaxParallelWriters:     3,
@@ -1417,10 +1417,14 @@ func Default() *Config {
 			Pairing:            BotPairingConfig{Enabled: true, RequestTTLMinutes: 60, MaxPendingPerPlatform: 3},
 			Allowlist:          BotAllowlist{Enabled: true},
 		},
-		Providers: []ProviderEntry{
-			{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY", BalanceURL: "https://api.deepseek.com/user/balance", ContextWindow: 1_000_000, Price: deepSeekV4FlashPriceUSD()},
-			{Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", APIKeyEnv: "DEEPSEEK_API_KEY", BalanceURL: "https://api.deepseek.com/user/balance", ContextWindow: 1_000_000, Price: deepSeekV4ProPriceUSD()},
-		},
+		Providers: []ProviderEntry{{
+			Name:          "patty",
+			Kind:          "openai",
+			BaseURL:       "https://omni.agents.patty.io/v1",
+			Model:         "medium",
+			APIKeyEnv:     "AGENTS_PATTY_API_KEY",
+			ContextWindow: 248124,
+		}},
 	}
 }
 

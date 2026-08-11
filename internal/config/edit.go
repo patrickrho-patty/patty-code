@@ -426,8 +426,8 @@ func (c *Config) SetColdResumePrune(enabled bool) error {
 // the threshold cannot accidentally turn normal cache growth into constant
 // compaction, while higher values still retain context-exhaustion headroom.
 func (c *Config) SetCompactRatio(ratio float64) error {
-	if math.IsNaN(ratio) || math.IsInf(ratio, 0) || ratio < 0.65 || ratio > 0.85 {
-		return fmt.Errorf("compact ratio %v: must be between 0.65 and 0.85", ratio)
+	if math.IsNaN(ratio) || math.IsInf(ratio, 0) || ratio < 0.65 || ratio > 0.97 {
+		return fmt.Errorf("compact ratio %v: must be between 0.65 and 0.97", ratio)
 	}
 	snip := c.Agent.ToolResultSnipRatio
 	force := c.Agent.CompactForceRatio
