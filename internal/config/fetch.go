@@ -25,10 +25,16 @@ var knownModelFetchCompatSuffixes = []string{
 // FetchModels queries the provider's OpenAI-compatible GET /models endpoint and
 // returns the available model IDs, sorted alphabetically.
 func (e *ProviderEntry) FetchModels(ctx context.Context) ([]string, error) {
+	return e.FetchModelsWithAPIKey(ctx, e.APIKey())
+}
+
+// FetchModelsWithAPIKey runs canonical model discovery with an explicit,
+// unsaved credential. Setup and onboarding use it to validate a key before
+// committing it to Patty Code's credential store.
+func (e *ProviderEntry) FetchModelsWithAPIKey(ctx context.Context, key string) ([]string, error) {
 	if e.BaseURL == "" {
 		return nil, fmt.Errorf("fetch models: provider %q has no base_url", e.Name)
 	}
-	key := e.APIKey()
 	if e.RequiresAPIKey() && key == "" {
 		return nil, fmt.Errorf("fetch models: provider %q has no API key (set %s in .env)", e.Name, e.APIKeyEnv)
 	}

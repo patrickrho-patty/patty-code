@@ -84,7 +84,7 @@ function baseSettings(displayMode: "standard" | "compact" = "standard"): Setting
     permissions: { mode: "ask", allow: [], ask: [], deny: [] },
     sandbox: { bash: "enforce", network: false, workspaceRoot: "", allowWrite: [], effectiveWorkspaceRoot: "/work", effectiveWriteRoots: ["/work"], shell: "auto" },
     network: { proxyMode: "auto", proxyUrl: "", noProxy: "", proxy: { type: "socks5", server: "", port: 0, username: "", password: "" } },
-    agent: { temperature: 0, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: 0.8 },
+    agent: { temperature: 0, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: 0.8, compactForceRatio: 0.98, toolResultSnipRatio: 0.6, compactRatioMin: 0.65, compactRatioMax: 0.97 },
     bot: {
       enabled: false,
       model: "",
@@ -283,7 +283,6 @@ const compactRootEl = document.createElement("div");
 document.body.appendChild(compactRootEl);
 const compactRoot = createRoot(compactRootEl);
 let compactSettings = baseSettings("standard");
-delete compactSettings.agent.compactRatio; // Old backends omit the additive field.
 compactSettings.agent.effectiveCompactRatio = 0.75;
 compactSettings.agent.compactRatioOverridden = true;
 compactSettings.defaultModel = "context-provider/context-model";
@@ -352,9 +351,9 @@ await act(async () => {
 });
 let customCompactInput = compactRootEl.querySelector('input[aria-label="Custom compaction threshold percentage"]') as HTMLInputElement | null;
 if (!customCompactInput) throw new Error("custom compaction threshold input did not open");
-eq(customCompactInput.value, "80", "custom compaction threshold defaults older backends to 80 percent");
-ok(compactRootEl.textContent?.includes("Tool output is trimmed at 60%") === true, "custom compact ratio explains the lower guard rail");
-ok(compactRootEl.textContent?.includes("98% forces compaction") === true, "custom compact ratio explains the upper guard rail");
+eq(customCompactInput.value, "80", "custom compaction threshold starts from the saved ratio");
+ok(compactRootEl.textContent?.includes("above the 60% tool-trim boundary") === true, "custom compact ratio explains the lower guard rail");
+ok(compactRootEl.textContent?.includes("below the 98% force boundary") === true, "custom compact ratio explains the upper guard rail");
 ok(document.activeElement === customCompactInput, "opening the custom compact ratio moves focus to its input");
 ok(customCompactButton.getAttribute("aria-expanded") === "true", "custom compact ratio exposes its expanded state");
 ok(balancedCompactButton.getAttribute("aria-pressed") === "true", "opening custom editing preserves the saved preset selection");

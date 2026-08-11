@@ -248,13 +248,15 @@ Long tasks eventually fill the model's context window. Patty Code manages this w
   tiered: below `agent.tool_result_snip_ratio` (default `0.6`) the session is
   left untouched apart from the soft notice; at the snip ratio, stale tool
   results before the recent tail are archived and shortened with deterministic
-  head/tail markers; at `agent.compact_ratio` (default `0.8`) stale tool results
+  head/tail markers; at `agent.compact_ratio` (stock default
+  `238123 / 248124`, or about `0.9597`) stale tool results
   are archived and pruned to short placeholders before any summary call; only if
   pruning still leaves the prompt above the threshold does summary compaction
-  run. At `agent.compact_force_ratio` (default `0.9`), the existing forced fold
+  run. At `agent.compact_force_ratio` (default `0.98`), the existing forced fold
   may proceed even when the fold economics would normally skip it.
-- Users can inspect or change the 65–85% automatic threshold with
-  `patcode config compact-ratio [--local] [VALUE]`. The default is 80%; the
+- Users can inspect or change the 65–97% automatic threshold with
+  `patcode config compact-ratio [--local] [VALUE]`. The stock Patty medium
+  threshold is exactly 238,123 tokens in its 248,124-token context; the
   project-local value overrides the shared user config used by desktop and new
   CLI sessions.
 - A positive `model_overrides.<model>.context_window` replaces the provider-wide
@@ -671,7 +673,7 @@ feeds workspace-scoped, non-provider `${VAR}` expansion for MCP/plugin settings
 without importing provider keys or Patty Code control variables.
 
 ```toml
-default_model = "deepseek"   # provider name (→ its default model) or "provider/model"
+default_model = "patty/medium"   # provider name (→ its default model) or "provider/model"
 # language    = "ko-KR"             # UI language tag; empty = Korean default; set en for English
 
 [ui]
@@ -683,26 +685,27 @@ show_turn_usage = false              # hide per-request token/cost receipts in t
 system_prompt = "You are Patty Code, a coding agent..."  # or system_prompt_file = "..."
 temperature       = 0.0
 reasoning_language = "auto"       # visible reasoning text: auto|ko-KR|en
+compact_ratio = 0.9596935403266109   # exactly 238123 of the 248124-token context
+compact_force_ratio = 0.98
 # plan_mode_read_only_commands = ["gh issue view"]   # legacy compatibility only; Plan bash uses Permissions
-# planner_model = "deepseek-pro"   # optional: two-model collaboration (low-frequency planner)
-# subagent_model = "deepseek-pro"   # optional default for runAs=subagent skills
+# planner_model = "patty/medium"   # optional: two-model collaboration (low-frequency planner)
+# subagent_model = "patty/medium"   # optional default for runAs=subagent skills
 # subagent_effort = "high"           # optional default reasoning effort for subagents
-# subagent_models = { review = "deepseek-pro", security_review = "deepseek-pro" }
+# subagent_models = { review = "patty/medium", security_review = "patty/medium" }
 # subagent_efforts = { review = "max", security_review = "high" }
 
-# A vendor endpoint exposing several models under one base_url/key.
+# The stock managed Patty endpoint.
 [[providers]]
-name           = "deepseek"
+name           = "patty"
 kind           = "openai"
-base_url       = "https://api.deepseek.com"
+base_url       = "https://omni.agents.patty.io/v1"
 # chat_url     = "https://proxy.example.com/v1/chat/completions"   # optional full chat request URL
 # models_url   = "https://proxy.example.com/v1/models"             # optional model discovery URL
-models         = ["deepseek-v4-flash", "deepseek-v4-pro"]
-default        = "deepseek-v4-flash"   # optional; defaults to models[0]
-api_key_env    = "DEEPSEEK_API_KEY"
-context_window = 1000000   # tokens; harness compacts older history near this limit (0 disables)
-max_output_tokens = 32768  # total visible + reasoning + tool-call output; 0 = provider default
-# model_overrides = { "deepseek-v4-flash" = { context_window = 1000000, max_output_tokens = 32768 } }
+model          = "medium"
+api_key_env    = "AGENTS_PATTY_API_KEY"
+context_window = 248124   # tokens; stock compaction begins at exactly 238123
+# max_output_tokens = 32768  # total visible + reasoning + tool-call output; 0 = provider default
+# model_overrides = { "medium" = { context_window = 248124, max_output_tokens = 32768 } }
 
 # A single-model entry still works for custom OpenAI-compatible endpoints.
 
@@ -832,4 +835,6 @@ Linux): each command is allowed to write only
 the same roots plus platform-specific command temp/cache roots, denied reads
 under `forbid_read`, and allowed to reach the network only when
 `network = true`.
-**Windows status:** Patty Code does not shi
+**Windows status:** Patty Code does not ship an OS-level Bash sandbox on
+Windows. Its effective Bash sandbox mode is `off`, while the in-process file
+tools continue to enforce workspace and read-deny boundaries.

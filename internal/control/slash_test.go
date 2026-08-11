@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"patty/internal/config"
 	"patty/internal/event"
 	"patty/internal/i18n"
 	"patty/internal/instruction"
@@ -32,6 +33,16 @@ func has(items []SlashItem, label string) bool {
 }
 
 func TestSlashArgItems(t *testing.T) {
+	t.Setenv("PATTY_HOME", t.TempDir())
+	cfg := config.Default()
+	cfg.Providers = append(cfg.Providers, config.ProviderEntry{
+		Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com",
+		Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY",
+		SupportedEfforts: []string{"disabled", "low", "high", "max"}, DefaultEffort: "high",
+	})
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save effort fixture: %v", err)
+	}
 	previousLanguage := i18n.CurrentLanguage()
 	t.Cleanup(func() { i18n.DetectLanguage(previousLanguage) })
 	i18n.DetectLanguage("en")

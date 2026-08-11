@@ -88,7 +88,12 @@ func TestEnsureBlankTabUsesGlobalSessionDefaultsForModelAndToolApproval(t *testi
 	}
 
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if err := cfg.SetDefaultModel("deepseek-pro/deepseek-v4-pro"); err != nil {
+	entries, _, err := officialProviderTemplate("deepseek", "en")
+	if err != nil {
+		t.Fatalf("officialProviderTemplate: %v", err)
+	}
+	cfg.Providers = append(cfg.Providers, entries...)
+	if err := cfg.SetDefaultModel("deepseek/deepseek-v4-pro"); err != nil {
 		t.Fatalf("SetDefaultModel: %v", err)
 	}
 	if err := cfg.SetDesktopDefaultToolApprovalMode(control.ToolApprovalAuto); err != nil {
@@ -105,7 +110,7 @@ func TestEnsureBlankTabUsesGlobalSessionDefaultsForModelAndToolApproval(t *testi
 		WorkspaceRoot:    workspace,
 		TopicID:          "topic_src",
 		SessionPath:      filepath.Join(workspace, "src.jsonl"),
-		model:            "deepseek-flash/deepseek-v4-flash",
+		model:            "patty/medium",
 		mode:             "plan",
 		toolApprovalMode: control.ToolApprovalAsk,
 		disabledMCP:      map[string]ServerView{},
@@ -123,13 +128,13 @@ func TestEnsureBlankTabUsesGlobalSessionDefaultsForModelAndToolApproval(t *testi
 	if created == nil {
 		t.Fatalf("new tab %q missing from app.tabs", meta.ID)
 	}
-	if created.model != "deepseek-pro/deepseek-v4-pro" {
+	if created.model != "deepseek/deepseek-v4-pro" {
 		t.Fatalf("new tab model = %q, want global default model", created.model)
 	}
 	if created.toolApprovalMode != control.ToolApprovalAuto {
 		t.Fatalf("new tab toolApprovalMode = %q, want global default auto", created.toolApprovalMode)
 	}
-	if src.model != "deepseek-flash/deepseek-v4-flash" || src.toolApprovalMode != control.ToolApprovalAsk {
+	if src.model != "patty/medium" || src.toolApprovalMode != control.ToolApprovalAsk {
 		t.Fatalf("existing tab should not be overwritten, got model=%q approval=%q", src.model, src.toolApprovalMode)
 	}
 	if !strings.Contains(filepath.Base(created.SessionPath), "deepseek-v4-pro") {
@@ -434,9 +439,6 @@ func TestDesktopNewSessionDefaultsSkipsKeylessDefaultModel(t *testing.T) {
 		Model:     "test-model",
 		APIKeyEnv: "PATTY_TEST_SESSION_KEY",
 	})
-	if err := cfg.SetDefaultModel("deepseek-pro/deepseek-v4-pro"); err != nil {
-		t.Fatalf("SetDefaultModel: %v", err)
-	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save user config: %v", err)
 	}
@@ -449,18 +451,15 @@ func TestDesktopNewSessionDefaultsSkipsKeylessDefaultModel(t *testing.T) {
 
 func TestDesktopNewSessionDefaultsKeepsConfiguredDefaultModel(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	seedUserCredentials(t, "DEEPSEEK_API_KEY=test-key\n")
+	seedUserCredentials(t, "AGENTS_PATTY_API_KEY=test-key\n")
 
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if err := cfg.SetDefaultModel("deepseek-pro/deepseek-v4-pro"); err != nil {
-		t.Fatalf("SetDefaultModel: %v", err)
-	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save user config: %v", err)
 	}
 
 	model, _ := desktopNewSessionDefaults("global", "")
-	if model != "deepseek-pro/deepseek-v4-pro" {
+	if model != "patty/medium" {
 		t.Fatalf("new session model = %q, want configured default verbatim", model)
 	}
 }
@@ -470,9 +469,6 @@ func TestDesktopNewSessionDefaultsKeepsKeylessDefaultWhenNothingConfigured(t *te
 	// No credentials seeded: every provider resolves as unconfigured.
 
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if err := cfg.SetDefaultModel("deepseek-pro/deepseek-v4-pro"); err != nil {
-		t.Fatalf("SetDefaultModel: %v", err)
-	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save user config: %v", err)
 	}
@@ -480,7 +476,7 @@ func TestDesktopNewSessionDefaultsKeepsKeylessDefaultWhenNothingConfigured(t *te
 	// With no configured provider at all, the raw default must survive so the
 	// boot-time missing-key notice still tells the user what to fix.
 	model, _ := desktopNewSessionDefaults("global", "")
-	if model != "deepseek-pro/deepseek-v4-pro" {
+	if model != "patty/medium" {
 		t.Fatalf("new session model = %q, want raw keyless default preserved", model)
 	}
 }

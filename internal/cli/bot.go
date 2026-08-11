@@ -448,7 +448,7 @@ Subcommands:
 
 Examples:
   patcode bot start --channels my-channel
-  patcode bot start --dir /path/to/project --model deepseek-pro
+  patcode bot start --dir /path/to/project --model patty/medium
   patcode bot doctor --json
 
 Configuration:
@@ -458,6 +458,7 @@ Configuration:
     [bot.pairing]   enabled / request_ttl_minutes / max_pending_per_platform
     [bot.allowlist]  enabled / users / approvers / admins / groups
 
-  All secrets are read from environment variables; never put keys in config files.
+  Bot transport secrets use environment variables. Provider keys belong in Patty's
+  credential store; never put secrets in config files.
 `)
 }

@@ -161,6 +161,10 @@ type AgentView struct {
 	ColdResumePrune        bool    `json:"coldResumePrune"`
 	ReasoningLanguage      string  `json:"reasoningLanguage"`
 	CompactRatio           float64 `json:"compactRatio,omitempty"`
+	CompactForceRatio      float64 `json:"compactForceRatio,omitempty"`
+	ToolResultSnipRatio    float64 `json:"toolResultSnipRatio,omitempty"`
+	CompactRatioMin        float64 `json:"compactRatioMin,omitempty"`
+	CompactRatioMax        float64 `json:"compactRatioMax,omitempty"`
 	EffectiveCompactRatio  float64 `json:"effectiveCompactRatio,omitempty"`
 	CompactRatioOverridden bool    `json:"compactRatioOverridden,omitempty"`
 }
@@ -517,6 +521,9 @@ func officialProviderHost(baseURL string) string {
 
 func officialProviderKindFromEntry(p config.ProviderEntry) string {
 	host := officialProviderHost(p.BaseURL)
+	if strings.TrimSpace(p.Name) == "patty" && host == "omni.agents.patty.io" {
+		return "patty"
+	}
 	switch config.CanonicalDesktopOfficialProviderName(p.Name) {
 	case "deepseek":
 		if host == "api.deepseek.com" {
@@ -639,7 +646,7 @@ func officialProviderViewsForRootWithResolver(added map[string]bool, pricingLang
 		resolver = config.NewCredentialResolverForRoot(root)
 	}
 	credentialsRevision := providerCredentialsRevision()
-	for _, kind := range []string{"deepseek"} {
+	for _, kind := range []string{"patty", "deepseek"} {
 		entries, _, err := officialProviderTemplate(kind, pricingLanguage)
 		if err != nil {
 			continue
@@ -951,6 +958,10 @@ func (a *App) Settings() SettingsView {
 				ColdResumePrune:        true,
 				ReasoningLanguage:      "auto",
 				CompactRatio:           config.Default().Agent.CompactRatio,
+				CompactForceRatio:      config.Default().Agent.CompactForceRatio,
+				ToolResultSnipRatio:    config.Default().Agent.ToolResultSnipRatio,
+				CompactRatioMin:        config.CompactRatioEditableMin,
+				CompactRatioMax:        config.CompactRatioEditableMax,
 				EffectiveCompactRatio:  config.Default().Agent.CompactRatio,
 			},
 			Bot:                     botSettingsView(config.BotConfig{}),
@@ -1029,6 +1040,10 @@ func (a *App) Settings() SettingsView {
 			ColdResumePrune:        cfg.ColdResumePruneEnabled(),
 			ReasoningLanguage:      cfg.ReasoningLanguage(),
 			CompactRatio:           cfg.Agent.CompactRatio,
+			CompactForceRatio:      cfg.Agent.CompactForceRatio,
+			ToolResultSnipRatio:    cfg.Agent.ToolResultSnipRatio,
+			CompactRatioMin:        config.CompactRatioEditableMin,
+			CompactRatioMax:        config.CompactRatioEditableMax,
 			EffectiveCompactRatio:  cfg.Agent.CompactRatio,
 		},
 		Bot:                     botSettingsView(cfg.Bot),
@@ -2152,6 +2167,13 @@ func (a *App) SetDefaultAutoRecoveryCheckpoint(_ bool) error { return nil }
 
 func officialProviderTemplate(kind, pricingLanguage string) ([]config.ProviderEntry, string, error) {
 	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "patty", "patty-official":
+		stock := config.Default()
+		entry, ok := stock.Provider("patty")
+		if !ok {
+			return nil, "", fmt.Errorf("stock Patty provider is unavailable")
+		}
+		return []config.ProviderEntry{*entry}, entry.APIKeyEnv, nil
 	case "deepseek", "deepseek-official":
 		return []config.ProviderEntry{{
 			Name:          "deepseek",
@@ -2451,29 +2473,108 @@ func (a *App) AddOfficialProviderAccess(kind, key string) (string, error) {
 	if err := a.ensureActiveTabRebuildAllowed("provider access"); err != nil {
 		return "", err
 	}
-	keyWarning := ""
-	if strings.TrimSpace(key) != "" && keyEnv != "" {
-		var err error
-		keyWarning, err = a.saveProviderCredential(keyEnv, key)
-		if err != nil {
-			return "", err
-		}
-	}
-	rebuildWarning, err := a.applyConfigChangeWithWarning("provider access", func(c *config.Config) error {
-		names := make([]string, 0, len(entries))
-		for _, e := range entries {
-			if err := c.UpsertProvider(e); err != nil {
-				return err
-			}
-			names = append(names, e.Name)
-		}
-		addProviderAccess(c, names...)
-		return nil
-	})
+	keyWarning, err := a.saveOfficialProviderAccessWithKey(entries, keyEnv, key)
 	if err != nil {
 		return "", err
 	}
+	rebuildWarning := ""
+	if err := a.rebuildSetting("provider access"); err != nil {
+		if warning, ok := a.deferredRebuildWarning("provider access", err); ok {
+			rebuildWarning = warning
+		} else {
+			return "", err
+		}
+	}
 	return appendSettingsWarning(keyWarning, rebuildWarning), nil
+}
+
+// saveOfficialProviderAccessWithKey keeps provider compatibility validation,
+// credential persistence, and the config commit under one cross-process lock
+// order. A competing config edit therefore cannot turn a validated official
+// provider into a conflict after its credential has been stored.
+func (a *App) saveOfficialProviderAccessWithKey(entries []config.ProviderEntry, keyEnv, key string) (string, error) {
+	unlockConfig := config.LockUserConfigEdits()
+	defer unlockConfig()
+	cfg, path, err := a.loadDesktopUserConfigForEdit()
+	if err != nil {
+		return "", err
+	}
+	if err := ensureOfficialProviderEntries(cfg, entries); err != nil {
+		return "", err
+	}
+
+	keyEnv = strings.TrimSpace(keyEnv)
+	key = strings.TrimSpace(key)
+	keyWarning := ""
+	var rollbackCredential func() error
+	if key != "" && keyEnv != "" {
+		unlockCredentials, err := config.LockUserCredentialEdits()
+		if err != nil {
+			return "", err
+		}
+		defer unlockCredentials()
+		rollbackCredential, err = config.CredentialRollbackLocked(keyEnv)
+		if err != nil {
+			return "", err
+		}
+		if _, err := config.SetCredentialLocked(keyEnv, key); err != nil {
+			return "", err
+		}
+		keyWarning = providerCredentialSourceNotice(keyEnv, key)
+	}
+	if a.officialProviderBeforeConfigSaveHook != nil {
+		a.officialProviderBeforeConfigSaveHook()
+	}
+	if err := cfg.SaveTo(path); err != nil {
+		if rollbackCredential != nil {
+			if rollbackErr := rollbackCredential(); rollbackErr != nil {
+				return "", errors.Join(err, fmt.Errorf("restore provider credential: %w", rollbackErr))
+			}
+		}
+		return "", err
+	}
+	return keyWarning, nil
+}
+
+// ensureOfficialProviderEntries restores the stock wire contract and records
+// access while retaining safe transport customizations such as extra headers.
+func ensureOfficialProviderEntries(c *config.Config, entries []config.ProviderEntry) error {
+	if err := validateOfficialProviderEntries(c, entries); err != nil {
+		return err
+	}
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		existing, ok := c.Provider(entry.Name)
+		if ok {
+			next := officialProviderEntryWithSafeCustomizations(*existing, entry)
+			if err := c.UpsertProvider(next); err != nil {
+				return err
+			}
+		} else if err := c.UpsertProvider(entry); err != nil {
+			return err
+		}
+		names = append(names, entry.Name)
+	}
+	addProviderAccess(c, names...)
+	return nil
+}
+
+func officialProviderEntryWithSafeCustomizations(existing, stock config.ProviderEntry) config.ProviderEntry {
+	stock.Headers = existing.Headers
+	stock.ExtraBody = existing.ExtraBody
+	stock.NoProxy = existing.NoProxy
+	stock.CacheTTLMinutes = existing.CacheTTLMinutes
+	return stock
+}
+
+func validateOfficialProviderEntries(c *config.Config, entries []config.ProviderEntry) error {
+	for _, entry := range entries {
+		existing, ok := c.Provider(entry.Name)
+		if ok && officialProviderKindFromEntry(*existing) != officialProviderKindFromEntry(entry) {
+			return fmt.Errorf("provider %q conflicts with the official provider", entry.Name)
+		}
+	}
+	return nil
 }
 
 // AddProviderPresetAccess installs one editable custom-provider preset. Unlike
@@ -3088,6 +3189,17 @@ func (a *App) ensureProviderAccessForKey(apiKeyEnv string) error {
 			addAccess(config.CanonicalDesktopOfficialProviderName(p.Name))
 		} else {
 			addAccess(strings.TrimSpace(p.Name))
+		}
+	}
+	if !changed {
+		for _, entry := range config.Default().Providers {
+			if strings.TrimSpace(entry.APIKeyEnv) != apiKeyEnv || len(entry.ModelList()) == 0 {
+				continue
+			}
+			if err := cfg.UpsertProvider(entry); err != nil {
+				return err
+			}
+			addAccess(entry.Name)
 		}
 	}
 	if !changed && apiKeyEnv == "DEEPSEEK_API_KEY" {

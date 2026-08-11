@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -814,16 +815,16 @@ func TestConfigCompactRatioCommandWritesUserConfigAndReportsSource(t *testing.T)
 	}
 
 	out := captureStdout(t, func() {
-		if rc := Run([]string{"config", "compact-ratio", "75.5"}, "test-version"); rc != 0 {
+		if rc := Run([]string{"config", "compact-ratio", "95.9"}, "test-version"); rc != 0 {
 			t.Fatalf("config compact-ratio rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "compact_ratio = 75.5%") || !strings.Contains(out, "user:") {
+	if !strings.Contains(out, "compact_ratio = 95.9%") || !strings.Contains(out, "user:") {
 		t.Fatalf("config compact-ratio output = %q", out)
 	}
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if got := cfg.Agent.CompactRatio; got != 0.755 {
-		t.Fatalf("saved compact ratio = %v, want 0.755", got)
+	if got := cfg.Agent.CompactRatio; math.Abs(got-0.959) > 1e-12 {
+		t.Fatalf("saved compact ratio = %v, want 0.959", got)
 	}
 	if got := cfg.Agent.Temperature; got != 0.42 {
 		t.Fatalf("compact-ratio update changed temperature to %v, want 0.42", got)
@@ -834,7 +835,7 @@ func TestConfigCompactRatioCommandWritesUserConfigAndReportsSource(t *testing.T)
 			t.Fatalf("config compact-ratio query rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "compact_ratio = 75.5%") || !strings.Contains(out, "user:") {
+	if !strings.Contains(out, "compact_ratio = 95.9%") || !strings.Contains(out, "user:") {
 		t.Fatalf("config compact-ratio query output = %q", out)
 	}
 }
@@ -902,17 +903,89 @@ func TestConfigCompactRatioLocalCreatesMinimalProjectOverride(t *testing.T) {
 	}
 }
 
+func TestConfigCompactRatioLocalHonorsInheritedUserThresholds(t *testing.T) {
+	tests := []struct {
+		name      string
+		ratio     string
+		configure func(*config.Config)
+	}{
+		{
+			name:  "force ratio",
+			ratio: "95",
+			configure: func(cfg *config.Config) {
+				cfg.Agent.CompactRatio = 0.8
+				cfg.Agent.CompactForceRatio = 0.9
+			},
+		},
+		{
+			name:  "tool result snip ratio",
+			ratio: "70",
+			configure: func(cfg *config.Config) {
+				cfg.Agent.CompactRatio = 0.85
+				cfg.Agent.ToolResultSnipRatio = 0.8
+			},
+		},
+	}
+	for _, test := range tests {
+		for _, existingProject := range []bool{false, true} {
+			projectState := "new project"
+			if existingProject {
+				projectState = "existing project"
+			}
+			t.Run(test.name+"/"+projectState, func(t *testing.T) {
+				isolateCLIConfigHome(t)
+				userCfg := config.Default()
+				test.configure(userCfg)
+				if err := userCfg.SaveTo(config.UserConfigPath()); err != nil {
+					t.Fatalf("write user config: %v", err)
+				}
+
+				var before []byte
+				if existingProject {
+					before = []byte("[agent]\ntemperature = 0.42\n")
+					if err := os.WriteFile("patty.toml", before, 0o600); err != nil {
+						t.Fatalf("write project config: %v", err)
+					}
+				}
+
+				errOut := captureStderr(t, func() {
+					if rc := Run([]string{"config", "compact-ratio", "--local", test.ratio}, "test-version"); rc != 2 {
+						t.Fatalf("config compact-ratio --local %s rc = %d, want 2", test.ratio, rc)
+					}
+				})
+				if !strings.Contains(errOut, "compact ratio") {
+					t.Fatalf("config compact-ratio --local stderr = %q", errOut)
+				}
+
+				after, err := os.ReadFile("patty.toml")
+				if !existingProject {
+					if !os.IsNotExist(err) {
+						t.Fatalf("rejected local override created project config, err=%v body=%q", err, after)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("read existing project config: %v", err)
+				}
+				if string(after) != string(before) {
+					t.Fatalf("rejected local override changed project config:\n%s", after)
+				}
+			})
+		}
+	}
+}
+
 func TestConfigCompactRatioRejectsValuesOutsideEditableRange(t *testing.T) {
 	isolateCLIConfigHome(t)
 
-	for _, value := range []string{"64", "86", "NaN", "+Inf", "not-a-number"} {
+	for _, value := range []string{"64", "98", "NaN", "+Inf", "not-a-number"} {
 		t.Run(value, func(t *testing.T) {
 			errOut := captureStderr(t, func() {
 				if rc := Run([]string{"config", "compact-ratio", value}, "test-version"); rc != 2 {
 					t.Fatalf("config compact-ratio %s rc = %d, want 2", value, rc)
 				}
 			})
-			if !strings.Contains(errOut, "percentage between 65 and 85") {
+			if !strings.Contains(errOut, "finite percentage") && !strings.Contains(errOut, "between 0.65 and 0.97") {
 				t.Fatalf("config compact-ratio %s stderr = %q", value, errOut)
 			}
 		})
@@ -974,6 +1047,7 @@ func TestConfigCurrencyRejectsProjectScope(t *testing.T) {
 }
 
 func TestProvidersWithMissingKeysOnlyChecksActiveDefaultModel(t *testing.T) {
+	isolateCLIConfigHome(t)
 	cfg := config.Default()
 	t.Setenv("AGENTS_PATTY_API_KEY", "")
 	t.Setenv("MIMO_API_KEY", "")
@@ -987,9 +1061,22 @@ func TestProvidersWithMissingKeysOnlyChecksActiveDefaultModel(t *testing.T) {
 	}
 }
 
+func TestProvidersWithMissingKeysIgnoresInheritedEnvironment(t *testing.T) {
+	isolateCLIConfigHome(t)
+	t.Setenv("AGENTS_PATTY_API_KEY", "inherited-only")
+
+	missing := providersWithMissingKeys(config.Default())
+	if len(missing) != 1 || missing[0].APIKeyEnv != "AGENTS_PATTY_API_KEY" {
+		t.Fatalf("inherited process key suppressed missing-store prompt: %+v", missing)
+	}
+}
+
 func TestProvidersWithMissingKeysIgnoresUnusedBuiltInPresets(t *testing.T) {
+	isolateCLIConfigHome(t)
 	cfg := config.Default()
-	t.Setenv("AGENTS_PATTY_API_KEY", "test-key")
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+		t.Fatalf("SetCredential: %v", err)
+	}
 	t.Setenv("MIMO_API_KEY", "")
 
 	if missing := providersWithMissingKeys(cfg); len(missing) != 0 {
@@ -998,6 +1085,7 @@ func TestProvidersWithMissingKeysIgnoresUnusedBuiltInPresets(t *testing.T) {
 }
 
 func TestProvidersWithMissingKeysIncludesReferencedSecondaryModels(t *testing.T) {
+	isolateCLIConfigHome(t)
 	cfg := config.Default()
 	cfg.Providers = append(cfg.Providers,
 		config.ProviderEntry{Name: "mimo-pro", Kind: "openai", BaseURL: "https://token-plan-cn.xiaomimimo.com/v1", Model: "mimo-v2.5-pro", APIKeyEnv: "MIMO_API_KEY"},
@@ -1008,7 +1096,9 @@ func TestProvidersWithMissingKeysIncludesReferencedSecondaryModels(t *testing.T)
 	cfg.Agent.SubagentModels = map[string]string{
 		"review": "mimo-pro/mimo-v2.5-pro",
 	}
-	t.Setenv("AGENTS_PATTY_API_KEY", "test-key")
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+		t.Fatalf("SetCredential: %v", err)
+	}
 	t.Setenv("MIMO_API_KEY", "")
 
 	missing := providersWithMissingKeys(cfg)
@@ -2026,7 +2116,7 @@ func TestWithBuiltinFamiliesDoesNotAddMissingMimo(t *testing.T) {
 }
 
 func TestWithBuiltinFamiliesUsesPattyMedium(t *testing.T) {
-	providers := withBuiltinFamiliesForLanguage(nil, "ko-KR")
+	providers := withBuiltinFamilies(nil)
 	if len(providers) != 1 || providers[0].Name != "patty" || providers[0].Model != "medium" {
 		t.Fatalf("built-in providers = %+v, want Patty medium", providers)
 	}
@@ -2113,6 +2203,7 @@ func captureCLIOutput(t *testing.T, fn func()) (stdout, stderr string) {
 }
 
 func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
+	isolateCLIConfigHome(t)
 	t.Setenv("AGENTS_PATTY_API_KEY", "")
 	t.Setenv("MIMO_API_KEY", "")
 	cfg := config.Default()
@@ -2131,7 +2222,10 @@ func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
 }
 
 func TestProvidersWithMissingKeysIncludesPlannerModel(t *testing.T) {
-	t.Setenv("AGENTS_PATTY_API_KEY", "set")
+	isolateCLIConfigHome(t)
+	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+		t.Fatalf("SetCredential: %v", err)
+	}
 	t.Setenv("MIMO_API_KEY", "")
 	cfg := config.Default()
 	cfg.Providers = append(cfg.Providers, config.ProviderEntry{Name: "mimo-pro", Kind: "openai", BaseURL: "https://token-plan-cn.xiaomimimo.com/v1", Model: "mimo-v2.5-pro", APIKeyEnv: "MIMO_API_KEY"})

@@ -205,10 +205,7 @@ func TestSetDesktopTerminalThemeValidatesPreference(t *testing.T) {
 
 func TestDesktopCurrencyNormalizesAndRefreshesOfficialPricing(t *testing.T) {
 	c := Default()
-	c.Providers = []ProviderEntry{
-		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY", Price: deepSeekV4FlashPriceUSD()},
-		{Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", APIKeyEnv: "DEEPSEEK_API_KEY", Price: deepSeekV4ProPriceUSD()},
-	}
+	c.Providers = legacyDeepSeekProviderEntries()
 	c.Desktop.Language = "ko-KR"
 	if err := c.SetDesktopCurrency("usd"); err != nil {
 		t.Fatalf("SetDesktopCurrency USD: %v", err)

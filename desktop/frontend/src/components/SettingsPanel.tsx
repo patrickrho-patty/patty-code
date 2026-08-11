@@ -48,6 +48,8 @@ import { getProcessFoldPreference, onProcessFoldPreferenceChange, setProcessFold
 import { DEFAULT_STATUS_BAR_ITEMS, normalizeStatusBarItems, type StatusBarItemId } from "../lib/statusBarItems";
 import { normalizeToolApprovalMode } from "../lib/types";
 import { IM_FALLBACK_LABEL, imDisplayLabel } from "../lib/imPresentation";
+import { builtInProviderLabel } from "../lib/providerPresentation";
+import { COMPACT_RATIO_MIN, LEGACY_COMPACT_FORCE_RATIO, LEGACY_COMPACT_RATIO, LEGACY_COMPACT_RATIO_MAX, compactRatioDraftChanged, compactRatioEditableMax, compactRatioIsEditable, formatCompactRatioPercent } from "../lib/compactRatio";
 import {
   comboFromKeyboardEvent,
   detectShortcutPlatform,
@@ -1327,12 +1329,12 @@ function normalizeSettingsView(view: SettingsView | null | undefined): SettingsV
     noProxy: "",
     proxy: { type: "socks5", server: "", port: 0, username: "", password: "" },
   };
-  const agent = view.agent ?? { temperature: 0, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: 0.8 };
+  const agent = view.agent ?? { temperature: 0, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: LEGACY_COMPACT_RATIO };
   agent.plannerMaxSteps = Number.isFinite(agent.plannerMaxSteps) ? Math.max(0, Math.trunc(agent.plannerMaxSteps)) : 0;
   agent.maxSteps = Number.isFinite(agent.maxSteps) ? Math.max(0, Math.trunc(agent.maxSteps)) : 0;
   agent.maxSubagentDepth = Number.isFinite(agent.maxSubagentDepth) && agent.maxSubagentDepth <= 1 ? 1 : 2;
   agent.reasoningLanguage = normalizeReasoningLanguage(agent.reasoningLanguage);
-  agent.compactRatio = Number.isFinite(agent.compactRatio) && Number(agent.compactRatio) > 0 ? Number(agent.compactRatio) : 0.8;
+  agent.compactRatio = Number.isFinite(agent.compactRatio) && Number(agent.compactRatio) > 0 ? Number(agent.compactRatio) : LEGACY_COMPACT_RATIO;
   agent.effectiveCompactRatio = Number.isFinite(agent.effectiveCompactRatio) && Number(agent.effectiveCompactRatio) > 0
     ? Number(agent.effectiveCompactRatio)
     : agent.compactRatio;
@@ -3355,20 +3357,29 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
     : !providerIsConfigured(defaultProviderView)
       ? t("settings.modelNeedsKey", { provider: modelProviderLabel(defaultProvider, defaultProviderView, t) })
       : "";
-  const agent = s.agent ?? { temperature: 0, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: 0.8 };
-  const compactRatio = agent.compactRatio ?? 0.8;
-  const compactRatioPercent = Math.round(compactRatio * 1000) / 10;
-  const [compactRatioDraft, setCompactRatioDraft] = useState(() => String(compactRatioPercent));
+  const agent = s.agent ?? { temperature: 0, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: LEGACY_COMPACT_RATIO };
+  const compactRatio = agent.compactRatio ?? LEGACY_COMPACT_RATIO;
+  const compactRatioPercent = formatCompactRatioPercent(compactRatio);
+  const [compactRatioDraft, setCompactRatioDraft] = useState(() => compactRatioPercent);
+  const [compactRatioDraftTouched, setCompactRatioDraftTouched] = useState(false);
   const [compactRatioCustomOpen, setCompactRatioCustomOpen] = useState(false);
   const compactRatioCustomInputRef = useRef<HTMLInputElement>(null);
   const compactRatioPreset = COMPACT_RATIO_PRESETS.find(([ratio]) => Math.abs(compactRatio - ratio) < 0.0001);
   const compactRatioDraftPercent = Number(compactRatioDraft);
-	const compactRatioDraftValid = compactRatioDraft !== ""
-		&& Number.isFinite(compactRatioDraftPercent)
-		&& compactRatioDraftPercent >= 65
-		&& compactRatioDraftPercent <= 97;
+  const compactForceRatio = agent.compactForceRatio ?? LEGACY_COMPACT_FORCE_RATIO;
+  const compactRatioMin = agent.compactRatioMin ?? COMPACT_RATIO_MIN;
+  const compactRatioAbsoluteMax = agent.compactRatioMax ?? LEGACY_COMPACT_RATIO_MAX;
+  const toolResultSnipRatio = agent.toolResultSnipRatio ?? 0;
+  const compactRatioBounds = { min: compactRatioMin, max: compactRatioAbsoluteMax, snip: toolResultSnipRatio, force: compactForceRatio };
+  const compactRatioMinPercent = formatCompactRatioPercent(compactRatioMin);
+  const toolResultSnipPercent = formatCompactRatioPercent(toolResultSnipRatio);
+  const compactForcePercent = formatCompactRatioPercent(compactForceRatio);
+  const compactRatioMax = compactRatioEditableMax(compactForceRatio, compactRatioAbsoluteMax);
+  const compactRatioMaxPercent = Number(formatCompactRatioPercent(compactRatioMax));
+  const compactRatioDraftValid = compactRatioDraft !== ""
+    && compactRatioIsEditable(compactRatioDraftPercent / 100, compactRatioBounds);
   const compactRatioDraftDirty = compactRatioDraftValid
-    && Math.abs(compactRatioDraftPercent / 100 - compactRatio) > 0.0001;
+    && compactRatioDraftChanged(compactRatioDraftPercent, compactRatio, compactRatioDraftTouched);
   const defaultModel = defaultRef.startsWith(`${defaultProvider}/`) ? defaultRef.slice(defaultProvider.length + 1) : "";
   const modelContextWindow = defaultProviderView?.modelOverrides?.find((override) => override.model === defaultModel)?.contextWindow ?? 0;
   const effectiveContextWindow = modelContextWindow > 0 ? modelContextWindow : (defaultProviderView?.contextWindow ?? 0);
@@ -3380,7 +3391,7 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
     ? t(compactRatioPreset[1])
     : t("settings.compactRatioCustomValue", { percent: compactRatioPercent });
   const compactRatioOverrideHint = agent.compactRatioOverridden
-    ? t("settings.compactRatioProjectOverride", { percent: Math.round((agent.effectiveCompactRatio ?? compactRatio) * 100) })
+    ? t("settings.compactRatioProjectOverride", { percent: formatCompactRatioPercent(agent.effectiveCompactRatio ?? compactRatio) })
     : "";
   const subagentDepth = Number.isFinite(agent.maxSubagentDepth) && agent.maxSubagentDepth <= 1 ? 1 : 2;
   const subagentConcurrency = Number.isFinite(agent.maxSubagentConcurrency) && agent.maxSubagentConcurrency > 0
@@ -3391,7 +3402,8 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
     : Math.min(3, subagentConcurrency);
 
   useEffect(() => {
-    setCompactRatioDraft(String(compactRatioPercent));
+    setCompactRatioDraft(compactRatioPercent);
+    setCompactRatioDraftTouched(false);
   }, [compactRatioPercent]);
 
   useEffect(() => {
@@ -3403,12 +3415,14 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
   };
 
   const openCompactRatioCustom = () => {
-    setCompactRatioDraft(String(compactRatioPercent));
+    setCompactRatioDraft(compactRatioPercent);
+    setCompactRatioDraftTouched(false);
     setCompactRatioCustomOpen(true);
   };
 
   const closeCompactRatioCustom = () => {
-    setCompactRatioDraft(String(compactRatioPercent));
+    setCompactRatioDraft(compactRatioPercent);
+    setCompactRatioDraftTouched(false);
     setCompactRatioCustomOpen(false);
   };
 
@@ -3676,7 +3690,7 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
                       key={ratio}
                       type="button"
                       className={`set-seg__btn${Math.abs(compactRatio - ratio) < 0.0001 ? " set-seg__btn--on" : ""}`}
-                      disabled={busy}
+                      disabled={busy || !compactRatioIsEditable(ratio, compactRatioBounds)}
                       aria-label={t(labelKey)}
                       aria-pressed={Math.abs(compactRatio - ratio) < 0.0001}
                       onClick={() => void selectCompactRatioPreset(ratio)}
@@ -3709,16 +3723,19 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
                         id="settings-compact-ratio-custom"
                         className="mem-input set-narrow"
                         type="number"
-						min={65}
-						max={97}
-                        step={0.1}
+                        min={compactRatioMin * 100}
+                        max={compactRatioMaxPercent}
+                        step={0.01}
                         inputMode="decimal"
                         value={compactRatioDraft}
                         disabled={busy}
                         aria-label={t("settings.compactRatioCustomAria")}
                         aria-describedby="settings-compact-ratio-custom-hint"
                         aria-invalid={!compactRatioDraftValid}
-                        onInput={(event) => setCompactRatioDraft(event.currentTarget.value)}
+                        onInput={(event) => {
+                          setCompactRatioDraft(event.currentTarget.value);
+                          setCompactRatioDraftTouched(true);
+                        }}
                         onKeyDown={(event) => {
                           if (event.key === "Enter") {
                             event.preventDefault();
@@ -3747,7 +3764,7 @@ function ModelsSection({ s, busy, apply, backgroundApply, initialFocus }: Models
                       id="settings-compact-ratio-custom-hint"
                       className={`compact-ratio-custom__hint${compactRatioDraftValid ? "" : " compact-ratio-custom__hint--invalid"}`}
                     >
-                      {t("settings.compactRatioCustomHint")}
+                      {t("settings.compactRatioCustomHint", { min: compactRatioMinPercent, max: compactRatioMaxPercent, snip: toolResultSnipPercent, force: compactForcePercent })}
                     </div>
                   </div>
                 )}
@@ -4247,6 +4264,7 @@ function ProvidersSection({ s, busy, apply }: SectionProps) {
           <AddProviderPanel
             mode={adding}
             kinds={s.providerKinds}
+            officialProviders={s.officialProviders}
             providerPresets={s.providerPresets}
             busy={busy}
             onMode={setAdding}
@@ -4341,11 +4359,17 @@ type ProviderModelDraft = {
 };
 
 type AddProviderMode = null | "official" | "custom";
-type OfficialProviderKind = "deepseek";
+type OfficialProviderKind = "patty" | "deepseek";
 
 const OFFICIAL_PROVIDER_CHOICES: Array<{ kind: OfficialProviderKind; labelKey: DictKey; descKey: DictKey; keyEnv: string }> = [
+  { kind: "patty", labelKey: "settings.addProvider.official.patty", descKey: "settings.addProvider.official.pattyDesc", keyEnv: "AGENTS_PATTY_API_KEY" },
   { kind: "deepseek", labelKey: "settings.addProvider.official.deepseek", descKey: "settings.addProvider.official.deepseekDesc", keyEnv: "DEEPSEEK_API_KEY" },
 ];
+
+export function officialProviderTemplateState(kind: string, keyEnv: string, providers: ProviderView[]): { added: boolean; keySet: boolean } {
+  const provider = providers.find((candidate) => candidate.name === kind || candidate.apiKeyEnv === keyEnv);
+  return { added: Boolean(provider?.added), keySet: Boolean(provider?.keySet) };
+}
 
 type ProviderTemplateChoice =
   | { id: string; source: "official"; kind: OfficialProviderKind; label: string; description: string; keyEnv: string; added: boolean; keySet: boolean }
@@ -4486,6 +4510,7 @@ function providerPresetLabel(preset: ProviderPresetView, t: ReturnType<typeof us
 function AddProviderPanel({
   mode,
   kinds,
+  officialProviders,
   providerPresets,
   busy,
   onMode,
@@ -4498,6 +4523,7 @@ function AddProviderPanel({
 }: {
   mode: AddProviderMode;
   kinds: string[];
+  officialProviders: ProviderView[];
   providerPresets: ProviderPresetView[];
   busy: boolean;
   onMode: (mode: AddProviderMode) => void;
@@ -4510,16 +4536,19 @@ function AddProviderPanel({
 }) {
   const t = useT();
   const templateChoices = useMemo<ProviderTemplateChoice[]>(() => [
-    ...OFFICIAL_PROVIDER_CHOICES.map((choice) => ({
-      id: `official:${choice.kind}`,
-      source: "official" as const,
-      kind: choice.kind,
-      label: t(choice.labelKey),
-      description: t(choice.descKey),
-      keyEnv: choice.keyEnv,
-      added: false,
-      keySet: false,
-    })),
+    ...OFFICIAL_PROVIDER_CHOICES.map((choice) => {
+      const state = officialProviderTemplateState(choice.kind, choice.keyEnv, officialProviders);
+      return {
+        id: `official:${choice.kind}`,
+        source: "official" as const,
+        kind: choice.kind,
+        label: t(choice.labelKey),
+        description: t(choice.descKey),
+        keyEnv: choice.keyEnv,
+        added: state.added,
+        keySet: state.keySet,
+      };
+    }),
     ...providerPresets.map((preset) => ({
       id: `preset:${preset.id}`,
       source: "preset" as const,
@@ -4532,8 +4561,8 @@ function AddProviderPanel({
       statusProviderNames: asArray(preset.statusProviderNames),
       keySet: preset.keySet,
     })),
-  ], [providerPresets, t]);
-  const [templateID, setTemplateID] = useState("official:deepseek");
+  ], [officialProviders, providerPresets, t]);
+  const [templateID, setTemplateID] = useState("official:patty");
   const [key, setKey] = useState("");
   const firstAvailableTemplateID = templateChoices.find(providerTemplateCanAdd)?.id ?? templateChoices[0]?.id ?? "";
   const selected = templateChoices.find((choice) => choice.id === templateID) ?? templateChoices.find((choice) => choice.id === firstAvailableTemplateID) ?? templateChoices[0];
@@ -5157,6 +5186,7 @@ function officialProviderKind(p: ProviderView): string {
   if (!p.builtIn) return "";
   const name = canonicalOfficialProviderName(p.name);
   const host = providerBaseHost(p.baseUrl);
+  if (name === "patty" && host === "omni.agents.patty.io") return "patty";
   if (name === "deepseek" && host === "api.deepseek.com") return "deepseek";
   return "";
 }
@@ -5169,12 +5199,16 @@ function providerGroupID(p: ProviderView): string {
 
 function providerGroupLabel(p: ProviderView, t?: ReturnType<typeof useT>): string {
   const id = providerGroupID(p);
-  if (id === "builtin:deepseek") return t ? t("settings.providerLabel.deepseek") : "DeepSeek";
+  if (id.startsWith("builtin:")) {
+    const kind = id.slice("builtin:".length);
+    return t ? builtInProviderLabel(kind, t) : (kind === "patty" ? "Patty" : "DeepSeek");
+  }
   return p.name;
 }
 
 function providerGroupDescription(p: ProviderView, t: ReturnType<typeof useT>): string {
   const id = providerGroupID(p);
+  if (id === "builtin:patty") return t("settings.providerDesc.patty");
   if (id === "builtin:deepseek") return t("settings.providerDesc.deepseek");
   return p.baseUrl;
 }

@@ -100,6 +100,33 @@ ok(
   /mockPreset\("token-rhythm",\s*"Token Rhythm"/.test(bridgeSource),
   "browser mock exposes the Token Rhythm preset",
 );
+ok(
+  bridgeSource.includes('defaultModel: "patty/medium"') &&
+    bridgeSource.includes('baseUrl: "https://omni.agents.patty.io/v1"') &&
+    bridgeSource.includes('apiKeyEnv: "AGENTS_PATTY_API_KEY"') &&
+    /const mockModelCatalog = \[\s*\{ ref: "patty\/medium", provider: "patty", model: "medium" \},\s*\]/.test(bridgeSource),
+  "browser mock uses Patty medium as its one stock model",
+);
+ok(
+  /"\/model": \[\s*\{ label: "medium", insert: "patty\/medium", hint: "current" \},\s*\]/.test(bridgeSource),
+  "browser slash model hint exposes only medium",
+);
+ok(
+  /async ConnectKey\(apiKey: string\)[\s\S]*?\[\.\.\.settings\.providers, \.\.\.settings\.officialProviders\]\.forEach/.test(bridgeSource),
+  "browser onboarding updates Patty credential state in provider and official-template views",
+);
+ok(
+  /p\.name === "patty" \|\| p\.baseUrl\.includes\("omni\.agents\.patty\.io"\)\) return \["medium"\]/.test(bridgeSource),
+  "browser Patty model refresh returns only the stock medium combo",
+);
+ok(
+  /name === "patty" && host === "omni\.agents\.patty\.io"\) return "patty"/.test(settingsSource) &&
+    settingsSource.includes('id === "builtin:patty"') &&
+    settingsSource.includes('{ kind: "patty", labelKey: "settings.addProvider.official.patty"') &&
+    bridgeSource.includes('patty: { name: "patty", builtIn: true, added: true') &&
+    enLocaleSource.includes('"settings.providerLabel.patty": "Patty"'),
+  "settings classify, label, and restore the stock Patty provider as built in",
+);
 const regionalPresetIds = [
   "kimi-cn",
   "mimo-token-plan-cn",

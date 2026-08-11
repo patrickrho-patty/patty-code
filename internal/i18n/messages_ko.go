@@ -390,7 +390,7 @@ var Korean = Messages{
 	SetupComplete:            "설정 완료.",
 	SetupCancelled:           "설정 취소됨.",
 	TryHintFmt:               "시도: %s",
-	NextHint:                 "다음: API 키 설정 (`patcode setup` 실행 또는 DEEPSEEK_API_KEY=... 내보내기), 그런 다음 `patcode run \"작업 내용\"` 실행.",
+	NextHint:                 "다음: `patcode setup` 또는 설정에서 AGENTS_PATTY_API_KEY를 저장한 다음 `patcode run \"작업 내용\"` 실행.",
 	ConfirmReconfigureFmt:    "%s 이미 존재합니다. 다시 구성하고 덮어쓸까요?",
 	NotOverwritingFmt:        "%s 이미 존재; 덮어쓰지 않음",
 	SetupManagerTitle:        "공급자 구성",
@@ -567,7 +567,7 @@ var Korean = Messages{
   patcode acp [--model NAME]                           stdio로 Agent Client Protocol 서빙 (또는: patcode --acp)
   patcode setup [path]                                 대화형 구성 마법사; patty.toml(+ .env) 작성
   patcode config reasoning-language [auto|ko-KR|en]        표시 reasoning 언어 구성
-  patcode config compact-ratio [--local] [65..85]       자동 압축 임계값 구성
+  patcode config compact-ratio [--local] [65..97]       자동 압축 임계값 구성
   patcode config telemetry [auto|on|off]                콘텐츠 없는 CLI 사용 메트릭 구성
   patcode report [list|show|send|delete] [ID]           로컬 CLI 크래시 리포트 검토 및 전송
   patcode mcp <add|remove|list|import>                 patty.toml의 MCP 서버 관리
@@ -593,14 +593,14 @@ var Korean = Messages{
   patcode --continue
   patcode --resume provider-config
   patcode run "main.go의 TODO를 구현하세요"
-  patcode run --model mimo-pro "이 함수에 단위 테스트를 추가하세요"
+  patcode run --model medium "이 함수에 단위 테스트를 추가하세요"
   patcode -p "이 저장소를 요약하세요" --output-format json
   patcode subagent run review "현재 변경 사항을 리뷰하세요"
   echo "이 코드를 설명하세요" | patcode run
 
 구성:
   해석 순서: 플래그 > ./patty.toml > <patty home>/config.toml > 내장 기본값
-  비밀은 api_key_env를 통해 환경에서 가져옵니다 (예: DEEPSEEK_API_KEY).
+  AGENTS_PATTY_API_KEY 같은 제공자 키는 'patcode setup' 또는 설정에서 Patty Code 자격 증명 저장소에 저장합니다.
   구성 스캐폴드하려면 'patcode setup' 실행; docs/SPEC.md 참조.
 `,
 }

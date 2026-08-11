@@ -390,7 +390,7 @@ var English = Messages{
 	SetupComplete:            "Setup complete.",
 	SetupCancelled:           "setup cancelled.",
 	TryHintFmt:               "Try: %s",
-	NextHint:                 "Next: set your API key (run `patcode setup` or export DEEPSEEK_API_KEY=...), then run `patcode run \"your task\"`.",
+	NextHint:                 "Next: save AGENTS_PATTY_API_KEY with `patcode setup` or Settings, then run `patcode run \"your task\"`.",
 	ConfirmReconfigureFmt:    "%s already exists. Reconfigure and overwrite?",
 	NotOverwritingFmt:        "%s already exists; not overwriting",
 	SetupManagerTitle:        "Provider configuration",
@@ -567,7 +567,7 @@ Usage:
   patcode acp [--model NAME]                           serve Agent Client Protocol over stdio (also: patcode --acp)
   patcode setup [path]                                 interactive config wizard; writes patty.toml (+ .env)
   patcode config reasoning-language [auto|ko-KR|en]        configure visible reasoning language
-  patcode config compact-ratio [--local] [65..85]       configure automatic compaction threshold
+  patcode config compact-ratio [--local] [65..97]       configure automatic compaction threshold
   patcode config telemetry [auto|on|off]                configure content-free CLI usage metrics
   patcode report [list|show|send|delete] [ID]           review and explicitly send local CLI crash reports
   patcode mcp <add|remove|list|import>                 manage MCP servers in patty.toml
@@ -593,14 +593,14 @@ Examples:
   patcode --continue
   patcode --resume provider-config
   patcode run "implement the TODOs in main.go"
-  patcode run --model mimo-pro "add unit tests for this function"
+  patcode run --model medium "add unit tests for this function"
   patcode -p "summarize this repository" --output-format json
   patcode subagent run review "review the current changes"
   echo "explain this code" | patcode run
 
 Configuration:
   Resolution: flag > ./patty.toml > <patty home>/config.toml > built-in defaults
-  Secrets come from the environment via api_key_env (e.g. DEEPSEEK_API_KEY).
+  Provider keys such as AGENTS_PATTY_API_KEY are saved with 'patcode setup' or Settings in the Patty Code credential store.
   Run 'patcode setup' to scaffold a config; see docs/SPEC.md.
 `,
 }

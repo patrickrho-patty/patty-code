@@ -2144,18 +2144,11 @@ func groupByFamily(providers []config.ProviderEntry) ([]string, map[string][]int
 // existing family are appended so the model picker always shows the full
 // catalogue rather than only the previously selected subset.
 func withBuiltinFamilies(providers []config.ProviderEntry) []config.ProviderEntry {
-	return withBuiltinFamiliesForLanguage(providers, "")
-}
-
-func withBuiltinFamiliesForLanguage(providers []config.ProviderEntry, pricingLanguage string) []config.ProviderEntry {
 	haveName := map[string]bool{}
 	for _, p := range providers {
 		haveName[p.Name] = true
 	}
-	defaults := config.Default()
-	defaults.Language = pricingLanguage
-	defaults.ApplyDeepSeekOfficialDefaultPricing()
-	for _, bp := range defaults.Providers {
+	for _, bp := range config.Default().Providers {
 		if !haveName[bp.Name] {
 			providers = append(providers, bp)
 		}
@@ -2196,7 +2189,7 @@ func providersWithMissingKeys(cfg *config.Config) []config.ProviderEntry {
 			continue
 		}
 		p, ok := cfg.ResolveModel(ref)
-		if !ok || p.APIKeyEnv == "" || os.Getenv(p.APIKeyEnv) != "" || seen[p.APIKeyEnv] {
+		if !ok || p.APIKeyEnv == "" || p.APIKey() != "" || seen[p.APIKeyEnv] {
 			continue
 		}
 		seen[p.APIKeyEnv] = true
@@ -2611,11 +2604,15 @@ func configCompactRatioCommand(args []string) int {
 		return 0
 	}
 	percent, err := strconv.ParseFloat(strings.TrimSpace(rest[0]), 64)
-	if err != nil || math.IsNaN(percent) || math.IsInf(percent, 0) || percent < 65 || percent > 85 {
-		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, "compact ratio must be a percentage between 65 and 85")
+	if err != nil || math.IsNaN(percent) || math.IsInf(percent, 0) {
+		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, "compact ratio must be a finite percentage")
 		return 2
 	}
 	ratio := percent / 100
+	if err := config.Default().SetCompactRatio(ratio); err != nil {
+		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
+		return 2
+	}
 	path := config.UserConfigPath()
 	scope := "user"
 	if *local {
@@ -2633,6 +2630,18 @@ func configCompactRatioCommand(args []string) int {
 	}
 	defer unlock()
 	if *local {
+		// A project override inherits user-level thresholds that are not
+		// necessarily present in ./patty.toml. Validate against the merged
+		// effective config before writing the intentionally minimal delta.
+		effective, err := config.LoadForRootReadOnly(".")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
+			return 1
+		}
+		if err := effective.SetCompactRatio(ratio); err != nil {
+			fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
+			return 2
+		}
 		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 			saved, err := config.SaveMinimalProjectCompactRatio(path, ratio)
 			if err != nil {

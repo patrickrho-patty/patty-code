@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -145,29 +144,20 @@ func metricBucket(value string) string {
 	return out
 }
 
-func metricsOfficialProviderHost(baseURL string) string {
-	u, err := url.Parse(strings.TrimSpace(baseURL))
-	if err != nil {
-		return ""
-	}
-	return strings.ToLower(u.Hostname())
-}
-
 func officialProviderBucket(e *config.ProviderEntry) string {
 	if e == nil {
 		return ""
 	}
+	if kind := officialProviderKindFromEntry(*e); kind != "" {
+		return kind
+	}
 	switch config.CanonicalDesktopOfficialProviderName(e.Name) {
-	case "deepseek":
-		if metricsOfficialProviderHost(e.BaseURL) == "api.deepseek.com" {
-			return "deepseek"
-		}
 	case "mimo-api":
-		if metricsOfficialProviderHost(e.BaseURL) == "api.xiaomimimo.com" {
+		if officialProviderHost(e.BaseURL) == "api.xiaomimimo.com" {
 			return "mimoapi"
 		}
 	case "mimo-token-plan":
-		if metricsOfficialProviderHost(e.BaseURL) == "token-plan-cn.xiaomimimo.com" {
+		if officialProviderHost(e.BaseURL) == "token-plan-cn.xiaomimimo.com" {
 			return "mimoplan"
 		}
 	}

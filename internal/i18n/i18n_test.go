@@ -53,6 +53,24 @@ func TestKoreanCatalogContainsNoHanCharacters(t *testing.T) {
 	}
 }
 
+func TestUsageCatalogsAdvertiseCompactRatioRange(t *testing.T) {
+	for tag, usage := range map[string]string{"ko": Korean.UsageBody, "en": English.UsageBody} {
+		if !strings.Contains(usage, "compact-ratio [--local] [65..97]") {
+			t.Fatalf("%s usage has stale compact-ratio range:\n%s", tag, usage)
+		}
+		for _, want := range []string{"--model medium", "AGENTS_PATTY_API_KEY"} {
+			if !strings.Contains(usage, want) {
+				t.Fatalf("%s usage missing stock Patty example %q:\n%s", tag, want, usage)
+			}
+		}
+	}
+	for tag, hint := range map[string]string{"ko": Korean.NextHint, "en": English.NextHint} {
+		if !strings.Contains(hint, "AGENTS_PATTY_API_KEY") || !strings.Contains(hint, "patcode setup") || strings.Contains(hint, "export") || strings.Contains(hint, "DEEPSEEK_API_KEY") {
+			t.Fatalf("%s setup hint has stale stock credential guidance: %q", tag, hint)
+		}
+	}
+}
+
 func TestPlanApprovalChoicesExposeThreeExplicitActions(t *testing.T) {
 	tests := []struct {
 		tag   string

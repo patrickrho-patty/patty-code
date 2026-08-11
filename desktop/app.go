@@ -34,7 +34,6 @@ import (
 
 	"patty/internal/agent"
 	"patty/internal/autoresearch"
-	"patty/internal/billing"
 	"patty/internal/boot"
 	"patty/internal/botruntime"
 	"patty/internal/checkpoint"
@@ -201,6 +200,9 @@ type App struct {
 	// compare-and-apply after its optimistic credential snapshot but before the
 	// shared credential lock and authoritative re-read.
 	providerCatalogBeforeCredentialLockHook func(string)
+	// officialProviderBeforeConfigSaveHook is test-only. It forces failures at
+	// the config commit boundary after an official credential has been written.
+	officialProviderBeforeConfigSaveHook func()
 
 	// tryRunMu guards tryRunCancel — the cancel handle for the single
 	// in-flight settings-page subagent try run (TrySubagentProfile /
@@ -12200,14 +12202,18 @@ func (k desktopTaskJobKiller) Kill(sessionID, taskID string) bool {
 	return false
 }
 
-// onboardingKeyEnv is the default provider (deepseek) key from config.Default().
-const onboardingKeyEnv = "DEEPSEEK_API_KEY"
+var connectKeyModelFetch = func(ctx context.Context, entry config.ProviderEntry, apiKey string) ([]string, error) {
+	return entry.FetchModelsWithAPIKey(ctx, apiKey)
+}
 
-// onboardingBalanceURL doubles as a zero-token connectivity + auth probe:
-// billing.FetchWithClient surfaces 401/403 for a bad key.
-const onboardingBalanceURL = "https://api.deepseek.com/user/balance"
-
-var connectKeyBalanceFetch = billing.FetchWithClient
+func onboardingProvider() (config.ProviderEntry, error) {
+	cfg := config.Default()
+	entry, ok := cfg.ResolveModel(cfg.DefaultModel)
+	if !ok || strings.TrimSpace(entry.APIKeyEnv) == "" || strings.TrimSpace(entry.BaseURL) == "" || strings.TrimSpace(entry.Model) == "" {
+		return config.ProviderEntry{}, fmt.Errorf("stock onboarding provider is not configured")
+	}
+	return *entry, nil
+}
 
 // NativeConfirmRequest is the payload for ConfirmAction — a native OS confirmation
 // dialog that replaces web-style confirm() for destructive or important actions.
@@ -12288,8 +12294,9 @@ func (a *App) NeedsOnboarding() bool {
 	return true
 }
 
-// ConnectKey validates apiKey against the balance endpoint, persists it to
-// Patty Code's global .env, and rebuilds the controller so the new key takes effect.
+// ConnectKey validates apiKey against the stock provider's model catalog,
+// persists it through Patty Code's credential store, and rebuilds the
+// controller so the new key takes effect.
 func (a *App) ConnectKey(apiKey string) (string, error) {
 	apiKey = strings.TrimSpace(apiKey)
 	if apiKey == "" {
@@ -12300,16 +12307,21 @@ func (a *App) ConnectKey(apiKey string) (string, error) {
 			return "", err
 		}
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, 8*time.Second)
+	ctx, cancel := context.WithTimeout(a.bootContext(), 8*time.Second)
 	defer cancel()
-	if _, err := connectKeyBalanceFetch(ctx, nil, onboardingBalanceURL, apiKey); err != nil {
+	entry, err := onboardingProvider()
+	if err != nil {
+		return "", err
+	}
+	models, err := connectKeyModelFetch(ctx, entry, apiKey)
+	if err != nil {
 		return "", fmt.Errorf("validate: %w", err)
 	}
-	warning, err := a.saveProviderCredential(onboardingKeyEnv, apiKey)
-	if err != nil {
-		return "", fmt.Errorf("save: %w", err)
+	if !slices.Contains(models, entry.Model) {
+		return "", fmt.Errorf("validate: stock model %q is unavailable", entry.Model)
 	}
-	if err := a.ensureProviderAccessForKey(onboardingKeyEnv); err != nil {
+	warning, err := a.saveOfficialProviderAccessWithKey([]config.ProviderEntry{entry}, entry.APIKeyEnv, apiKey)
+	if err != nil {
 		return "", fmt.Errorf("enable provider: %w", err)
 	}
 	if err := a.rebuildSetting("provider key"); err != nil {

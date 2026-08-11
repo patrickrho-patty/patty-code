@@ -220,7 +220,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	if strings.TrimSpace(c.Agent.RecoveryModel) != "" {
 		fmt.Fprintf(&b, "recovery_model = %q   # optional independent reviewer for low-risk automatic recovery\n", c.Agent.RecoveryModel)
 	} else {
-		b.WriteString("# recovery_model = \"deepseek-pro\"   # optional; falls back to guardian then main model\n")
+		b.WriteString("# recovery_model = \"patty/medium\"   # optional; falls back to guardian then main model\n")
 	}
 	if lang := c.ReasoningLanguage(); lang != "auto" {
 		fmt.Fprintf(&b, "reasoning_language = %q   # visible reasoning language: auto|ko-KR|en\n", lang)
@@ -250,17 +250,17 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	if c.Agent.PlannerModel != "" {
 		fmt.Fprintf(&b, "planner_model = %q   # low-frequency planner (two-model collaboration)\n", c.Agent.PlannerModel)
 	} else {
-		b.WriteString("# planner_model = \"deepseek-pro\"   # optional: enable two-model collaboration\n")
+		b.WriteString("# planner_model = \"patty/medium\"   # optional: enable two-model collaboration\n")
 	}
 	if c.Agent.SubagentModel != "" {
 		fmt.Fprintf(&b, "subagent_model = %q   # default model for runAs=subagent skills\n", c.Agent.SubagentModel)
 	} else {
-		b.WriteString("# subagent_model = \"deepseek-pro\"   # optional default for runAs=subagent skills\n")
+		b.WriteString("# subagent_model = \"patty/medium\"   # optional default for runAs=subagent skills\n")
 	}
 	if len(c.Agent.SubagentModels) > 0 {
 		fmt.Fprintf(&b, "subagent_models = %s   # per-skill overrides\n", renderStringMap(c.Agent.SubagentModels))
 	} else {
-		b.WriteString("# subagent_models = { review = \"deepseek-pro\", security_review = \"deepseek-pro\" }   # per-skill overrides\n")
+		b.WriteString("# subagent_models = { review = \"patty/medium\", security_review = \"patty/medium\" }   # per-skill overrides\n")
 	}
 	if c.Agent.SubagentEffort != "" {
 		fmt.Fprintf(&b, "subagent_effort = %q   # default effort for subagent entry points\n", c.Agent.SubagentEffort)

@@ -19,7 +19,7 @@ An ACP host should launch one of these commands:
 
 ```sh
 patcode acp
-patcode acp --model deepseek-pro
+patcode acp --model patty/medium
 patcode acp --profile delivery
 ```
 

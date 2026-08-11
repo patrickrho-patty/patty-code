@@ -67,7 +67,7 @@ Example:
 
 ```toml
 config_version = 1
-default_model = "deepseek/deepseek-v4-flash"
+default_model = "patty/medium"
 language = "ko"
 credentials_store = "auto"   # legacy compatibility; provider keys are in .env
 
@@ -77,15 +77,19 @@ cursor_shape = "bar"         # CLI/TUI text cursor: underline|block|bar
 show_turn_usage = false       # hide per-request token/cost receipts in the TUI; default true
 
 [desktop]
-provider_access = ["deepseek"]
+provider_access = ["patty"]
+
+[agent]
+compact_ratio = 0.9596935403266109   # exactly 238123 of 248124 tokens
+compact_force_ratio = 0.98
 
 [[providers]]
-name        = "deepseek"
+name        = "patty"
 kind        = "openai"
-base_url    = "https://api.deepseek.com"
-models      = ["deepseek-v4-flash", "deepseek-v4-pro"]
-default     = "deepseek-v4-flash"
-api_key_env = "DEEPSEEK_API_KEY"
+base_url    = "https://omni.agents.patty.io/v1"
+model       = "medium"
+api_key_env = "AGENTS_PATTY_API_KEY"
+context_window = 248124
 
 [[plugins]]
 name    = "example"
@@ -156,6 +160,7 @@ credential helpers.
 Structure:
 
 ```dotenv
+AGENTS_PATTY_API_KEY=patty-...
 DEEPSEEK_API_KEY=sk-...
 GEMINI_API_KEY=...
 ANTHROPIC_API_KEY=...
@@ -168,7 +173,7 @@ Rules:
 - blank lines and `#` comments are ignored;
 - `export KEY=value` and quoted values are accepted when reading;
 - multiline values are rejected by Patty Code writes;
-- keys must use shell-style names such as `DEEPSEEK_API_KEY`;
+- keys must use shell-style names such as `AGENTS_PATTY_API_KEY`;
 - `# reasoning-cleared KEY` comments are non-secret tombstones written after a key
   is deleted so legacy stores do not silently re-import it;
 - Patty Code writes this file with restricted permissions where the OS supports

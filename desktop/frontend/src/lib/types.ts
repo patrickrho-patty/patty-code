@@ -1797,6 +1797,10 @@ export interface AgentView {
   coldResumePrune: boolean;
   reasoningLanguage: string; // "auto" | "ko-KR" | "en"
   compactRatio?: number; // Advanced global default; older backends omit it.
+  compactForceRatio?: number; // Upper compaction safety boundary; editable ratio must remain below it.
+  toolResultSnipRatio?: number; // Lower safety boundary; editable ratio must remain above it.
+  compactRatioMin?: number; // Inclusive backend editor bound.
+  compactRatioMax?: number; // Inclusive backend editor bound.
   effectiveCompactRatio?: number; // Active local session after project overrides.
   compactRatioOverridden?: boolean;
 }

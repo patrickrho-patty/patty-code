@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -36,6 +37,35 @@ func TestWithFreshSystemPromptReplacesExistingSystemMessage(t *testing.T) {
 	}
 	if msgs[0].Content != "old" {
 		t.Fatalf("input slice was mutated: %+v", msgs[0])
+	}
+}
+
+func TestOfficialProviderKindRecognizesPattyStockOnly(t *testing.T) {
+	stock := config.Default().Providers[0]
+	if got := officialProviderKindFromEntry(stock); got != "patty" {
+		t.Fatalf("Patty stock kind = %q, want patty", got)
+	}
+	for _, altered := range []config.ProviderEntry{
+		{Name: "patty", BaseURL: "https://relay.example.com/v1"},
+		{Name: "renamed", BaseURL: "https://omni.agents.patty.io/v1"},
+	} {
+		if got := officialProviderKindFromEntry(altered); got != "" {
+			t.Fatalf("altered Patty provider %+v classified as %q", altered, got)
+		}
+	}
+}
+
+func TestOfficialPattyTemplateRestoresStockProvider(t *testing.T) {
+	entries, keyEnv, err := officialProviderTemplate("patty", "en")
+	if err != nil {
+		t.Fatalf("officialProviderTemplate(patty): %v", err)
+	}
+	if len(entries) != 1 || keyEnv != "AGENTS_PATTY_API_KEY" {
+		t.Fatalf("Patty template = %+v/%q", entries, keyEnv)
+	}
+	want := config.Default().Providers[0]
+	if got := entries[0]; got.Name != want.Name || got.BaseURL != want.BaseURL || got.Model != want.Model || got.ContextWindow != want.ContextWindow {
+		t.Fatalf("Patty template = %+v, want stock %+v", got, want)
 	}
 }
 
@@ -1127,31 +1157,35 @@ func TestSetCompactRatioPersistsToUserConfig(t *testing.T) {
 
 	app := NewApp()
 	defaultView := app.Settings()
-	if defaultView.Agent.CompactRatio != 0.8 || defaultView.Agent.EffectiveCompactRatio != 0.8 {
-		t.Fatalf("default compact ratios = %v/%v, want 0.8/0.8", defaultView.Agent.CompactRatio, defaultView.Agent.EffectiveCompactRatio)
+	wantDefault := float64(238123) / float64(248124)
+	if math.Abs(defaultView.Agent.CompactRatio-wantDefault) > 1e-12 || math.Abs(defaultView.Agent.EffectiveCompactRatio-wantDefault) > 1e-12 {
+		t.Fatalf("default compact ratios = %v/%v, want %v/%v", defaultView.Agent.CompactRatio, defaultView.Agent.EffectiveCompactRatio, wantDefault, wantDefault)
 	}
-	if err := app.SetCompactRatio(0.7); err != nil {
+	if defaultView.Agent.CompactRatioMin != config.CompactRatioEditableMin || defaultView.Agent.CompactRatioMax != config.CompactRatioEditableMax || defaultView.Agent.ToolResultSnipRatio != 0.6 || defaultView.Agent.CompactForceRatio != 0.98 {
+		t.Fatalf("desktop compact bounds = %+v", defaultView.Agent)
+	}
+	if err := app.SetCompactRatio(0.959); err != nil {
 		t.Fatalf("SetCompactRatio: %v", err)
 	}
 
 	view := app.Settings()
-	if view.Agent.CompactRatio != 0.7 {
-		t.Fatalf("Settings().Agent.CompactRatio = %v, want 0.7", view.Agent.CompactRatio)
+	if math.Abs(view.Agent.CompactRatio-0.959) > 1e-12 {
+		t.Fatalf("Settings().Agent.CompactRatio = %v, want 0.959", view.Agent.CompactRatio)
 	}
 
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if cfg.Agent.CompactRatio != 0.7 {
-		t.Fatalf("saved compact ratio = %v, want 0.7", cfg.Agent.CompactRatio)
+	if math.Abs(cfg.Agent.CompactRatio-0.959) > 1e-12 {
+		t.Fatalf("saved compact ratio = %v, want 0.959", cfg.Agent.CompactRatio)
 	}
-	if cfg.Agent.ToolResultSnipRatio != 0.6 || cfg.Agent.CompactForceRatio != 0.9 {
+	if cfg.Agent.ToolResultSnipRatio != 0.6 || cfg.Agent.CompactForceRatio != 0.98 {
 		t.Fatalf("setting compact ratio changed adjacent thresholds: %+v", cfg.Agent)
 	}
 
-	if err := app.SetCompactRatio(0.9); err == nil {
+	if err := app.SetCompactRatio(0.98); err == nil {
 		t.Fatal("SetCompactRatio should reject values outside the Desktop safety range")
 	}
 	cfg = config.LoadForEdit(config.UserConfigPath())
-	if cfg.Agent.CompactRatio != 0.7 {
+	if math.Abs(cfg.Agent.CompactRatio-0.959) > 1e-12 {
 		t.Fatalf("rejected update changed saved compact ratio to %v", cfg.Agent.CompactRatio)
 	}
 }
@@ -1165,8 +1199,9 @@ func TestSetCompactRatioRejectsActiveWorkBeforeSaving(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "stop background jobs") {
 		t.Fatalf("SetCompactRatio with background job error = %v, want active-work guard", err)
 	}
-	if got := config.LoadForEdit(config.UserConfigPath()).Agent.CompactRatio; got != 0.8 {
-		t.Fatalf("compact ratio changed after rejected update: %v", got)
+	wantDefault := float64(238123) / float64(248124)
+	if got := config.LoadForEdit(config.UserConfigPath()).Agent.CompactRatio; math.Abs(got-wantDefault) > 1e-12 {
+		t.Fatalf("compact ratio changed after rejected update: %v, want %v", got, wantDefault)
 	}
 }
 
@@ -1219,6 +1254,15 @@ func TestSetDesktopLanguagePersistsResponseLanguageAndUpdatesLiveTabs(t *testing
 
 func TestSetDesktopCurrencyPersistsRegionalOfficialPricing(t *testing.T) {
 	isolateDesktopUserDirs(t)
+	entries, _, err := officialProviderTemplate("deepseek", "en")
+	if err != nil {
+		t.Fatalf("officialProviderTemplate: %v", err)
+	}
+	cfg := config.Default()
+	cfg.Providers = append(cfg.Providers, entries...)
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save DeepSeek pricing fixture: %v", err)
+	}
 
 	app := NewApp()
 	if err := app.SetDesktopCurrency("CNY"); err != nil {
@@ -1229,9 +1273,13 @@ func TestSetDesktopCurrencyPersistsRegionalOfficialPricing(t *testing.T) {
 	if view.DesktopCurrency != "CNY" {
 		t.Fatalf("Settings().DesktopCurrency = %q, want CNY", view.DesktopCurrency)
 	}
-	cfg := config.LoadForEdit(config.UserConfigPath())
-	flash, ok := cfg.Provider("deepseek-flash")
-	if !ok || flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "¥" {
+	cfg = config.LoadForEdit(config.UserConfigPath())
+	deepseek, ok := cfg.Provider("deepseek")
+	if !ok {
+		t.Fatal("saved DeepSeek provider is missing")
+	}
+	flash := deepseek.Prices["deepseek-v4-flash"]
+	if flash == nil || flash.Output != 2 || flash.Currency != "¥" {
 		t.Fatalf("saved DeepSeek flash price = %+v, want CNY official price", flash)
 	}
 }

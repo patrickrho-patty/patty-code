@@ -75,6 +75,11 @@ func TestApplyRuntimeAutoPricingCurrency(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := config.Default()
+			cfg.Providers = []config.ProviderEntry{{
+				Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com",
+				Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY",
+				Price: config.DeepSeekV4PricesForLanguage("en")["deepseek-v4-flash"],
+			}}
 			cfg.Desktop.Currency = tt.desktopCurrency
 			cfg.Desktop.Language = tt.desktopLanguage
 			cfg.Language = tt.language
@@ -84,7 +89,7 @@ func TestApplyRuntimeAutoPricingCurrency(t *testing.T) {
 
 			deepseek, ok := cfg.Provider("deepseek-flash")
 			if !ok {
-				t.Fatal("default DeepSeek provider is missing")
+				t.Fatal("DeepSeek pricing fixture is missing")
 			}
 			price := deepseek.PriceForModel("deepseek-v4-flash")
 			if price == nil || price.Currency != tt.wantCurrency || price.Output != tt.wantOutput {

@@ -3,6 +3,7 @@ import { Brain, Check, ChevronsUpDown, Search } from "lucide-react";
 import { asArray } from "../lib/array";
 import { app } from "../lib/bridge";
 import { useT } from "../lib/i18n";
+import { builtInProviderLabel } from "../lib/providerPresentation";
 import type { ModelInfo } from "../lib/types";
 import { AnchoredPopover } from "./AnchoredPopover";
 import { Tooltip } from "./Tooltip";
@@ -236,12 +237,5 @@ export function normalizeModelInfo(model: ModelInfo): ModelInfo {
 }
 
 function providerLabel(provider: string, t: ReturnType<typeof useT>): string {
-  switch (provider) {
-    case "deepseek":
-    case "deepseek-flash":
-    case "deepseek-pro":
-      return t("settings.providerLabel.deepseek");
-    default:
-      return provider;
-  }
+  return builtInProviderLabel(provider, t);
 }

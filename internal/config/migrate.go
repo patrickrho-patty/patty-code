@@ -123,6 +123,7 @@ func MigrateLegacyIfNeededForRoot(root string) (*MigrationResult, error) {
 	}
 
 	cfg := Default()
+	cfg.DefaultModel = legacyDeepSeekDefaultModel
 	cfg.Providers = legacyDeepSeekProviderEntries()
 	res := &MigrationResult{From: src, To: dest}
 	if legacy.Lang != "" {
@@ -142,7 +143,7 @@ func MigrateLegacyIfNeededForRoot(root string) (*MigrationResult, error) {
 
 	var envLines []string
 	if key := strings.TrimSpace(legacy.APIKey); key != "" {
-		envLines = append(envLines, "DEEPSEEK_API_KEY="+key)
+		envLines = append(envLines, legacyDeepSeekCredentialEnv+"="+key)
 		res.KeyToEnv = true
 		if base := strings.TrimSpace(legacy.BaseURL); base != "" && !strings.Contains(base, "deepseek.com") {
 			res.Warnings = append(res.Warnings, "your previous base_url was "+base+
@@ -379,7 +380,7 @@ func migrateLegacyCredentialsIfNeededForRoot(root string) error {
 			}
 		}
 	}
-	keys := mergeUniqueTrimmed(credentialEnvNamesForRoot(root), "DEEPSEEK_API_KEY")
+	keys := mergeUniqueTrimmed(credentialEnvNamesForRoot(root), legacyDeepSeekCredentialEnv)
 	needKeyring := make([]string, 0, len(keys))
 	for _, key := range keys {
 		if skipStore(key) {
@@ -487,8 +488,17 @@ func migrateLegacyTOMLIfNeeded(dest, home string) (*MigrationResult, error) {
 			continue
 		}
 		cfg := Default()
-		if err := mergeFile(cfg, src); err != nil {
+		meta, err := mergeFileSnapshot(cfg, src)
+		if err != nil {
 			return nil, fmt.Errorf("parse legacy config %s: %w", src, err)
+		}
+		if !meta.IsDefined("providers") {
+			if !meta.IsDefined("default_model") {
+				cfg.DefaultModel = legacyDeepSeekDefaultModel
+				cfg.Providers = legacyDeepSeekProviderEntries()
+			} else if isLegacyDeepSeekModelRef(cfg.DefaultModel) {
+				cfg.Providers = legacyDeepSeekProviderEntries()
+			}
 		}
 		cfg.ConfigVersion = Default().ConfigVersion
 		if strings.TrimSpace(cfg.Desktop.CloseBehavior) == "" && strings.TrimSpace(cfg.UI.CloseBehavior) != "" {
@@ -547,7 +557,7 @@ func migrateLegacyBaseURL(cfg *Config, baseURL string) {
 		return
 	}
 	for i := range cfg.Providers {
-		if cfg.Providers[i].APIKeyEnv == "DEEPSEEK_API_KEY" {
+		if cfg.Providers[i].APIKeyEnv == legacyDeepSeekCredentialEnv {
 			cfg.Providers[i].BaseURL = baseURL
 		}
 	}

@@ -207,6 +207,23 @@ func TestRenderTOMLUsesKoreanFirstLocaleExamples(t *testing.T) {
 	}
 }
 
+func TestRenderTOMLUsesResolvableStockModelExamples(t *testing.T) {
+	rendered := RenderTOML(Default())
+	if strings.Contains(rendered, `"deepseek-pro"`) {
+		t.Fatalf("rendered stock config advertises a removed default model:\n%s", rendered)
+	}
+	for _, want := range []string{
+		`# recovery_model = "patty/medium"`,
+		`# planner_model = "patty/medium"`,
+		`# subagent_model = "patty/medium"`,
+		`review = "patty/medium"`,
+	} {
+		if !strings.Contains(rendered, want) {
+			t.Fatalf("rendered stock config missing resolvable example %q:\n%s", want, rendered)
+		}
+	}
+}
+
 func TestRenderTOMLRoundTrips(t *testing.T) {
 	orig := Default()
 	orig.Providers = append(orig.Providers, legacyDeepSeekProviderEntries()...)

@@ -7,7 +7,7 @@ LDFLAGS := -s -w \
 	-X main.buildTimeUTC=$(BUILD_TIME_UTC)
 GOEXE := $(shell go env GOEXE)
 
-.PHONY: build vet fmt lint lint-cross lint-update test desktop-test desktop-test-short desktop-test-times sdk-test sdk-test-race hooks cross clean
+.PHONY: build tracked-patcode vet fmt lint lint-cross lint-update test desktop-test desktop-test-short desktop-test-times sdk-test sdk-test-race hooks cross clean
 
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/patcode$(GOEXE) ./cmd/patcode
@@ -16,6 +16,18 @@ build:
 		/usr/bin/codesign --force --sign - bin/patcode$(GOEXE); \
 		/usr/bin/codesign --force --sign - bin/patty-plugin-example$(GOEXE); \
 	fi
+
+# Refresh the checked-in macOS launcher from the canonical signed build output.
+# Keeping the copy in one target prevents source fixes from being followed by a
+# stale manually-copied root artifact.
+tracked-patcode: build
+	@if [ "$$(go env GOOS)" != darwin ] || [ -n "$(GOEXE)" ]; then \
+		echo "tracked-patcode requires a macOS host" >&2; \
+		exit 1; \
+	fi
+	cp bin/patcode patcode
+	cmp -s bin/patcode patcode
+	/usr/bin/codesign --verify --verbose=2 patcode
 
 vet:
 	go vet ./...

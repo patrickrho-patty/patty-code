@@ -92,6 +92,25 @@ func TestMigrateImportsKeyPluginsAndLang(t *testing.T) {
 	}
 }
 
+func TestMigrateLegacyWithoutModelKeepsResolvableLegacyDefault(t *testing.T) {
+	src, _, _ := legacyHome(t)
+	writeLegacy(t, src, `{}`)
+
+	if _, err := MigrateLegacyIfNeeded(); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("load migrated config: %v", err)
+	}
+	if cfg.DefaultModel != "deepseek-flash" {
+		t.Fatalf("DefaultModel = %q, want legacy deepseek-flash", cfg.DefaultModel)
+	}
+	if _, ok := cfg.ResolveModel(cfg.DefaultModel); !ok {
+		t.Fatalf("migrated default %q is not resolvable in %+v", cfg.DefaultModel, cfg.Providers)
+	}
+}
+
 // TestMigrateImportsLegacyMCPStringList covers the pre-mcpServers `mcp` format
 // (#3949): `--mcp`-style strings, with mcpEnv/mcpDisabled keyed by name and
 // mcpServers winning a name collision.
@@ -453,6 +472,38 @@ command = "legacy-bin"
 	}
 	if _, err := os.Stat(UserCredentialsPath()); !os.IsNotExist(err) {
 		t.Fatalf("v1 TOML migration should not import lower-priority JSON key, credentials stat err=%v", err)
+	}
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("load migrated legacy TOML: %v", err)
+	}
+	if _, ok := loaded.ResolveModel(loaded.DefaultModel); !ok {
+		t.Fatalf("migrated legacy default %q is not resolvable in %+v", loaded.DefaultModel, loaded.Providers)
+	}
+}
+
+func TestMigrateLegacyV1TOMLPreservesExplicitProDefault(t *testing.T) {
+	_, dest, _ := legacyHome(t)
+	legacyTOML := filepath.Join(filepath.Dir(dest), "patty.toml")
+	if err := os.MkdirAll(filepath.Dir(legacyTOML), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(legacyTOML, []byte(`default_model = "deepseek-pro"`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := MigrateLegacyIfNeeded(); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("load migrated legacy TOML: %v", err)
+	}
+	if loaded.DefaultModel != "deepseek-pro" {
+		t.Fatalf("DefaultModel = %q, want explicit deepseek-pro", loaded.DefaultModel)
+	}
+	if _, ok := loaded.ResolveModel(loaded.DefaultModel); !ok {
+		t.Fatalf("explicit legacy default %q is not resolvable in %+v", loaded.DefaultModel, loaded.Providers)
 	}
 }
 

@@ -131,9 +131,8 @@ func TestProviderFetchModelsContinuesAfterRootAuthFailure(t *testing.T) {
 	}
 }
 
-func TestProviderFetchModelsUsesSetupProbeEnv(t *testing.T) {
+func TestProviderFetchModelsUsesExplicitSetupCredential(t *testing.T) {
 	const key = "FETCH_MODELS_PROBE_KEY"
-	t.Setenv(key, "probe-key")
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer probe-key" {
 			http.Error(w, "bad key", http.StatusUnauthorized)
@@ -146,8 +145,7 @@ func TestProviderFetchModelsUsesSetupProbeEnv(t *testing.T) {
 	defer srv.Close()
 
 	p := ProviderEntry{Name: "probe", BaseURL: srv.URL, APIKeyEnv: key}
-	p.ResolveAPIKeyFromProcessEnvForProbe()
-	got, err := p.FetchModels(context.Background())
+	got, err := p.FetchModelsWithAPIKey(context.Background(), "probe-key")
 	if err != nil {
 		t.Fatalf("FetchModels: %v", err)
 	}

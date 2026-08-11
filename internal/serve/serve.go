@@ -27,6 +27,7 @@ import (
 	"patty/internal/control"
 	"patty/internal/event"
 	"patty/internal/jobs"
+	"patty/internal/netclient"
 	"patty/internal/nilutil"
 	"patty/internal/provider"
 	"patty/internal/stats"
@@ -153,40 +154,47 @@ func (s *Server) AuthMode() string {
 	return s.auth.Mode()
 }
 
-// initTitleProvider builds a lightweight flash-model provider used solely to
-// generate short session titles. Errors are silently swallowed — title
-// generation is best-effort, and the server works fine without it.
+// initTitleProvider reuses the configured default chat model solely to generate
+// short session titles. Errors are silently swallowed — title generation is
+// best-effort, and the server works fine without it.
 func (s *Server) initTitleProvider() {
 	cfg, err := config.Load()
 	if err != nil {
 		return
 	}
-	entry, ok := cfg.ResolveModel("deepseek-flash")
+	entry, ok := cfg.ResolveModel(cfg.DefaultModel)
 	if !ok {
 		return
 	}
-	prov, err := provider.New(entry.Kind, titleProviderConfig(entry))
+	prov, err := newTitleProvider(entry, cfg.NetworkProxySpec())
 	if err != nil {
 		return
 	}
 	s.titleProv = prov
-	s.titlePrice = entry.Price
+	s.titlePrice = entry.PriceForModel(entry.Model)
 	s.titleModelRef = entry.Name + "/" + entry.Model
 	// Title generation is accounting-only; do not inject its usage event into
 	// the shared chat SSE stream.
 	s.titleUsageSink = stats.NewRecorder(event.Discard, config.StatsDir(), "serve")
 }
 
-func titleProviderConfig(entry *config.ProviderEntry) provider.Config {
-	return provider.Config{
-		Name:    entry.Name,
-		BaseURL: entry.BaseURL,
-		Model:   entry.Model,
-		APIKey:  entry.APIKey(),
-		// Title generation needs a short visible answer, not chain-of-thought.
-		// "off" is a retired DeepSeek effort value and now falls back to high.
-		Extra: map[string]any{"effort": "disabled"},
+func newTitleProvider(entry *config.ProviderEntry, proxy netclient.ProxySpec) (provider.Provider, error) {
+	titleEntry := *entry
+	switch strings.ToLower(strings.TrimSpace(entry.Thinking)) {
+	case "enabled", "disabled":
+		titleEntry.Thinking = "disabled"
+	default:
+		titleEntry.Thinking = ""
 	}
+	titleEntry.Effort = ""
+	titleEntry.DefaultEffort = ""
+	for _, level := range config.EffortCapabilityForEntry(entry).Levels {
+		if level == "disabled" {
+			titleEntry.Effort = "disabled"
+			break
+		}
+	}
+	return boot.NewProviderWithProxy(&titleEntry, proxy)
 }
 
 // switchModel rebuilds the controller with a new model, carrying over the

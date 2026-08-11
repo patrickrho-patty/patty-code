@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"patty/internal/agent"
-	"patty/internal/billing"
 	"patty/internal/boot"
 	"patty/internal/bot"
 	"patty/internal/command"
@@ -267,15 +266,25 @@ func setDesktopTestCredential(t *testing.T, key, value string) {
 	}
 }
 
+func onboardingTestProvider(t *testing.T) config.ProviderEntry {
+	t.Helper()
+	entry, err := onboardingProvider()
+	if err != nil {
+		t.Fatalf("onboardingProvider: %v", err)
+	}
+	return entry
+}
+
 func TestNeedsOnboardingIgnoresInheritedEnv(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv(onboardingKeyEnv, "inherited-key")
+	keyEnv := onboardingTestProvider(t).APIKeyEnv
+	t.Setenv(keyEnv, "inherited-key")
 
 	app := NewApp()
 	if !app.NeedsOnboarding() {
 		t.Fatal("NeedsOnboarding should require a key saved in patty global .env")
 	}
-	setDesktopTestCredential(t, onboardingKeyEnv, "saved-key")
+	setDesktopTestCredential(t, keyEnv, "saved-key")
 	if app.NeedsOnboarding() {
 		t.Fatal("NeedsOnboarding should be false after saving the global credential")
 	}
@@ -283,10 +292,11 @@ func TestNeedsOnboardingIgnoresInheritedEnv(t *testing.T) {
 
 func TestNeedsOnboardingTreatsBlankSavedKeyAsMissing(t *testing.T) {
 	isolateDesktopUserDirs(t)
+	keyEnv := onboardingTestProvider(t).APIKeyEnv
 	if err := os.MkdirAll(filepath.Dir(config.UserCredentialsPath()), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(config.UserCredentialsPath(), []byte(onboardingKeyEnv+"=\n"), 0o600); err != nil {
+	if err := os.WriteFile(config.UserCredentialsPath(), []byte(keyEnv+"=\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -717,8 +727,8 @@ func TestEffortDefaultsBeforeStartup(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	got := NewApp().Effort()
-	if !got.Supported || got.Current != "auto" || got.Default != "high" || !hasLevel(got.Levels, "auto") {
-		t.Fatalf("pre-startup Effort() = %+v, want auto with DeepSeek default high", got)
+	if got.Supported || got.Current != "auto" || got.Default != "" || len(got.Levels) != 0 {
+		t.Fatalf("pre-startup Effort() = %+v, want stock Patty medium without configurable effort", got)
 	}
 }
 
@@ -1073,6 +1083,16 @@ func TestEmitReadyInvokesReadyHook(t *testing.T) {
 
 func TestSetEffortPersistsAndAutoClears(t *testing.T) {
 	isolateDesktopUserDirs(t)
+	entries, _, err := officialProviderTemplate("deepseek", "en")
+	if err != nil {
+		t.Fatalf("officialProviderTemplate: %v", err)
+	}
+	cfg := config.Default()
+	cfg.DefaultModel = "deepseek/deepseek-v4-flash"
+	cfg.Providers = entries
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save DeepSeek effort fixture: %v", err)
+	}
 
 	app := NewApp()
 	if err := app.SetEffort("max"); err != nil {
@@ -1633,7 +1653,7 @@ api_key_env = "DEEPSEEK_API_KEY"
 
 func TestSettingsInfersConfiguredBuiltInsWithoutConfigFile(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "DEEPSEEK_API_KEY", "sk-test")
+	setDesktopTestCredential(t, "AGENTS_PATTY_API_KEY", "sk-test")
 	setDesktopTestCredential(t, "MIMO_API_KEY", "sk-test")
 
 	got := NewApp().Settings()
@@ -1641,8 +1661,8 @@ func TestSettingsInfersConfiguredBuiltInsWithoutConfigFile(t *testing.T) {
 	for _, p := range got.Providers {
 		providers[p.Name] = p
 	}
-	if !providers["deepseek"].Added || !providers["deepseek"].KeySet {
-		t.Fatalf("deepseek provider = %+v, want inferred added provider from configured key", providers["deepseek"])
+	if !providers["patty"].Added || !providers["patty"].KeySet {
+		t.Fatalf("Patty provider = %+v, want inferred added stock provider from configured key", providers["patty"])
 	}
 	if _, ok := providers["mimo-token-plan"]; ok {
 		t.Fatalf("mimo-token-plan should not be inferred from MIMO_API_KEY alone: %+v", providers["mimo-token-plan"])
@@ -1697,6 +1717,47 @@ api_key_env = "DEEPSEEK_API_KEY"
 	}
 	if cfg.DefaultModel != "deepseek/deepseek-v4-flash" {
 		t.Fatalf("default_model = %q, want deepseek/deepseek-v4-flash", cfg.DefaultModel)
+	}
+}
+
+func TestOfficialPattyAccessCanBeRemovedAndRestored(t *testing.T) {
+	isolateDesktopUserDirs(t)
+	cfg := config.Default()
+	cfg.Providers = append(cfg.Providers, config.ProviderEntry{
+		Name:    "local",
+		Kind:    "openai",
+		BaseURL: "http://127.0.0.1:11434/v1",
+		Model:   "local-model",
+	})
+	cfg.DefaultModel = "local/local-model"
+	cfg.Desktop.ProviderAccess = []string{"patty", "local"}
+	cfg.Providers[0].Headers = map[string]string{"X-Patty-Route": "custom"}
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save provider access fixture: %v", err)
+	}
+
+	app := NewApp()
+	if err := app.RemoveProviderAccess("patty"); err != nil {
+		t.Fatalf("RemoveProviderAccess(patty): %v", err)
+	}
+	removed := config.LoadForEdit(config.UserConfigPath())
+	if providerAccessSet(removed.Desktop.ProviderAccess)["patty"] {
+		t.Fatalf("Patty access still present after removal: %+v", removed.Desktop.ProviderAccess)
+	}
+	if _, err := app.AddOfficialProviderAccess("patty", ""); err != nil {
+		t.Fatalf("AddOfficialProviderAccess(patty): %v", err)
+	}
+	restored := config.LoadForEdit(config.UserConfigPath())
+	if !providerAccessSet(restored.Desktop.ProviderAccess)["patty"] {
+		t.Fatalf("Patty access was not restored: %+v", restored.Desktop.ProviderAccess)
+	}
+	got, ok := restored.Provider("patty")
+	want := config.Default().Providers[0]
+	if !ok || got.BaseURL != want.BaseURL || got.Model != want.Model || got.ContextWindow != want.ContextWindow {
+		t.Fatalf("restored Patty provider = %+v, found=%v; want stock %+v", got, ok, want)
+	}
+	if got.Headers["X-Patty-Route"] != "custom" {
+		t.Fatalf("restoring Patty access replaced customized headers: %+v", got.Headers)
 	}
 }
 
@@ -2140,6 +2201,97 @@ func TestAddOfficialProviderAccessRejectsBackgroundJobsBeforeSavingKey(t *testin
 	}
 	if data, readErr := os.ReadFile(config.UserCredentialsPath()); readErr == nil && strings.Contains(string(data), "DEEPSEEK_API_KEY") {
 		t.Fatalf("provider key should not be saved after rejected add access:\n%s", data)
+	}
+}
+
+func TestAddOfficialProviderAccessRejectsConflictBeforeSavingKey(t *testing.T) {
+	isolateDesktopUserDirs(t)
+	t.Setenv("AGENTS_PATTY_API_KEY", "")
+	_ = os.Unsetenv("AGENTS_PATTY_API_KEY")
+	cfg := config.Default()
+	cfg.Providers = []config.ProviderEntry{{
+		Name: "patty", Kind: "openai", BaseURL: "https://custom.example.test/v1",
+		Model: "custom-medium", APIKeyEnv: "AGENTS_PATTY_API_KEY",
+	}}
+	cfg.DefaultModel = "patty/custom-medium"
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save conflicting provider: %v", err)
+	}
+
+	_, err := NewApp().AddOfficialProviderAccess("patty", "sk-test")
+	if err == nil || !strings.Contains(err.Error(), `provider "patty" conflicts`) {
+		t.Fatalf("AddOfficialProviderAccess conflict error = %v", err)
+	}
+	if data, readErr := os.ReadFile(config.UserCredentialsPath()); readErr == nil && strings.Contains(string(data), "AGENTS_PATTY_API_KEY") {
+		t.Fatalf("conflicting official-provider key should not be saved:\n%s", data)
+	}
+}
+
+func TestAddOfficialProviderAccessRestoresCredentialWhenConfigSaveFails(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		prepareKey func(*testing.T, string)
+		wantStored string
+		wantEnv    string
+		wantEnvSet bool
+	}{
+		{
+			name: "stored value",
+			prepareKey: func(t *testing.T, key string) {
+				setDesktopTestCredential(t, key, "sk-old")
+			},
+			wantStored: "AGENTS_PATTY_API_KEY=sk-old\n",
+			wantEnv:    "sk-old",
+			wantEnvSet: true,
+		},
+		{
+			name: "cleared tombstone",
+			prepareKey: func(t *testing.T, key string) {
+				if err := config.RemoveCredential(key); err != nil {
+					t.Fatalf("clear credential: %v", err)
+				}
+			},
+			wantStored: "# patty-cleared AGENTS_PATTY_API_KEY\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			isolateDesktopUserDirs(t)
+			const keyEnv = "AGENTS_PATTY_API_KEY"
+			t.Setenv(keyEnv, "")
+			_ = os.Unsetenv(keyEnv)
+			test.prepareKey(t, keyEnv)
+			cfg := config.Default()
+			if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+				t.Fatalf("save stock config: %v", err)
+			}
+
+			app := NewApp()
+			app.officialProviderBeforeConfigSaveHook = func() {
+				path := config.UserConfigPath()
+				if err := os.Remove(path); err != nil {
+					t.Fatalf("remove config at save boundary: %v", err)
+				}
+				if err := os.Mkdir(path, 0o755); err != nil {
+					t.Fatalf("replace config with directory: %v", err)
+				}
+			}
+			_, err := app.AddOfficialProviderAccess("patty", "sk-new")
+			if err == nil {
+				t.Fatal("AddOfficialProviderAccess with forced config failure returned nil")
+			}
+
+			data, readErr := os.ReadFile(config.UserCredentialsPath())
+			if readErr != nil {
+				t.Fatalf("read restored credential store: %v", readErr)
+			}
+			if got := string(data); got != test.wantStored {
+				t.Fatalf("restored credential store = %q, want %q", got, test.wantStored)
+			}
+			gotEnv, gotEnvSet := os.LookupEnv(keyEnv)
+			if gotEnv != test.wantEnv || gotEnvSet != test.wantEnvSet {
+				t.Fatalf("restored process credential = %q/set=%v, want %q/set=%v", gotEnv, gotEnvSet, test.wantEnv, test.wantEnvSet)
+			}
+		})
 	}
 }
 
@@ -3048,12 +3200,21 @@ func TestModelsForTabOnlyListsProviderAccessWhenConfigured(t *testing.T) {
 	setDesktopTestCredential(t, "MIMO_API_KEY", "sk-test")
 
 	cfg := config.Default()
-	cfg.DefaultModel = "deepseek-flash/deepseek-v4-flash"
-	cfg.Desktop.ProviderAccess = []string{"deepseek-flash", "mimo-pro"}
-	deepseek, _ := cfg.Provider("deepseek-flash")
-	deepseek.Model = ""
-	deepseek.Models = []string{"deepseek-v4-flash", "deepseek-v4-pro"}
-	deepseek.Default = "deepseek-v4-flash"
+	deepseekEntries, _, err := officialProviderTemplate("deepseek", "en")
+	if err != nil {
+		t.Fatalf("officialProviderTemplate: %v", err)
+	}
+	cfg.Providers = append(deepseekEntries, config.ProviderEntry{
+		Name:          "mimo-pro",
+		Kind:          "openai",
+		BaseURL:       "https://token-plan-cn.xiaomimimo.com/v1",
+		Models:        []string{"mimo-v2.5-pro", "mimo-v2.5"},
+		Default:       "mimo-v2.5-pro",
+		APIKeyEnv:     "MIMO_API_KEY",
+		ContextWindow: 1_048_576,
+	})
+	cfg.DefaultModel = "deepseek/deepseek-v4-flash"
+	cfg.Desktop.ProviderAccess = []string{"deepseek", "mimo-pro"}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
@@ -5077,40 +5238,133 @@ api_key_env = "MIMO_API_KEY"
 
 func TestConnectKeyRejectsBackgroundJobsBeforeSavingKey(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("DEEPSEEK_API_KEY", "")
-	os.Unsetenv("DEEPSEEK_API_KEY")
+	t.Setenv("AGENTS_PATTY_API_KEY", "")
+	os.Unsetenv("AGENTS_PATTY_API_KEY")
 
 	app := NewApp()
 	app.ctx = context.Background()
-	app.setTestCtrl(newBackgroundJobController(t, "connect-key-job"), "deepseek-flash/deepseek-v4-flash")
+	app.setTestCtrl(newBackgroundJobController(t, "connect-key-job"), "patty/medium")
 
 	_, err := app.ConnectKey("sk-test")
 	if err == nil || !strings.Contains(err.Error(), "stop background jobs") {
 		t.Fatalf("ConnectKey with background job error = %v, want active-work guard", err)
 	}
-	if data, readErr := os.ReadFile(config.UserCredentialsPath()); readErr == nil && strings.Contains(string(data), "DEEPSEEK_API_KEY") {
+	if data, readErr := os.ReadFile(config.UserCredentialsPath()); readErr == nil && strings.Contains(string(data), "AGENTS_PATTY_API_KEY") {
 		t.Fatalf("onboarding key should not be saved after rejected connect:\n%s", data)
 	}
 }
 
-func TestConnectKeyRestoresDeepSeekProviderAccess(t *testing.T) {
+func TestConnectKeyRejectsUnusableCatalogBeforeSavingKey(t *testing.T) {
+	tests := []struct {
+		name      string
+		fetch     func(context.Context, config.ProviderEntry, string) ([]string, error)
+		wantError string
+	}{
+		{
+			name: "model fetch failure",
+			fetch: func(context.Context, config.ProviderEntry, string) ([]string, error) {
+				return nil, errors.New("catalog unavailable")
+			},
+			wantError: "validate: catalog unavailable",
+		},
+		{
+			name: "stock model missing",
+			fetch: func(context.Context, config.ProviderEntry, string) ([]string, error) {
+				return []string{"small", "large"}, nil
+			},
+			wantError: `validate: stock model "medium" is unavailable`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			isolateDesktopUserDirs(t)
+			entry := onboardingTestProvider(t)
+			t.Setenv(entry.APIKeyEnv, "")
+			if err := os.Unsetenv(entry.APIKeyEnv); err != nil {
+				t.Fatalf("unset onboarding key: %v", err)
+			}
+
+			oldFetch := connectKeyModelFetch
+			connectKeyModelFetch = test.fetch
+			t.Cleanup(func() { connectKeyModelFetch = oldFetch })
+
+			app := NewApp()
+			app.ctx = context.Background()
+			_, err := app.ConnectKey("sk-test")
+			if err == nil || !strings.Contains(err.Error(), test.wantError) {
+				t.Fatalf("ConnectKey error = %v, want %q", err, test.wantError)
+			}
+			data, readErr := os.ReadFile(config.UserCredentialsPath())
+			if readErr == nil && strings.Contains(string(data), entry.APIKeyEnv) {
+				t.Fatalf("unusable onboarding key should not be saved:\n%s", data)
+			}
+			if readErr != nil && !os.IsNotExist(readErr) {
+				t.Fatalf("read credential store: %v", readErr)
+			}
+		})
+	}
+}
+
+func TestConnectKeyRejectsProviderConflictBeforeSavingKey(t *testing.T) {
+	isolateDesktopUserDirs(t)
+	entry := onboardingTestProvider(t)
+	t.Setenv(entry.APIKeyEnv, "")
+	_ = os.Unsetenv(entry.APIKeyEnv)
+	cfg := config.Default()
+	cfg.Providers = []config.ProviderEntry{{
+		Name: "patty", Kind: "openai", BaseURL: "https://custom.example.test/v1",
+		Model: "custom-medium", APIKeyEnv: entry.APIKeyEnv,
+	}}
+	cfg.DefaultModel = "patty/custom-medium"
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save conflicting provider: %v", err)
+	}
+
+	oldFetch := connectKeyModelFetch
+	connectKeyModelFetch = func(context.Context, config.ProviderEntry, string) ([]string, error) {
+		return []string{"medium"}, nil
+	}
+	t.Cleanup(func() { connectKeyModelFetch = oldFetch })
+
+	app := NewApp()
+	app.ctx = context.Background()
+	_, err := app.ConnectKey("sk-test")
+	if err == nil || !strings.Contains(err.Error(), `provider "patty" conflicts`) {
+		t.Fatalf("ConnectKey conflict error = %v", err)
+	}
+	if data, readErr := os.ReadFile(config.UserCredentialsPath()); readErr == nil && strings.Contains(string(data), entry.APIKeyEnv) {
+		t.Fatalf("conflicting onboarding key should not be saved:\n%s", data)
+	}
+}
+
+func TestConnectKeyRestoresPattyProviderAccess(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	cfg := config.Default()
 	cfg.DefaultModel = "custom/custom-model"
 	cfg.Desktop.ProviderAccess = []string{"custom"}
-	cfg.Providers = []config.ProviderEntry{{
-		Name: "custom", Kind: "openai", BaseURL: "https://models.example.invalid/v1",
-		Model: "custom-model", APIKeyEnv: "CUSTOM_API_KEY",
-	}}
+	cfg.Providers = []config.ProviderEntry{
+		{
+			Name: "custom", Kind: "openai", BaseURL: "https://models.example.invalid/v1",
+			Model: "custom-model", APIKeyEnv: "AGENTS_PATTY_API_KEY",
+		},
+		{
+			Name: "patty", Kind: "anthropic", BaseURL: "https://omni.agents.patty.io/v1",
+			Model: "wrong-model", APIKeyEnv: "CUSTOM_PATTY_KEY",
+			Headers: map[string]string{"X-Patty-Route": "custom"},
+		},
+	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save custom provider config: %v", err)
 	}
 
-	oldFetch := connectKeyBalanceFetch
-	connectKeyBalanceFetch = func(context.Context, *http.Client, string, string) (*billing.Balance, error) {
-		return &billing.Balance{Available: true}, nil
+	oldFetch := connectKeyModelFetch
+	connectKeyModelFetch = func(_ context.Context, entry config.ProviderEntry, apiKey string) ([]string, error) {
+		if entry.BaseURL != "https://omni.agents.patty.io/v1" || apiKey != "sk-test" {
+			t.Fatalf("model probe = %q/%q", entry.BaseURL, apiKey)
+		}
+		return []string{"medium"}, nil
 	}
-	t.Cleanup(func() { connectKeyBalanceFetch = oldFetch })
+	t.Cleanup(func() { connectKeyModelFetch = oldFetch })
 
 	app := NewApp()
 	app.ctx = context.Background()
@@ -5126,14 +5380,22 @@ func TestConnectKeyRestoresDeepSeekProviderAccess(t *testing.T) {
 	}
 
 	got := config.LoadForEditWithoutCredentials(config.UserConfigPath())
-	if !providerAccessSet(got.Desktop.ProviderAccess)["deepseek"] {
-		t.Fatalf("provider_access = %v, want DeepSeek restored", got.Desktop.ProviderAccess)
+	if !providerAccessSet(got.Desktop.ProviderAccess)["patty"] {
+		t.Fatalf("provider_access = %v, want Patty restored", got.Desktop.ProviderAccess)
 	}
-	if _, ok := got.Provider("deepseek"); !ok {
-		t.Fatal("DeepSeek provider template should be restored")
+	patty, ok := got.Provider("patty")
+	if !ok {
+		t.Fatal("Patty provider template should be restored")
+	}
+	stock, _ := config.Default().Provider("patty")
+	if patty.Kind != stock.Kind || patty.APIKeyEnv != stock.APIKeyEnv || patty.Model != stock.Model || patty.ContextWindow != stock.ContextWindow {
+		t.Fatalf("restored Patty provider = %+v, want stock wire contract %+v", patty, stock)
+	}
+	if patty.Headers["X-Patty-Route"] != "custom" {
+		t.Fatalf("restored Patty provider lost safe custom headers: %+v", patty.Headers)
 	}
 	if app.NeedsOnboarding() {
-		t.Fatal("restored DeepSeek access and saved key should satisfy onboarding")
+		t.Fatal("restored Patty access and saved key should satisfy onboarding")
 	}
 }
 
@@ -5165,15 +5427,16 @@ func TestBalanceForTabUsesDesktopPricingCurrency(t *testing.T) {
 
 func TestConnectKeyRebuildLeaseHeldKeepsCurrentController(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv(onboardingKeyEnv, "")
-	os.Unsetenv(onboardingKeyEnv)
+	keyEnv := onboardingTestProvider(t).APIKeyEnv
+	t.Setenv(keyEnv, "")
+	os.Unsetenv(keyEnv)
 	setDesktopTestCredential(t, "OLD_MODEL_KEY", "sk-test")
 
-	oldFetch := connectKeyBalanceFetch
-	connectKeyBalanceFetch = func(context.Context, *http.Client, string, string) (*billing.Balance, error) {
-		return &billing.Balance{Available: true}, nil
+	oldFetch := connectKeyModelFetch
+	connectKeyModelFetch = func(context.Context, config.ProviderEntry, string) ([]string, error) {
+		return []string{"medium"}, nil
 	}
-	t.Cleanup(func() { connectKeyBalanceFetch = oldFetch })
+	t.Cleanup(func() { connectKeyModelFetch = oldFetch })
 
 	cfg := config.Default()
 	cfg.DefaultModel = "old/old-model"
@@ -5234,7 +5497,7 @@ func TestConnectKeyRebuildLeaseHeldKeepsCurrentController(t *testing.T) {
 	if tab.StartupErr != "" {
 		t.Fatalf("tab startup error = %q, want unchanged current session", tab.StartupErr)
 	}
-	if !config.CredentialStored(onboardingKeyEnv) {
+	if !config.CredentialStored(keyEnv) {
 		t.Fatal("onboarding key should be persisted even when hot rebuild is deferred")
 	}
 }
@@ -5268,12 +5531,22 @@ func TestMigrateDesktopPreferencesDoesNotOverwriteExistingConfig(t *testing.T) {
 
 func TestSetEffortRebuildsController(t *testing.T) {
 	isolateDesktopUserDirs(t)
+	entries, _, err := officialProviderTemplate("deepseek", "en")
+	if err != nil {
+		t.Fatalf("officialProviderTemplate: %v", err)
+	}
+	cfg := config.Default()
+	cfg.DefaultModel = "deepseek/deepseek-v4-flash"
+	cfg.Providers = entries
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save DeepSeek effort fixture: %v", err)
+	}
 
 	app := NewApp()
 	app.ctx = context.Background()
 	app.readyHook = func() {}
 	old := control.New(control.Options{Label: "old-controller"})
-	app.setTestCtrl(old, "deepseek-flash/deepseek-v4-flash")
+	app.setTestCtrl(old, "deepseek/deepseek-v4-flash")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()
@@ -5316,7 +5589,7 @@ func TestSetEffortMigratesStaleOfficialDeepSeekTabModel(t *testing.T) {
 	app.ctx = context.Background()
 	app.readyHook = func() {}
 	old := control.New(control.Options{Label: "old-controller"})
-	app.setTestCtrl(old, "deepseek-flash/deepseek-v4-flash")
+	app.setTestCtrl(old, "patty/medium")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()
@@ -5342,7 +5615,7 @@ func TestSetTokenModeRebuildsController(t *testing.T) {
 	app.ctx = context.Background()
 	app.readyHook = func() {}
 	old := control.New(control.Options{Label: "old-controller"})
-	app.setTestCtrl(old, "deepseek-flash/deepseek-v4-flash")
+	app.setTestCtrl(old, "patty/medium")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()
@@ -5381,7 +5654,7 @@ func TestSetTokenModeDeliveryRebuildsAndPersistsProfile(t *testing.T) {
 	app.ctx = context.Background()
 	app.readyHook = func() {}
 	old := control.New(control.Options{Label: "old-controller"})
-	app.setTestCtrl(old, "deepseek-flash/deepseek-v4-flash")
+	app.setTestCtrl(old, "patty/medium")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()
@@ -5847,7 +6120,7 @@ func TestClearSessionCancelsRunningRuntimeAndKeepsTopic(t *testing.T) {
 	oldCtrl := control.New(control.Options{Runner: runner, SessionDir: dir, SessionPath: path, Label: "test"})
 	app := NewApp()
 	app.projectTreeChangedHook = func() {}
-	app.setTestCtrl(oldCtrl, "deepseek-flash/deepseek-v4-flash")
+	app.setTestCtrl(oldCtrl, "patty/medium")
 	app.tabs["test"].TopicID = "topic_clear"
 	app.tabs["test"].TopicTitle = "Clear topic"
 	defer func() {
@@ -5895,7 +6168,7 @@ func TestClearSessionRemovesRunningJobArtifacts(t *testing.T) {
 	oldCtrl := control.New(control.Options{SessionDir: dir, SessionPath: path, Label: "test", Jobs: jm})
 	app := NewApp()
 	app.projectTreeChangedHook = func() {}
-	app.setTestCtrl(oldCtrl, "deepseek-flash/deepseek-v4-flash")
+	app.setTestCtrl(oldCtrl, "patty/medium")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()

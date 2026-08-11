@@ -51,7 +51,7 @@ For the desktop and CLI usage of visible reasoning language, see
 [Patty Code language](./PATTY_CODE_LANGUAGE.md).
 
 ```toml
-default_model = "deepseek-flash"   # executor; set [agent].planner_model to add a planner
+default_model = "patty/medium"   # executor; set [agent].planner_model to add a planner
 # language    = "ko-KR"            # UI language; empty = Korean default; set en for English
 
 [ui]
@@ -62,21 +62,23 @@ show_turn_usage = false             # hide per-request token/cost receipts in th
 [agent]
 reasoning_language = "auto"      # visible reasoning text: auto|ko-KR|en
 # plan_mode_read_only_commands = ["gh issue view"]   # legacy compatibility only; Plan bash now uses Permissions
-# planner_model = "deepseek-pro"      # optional low-frequency planner
-# subagent_model = "deepseek-pro"     # optional default for runAs=subagent skills
-# subagent_models = { review = "deepseek-pro", security_review = "deepseek-pro" }
+# planner_model = "patty/medium"      # optional low-frequency planner
+# subagent_model = "patty/medium"     # optional default for runAs=subagent skills
+# subagent_models = { review = "patty/medium", security_review = "patty/medium" }
 # max_subagent_depth = 2              # nested delegation depth; set 1 for the old single-layer boundary
 # max_subagent_concurrency = 6        # session-wide sub-agent concurrency (task/fleet/skills)
 # max_parallel_writers = 3            # concurrent writers with non-overlapping write_paths
 tool_result_snip_ratio = 0.6       # shorten stale tool output before summary compaction
+compact_ratio = 0.9596935403266109 # compact at exactly 238123 of 248124 tokens
+compact_force_ratio = 0.98         # context-exhaustion safety boundary
 
 [[providers]]
-name        = "deepseek-flash"
+name        = "patty"
 kind        = "openai"
-base_url    = "https://api.deepseek.com"
-model       = "deepseek-v4-flash"
-api_key_env = "DEEPSEEK_API_KEY"
-# also preset: deepseek-pro
+base_url    = "https://omni.agents.patty.io/v1"
+model       = "medium"
+api_key_env = "AGENTS_PATTY_API_KEY"
+context_window = 248124
 
 [tools]
 enabled = []   # omit/empty = all built-ins
@@ -924,7 +926,7 @@ changing the ordinary `patcode run` task semantics:
 ```bash
 patcode subagent list
 patcode subagent create reviewer --description "Review changes" --prompt-file reviewer.md --tools read_file,grep,bash
-patcode subagent edit reviewer --effort high --model deepseek-pro
+patcode subagent edit reviewer --model patty/medium
 patcode subagent try reviewer "review the current diff"   # always read-only
 patcode subagent run reviewer "review and fix the current diff"
 patcode subagent delete reviewer --yes
@@ -1136,7 +1138,7 @@ is a one-line edit afterwards — set `planner_model` to any other enabled provi
 
 ```toml
 [agent]
-planner_model = "deepseek-pro"   # used as the low-frequency planner
+planner_model = "deepseek/deepseek-v4-pro"   # after adding DeepSeek; used as the low-frequency planner
 ```
 
 The planner sees loaded `PATTY.md` / `AGENTS.md` memory and a small read-only

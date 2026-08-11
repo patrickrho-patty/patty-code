@@ -17,6 +17,7 @@ import { DEFAULT_STATUS_BAR_ITEMS, normalizeStatusBarItems } from "./statusBarIt
 import { registerTrustedThemeBackgroundURLs } from "./themePack";
 import { modeHasAutoApproveTools, modeWithAutoApproveTools, modeWithPlan, normalizeCollaborationMode, normalizeMode, normalizeTokenMode, normalizeToolApprovalMode } from "./types";
 import { decisionSurfaceMockFromInput, isLongDecisionOptionsMockInput } from "./decisionSurfaceMock";
+import { COMPACT_RATIO_MAX, COMPACT_RATIO_MIN, compactRatioIsEditable, PATTY_MEDIUM_COMPACT_FORCE_RATIO, PATTY_MEDIUM_COMPACT_RATIO, PATTY_MEDIUM_CONTEXT_WINDOW } from "./compactRatio";
 
 import type {
   AutoResearchFindingView,
@@ -1251,7 +1252,6 @@ function makeMockApp(): AppBindings {
   const globalWorkspaceRoot = "~/Library/Application Support/patty/global-workspace";
   let cwd = freshMock ? globalWorkspaceRoot : "~/projects/joyquant-db"; // mutable so PickWorkspace is visible in dev
   let workspaces = freshMock ? [] : ["~/projects/joyquant-db", "~/projects/joyquant-sys", "~/projects/patty", "~/projects/blade"];
-  let mockEffort = "auto";
   let mockDesktopZoomFactor = 1.0;
   let mockActiveThemeId = "";
   let mockBaseStyle = "graphite";
@@ -1498,15 +1498,16 @@ function makeMockApp(): AppBindings {
   }
   // Mutable settings so the Settings panel's edits are observable in browser dev.
   const settings: SettingsView = {
-    defaultModel: "deepseek",
+    defaultModel: "patty/medium",
     plannerModel: "",
     subagentModel: "",
     subagentEffort: "",
     autoPlan: "off",
     providers: [
-      { name: "deepseek", builtIn: true, added: false, kind: "openai", baseUrl: "https://api.deepseek.com", modelsUrl: "", models: ["deepseek-v4-flash"], visionModels: [], visionModelsConfigured: false, default: "deepseek-v4-flash", apiKeyEnv: "DEEPSEEK_API_KEY", keySet: true, balanceUrl: "https://api.deepseek.com/user/balance", contextWindow: 1_000_000, reasoningProtocol: "", thinking: "", supportedEfforts: [], defaultEffort: "" },
+      { name: "patty", builtIn: true, added: true, kind: "openai", baseUrl: "https://omni.agents.patty.io/v1", modelsUrl: "", models: ["medium"], visionModels: [], visionModelsConfigured: false, default: "medium", apiKeyEnv: "AGENTS_PATTY_API_KEY", keySet: true, balanceUrl: "", contextWindow: PATTY_MEDIUM_CONTEXT_WINDOW, reasoningProtocol: "", thinking: "", supportedEfforts: [], defaultEffort: "" },
     ],
     officialProviders: [
+      { name: "patty", builtIn: true, added: true, kind: "openai", baseUrl: "https://omni.agents.patty.io/v1", modelsUrl: "", models: ["medium"], visionModels: [], visionModelsConfigured: false, default: "medium", apiKeyEnv: "AGENTS_PATTY_API_KEY", keySet: true, balanceUrl: "", contextWindow: PATTY_MEDIUM_CONTEXT_WINDOW, reasoningProtocol: "", thinking: "", supportedEfforts: [], defaultEffort: "" },
       { name: "deepseek", builtIn: true, added: false, kind: "openai", baseUrl: "https://api.deepseek.com", modelsUrl: "", models: ["deepseek-v4-flash", "deepseek-v4-pro"], visionModels: [], visionModelsConfigured: false, default: "deepseek-v4-flash", apiKeyEnv: "DEEPSEEK_API_KEY", keySet: true, balanceUrl: "https://api.deepseek.com/user/balance", contextWindow: 1_000_000, reasoningProtocol: "", thinking: "", supportedEfforts: [], defaultEffort: "" },
     ],
     providerPresets: mockProviderPresetViews(),
@@ -1518,7 +1519,7 @@ function makeMockApp(): AppBindings {
       noProxy: "",
       proxy: { type: "socks5", server: "127.0.0.1", port: 7890, username: "", password: "" },
     },
-    agent: { temperature: 0.2, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "You are Patty Code, a coding agent.", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: 0.8 },
+    agent: { temperature: 0.2, maxSteps: 0, plannerMaxSteps: 0, maxSubagentDepth: 2, maxSubagentConcurrency: 6, maxParallelWriters: 3, systemPrompt: "You are Patty Code, a coding agent.", coldResumePrune: true, reasoningLanguage: "auto", compactRatio: PATTY_MEDIUM_COMPACT_RATIO, compactForceRatio: PATTY_MEDIUM_COMPACT_FORCE_RATIO, toolResultSnipRatio: 0.6, compactRatioMin: COMPACT_RATIO_MIN, compactRatioMax: COMPACT_RATIO_MAX },
     bot: {
       enabled: !freshMock,
       model: "",
@@ -1597,7 +1598,10 @@ function makeMockApp(): AppBindings {
     },
   };
   settings.providers = settings.providers.map((provider) =>
-    provider.apiKeyEnv === "DEEPSEEK_API_KEY" ? { ...provider, keySet: !freshMock } : provider,
+    provider.apiKeyEnv === "AGENTS_PATTY_API_KEY" ? { ...provider, keySet: !freshMock } : provider,
+  );
+  settings.officialProviders = settings.officialProviders.map((provider) =>
+    provider.apiKeyEnv === "AGENTS_PATTY_API_KEY" ? { ...provider, keySet: !freshMock } : provider,
   );
   if (freshMock) {
     settings.configPath = "~/.patty/config.toml";
@@ -1931,7 +1935,7 @@ function makeMockApp(): AppBindings {
       topicId: "topic_notice_preview",
       topicTitle: "Compact notice preview",
       projectColor: "green",
-      label: "DeepSeek-R1",
+      label: "medium",
       ready: true,
       running: false,
       mode: "normal",
@@ -1950,7 +1954,7 @@ function makeMockApp(): AppBindings {
       workspacePath: globalWorkspaceRoot,
       topicId: "",
       topicTitle: "Global",
-      label: "DeepSeek-R1",
+      label: "medium",
       ready: true,
       running: false,
       mode: "normal",
@@ -1971,7 +1975,7 @@ function makeMockApp(): AppBindings {
       topicId: "topic_dev_standard",
       topicTitle: t("mock.trashDevStandardTitle"),
       projectColor: "blue",
-      label: "DeepSeek-R1",
+      label: "medium",
       ready: true,
       running: false,
       mode: "normal",
@@ -1991,7 +1995,7 @@ function makeMockApp(): AppBindings {
       topicId: "topic_p3b_pd",
       topicTitle: "p3b P&D",
       projectColor: "purple",
-      label: "DeepSeek-R1",
+      label: "medium",
       ready: true,
       running: runningMock && mockTopicIsRunning("topic_p3b_pd"),
       mode: "normal",
@@ -2009,7 +2013,7 @@ function makeMockApp(): AppBindings {
       workspacePath: "~/projects/joyquant-db",
       topicId: "topic_global",
       topicTitle: "Global",
-      label: "DeepSeek-R1",
+      label: "medium",
       ready: true,
       running: false,
       mode: "normal",
@@ -2039,13 +2043,12 @@ function makeMockApp(): AppBindings {
     }, 800);
   }
   const mockModelCatalog = [
-    { ref: "deepseek/deepseek-v4-flash", provider: "deepseek", model: "deepseek-v4-flash" },
-    { ref: "deepseek/deepseek-v4-pro", provider: "deepseek", model: "deepseek-v4-pro" },
+    { ref: "patty/medium", provider: "patty", model: "medium" },
   ];
   const defaultMockModelRef = mockModelCatalog[0].ref;
   const mockModelRef = (name: string): string => {
     const trimmed = name.trim();
-    if (!trimmed || trimmed === "DeepSeek-R1") return defaultMockModelRef;
+    if (!trimmed || trimmed === "medium") return defaultMockModelRef;
     const exact = mockModelCatalog.find((model) => model.ref === trimmed);
     if (exact) return exact.ref;
     const byModel = mockModelCatalog.find((model) => model.model === trimmed);
@@ -2960,7 +2963,7 @@ function makeMockApp(): AppBindings {
       if (index >= 0) mockProjectTree.splice(index, 1);
     },
         async ContextUsage() {
-          return { used: 42124, window: 128000, sessionTokens: 34479, compactRatio: 0.8 };
+          return { used: 42124, window: PATTY_MEDIUM_CONTEXT_WINDOW, sessionTokens: 34479, compactRatio: PATTY_MEDIUM_COMPACT_RATIO };
         },
         async ContextUsageForTab() {
           return this.ContextUsage();
@@ -3025,7 +3028,7 @@ function makeMockApp(): AppBindings {
           const collaborationMode = normalizeCollaborationMode(active?.collaborationMode, active?.goal, active ? normalizeMode(active.mode) : "normal");
           const workspacePath = active?.workspacePath || active?.workspaceRoot || active?.cwd || cwd;
           return {
-            label: active?.label ?? "DeepSeek-R1",
+            label: active?.label ?? "medium",
             ready: active?.ready ?? true,
             eventChannel: EVENT_CHANNEL,
             cwd: active?.cwd || cwd,
@@ -3052,7 +3055,7 @@ function makeMockApp(): AppBindings {
           const collaborationMode = normalizeCollaborationMode(tab?.collaborationMode, tab?.goal, tab ? normalizeMode(tab.mode) : "normal");
           const workspacePath = tab?.workspacePath || tab?.workspaceRoot || tab?.cwd || cwd;
           return {
-            label: tab?.label ?? "DeepSeek-R1",
+            label: tab?.label ?? "medium",
             ready: tab?.ready ?? true,
             eventChannel: EVENT_CHANNEL,
             cwd: tab?.cwd || cwd,
@@ -3593,13 +3596,7 @@ function makeMockApp(): AppBindings {
           { label: "list", insert: "list", hint: "list active hooks" },
         ],
         "/model": [
-          { label: "deepseek/deepseek-v4-flash", insert: "deepseek/deepseek-v4-flash", hint: "current" },
-          { label: "deepseek/deepseek-v4-pro", insert: "deepseek/deepseek-v4-pro", hint: "" },
-        ],
-        "/effort": [
-          { label: "auto", insert: "auto", hint: "use the model default" },
-          { label: "high", insert: "high", hint: "deeper reasoning" },
-          { label: "max", insert: "max", hint: "maximum reasoning" },
+          { label: "medium", insert: "patty/medium", hint: "current" },
         ],
       };
       const items = (subs[cmd] ?? [])
@@ -3811,13 +3808,13 @@ function makeMockApp(): AppBindings {
           setMockTabModel(tabID, name);
         },
         async Effort() {
-          return { supported: true, current: mockEffort, default: "high", levels: ["auto", "high", "max"] };
+          return { supported: false, current: "auto", default: "auto", levels: [] };
         },
         async EffortForTab() {
           return this.Effort();
         },
-        async SetEffort(level: string) {
-          mockEffort = level || "auto";
+        async SetEffort(_level: string) {
+          throw new Error("reasoning effort is not supported by patty/medium");
         },
         async SetEffortForTab(_tabID, level) {
           await this.SetEffort(level);
@@ -4110,13 +4107,19 @@ function makeMockApp(): AppBindings {
     },
     async AddOfficialProviderAccess(kind: string, key: string) {
       const templates: Record<string, ProviderView> = {
+        patty: { name: "patty", builtIn: true, added: true, kind: "openai", baseUrl: "https://omni.agents.patty.io/v1", modelsUrl: "", models: ["medium"], visionModels: [], visionModelsConfigured: false, default: "medium", apiKeyEnv: "AGENTS_PATTY_API_KEY", keySet: !!key.trim(), balanceUrl: "", contextWindow: PATTY_MEDIUM_CONTEXT_WINDOW, reasoningProtocol: "", thinking: "", supportedEfforts: [], defaultEffort: "" },
         deepseek: { name: "deepseek", builtIn: true, added: true, kind: "openai", baseUrl: "https://api.deepseek.com", modelsUrl: "", models: ["deepseek-v4-flash", "deepseek-v4-pro"], visionModels: [], visionModelsConfigured: false, default: "deepseek-v4-flash", apiKeyEnv: "DEEPSEEK_API_KEY", keySet: !!key.trim(), balanceUrl: "https://api.deepseek.com/user/balance", contextWindow: 1_000_000, reasoningProtocol: "", thinking: "", supportedEfforts: [], defaultEffort: "" },
       };
       const next = templates[kind];
       if (!next) throw new Error(`unknown official provider template ${kind}`);
       const i = settings.providers.findIndex((x) => x.name === next.name);
-      if (i >= 0) settings.providers[i] = { ...settings.providers[i], ...next, keySet: next.keySet || settings.providers[i].keySet };
+      if (i >= 0) settings.providers[i] = { ...settings.providers[i], added: true, keySet: next.keySet || settings.providers[i].keySet };
       else settings.providers.push(next);
+      const official = settings.officialProviders.find((x) => x.name === next.name);
+      if (official) {
+        official.added = true;
+        official.keySet = next.keySet || official.keySet;
+      }
       return "";
     },
     async AddProviderPresetAccess(id: string, key: string) {
@@ -4157,6 +4160,7 @@ function makeMockApp(): AppBindings {
       if (!p.baseUrl.trim()) throw new Error(t("settings.fetchModelsMissingBaseUrl"));
       if (providerRequiresKey(p) && !p.apiKeyEnv.trim()) throw new Error(t("settings.fetchModelsMissingKeyEnv"));
       await delay(350);
+      if (p.name === "patty" || p.baseUrl.includes("omni.agents.patty.io")) return ["medium"];
       if (p.baseUrl.includes("deepseek")) return ["deepseek-v4-flash", "deepseek-v4-pro"];
       if (p.baseUrl.includes("token-plan")) return ["mimo-v2.5", "mimo-v2.5-pro"];
       if (p.baseUrl.includes("xiaomimimo")) return ["mimo-v2.5-pro", "mimo-v2.5"];
@@ -4180,21 +4184,23 @@ function makeMockApp(): AppBindings {
       const p = settings.providers.find((x) => x.name === name);
       if (p?.builtIn) p.added = false;
       else settings.providers = settings.providers.filter((x) => x.name !== name);
+      const official = settings.officialProviders.find((x) => x.name === name);
+      if (official) official.added = false;
     },
     async SaveProviderKey(apiKeyEnv: string, _value: string) {
-      settings.providers.forEach((p) => {
+      [...settings.providers, ...settings.officialProviders].forEach((p) => {
         if (p.apiKeyEnv === apiKeyEnv) p.keySet = true;
       });
       return "";
     },
     async SetProviderKey(apiKeyEnv: string, _value: string) {
-      settings.providers.forEach((p) => {
+      [...settings.providers, ...settings.officialProviders].forEach((p) => {
         if (p.apiKeyEnv === apiKeyEnv) p.keySet = true;
       });
       return "";
     },
     async ClearProviderKey(apiKeyEnv: string) {
-      settings.providers.forEach((p) => {
+      [...settings.providers, ...settings.officialProviders].forEach((p) => {
         if (p.apiKeyEnv === apiKeyEnv) p.keySet = false;
       });
     },
@@ -4451,7 +4457,13 @@ function makeMockApp(): AppBindings {
       settings.agent = { ...settings.agent, coldResumePrune: enabled };
     },
     async SetCompactRatio(ratio: number) {
-      if (!Number.isFinite(ratio) || ratio < 0.65 || ratio > 0.85) throw new Error("compact ratio must be between 0.65 and 0.85");
+      const bounds = {
+        min: settings.agent.compactRatioMin ?? COMPACT_RATIO_MIN,
+        max: settings.agent.compactRatioMax ?? COMPACT_RATIO_MAX,
+        snip: settings.agent.toolResultSnipRatio ?? 0,
+        force: settings.agent.compactForceRatio ?? 0,
+      };
+      if (!compactRatioIsEditable(ratio, bounds)) throw new Error(`compact ratio must be between ${bounds.min} and ${bounds.max} and inside the configured safety thresholds`);
       settings.agent = { ...settings.agent, compactRatio: ratio };
     },
     async SetReasoningLanguage(lang: string) {
@@ -4538,8 +4550,8 @@ function makeMockApp(): AppBindings {
     },
     async ConnectKey(apiKey: string) {
       if (!apiKey.trim()) throw new Error("key is required");
-      settings.providers.forEach((p) => {
-        if (p.apiKeyEnv === "DEEPSEEK_API_KEY") {
+      [...settings.providers, ...settings.officialProviders].forEach((p) => {
+        if (p.apiKeyEnv === "AGENTS_PATTY_API_KEY") {
           p.added = true;
           p.keySet = true;
           p.configured = true;

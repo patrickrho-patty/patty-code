@@ -43,10 +43,10 @@ func decodeTOMLBytes(data []byte, v any) (toml.MetaData, error) {
 //
 // TOML array-of-tables decoding is positional: BurntSushi/toml unifies
 // [[providers]][i] onto whatever the destination slice already holds at index i
-// instead of onto a zero value. Every config load seeds from Default(), which
-// ships two official DeepSeek entries, so a user's first two [[providers]]
-// inherit every DeepSeek field they did not set themselves — balance_url,
-// the USD price table and context_window = 1000000 (#7357, #7358).
+// instead of onto a zero value. Config loads seed from Default(); before the
+// Patty stock model, that catalog contained two DeepSeek entries, so a user's
+// first two [[providers]] inherited every DeepSeek field they did not set —
+// balance_url, the USD price table and context_window = 1000000 (#7357, #7358).
 //
 // Re-decoding the same bytes onto an empty slice makes a declared provider list
 // carry only what the file declares. Defaults that are genuinely correct for an

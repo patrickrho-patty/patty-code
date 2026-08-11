@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="170" viewBox="0 0 760 170" role="img" aria-label="Patty Code — DeepSeek-native agent framework">
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="170" viewBox="0 0 760 170" role="img" aria-label="Patty Code — Korean-first coding agent">
   <title>Patty Code</title>
   <defs>
     <!-- Signature cyan → violet → fuchsia gradient used across the TUI wordmark
@@ -91,5 +91,5 @@
         font-family="ui-monospace, SFMono-Regular, 'Cascadia Code', Menlo, Consolas, 'DejaVu Sans Mono', monospace"
         font-size="15"
         fill="#64748b"
-        letter-spacing="0.5">DeepSeek-native agent framework  ·  cache-first loop  ·  Ink TUI</text>
+        letter-spacing="0.5">Korean-first coding agent  ·  cache-first loop  ·  terminal native</text>
 </svg>

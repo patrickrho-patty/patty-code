@@ -3,8 +3,8 @@ import logo from "../assets/logo.svg";
 import { useT } from "../lib/i18n";
 import { app, openExternal } from "../lib/bridge";
 
-// Full-window first-run guide: DeepSeek stays the fastest path, while users can
-// open the provider settings or defer setup without being trapped in the gate.
+// Full-window first-run guide for the stock Patty model. Users can still open
+// provider settings or defer setup without being trapped in the gate.
 export function OnboardingOverlay({
   onComplete,
   onChooseProvider,
@@ -115,7 +115,7 @@ export function OnboardingOverlay({
           <button
             type="button"
             className="onboarding__link"
-            onClick={() => openExternal("https://platform.deepseek.com/api_keys")}
+            onClick={() => openExternal("https://code.patty.io")}
           >
             {t("onboarding.getKey")}
           </button>

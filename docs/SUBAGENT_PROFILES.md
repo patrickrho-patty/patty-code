@@ -17,8 +17,7 @@ patcode subagent create reviewer \
   --description "Review changes for correctness and regressions" \
   --prompt-file reviewer.md \
   --tools read_file,grep,bash \
-  --model deepseek-pro \
-  --effort high
+  --model patty/medium
 ```
 
 With a workspace, `create` defaults to project scope. Outside a workspace it
@@ -134,8 +133,7 @@ description: Review changes for correctness and regressions
 color: orange
 invocation: manual
 runAs: subagent
-model: deepseek-pro
-effort: high
+model: patty/medium
 read-only: true
 allowed-tools: [read_file, grep, bash]
 ---
@@ -173,11 +171,11 @@ lowest priority:
 4. `agent.subagent_model` and `agent.subagent_effort` defaults;
 5. the configured executor/default model and its default effort.
 
-For example:
+For example, after adding DeepSeek as an alternative provider:
 
 ```toml
 [agent]
-subagent_model = "deepseek-pro"
+subagent_model = "deepseek/deepseek-v4-pro"
 subagent_effort = "high"
 subagent_models = { reviewer = "deepseek/deepseek-v4-pro" }
 subagent_efforts = { reviewer = "max" }

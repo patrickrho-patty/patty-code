@@ -155,3 +155,33 @@ func TestMergeExtensionModelRefs(t *testing.T) {
 		t.Fatalf("nil catalog changed the base list: %v", out)
 	}
 }
+
+func TestModelPickerPresentationPreservesExtensionIdentity(t *testing.T) {
+	descriptor := provider.Descriptor{
+		Ref:         "plugin/demo/fake/x",
+		DisplayName: "Demo X",
+		Model:       "x",
+	}
+	descriptorsByRef := map[string]provider.Descriptor{descriptor.Ref: descriptor}
+	label, description := modelPickerPresentation("plugin/demo/fake/x", descriptorsByRef)
+	if label != "Demo X" || description != "Extension: plugin/demo/fake/x" {
+		t.Fatalf("extension presentation = %q/%q", label, description)
+	}
+
+	label, description = modelPickerPresentation("plugin/demo/fake/y", descriptorsByRef)
+	if label != "plugin/demo/fake/y" || description != "Extension model" {
+		t.Fatalf("unknown extension presentation = %q/%q", label, description)
+	}
+
+	label, description = modelPickerPresentation("plugin/local-model", descriptorsByRef)
+	if label != "local-model" || description != "Provider: plugin" {
+		t.Fatalf("ordinary plugin-named provider presentation = %q/%q", label, description)
+	}
+
+	for _, malformed := range []string{"patty/", "/medium"} {
+		label, description = modelPickerPresentation(malformed, descriptorsByRef)
+		if label != malformed || description != "" {
+			t.Fatalf("malformed ref %q presentation = %q/%q", malformed, label, description)
+		}
+	}
+}

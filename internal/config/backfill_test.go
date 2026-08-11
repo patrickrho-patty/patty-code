@@ -1044,10 +1044,7 @@ func TestBackfillDeepSeekOfficialPricesKeepsProviderWidePrice(t *testing.T) {
 
 func TestApplyDeepSeekOfficialDefaultPricingUsesConfiguredLanguage(t *testing.T) {
 	c := Default()
-	c.Providers = []ProviderEntry{
-		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY", Price: deepSeekV4FlashPriceUSD()},
-		{Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", APIKeyEnv: "DEEPSEEK_API_KEY", Price: deepSeekV4ProPriceUSD()},
-	}
+	c.Providers = legacyDeepSeekProviderEntries()
 	c.Language = "ko-KR"
 	applyDeepSeekOfficialDefaultPricing(c)
 	flash, ok := c.Provider("deepseek-flash")
@@ -1255,10 +1252,7 @@ func TestLoadForRootKeepsPricingRegionUserGlobal(t *testing.T) {
 
 func TestApplyDeepSeekOfficialDefaultPricingExplicitCurrencyWins(t *testing.T) {
 	c := Default()
-	c.Providers = []ProviderEntry{
-		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY", Price: deepSeekV4FlashPriceUSD()},
-		{Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", APIKeyEnv: "DEEPSEEK_API_KEY", Price: deepSeekV4ProPriceUSD()},
-	}
+	c.Providers = legacyDeepSeekProviderEntries()
 	c.Desktop.Language = "ko-KR"
 	c.Desktop.Currency = "USD"
 	applyDeepSeekOfficialDefaultPricing(c)

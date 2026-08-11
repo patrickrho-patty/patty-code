@@ -35,7 +35,7 @@
 데스크톱과 CLI에서 표시용 patty code 언어를 사용하는 방법은 [Patty Code 언어](./PATTY_CODE_LANGUAGE.md)를 참조하세요.
 
 ```toml
-default_model = "deepseek-flash"   # executor; 플래너를 추가하려면 [agent].planner_model 설정
+default_model = "patty/medium"   # 실행 모델; 플래너를 추가하려면 [agent].planner_model 설정
 # language    = "ko-KR"            # UI 언어; 비어 있으면 한국어 기본값, en이면 영어
 
 [ui]
@@ -46,21 +46,23 @@ show_turn_usage = false             # TUI에서 요청별 토큰/비용 내역 �
 [agent]
 reasoning_language = "auto"      # 표시용 reasoning 텍스트: auto|ko-KR|en
 # plan_mode_read_only_commands = ["gh issue view"]   # 레거시 호환 전용; Plan bash는 이제 Permissions 사용
-# planner_model = "deepseek-pro"      # 선택적 저빈도 플래너
-# subagent_model = "deepseek-pro"     # runAs=subagent 스킬용 선택적 기본값
-# subagent_models = { review = "deepseek-pro", security_review = "deepseek-pro" }
+# planner_model = "patty/medium"      # 선택적 저빈도 플래너
+# subagent_model = "patty/medium"     # runAs=subagent 스킬용 선택적 기본값
+# subagent_models = { review = "patty/medium", security_review = "patty/medium" }
 # max_subagent_depth = 2              # 중첩 위임 깊이; 기존 단일 계층 경계는 1로 설정
 # max_subagent_concurrency = 6        # 세션 전체 하위 에이전트 동시성(task/fleet/skills)
 # max_parallel_writers = 3            # 겹치지 않는 write_paths를 가진 동시 작성자
 tool_result_snip_ratio = 0.6       # 요약 압축 전 오래된 도구 출력 축약
+compact_ratio = 0.9596935403266109 # 248124토큰 중 정확히 238123토큰에서 자동 압축
+compact_force_ratio = 0.98         # 컨텍스트 한계 안전 경계
 
 [[providers]]
-name        = "deepseek-flash"
+name        = "patty"
 kind        = "openai"
-base_url    = "https://api.deepseek.com"
-model       = "deepseek-v4-flash"
-api_key_env = "DEEPSEEK_API_KEY"
-# 사전 설정: deepseek-pro도 있음
+base_url    = "https://omni.agents.patty.io/v1"
+model       = "medium"
+api_key_env = "AGENTS_PATTY_API_KEY"
+context_window = 248124
 
 [tools]
 enabled = []   # 생략/비움 = 모든 내장 도구
@@ -550,7 +552,7 @@ headers = { Authorization = "Bearer ${STRIPE_KEY}" }
 ```bash
 patcode subagent list
 patcode subagent create reviewer --description "Review changes" --prompt-file reviewer.md --tools read_file,grep,bash
-patcode subagent edit reviewer --effort high --model deepseek-pro
+patcode subagent edit reviewer --model patty/medium
 patcode subagent try reviewer "review the current diff"   # 항상 읽기 전용
 patcode subagent run reviewer "review and fix the current diff"
 patcode subagent delete reviewer --yes
@@ -628,7 +630,7 @@ AutoResearch가 활성화되면 에이전트는 목표를 채팅 전용 연속�
 
 ```toml
 [agent]
-planner_model = "deepseek-pro"   # 저빈도 플래너로 사용
+planner_model = "deepseek/deepseek-v4-pro"   # DeepSeek 추가 후 저빈도 플래너로 사용
 ```
 
 플래너는 로드된 `PATTY.md` / `AGENTS.md` 메모리와 작은 읽기 전용 연구 도구 세트를 보므로 executor에게 계획을 넘기기 전에 관련 파일을 검사할 수 있습니다. 작성자 및 워크플로 도구는 executor 전용으로 남습니다.

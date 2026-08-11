@@ -2,9 +2,12 @@ package serve
 
 import (
 	"context"
+	"reflect"
+	"strings"
 	"testing"
 
 	"patty/internal/config"
+	"patty/internal/netclient"
 	"patty/internal/provider"
 )
 
@@ -23,15 +26,85 @@ func (p *recordingTitleProvider) Stream(_ context.Context, req provider.Request)
 	return ch, nil
 }
 
-func TestTitleProviderDisablesReasoning(t *testing.T) {
-	cfg := titleProviderConfig(&config.ProviderEntry{
-		Name:    "deepseek-flash",
-		Kind:    "openai",
-		BaseURL: "https://api.deepseek.com",
-		Model:   "deepseek-v4-flash",
+func TestTitleProviderReusesCompleteProviderConfigAndDisablesReasoning(t *testing.T) {
+	kind := "title-config-" + strings.ReplaceAll(t.Name(), "/", "-")
+	var got provider.Config
+	provider.Register(kind, func(cfg provider.Config) (provider.Provider, error) {
+		got = cfg
+		return &recordingTitleProvider{}, nil
 	})
-	if got := cfg.Extra["effort"]; got != "disabled" {
-		t.Fatalf("title provider effort = %v, want disabled", got)
+	entry := &config.ProviderEntry{
+		Name:              "custom-title",
+		Kind:              kind,
+		BaseURL:           "https://example.test/v1",
+		ChatURL:           "https://chat.example.test/completions",
+		Model:             "custom-model",
+		APIKeyEnv:         "CUSTOM_TITLE_KEY",
+		Headers:           map[string]string{"X-Workspace": "patty"},
+		ExtraBody:         map[string]any{"route": "fast"},
+		AuthHeader:        true,
+		Thinking:          "enabled",
+		ReasoningProtocol: "openai",
+		SupportedEfforts:  []string{"disabled", "high"},
+		DefaultEffort:     "high",
+	}
+	proxy := netclient.ProxySpec{Mode: netclient.ModeOff}
+	if _, err := newTitleProvider(entry, proxy); err != nil {
+		t.Fatalf("newTitleProvider: %v", err)
+	}
+	if got.Name != entry.Name || got.BaseURL != entry.BaseURL || got.Model != entry.Model {
+		t.Fatalf("title provider identity = %+v, want entry identity %+v", got, entry)
+	}
+	if got.Extra["effort"] != "disabled" || got.Extra["thinking"] != "disabled" || got.Extra["chat_url"] != entry.ChatURL || got.Extra["auth_header"] != entry.AuthHeader {
+		t.Fatalf("title provider scalar options = %+v", got.Extra)
+	}
+	if !reflect.DeepEqual(got.Extra["proxy_spec"], proxy) {
+		t.Fatalf("title provider proxy = %+v, want %+v", got.Extra["proxy_spec"], proxy)
+	}
+	headers, _ := got.Extra["headers"].(map[string]string)
+	extraBody, _ := got.Extra["extra_body"].(map[string]any)
+	if headers["X-Workspace"] != "patty" || extraBody["route"] != "fast" {
+		t.Fatalf("title provider request options = %+v", got.Extra)
+	}
+}
+
+func TestStockTitleProviderUsesPattyMediumWithoutUnsupportedEffort(t *testing.T) {
+	cfg := config.Default()
+	entry, ok := cfg.ResolveModel(cfg.DefaultModel)
+	if !ok {
+		t.Fatalf("default model %q did not resolve", cfg.DefaultModel)
+	}
+	kind := "stock-title-" + strings.ReplaceAll(t.Name(), "/", "-")
+	entry.Kind = kind
+	var got provider.Config
+	provider.Register(kind, func(cfg provider.Config) (provider.Provider, error) {
+		got = cfg
+		return &recordingTitleProvider{}, nil
+	})
+	if _, err := newTitleProvider(entry, cfg.NetworkProxySpec()); err != nil {
+		t.Fatalf("construct stock title provider: %v", err)
+	}
+	if got.Extra["effort"] != "" || got.Extra["thinking"] != "" {
+		t.Fatalf("stock title reasoning overrides = %+v, want none", got.Extra)
+	}
+}
+
+func TestAnthropicTitleProviderOmitsAdaptiveThinking(t *testing.T) {
+	kind := "anthropic-title-" + strings.ReplaceAll(t.Name(), "/", "-")
+	var got provider.Config
+	provider.Register(kind, func(cfg provider.Config) (provider.Provider, error) {
+		got = cfg
+		return &recordingTitleProvider{}, nil
+	})
+	entry := &config.ProviderEntry{
+		Name: "anthropic-title", Kind: kind, BaseURL: "https://api.anthropic.com",
+		Model: "claude-test", APIKeyEnv: "ANTHROPIC_API_KEY", Thinking: "adaptive",
+	}
+	if _, err := newTitleProvider(entry, netclient.ProxySpec{Mode: netclient.ModeOff}); err != nil {
+		t.Fatalf("construct adaptive title provider: %v", err)
+	}
+	if got.Extra["thinking"] != "" {
+		t.Fatalf("adaptive title thinking = %q, want omitted", got.Extra["thinking"])
 	}
 }
 

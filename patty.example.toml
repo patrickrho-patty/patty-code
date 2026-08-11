@@ -4,7 +4,7 @@
 # Provider entries name secrets via api_key_env; saved key values live in
 # Patty Code's global <Patty Code home>/.env. Never put API key values here.
 
-default_model = "deepseek"   # a provider name (→ its default model) or "provider/model"
+default_model = "patty/medium"   # a provider name (→ its default model) or "provider/model"
 # language      = "ko-KR"   # ui/model language; empty = Korean default; set en for English
 
 [ui]
@@ -33,15 +33,15 @@ ask_request = true   # notify when a question is waiting
 # system_prompt_file = "prompts/system.md"   # project paths stay in <workspace>; user paths may fall back to <patty code home>
 temperature       = 0.0
 # recovery_model = ""               # optional reviewer for low-risk automatic recovery; falls back to guardian_model then main model
-# patty_code_language = "auto"   # visible patty code text: auto|ko-KR|en
+# reasoning_language = "auto"   # model reasoning language: auto|ko-KR|en
 # plan_mode_read_only_commands = ["gh issue view"]   # legacy compatibility only; Plan bash uses Permissions
 soft_compact_ratio  = 0.5   # notice only; keeps the cache-first prefix intact
 tool_result_snip_ratio = 0.6   # snip stale tool results before summary compaction
-compact_ratio       = 0.8   # try compacting when prompt reaches this fraction
-compact_force_ratio = 0.9   # force compacting at this high-water mark
-# planner_model = "deepseek-pro"   # optional: enable two-model collaboration
-# subagent_model = "deepseek-pro"   # optional default for runAs=subagent skills
-# subagent_models = { review = "deepseek-pro", security_review = "deepseek-pro" }   # per-skill overrides
+compact_ratio       = 0.9596935403266109   # compact at exactly 238123 of 248124 context tokens
+compact_force_ratio = 0.98   # force compacting at this high-water mark
+# planner_model = "patty/medium"   # optional: enable two-model collaboration
+# subagent_model = "patty/medium"   # optional default for runAs=subagent skills
+# subagent_models = { review = "patty/medium", security_review = "patty/medium" }   # per-skill overrides
 # max_subagent_concurrency = 6   # session-wide sub-agent concurrency (task/fleet/skills)
 # max_parallel_writers = 3       # concurrent writers with non-overlapping write_paths
 # output_style = "explanatory"   # persona/tone folded into the prompt: explanatory | learning | concise,
@@ -55,21 +55,14 @@ compact_force_ratio = 0.9   # force compacting at this high-water mark
 # Vercel AI Gateway, HuggingFace, NVIDIA, KiloCode, Ollama Cloud,
 # and other OpenAI-compatible providers.
 [[providers]]
-name        = "deepseek"
+name        = "patty"
 kind        = "openai"
-base_url    = "https://api.deepseek.com"
-models      = ["deepseek-v4-flash", "deepseek-v4-pro"]
-default     = "deepseek-v4-flash"   # optional; defaults to the first of `models`
-api_key_env = "DEEPSEEK_API_KEY"
-context_window = 1000000
+base_url    = "https://omni.agents.patty.io/v1"
+model       = "medium"
+api_key_env = "AGENTS_PATTY_API_KEY"
+context_window = 248124
 # Optional per-model context budgets. Omitted models inherit context_window.
-# model_overrides = { "deepseek-v4-flash" = { context_window = 1000000 } }
-# Official DeepSeek providers use CNY or USD regional prices from
-# [desktop].currency; auto follows the selected language and defaults to USD.
-# Set prices explicitly only when you want to pin custom rates.
-# prices = { "deepseek-v4-flash" = { cache_hit = 0.02, input = 1, output = 2, currency = "¥" }, "deepseek-v4-pro" = { cache_hit = 0.025, input = 3, output = 6, currency = "¥" } }   # per 1M tokens
-# DeepSeek thinking is always on; effort: high | max. Omit for auto (provider default).
-effort      = "high"
+# model_overrides = { "medium" = { context_window = 248124 } }
 
 # A single-model provider still works (use `model = "..."`) — pick this form when
 # a model needs its own base_url. Use model_overrides when models share an endpoint

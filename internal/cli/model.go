@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"patty/internal/config"
+	"patty/internal/extension/providerext"
 	"patty/internal/i18n"
 	"patty/internal/provider"
 )
@@ -112,15 +113,15 @@ func (m *chatTUI) openModelPicker() {
 		return
 	}
 	items := make([]quickPickerItem, 0, len(refs))
+	descriptorsByRef := make(map[string]provider.Descriptor, len(catalog))
+	for _, descriptor := range catalog {
+		if ref := strings.TrimSpace(descriptor.Ref); ref != "" {
+			descriptorsByRef[ref] = descriptor
+		}
+	}
 	selected := 0
 	for _, ref := range refs {
-		parts := strings.SplitN(ref, "/", 2)
-		description := ""
-		label := ref
-		if len(parts) == 2 {
-			description = "Provider: " + parts[0]
-			label = parts[1]
-		}
+		label, description := modelPickerPresentation(ref, descriptorsByRef)
 		status := ""
 		if ref == m.modelRef {
 			status = "active"
@@ -129,6 +130,31 @@ func (m *chatTUI) openModelPicker() {
 		items = append(items, quickPickerItem{ID: ref, Label: label, Description: description, Status: status})
 	}
 	m.quickPick = &quickPicker{kind: quickPickerModel, title: "Select model", items: items, selected: selected}
+}
+
+func modelPickerPresentation(ref string, descriptorsByRef map[string]provider.Descriptor) (label, description string) {
+	if providerext.PluginRefOwner(ref) != "" {
+		if descriptor, ok := descriptorsByRef[ref]; ok {
+			label = strings.TrimSpace(descriptor.DisplayName)
+			if label == "" {
+				label = strings.TrimSpace(descriptor.Model)
+			}
+			if label == "" {
+				label = ref
+			}
+			return label, "Extension: " + ref
+		}
+		return ref, "Extension model"
+	}
+	parts := strings.SplitN(ref, "/", 2)
+	if len(parts) == 2 {
+		providerName := strings.TrimSpace(parts[0])
+		modelName := strings.TrimSpace(parts[1])
+		if providerName != "" && modelName != "" {
+			return modelName, "Provider: " + providerName
+		}
+	}
+	return ref, ""
 }
 
 // persistModel writes ref (a "provider/model" string) to default_model in the

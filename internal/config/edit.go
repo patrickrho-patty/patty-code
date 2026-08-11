@@ -421,13 +421,20 @@ func (c *Config) SetColdResumePrune(enabled bool) error {
 	return nil
 }
 
+const (
+	// CompactRatioEditableMin is the inclusive lower bound exposed to editors.
+	CompactRatioEditableMin = 0.65
+	// CompactRatioEditableMax is the inclusive upper bound exposed to editors.
+	CompactRatioEditableMax = 0.97
+)
+
 // SetCompactRatio updates the user-controlled auto-compaction threshold.
 // Keep the editable range inside the default snip/force guard rails so lowering
 // the threshold cannot accidentally turn normal cache growth into constant
 // compaction, while higher values still retain context-exhaustion headroom.
 func (c *Config) SetCompactRatio(ratio float64) error {
-	if math.IsNaN(ratio) || math.IsInf(ratio, 0) || ratio < 0.65 || ratio > 0.97 {
-		return fmt.Errorf("compact ratio %v: must be between 0.65 and 0.97", ratio)
+	if math.IsNaN(ratio) || math.IsInf(ratio, 0) || ratio < CompactRatioEditableMin || ratio > CompactRatioEditableMax {
+		return fmt.Errorf("compact ratio %v: must be between %.2f and %.2f", ratio, CompactRatioEditableMin, CompactRatioEditableMax)
 	}
 	snip := c.Agent.ToolResultSnipRatio
 	force := c.Agent.CompactForceRatio

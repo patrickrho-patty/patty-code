@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"patty/internal/boot"
+	"patty/internal/config"
 	"patty/internal/control"
 )
 
@@ -18,7 +19,7 @@ func testTab(id, root string) *WorkspaceTab {
 		WorkspaceRoot: root,
 		Ready:         true,
 		Ctrl:          control.New(control.Options{Label: id}),
-		model:         "deepseek-flash/deepseek-v4-flash",
+		model:         "patty/medium",
 		mode:          "normal",
 		disabledMCP:   map[string]ServerView{},
 	}
@@ -26,6 +27,16 @@ func testTab(id, root string) *WorkspaceTab {
 
 func TestSetEffortForTabIsTabLocal(t *testing.T) {
 	isolateDesktopUserDirs(t)
+	entries, _, err := officialProviderTemplate("deepseek", "en")
+	if err != nil {
+		t.Fatalf("officialProviderTemplate: %v", err)
+	}
+	cfg := config.Default()
+	cfg.DefaultModel = "deepseek/deepseek-v4-flash"
+	cfg.Providers = entries
+	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
+		t.Fatalf("save DeepSeek effort fixture: %v", err)
+	}
 
 	rootA := t.TempDir()
 	rootB := t.TempDir()
@@ -34,6 +45,8 @@ func TestSetEffortForTabIsTabLocal(t *testing.T) {
 	app.readyHook = func() {}
 	tabA := testTab("a", rootA)
 	tabB := testTab("b", rootB)
+	tabA.model = "deepseek/deepseek-v4-flash"
+	tabB.model = "deepseek/deepseek-v4-flash"
 	tabA.sink = &tabEventSink{tabID: tabA.ID, app: app}
 	tabB.sink = &tabEventSink{tabID: tabB.ID, app: app}
 	app.tabs = map[string]*WorkspaceTab{tabA.ID: tabA, tabB.ID: tabB}

@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -325,6 +326,63 @@ func SetCredential(key, value string) (string, error) {
 		return "", fmt.Errorf("credential value for %s contains a newline", key)
 	}
 	return StoreCredentialLines([]string{key + "=" + value})
+}
+
+// SetCredentialLocked stores one credential while the caller holds
+// LockUserCredentialEdits. Callers coordinating a config+credential transaction
+// must acquire LockUserConfigEdits first, then LockUserCredentialEdits.
+func SetCredentialLocked(key, value string) (string, error) {
+	key = strings.TrimSpace(key)
+	if !isCredentialKey(key) {
+		return "", fmt.Errorf("invalid credential key %q", key)
+	}
+	if strings.ContainsAny(value, "\r\n") {
+		return "", fmt.Errorf("credential value for %s contains a newline", key)
+	}
+	assignments := parseCredentialLines([]string{key + "=" + value})
+	if len(assignments) != 1 {
+		return "", fmt.Errorf("invalid credential assignment for %s", key)
+	}
+	return storeCredentialAssignmentsLocked(assignments)
+}
+
+// CredentialRollbackLocked snapshots the credential store and the process
+// environment for key while the caller holds LockUserCredentialEdits. The
+// returned rollback must be invoked under that same lock if a later step in the
+// surrounding transaction fails.
+func CredentialRollbackLocked(key string) (func() error, error) {
+	key = strings.TrimSpace(key)
+	if !isCredentialKey(key) {
+		return nil, fmt.Errorf("invalid credential key %q", key)
+	}
+	path := UserCredentialsPath()
+	data, err := os.ReadFile(path)
+	existed := err == nil
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	perm := os.FileMode(0o600)
+	if existed {
+		if info, statErr := os.Stat(path); statErr == nil {
+			perm = info.Mode().Perm()
+		}
+	}
+	processValue, processSet := os.LookupEnv(key)
+	return func() error {
+		var storeErr error
+		if existed {
+			storeErr = fileutil.AtomicWriteFile(path, data, perm)
+		} else if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			storeErr = err
+		}
+		var envErr error
+		if processSet {
+			envErr = os.Setenv(key, processValue)
+		} else {
+			envErr = os.Unsetenv(key)
+		}
+		return errors.Join(storeErr, envErr)
+	}, nil
 }
 
 // SetCredentialIfRevision stores one credential only when the global

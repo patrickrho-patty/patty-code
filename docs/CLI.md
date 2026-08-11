@@ -14,8 +14,8 @@ configuration, plugins, and sandbox policy, see the [Guide](./GUIDE.md).
 
 ```sh
 patty
-patcode --model deepseek-pro
-patcode --profile delivery --effort high
+patcode --model patty/medium
+patcode --profile delivery
 patcode --dir /path/to/project
 ```
 
@@ -114,15 +114,16 @@ a project override:
 
 ```sh
 patcode config compact-ratio              # show effective value and source
-patcode config compact-ratio 75           # set the user-global default
+patcode config compact-ratio 95.97        # set the user-global threshold
 patcode config compact-ratio --local 75   # override in ./patty.toml
 ```
 
-The editable range is 65–85%, with 80% as the built-in default. Lower values
-compact earlier and may reduce prompt-prefix cache reuse; higher values retain
-more context before compaction. Project `patty.toml` takes precedence over
-the user config. Changes apply to new CLI sessions; an already-running session
-keeps the threshold it loaded at startup.
+The editable range is 65–97%. Patty medium defaults to exactly 238,123 tokens
+within its 248,124-token context (about 95.97%). Lower values compact earlier
+and may reduce prompt-prefix cache reuse; higher values retain more context
+before compaction. Project `patty.toml` takes precedence over the user config.
+Changes apply to new CLI sessions; an already-running session keeps the
+threshold it loaded at startup.
 
 ## One-shot and automation
 
