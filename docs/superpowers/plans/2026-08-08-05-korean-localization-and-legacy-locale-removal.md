@@ -12,9 +12,9 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 
 ## 2. Scope
 
-- Go i18n catalog: `internal/i18n/messages_ko.go` (complete), `messages_en.go` → update scope
+- Go i18n catalogs: keep `internal/i18n/messages_ko.go` as the canonical catalog and `messages_en.go` as the English parity table
 - Desktop frontend locales: Korean (`ko.ts`) and English (`en.ts`) catalogs
-- Response/patty code language policy defaults to Korean
+- Response language policy defaults to Korean across Patty Code surfaces
 - CLI/TUI text replacement with localizable strings
 - Retired locale resource removal after parity checks
 
@@ -27,11 +27,11 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 ### T1: Maintain `internal/i18n/messages_ko.go` as the canonical catalog
 - Keep every typed message key in the Korean catalog
 - Translate every user-facing value into Korean
-- Validate: every en key exists in ko catalog
+- Validate: every English key exists in the Korean catalog
 
-### T2: Rewrite `messages_en.go` to be a secondary translation table
-- Source of truth is now Korean
-- En keys are auto-generated or manually maintained translations
+### T2: Maintain `messages_en.go` as the secondary translation table
+- Korean remains the source of truth
+- English keys are auto-generated or manually maintained parity translations
 
 ### T3: Update locale detection and persistence
 - Default locale resolves to `"ko"`; English requires an explicit opt-in
@@ -44,8 +44,8 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 - Korean-first resolution: `/resume` → displays `/이어하기` when locale=ko
 
 ### T5: Update desktop frontend locale system
-- Create `desktop/frontend/src/locales/ko.ts` from scratch
-- Update `en.ts` with current correct strings
+- Maintain `desktop/frontend/src/locales/ko.ts` as the primary desktop catalog
+- Keep `en.ts` aligned with the current Korean strings
 - Remove retired locale files after Korean and English parity passes
 
 ### T6: Add completion-check tests
@@ -54,7 +54,7 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 - Test IME composition compatibility
 
 ### T7: Delete retired locale resources (after parity pass)
-- Delete `internal/i18n/messages_zh*.go` if present
+- Delete retired Go locale catalogs and aliases
 - Delete retired desktop locale catalogs and aliases
 - Delete retired documentation translations while preserving Korean and English docs
 
@@ -64,7 +64,7 @@ Make Korean the default and completeness source for all user-facing surfaces. Ad
 
 ## 4. Definition of Done
 
-- [ ] Korean catalog complete and serves as source-of-truth
+- [ ] Korean catalog is complete and serves as the source of truth
 - [ ] English catalog maintains full parity
 - [ ] All retired locale files deleted
 - [ ] No hardcoded retired locale references in i18n code
