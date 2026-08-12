@@ -168,18 +168,17 @@ func TestYoloStatuslineUsesOperationalWarningWithoutModePill(t *testing.T) {
 	}
 }
 
-func TestPlanStatuslineKeepsModeInMasthead(t *testing.T) {
+func TestPlanStatuslineShowsCurrentModeLabel(t *testing.T) {
 	defer restoreThemeForTest(activeColorProfile, activeCLITheme)
 	activeColorProfile = colorprofile.TrueColor
 	i18n.DetectLanguage("en")
 
 	content := renderPlanStatuslineView(t)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "ready") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode") {
-		t.Fatalf("plan status line missing operational state:\n%s", plain)
-	}
-	if strings.Contains(plain, " Plan ") {
-		t.Fatalf("plan mode should remain in the masthead rather than the operational footer:\n%s", plain)
+	// Plan mode surfaces its current-mode label in the operational footer so
+	// Shift+Tab cycling is visible (ask -> auto -> plan).
+	if !strings.Contains(plain, i18n.M.ChatModePlanLabel) || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode") {
+		t.Fatalf("plan status line missing current-mode label:\n%s", plain)
 	}
 	if raw := lastRenderedLine(content); strings.Contains(raw, "\x1b[48;") {
 		t.Fatalf("plan operational status should not use a mode pill background, got:\n%q", raw)

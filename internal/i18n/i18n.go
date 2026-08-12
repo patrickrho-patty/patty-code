@@ -22,6 +22,8 @@ type Messages struct {
 	YoloModePrompt            string // YOLO activation confirmation prompt
 	YoloModeDisclaimer        string // YOLO no-approval disclaimer body
 	YoloApproveLabel          string // approve-YOLO-for-this-folder action label
+	ChatModeAutoLabel         string // current-mode label: auto
+	ChatModePlanLabel         string // current-mode label: plan
 	ChatMastheadTitle         string // brand line below the launch artwork
 	ChatUserLabel             string // transcript timeline label for the human turn
 	ChatPlanLabel             string // transcript timeline modifier for a plan-mode turn

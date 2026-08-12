@@ -19,6 +19,8 @@ var Korean = Messages{
 	YoloModePrompt:            "이 폴더에서 YOLO 모드를 켤까요?",
 	YoloModeDisclaimer:        "YOLO 모드는 에이전트가 승인을 요청하지 않고 모든 도구를 실행하고 변경 작업을 진행합니다. 이 폴더에서 파일을 편집하고 명령을 사용자 대신 실행할 수 있습니다. 주의해서 사용하세요.",
 	YoloApproveLabel:          "승인",
+	ChatModeAutoLabel:         "자동",
+	ChatModePlanLabel:         "계획",
 	ChatMastheadTitle:         "PATTY / 작업 흐름",
 	ChatUserLabel:             "사용자",
 	ChatPlanLabel:             "계획",

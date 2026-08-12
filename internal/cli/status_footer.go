@@ -197,9 +197,9 @@ func (m chatTUI) primaryStatusLine(shellMode, cancelRequested bool) string {
 	case shellMode:
 		status = i18n.M.ShellModeHint
 	case m.ctrl != nil && m.ctrl.AutoApproveTools():
-		status = footerValue(i18n.M.ChatStatusYoloIdle) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
+		status = footerValue(m.currentApprovalModeLabel()) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
 	default:
-		status = footerValue(i18n.M.ChatStatusIdle) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
+		status = footerValue(m.currentApprovalModeLabel()) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
 	}
 	if mt := m.mouseTag(); mt != "" {
 		if status == "" {

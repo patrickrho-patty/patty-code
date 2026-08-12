@@ -4439,6 +4439,26 @@ func (m *chatTUI) activateYolo(persist bool) tea.Cmd {
 	return yoloFrameTick()
 }
 
+// currentApprovalModeLabel returns the localized name of the active approval
+// mode for the status footer so Shift+Tab cycling is visible: ask stays on the
+// idle label (확인/ready), auto shows 자동/Auto, plan shows 계획/Plan, and YOLO
+// shows its skipped-approvals state.
+func (m chatTUI) currentApprovalModeLabel() string {
+	if m.ctrl == nil {
+		return i18n.M.ChatStatusIdle
+	}
+	switch m.ctrl.ToolApprovalMode() {
+	case control.ToolApprovalYolo:
+		return i18n.M.ChatStatusYoloIdle
+	case control.ToolApprovalAuto:
+		return i18n.M.ChatModeAutoLabel
+	}
+	if m.planMode {
+		return i18n.M.ChatModePlanLabel
+	}
+	return i18n.M.ChatStatusIdle
+}
+
 func (m chatTUI) modeTagText() string {
 	goalMode := strings.TrimSpace(m.ctrl.Goal()) != "" && m.ctrl.GoalStatus() == control.GoalStatusRunning
 	toolApprovalMode := m.ctrl.ToolApprovalMode()

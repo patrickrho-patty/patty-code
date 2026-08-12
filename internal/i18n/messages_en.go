@@ -19,6 +19,8 @@ var English = Messages{
 	YoloModePrompt:            "Activate YOLO mode in this folder?",
 	YoloModeDisclaimer:        "YOLO mode lets the agent run every tool and make changes without asking for your approval. It can edit files and run commands on your behalf in this folder. Use with caution.",
 	YoloApproveLabel:          "Approve",
+	ChatModeAutoLabel:         "Auto",
+	ChatModePlanLabel:         "Plan",
 	ChatMastheadTitle:         "PATTY / WORKFLOW",
 	ChatUserLabel:             "USER",
 	ChatPlanLabel:             "PLAN",

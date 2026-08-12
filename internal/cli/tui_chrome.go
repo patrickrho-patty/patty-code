@@ -443,23 +443,40 @@ func renderComposerTitle(yolo bool) string {
 		return base
 	}
 	sep := themeFg(activeCLITheme.faint, " \u00b7 ")
-	yoloLabel := themeStyle(activeCLITheme.danger).Bold(true).Render("YOLO")
+	yoloLabel := themeStyle(yoloTitleColor()).Bold(true).Render("YOLO")
 	return base + sep + yoloLabel
 }
 
-// yoloBorderColor returns the pulsing red composer border color for a given
-// YOLO animation frame. It breathes between a dim red and the theme's danger
-// red via a cosine ease so the motion is subtle and continuous; on 256-colour
-// terminals it falls back to the theme danger colour (still unmistakably red).
+// yoloTitleColor is the steady softened red used for the "YOLO" title tag —
+// recognizably red but desaturated toward faint so it is not a loud neon.
+func yoloTitleColor() cliColor {
+	return softenedYoloRed(0.35)
+}
+
+// yoloBorderColor returns the composer border colour for a given YOLO animation
+// frame. It is deliberately calm: a slow (~6s) cosine breathe across a narrow
+// band of softened reds, so the indicator is clearly alive without being a
+// fast, bright, distracting flash. On 256-colour terminals it falls back to the
+// theme danger colour (still unmistakably red).
 func yoloBorderColor(frame int) cliColor {
-	const period = 22.0                                          // frames (~2s at 90ms) per breathe cycle
+	const period = 40.0                                          // frames (~6s at 150ms) per breathe cycle
 	t := 0.5 - 0.5*math.Cos(2*math.Pi*float64(frame%256)/period) // 0..1
+	return softenedYoloRed(0.45 + 0.4*t)                         // gentle 0.45..0.85 swing, both ends softened
+}
+
+// softenedYoloRed blends the theme danger red toward faint by mix (0 = full
+// danger, 1 = faint), yielding a desaturated red suitable for a subtle YOLO
+// indicator.
+func softenedYoloRed(mix float64) cliColor {
 	bright := activeCLITheme.danger
 	if bright.hex == "" {
 		bright = cliColor{hex: "#e5484d", xterm: 167}
 	}
-	dimHex := blendHex("#2a0a0c", bright.hex, 0.35)
-	return cliColor{hex: blendHex(dimHex, bright.hex, t), xterm: bright.xterm}
+	faint := activeCLITheme.faint
+	if faint.hex == "" {
+		faint = cliColor{hex: "#8a8a8a", xterm: 245}
+	}
+	return cliColor{hex: blendHex(bright.hex, faint.hex, mix), xterm: bright.xterm}
 }
 
 // blendHex linearly interpolates between two #rrggbb colours by t in [0,1].

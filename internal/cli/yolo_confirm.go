@@ -9,10 +9,10 @@ import (
 	"patty/internal/i18n"
 )
 
-// yoloFrameInterval is the composer border animation cadence while YOLO mode is
-// active. The tick self-renews only while YOLO is on, so it stops on its own
-// when the user leaves YOLO.
-const yoloFrameInterval = 90 * time.Millisecond
+// yoloFrameInterval is the composer border animation cadence while YOLO mode
+// is active. The breathe is intentionally slow and subtle; the tick self-renews
+// only while YOLO is on, so it stops on its own when the user leaves YOLO.
+const yoloFrameInterval = 150 * time.Millisecond
 
 // yoloFrameMsg advances the pulsing red composer border by one frame while YOLO
 // mode is active.
