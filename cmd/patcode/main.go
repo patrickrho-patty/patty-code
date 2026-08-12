@@ -12,6 +12,7 @@ import (
 	// Blank imports wire compile-time built-ins into their registries.
 	_ "patty/internal/provider/anthropic"
 	_ "patty/internal/provider/openai"
+	_ "patty/internal/provider/paper"
 	_ "patty/internal/provider/responses"
 	_ "patty/internal/tool/builtin"
 )
