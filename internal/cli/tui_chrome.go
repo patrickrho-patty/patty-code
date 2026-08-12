@@ -410,8 +410,12 @@ func renderComposerChrome(m chatTUI, width int) string {
 	width = max(width, 1)
 	yolo := m.ctrl != nil && m.ctrl.ToolApprovalMode() == control.ToolApprovalYolo
 	border := activeCLITheme.border
-	if yolo {
-		border = yoloBorderColor(m.yoloFrame)
+	if m.ctrl != nil {
+		if yolo {
+			border = yoloBorderColor(m.yoloFrame) // YOLO: animated soft red
+		} else {
+			_, border = m.currentApprovalModeBadge() // ask/auto/plan tint the border, static
+		}
 	}
 	title := renderComposerTitle(yolo)
 	header := renderComposerTopBorder(title, width, border)

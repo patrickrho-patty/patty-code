@@ -28,6 +28,21 @@ func footerValue(value string) string {
 	return themeFg(activeCLITheme.muted, value)
 }
 
+// renderCycleHint renders the localized mode-cycle hint, colouring the trailing
+// "YOLO 모드"/"YOLO Mode" segment red so it matches the YOLO branding. The
+// leading Shift+Tab/Ctrl+Y text stays subtle.
+func renderCycleHint() string {
+	hint := i18n.M.ChatStatusCycleHintCompact
+	if !colorOn() {
+		return footerHint(hint)
+	}
+	idx := strings.Index(hint, "YOLO")
+	if idx < 0 {
+		return footerHint(hint)
+	}
+	return footerHint(hint[:idx]) + themeStyle(yoloTitleColor()).Bold(true).Render(hint[idx:])
+}
+
 func footerInfo(value string) string {
 	return themeFg(activeCLITheme.info, value)
 }
@@ -197,9 +212,9 @@ func (m chatTUI) primaryStatusLine(shellMode, cancelRequested bool) string {
 	case shellMode:
 		status = i18n.M.ShellModeHint
 	case m.ctrl != nil && m.ctrl.AutoApproveTools():
-		status = footerValue(m.currentApprovalModeLabel()) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
+		status = m.renderModeBadge() + " · " + renderCycleHint()
 	default:
-		status = footerValue(m.currentApprovalModeLabel()) + " · " + footerHint(i18n.M.ChatStatusCycleHintCompact)
+		status = m.renderModeBadge() + " · " + renderCycleHint()
 	}
 	if mt := m.mouseTag(); mt != "" {
 		if status == "" {

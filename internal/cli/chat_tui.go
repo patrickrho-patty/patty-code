@@ -4439,24 +4439,35 @@ func (m *chatTUI) activateYolo(persist bool) tea.Cmd {
 	return yoloFrameTick()
 }
 
-// currentApprovalModeLabel returns the localized name of the active approval
-// mode for the status footer so Shift+Tab cycling is visible: ask stays on the
-// idle label (확인/ready), auto shows 자동/Auto, plan shows 계획/Plan, and YOLO
-// shows its skipped-approvals state.
-func (m chatTUI) currentApprovalModeLabel() string {
+// currentApprovalModeBadge returns the localized active approval-mode label and a
+// distinct theme color, so Shift+Tab cycling is obvious at a glance: ask=info,
+// auto=success, plan=warn, YOLO=danger. ask stays on the idle label
+// (확인/ready); only auto/plan/YOLO change the text.
+func (m chatTUI) currentApprovalModeBadge() (string, cliColor) {
 	if m.ctrl == nil {
-		return i18n.M.ChatStatusIdle
+		return i18n.M.ChatStatusIdle, activeCLITheme.info
 	}
 	switch m.ctrl.ToolApprovalMode() {
 	case control.ToolApprovalYolo:
-		return i18n.M.ChatStatusYoloIdle
+		return i18n.M.ChatStatusYoloIdle, activeCLITheme.danger
 	case control.ToolApprovalAuto:
-		return i18n.M.ChatModeAutoLabel
+		return i18n.M.ChatModeAutoLabel, activeCLITheme.success
 	}
 	if m.planMode {
-		return i18n.M.ChatModePlanLabel
+		return i18n.M.ChatModePlanLabel, activeCLITheme.warn
 	}
-	return i18n.M.ChatStatusIdle
+	return i18n.M.ChatStatusIdle, activeCLITheme.info
+}
+
+// renderModeBadge renders the active approval-mode label in its mode-specific
+// color, bold, so a mode change is immediately visible in the status footer.
+// In color-off/NO_COLOR environments it renders as plain text.
+func (m chatTUI) renderModeBadge() string {
+	label, color := m.currentApprovalModeBadge()
+	if !colorOn() {
+		return label
+	}
+	return themeStyle(color).Bold(true).Render(label)
 }
 
 func (m chatTUI) modeTagText() string {

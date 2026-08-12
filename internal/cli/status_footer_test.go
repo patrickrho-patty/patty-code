@@ -160,9 +160,25 @@ func TestStatusFooterSemanticPaletteAcrossThemes(t *testing.T) {
 			m.effortLevel = "auto"
 			m.runtimeProfile = "full"
 			primary := m.primaryStatusLine(false, false)
-			if !strings.Contains(primary, tt.valueSGR+i18n.M.ChatStatusIdle) ||
-				!strings.Contains(primary, tt.labelSGR+i18n.M.ChatStatusCycleHintCompact) {
-				t.Fatalf("%s interaction hints should use readable semantic contrast: %q", tt.mode, primary)
+			if !strings.Contains(ansi.Strip(primary), i18n.M.ChatStatusIdle) {
+				t.Fatalf("%s interaction hints should keep the operational label: %q", tt.mode, primary)
+			}
+			// The active-mode badge is colour-coded per mode (ask=info here) so a
+			// Shift+Tab change is visible at a glance. Bold may merge with the
+			// colour into one SGR, so match the colour index alone.
+			infoColor := strings.TrimSuffix(strings.TrimPrefix(tt.infoSGR, "\033["), "m")
+			if !strings.Contains(primary, infoColor) {
+				t.Fatalf("%s ask-mode badge should use the info semantic color: %q", tt.mode, primary)
+			}
+			// The hint prefix stays subtle (label colour); the trailing
+			// "YOLO Mode" segment is recoloured red to match the YOLO branding,
+			// so check the full hint text colour-agnostic and the label colour
+			// is present for the prefix.
+			if !strings.Contains(ansi.Strip(primary), i18n.M.ChatStatusCycleHintCompact) {
+				t.Fatalf("%s interaction hint text missing: %q", tt.mode, primary)
+			}
+			if !strings.Contains(primary, tt.labelSGR) {
+				t.Fatalf("%s interaction hint prefix should use readable semantic contrast: %q", tt.mode, primary)
 			}
 			for _, reject := range []string{"MODEL", "EFFORT", "deepseek-v4-flash"} {
 				if strings.Contains(ansi.Strip(primary), reject) {
