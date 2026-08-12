@@ -294,6 +294,15 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 					return
 				}
 
+				// If content was sent directly (non-streaming), emit as text
+				if result.Content != "" {
+					select {
+					case out <- provider.Chunk{Type: provider.ChunkText, Text: result.Content}:
+					case <-ctx.Done():
+						return
+					}
+				}
+
 				// Send usage chunk
 				out <- provider.Chunk{
 					Type: provider.ChunkUsage,

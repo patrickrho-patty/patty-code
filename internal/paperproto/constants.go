@@ -30,7 +30,10 @@ const (
 	// Auth (0x0100–0x01FF)
 	MsgAuthChallenge MessageType = 0x0100
 	MsgAuthProof     MessageType = 0x0101
-	MsgAuthAck       MessageType = 0x0102
+	MsgUserBind      MessageType = 0x0102
+	MsgUserBindAck   MessageType = 0x0103
+	MsgCapabilities  MessageType = 0x0104
+	MsgAuthAck       MessageType = 0x0105
 
 	// AI inference (0x0400–0x04FF)
 	MsgAIOpen           MessageType = 0x0400
@@ -52,6 +55,12 @@ func (m MessageType) String() string {
 		return "AUTH_CHALLENGE"
 	case MsgAuthProof:
 		return "AUTH_PROOF"
+	case MsgUserBind:
+		return "USER_BIND"
+	case MsgUserBindAck:
+		return "USER_BIND_ACK"
+	case MsgCapabilities:
+		return "CAPABILITIES"
 	case MsgAuthAck:
 		return "AUTH_ACK"
 	case MsgPing:
