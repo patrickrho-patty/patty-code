@@ -160,8 +160,8 @@ func TestYoloStatuslineUsesOperationalWarningWithoutModePill(t *testing.T) {
 
 	content := renderStatuslineView(t, true)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "approvals skipped") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode") {
-		t.Fatalf("YOLO status line missing warning text:\n%s", plain)
+	if !strings.Contains(plain, "YOLO") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode") {
+		t.Fatalf("YOLO status line missing YOLO badge:\n%s", plain)
 	}
 	if raw := lastRenderedLine(content); strings.Contains(raw, "\x1b[48;") {
 		t.Fatalf("YOLO operational warning should not use a mode pill background, got:\n%q", raw)

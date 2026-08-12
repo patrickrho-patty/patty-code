@@ -62,7 +62,6 @@ var Korean = Messages{
 	ChatStatusRetryingFmt:                  "%s 재시도 중 (%d/%d)… (Esc 취소)",
 	ChatStatusCancellingFmt:                "%s 중지 중… (%d초 · Ctrl+C 종료)",
 	ChatStatusIdle:                         "확인",
-	ChatStatusYoloIdle:                     "도구 승인 건너뜀",
 	ChatStatusCycleHintCompact:             "Shift+Tab 확인/자동/계획 · Ctrl+Y YOLO 모드",
 	ChatTurnReceiptLabel:                   "턴",
 	ChatTurnReceiptIn:                      "입력",

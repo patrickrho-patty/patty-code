@@ -4449,7 +4449,7 @@ func (m chatTUI) currentApprovalModeBadge() (string, cliColor) {
 	}
 	switch m.ctrl.ToolApprovalMode() {
 	case control.ToolApprovalYolo:
-		return i18n.M.ChatStatusYoloIdle, activeCLITheme.danger
+		return "YOLO", activeCLITheme.danger
 	case control.ToolApprovalAuto:
 		return i18n.M.ChatModeAutoLabel, activeCLITheme.success
 	}

@@ -62,7 +62,6 @@ var English = Messages{
 	ChatStatusRetryingFmt:                  "%s retrying (%d/%d)… (Esc cancels)",
 	ChatStatusCancellingFmt:                "%s stopping… (%ds · Ctrl+C exits)",
 	ChatStatusIdle:                         "ready",
-	ChatStatusYoloIdle:                     "tool approvals skipped",
 	ChatStatusCycleHintCompact:             "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode",
 	ChatTurnReceiptLabel:                   "TURN",
 	ChatTurnReceiptIn:                      "in",
