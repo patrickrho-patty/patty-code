@@ -2302,9 +2302,7 @@ func (m chatTUI) bottomRowsWithoutComposer() int {
 	return m.buildFrameLayout(max(m.width, 10), false).rowsWithoutComposer
 }
 
-// composerRowCount mirrors the exact composer string appended by View. The
-// localized hint groups may wrap on narrow terminals, so treating the heading
-// and hints as two permanently fixed rows under-reserves the bottom rail.
+// composerRowCount mirrors the exact composer string appended by View.
 func (m chatTUI) composerRowCount() int {
 	if m.hideComposer() {
 		return 0
@@ -2312,13 +2310,7 @@ func (m chatTUI) composerRowCount() int {
 	if m.isMinimalTerminal() {
 		return 1
 	}
-	if m.isCompactTerminal() {
-		return 2 + m.composerInputVerticalPaddingRows() + m.input.Height()
-	}
-	if m.isNaturalStartupFrame() && !m.completion.active {
-		return 2 + m.composerInputVerticalPaddingRows() + m.input.Height()
-	}
-	return 2 + m.composerInputVerticalPaddingRows() + m.input.Height() + m.composerHintRowCount(max(m.width, 10))
+	return 2 + m.composerInputVerticalPaddingRows() + m.input.Height()
 }
 
 // hideComposer is the single ownership gate for the bottom composer.

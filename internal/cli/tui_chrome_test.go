@@ -303,24 +303,6 @@ func TestComposerChromeUsesEnglishCatalogAndFitsWidth(t *testing.T) {
 	}
 }
 
-func TestComposerChromeCompactsHintsBeforeCrowdingOutEditor(t *testing.T) {
-	previousLanguage := i18n.CurrentLanguage()
-	defer i18n.DetectLanguage(previousLanguage)
-	i18n.DetectLanguage("ko")
-	m := newChatTUI(control.New(control.Options{}), "", make(chan event.Event, 1), 16)
-	next, _ := m.Update(tea.WindowSizeMsg{Width: 16, Height: 14})
-	m = next.(chatTUI)
-	m.commitLine("active transcript")
-
-	plain := ansi.Strip(renderComposerChrome(m, 16))
-	if m.composerHintRowCount(m.width) != 0 {
-		t.Fatalf("empty compact composer should keep the command legend inside the placeholder:\n%s", plain)
-	}
-	if m.input.MaxHeight < 3 {
-		t.Fatalf("compact hints left only %d editor rows, want at least 3", m.input.MaxHeight)
-	}
-}
-
 func TestChromeUsesSingleCanvasWithoutAnsiBackgroundBands(t *testing.T) {
 	defer restoreThemeForTest(activeColorProfile, activeCLITheme)
 	activeColorProfile = colorprofile.ANSI256

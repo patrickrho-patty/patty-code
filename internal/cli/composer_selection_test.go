@@ -77,24 +77,6 @@ func TestComposerWheelScrollsViewWithoutMovingInsertionCursor(t *testing.T) {
 	}
 }
 
-func TestComposerMouseRegionIncludesWrappedHintRows(t *testing.T) {
-	m := newComposerMouseTestTUI(t, 34, 16)
-	// Empty composers keep the command legend inside the placeholder; a typed
-	// message restores the dedicated wrapped hint rows below the editor.
-	m.input.SetValue("typed")
-	_, contentY, ok := m.composerOrigin()
-	if !ok {
-		t.Fatal("composer should expose a mouse origin")
-	}
-	if hintRows := m.composerHintRowCount(m.width); hintRows < 2 {
-		t.Fatalf("test width produced %d hint rows, want wrapped hints", hintRows)
-	}
-	lastHintY := contentY + m.composerRowCount() - 2
-	if !m.mouseOverComposer(2, lastHintY) {
-		t.Fatalf("last hint row y=%d is outside composer mouse region", lastHintY)
-	}
-}
-
 func TestComposerTypingRestoresCaretFollowingAfterWheel(t *testing.T) {
 	m := overflowingComposerMouseTestTUI(t)
 	x, y, _ := m.composerOrigin()

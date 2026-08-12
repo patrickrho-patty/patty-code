@@ -16,7 +16,6 @@ var English = Messages{
 	ChatComposerFilesHint:     "@ files",
 	ChatComposerShellHint:     "! shell",
 	ChatComposerShortcutsHint: "? shortcuts",
-	ChatComposerHelpLabel:     "HELP",
 	ChatMastheadTitle:         "PATTY / WORKFLOW",
 	ChatUserLabel:             "USER",
 	ChatPlanLabel:             "PLAN",

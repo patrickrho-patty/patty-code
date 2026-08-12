@@ -16,7 +16,6 @@ var Korean = Messages{
 	ChatComposerFilesHint:     "@ 파일",
 	ChatComposerShellHint:     "! 셸",
 	ChatComposerShortcutsHint: "? 단축키",
-	ChatComposerHelpLabel:     "도움말",
 	ChatMastheadTitle:         "PATTY / 작업 흐름",
 	ChatUserLabel:             "사용자",
 	ChatPlanLabel:             "계획",

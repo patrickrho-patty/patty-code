@@ -19,7 +19,6 @@ type Messages struct {
 	ChatComposerFilesHint     string // file reference hint below the composer
 	ChatComposerShellHint     string // shell mode hint below the composer
 	ChatComposerShortcutsHint string // shortcut help hint below the composer
-	ChatComposerHelpLabel     string // heading label of the hint legend below the composer
 	ChatMastheadTitle         string // brand line below the launch artwork
 	ChatUserLabel             string // transcript timeline label for the human turn
 	ChatPlanLabel             string // transcript timeline modifier for a plan-mode turn
