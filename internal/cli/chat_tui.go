@@ -48,6 +48,9 @@ import (
 type chatTUI struct {
 	ctrl  control.SessionAPI
 	label string
+	// cwd is the process working directory captured at launch. It is the folder
+	// key for per-folder YOLO authorization (the user approves YOLO per cwd).
+	cwd string
 	// displayIdentity is optional frontend metadata. It is kept as one typed
 	// projection input so future harness/user identifiers do not become fields
 	// copied through every renderer and model-switch branch.
@@ -137,6 +140,11 @@ type chatTUI struct {
 	// yoloRestoreToolApprovalMode remembers the Ask/Auto base mode that Ctrl+Y
 	// should restore after a desktop-style YOLO toggle.
 	yoloRestoreToolApprovalMode string
+
+	// yoloFrame advances on each animation tick while YOLO mode is active,
+	// driving the pulsing red composer border. The tick self-renews only while
+	// YOLO is on, so it stops automatically when the user leaves YOLO.
+	yoloFrame int
 
 	// pendingInterject queues input typed while a turn runs; each TurnDone
 	// dequeues the front and submits it as the next turn.
@@ -327,6 +335,11 @@ type chatTUI struct {
 	// clearConfirm is the destructive "/clear" confirmation overlay. It is separate
 	// from /new because /clear discards the current transcript instead of saving it.
 	clearConfirm *clearConfirm
+
+	// yoloConfirm is the per-folder YOLO authorization overlay. It intercepts a
+	// Ctrl+Y into YOLO when the current folder has not yet been approved: approve
+	// activates YOLO and persists the folder; cancel returns to the prior mode.
+	yoloConfirm *yoloConfirm
 
 	// lastCtrlCAt records when Ctrl+C was pressed while idle on an empty
 	// composer, enabling a "press again to quit" confirmation pattern (1.5s
@@ -626,6 +639,7 @@ type clipboardImageMsg struct {
 // are read from the controller, so explicit selections and resumed sessions stay
 // authoritative.
 func newChatTUI(ctrl control.SessionAPI, missing string, eventCh chan event.Event, termW int) chatTUI {
+	cwd, _ := os.Getwd()
 	ti := textarea.New()
 	configureChatTextarea(&ti)
 
@@ -643,6 +657,7 @@ func newChatTUI(ctrl control.SessionAPI, missing string, eventCh chan event.Even
 		label:                       ctrl.Label(),
 		modelRef:                    ctrl.ModelRef(),
 		missing:                     missing,
+		cwd:                         cwd,
 		nativeScrollback:            nativeScrollback,
 		mouseCaptureOff:             mouseCaptureOffByDefault(),
 		imeTraceMode:                configuredIMETraceMode(os.Getenv),
@@ -1325,7 +1340,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, finalize(m, cmds)
 		}
-		if !m.chooserTyping() && m.pendingApproval == nil && m.rewind == nil && m.resumePick == nil && m.mcp == nil && m.clearConfirm == nil && m.mcpImport == nil && m.skillPick == nil && m.shouldFoldPaste(msg.Content) {
+		if !m.chooserTyping() && m.pendingApproval == nil && m.rewind == nil && m.resumePick == nil && m.mcp == nil && m.clearConfirm == nil && m.yoloConfirm == nil && m.mcpImport == nil && m.skillPick == nil && m.shouldFoldPaste(msg.Content) {
 			m.insertFoldedPaste(msg.Content)
 			m.growInputToFit()
 			m.updateCompletion()
@@ -1466,6 +1481,10 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.clearConfirm != nil {
 			return m.handleClearConfirmKey(msg)
 		}
+		// The per-folder YOLO authorization confirmation is modal while open.
+		if m.yoloConfirm != nil {
+			return m.handleYoloConfirmKey(msg)
+		}
 		// The skill picker is modal while open: keys navigate it.
 		if m.skillPick != nil {
 			return m.handleSkillPickerKey(msg)
@@ -1558,9 +1577,10 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, pasteClipboardText())
 			return m, finalize(m, cmds)
 		}
-		// Shift+Tab encodings are recognized via modeToggleKey so both
-		// "shift+tab" and CSI-Z "backtab" stay covered by one helper (#6660).
-		if modeToggleKey(msg.String()) {
+		// Shift+Tab is matched structurally (Code == KeyTab + Shift modifier) with
+		// a string fallback, so every terminal encoding — including ones whose
+		// Key.String() is not "shift+tab"/"backtab" — hits cycleMode (#6660).
+		if modeToggleKeyPress(msg) {
 			m.cycleMode()
 			return m, nil
 		}
@@ -1697,8 +1717,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, finalize(m, cmds)
 		case "ctrl+y", "super+y", "meta+y":
-			m.toggleYoloMode()
-			return m, nil
+			return m, m.toggleYoloMode()
 		case "ctrl+o":
 			m.toggleVerboseReasoning(m.state != tuiRunning)
 			return m, finalize(m, cmds)
@@ -2079,6 +2098,16 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, elapsedTick())
 		}
 
+	case yoloFrameMsg:
+		// The YOLO border animation self-renews only while YOLO stays active, so
+		// the tick dies on its own once the user leaves YOLO.
+		if m.ctrl != nil && m.ctrl.ToolApprovalMode() == control.ToolApprovalYolo {
+			m.yoloFrame++
+			cmds = append(cmds, yoloFrameTick())
+		} else {
+			m.yoloFrame = 0
+		}
+
 	case spinner.TickMsg:
 		if m.state == tuiRunning {
 			var cmd tea.Cmd
@@ -2326,7 +2355,7 @@ func (m chatTUI) composerRowCount() int {
 // reserve rows for a composer that cannot receive input, leaving a confusing
 // blank/bordered area at the bottom of the TUI.
 func (m chatTUI) hideComposer() bool {
-	if m.mcp != nil || m.clearConfirm != nil || m.mcpImport != nil || m.skillPick != nil || m.resumePick != nil || m.quickPick != nil || m.copyPick != nil || m.rewind != nil || m.pendingApproval != nil {
+	if m.mcp != nil || m.clearConfirm != nil || m.mcpImport != nil || m.skillPick != nil || m.resumePick != nil || m.quickPick != nil || m.copyPick != nil || m.rewind != nil || m.pendingApproval != nil || m.yoloConfirm != nil {
 		return true
 	}
 	return m.chooser != nil && !m.chooser.typing
@@ -2484,6 +2513,9 @@ func (m chatTUI) renderMainManager() string {
 	if card := m.renderClearConfirm(); card != "" {
 		return card
 	}
+	if card := m.renderYoloConfirm(); card != "" {
+		return card
+	}
 	return m.renderSkillPicker()
 }
 
@@ -2506,6 +2538,8 @@ func (m chatTUI) renderMainManagerFooter() string {
 		hint = m.mcp.footerHint()
 	case m.clearConfirm != nil:
 		hint = "Enter confirm · y clear · n/Esc cancel"
+	case m.yoloConfirm != nil:
+		hint = i18n.M.YoloApproveLabel + " · n/Esc cancel"
 	case m.skillPick != nil:
 		hint = m.skillPickerFooterHint()
 	}
@@ -4314,6 +4348,20 @@ func modeToggleKey(s string) bool {
 	}
 }
 
+// modeToggleKeyPress is the production form of modeToggleKey: it matches on the
+// structured key fields first (Code == KeyTab with the Shift modifier), which
+// is terminal-encoding independent, then falls back to the string encodings.
+// String matching alone is fragile because ultraviolet's Key.String() returns
+// the key's Text verbatim when it is non-empty, so a terminal that populates
+// Text for the Shift+Tab event yields a String() that is neither "shift+tab"
+// nor "backtab" — and the gesture silently stops cycling modes.
+func modeToggleKeyPress(msg tea.KeyPressMsg) bool {
+	if msg.Code == tea.KeyTab && msg.Mod&tea.ModShift != 0 {
+		return true
+	}
+	return modeToggleKey(msg.String())
+}
+
 // cycleMode handles the Shift+Tab gesture using the same three safe modes users
 // see in Claude Code: Ask → Auto → Plan → Ask. YOLO stays outside this cycle and
 // remains an explicit Ctrl+Y choice.
@@ -4341,25 +4389,54 @@ func (m chatTUI) desktopShortcutLayout() bool {
 	return m.cfg != nil && m.cfg.UIShortcutLayout() == "desktop"
 }
 
-func (m *chatTUI) toggleYoloMode() {
+// toggleYoloMode is the Ctrl+Y entry point. Turning YOLO off always proceeds
+// directly. Turning it on requires per-folder approval the first time a folder
+// is used: if the current cwd has not been authorized, the yoloConfirm overlay
+// intercepts instead of activating. It returns a command (the border animation
+// tick) when YOLO is activated, nil otherwise.
+func (m *chatTUI) toggleYoloMode() tea.Cmd {
 	if m.ctrl == nil {
-		return
+		return nil
 	}
 	if m.ctrl.ToolApprovalMode() == control.ToolApprovalYolo {
-		restore := m.yoloRestoreToolApprovalMode
-		if restore != control.ToolApprovalAuto {
-			restore = control.ToolApprovalAsk
-		}
-		m.ctrl.SetToolApprovalMode(restore)
-		m.yoloRestoreToolApprovalMode = ""
-		return
+		m.deactivateYolo()
+		return nil
 	}
+	if config.IsYoloAuthorized(m.cwd) {
+		return m.activateYolo(false)
+	}
+	m.yoloConfirm = &yoloConfirm{confirm: 1} // default to cancel for safety
+	return nil
+}
+
+// deactivateYolo restores the Ask/Auto base mode remembered when YOLO was
+// activated and stops the border animation.
+func (m *chatTUI) deactivateYolo() {
+	restore := m.yoloRestoreToolApprovalMode
+	if restore != control.ToolApprovalAuto {
+		restore = control.ToolApprovalAsk
+	}
+	m.ctrl.SetToolApprovalMode(restore)
+	m.yoloRestoreToolApprovalMode = ""
+	m.yoloFrame = 0
+}
+
+// activateYolo switches the controller to YOLO mode, records the mode to
+// restore on the way out, and starts the border-animation tick. When persist is
+// true the current cwd is recorded as an approved YOLO folder so the disclaimer
+// does not reappear there.
+func (m *chatTUI) activateYolo(persist bool) tea.Cmd {
 	restore := m.ctrl.ToolApprovalMode()
 	if restore != control.ToolApprovalAuto {
 		restore = control.ToolApprovalAsk
 	}
 	m.yoloRestoreToolApprovalMode = restore
 	m.ctrl.SetToolApprovalMode(control.ToolApprovalYolo)
+	m.yoloConfirm = nil
+	if persist && m.cwd != "" {
+		_ = config.AuthorizeYoloFolder(m.cwd)
+	}
+	return yoloFrameTick()
 }
 
 func (m chatTUI) modeTagText() string {

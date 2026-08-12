@@ -4483,6 +4483,18 @@ func TestDesktopShortcutLayoutShiftTabClearsGoalWhenEnteringPlan(t *testing.T) {
 	}
 }
 
+// authorizeTestYoloFolder isolates YOLO folder state to a throwaway PATTY_HOME
+// and approves m.cwd so Ctrl+Y activates YOLO directly (folder gate satisfied),
+// without touching the developer's real yolo_folders.json.
+func authorizeTestYoloFolder(t *testing.T, m *chatTUI) {
+	t.Helper()
+	t.Setenv("PATTY_HOME", t.TempDir())
+	m.cwd = t.TempDir()
+	if err := config.AuthorizeYoloFolder(m.cwd); err != nil {
+		t.Fatalf("authorize test yolo folder: %v", err)
+	}
+}
+
 func TestDesktopShortcutLayoutCtrlYTogglesYolo(t *testing.T) {
 	m := newTestChatTUI()
 	m.ctrl = control.New(control.Options{})
@@ -4490,6 +4502,7 @@ func TestDesktopShortcutLayoutCtrlYTogglesYolo(t *testing.T) {
 	if err := m.cfg.SetUIShortcutLayout("desktop"); err != nil {
 		t.Fatal(err)
 	}
+	authorizeTestYoloFolder(t, &m)
 
 	ctrlY := tea.KeyPressMsg{Code: 'y', Mod: tea.ModCtrl}
 	out, _ := m.Update(ctrlY)
@@ -4513,6 +4526,7 @@ func TestDesktopShortcutLayoutCtrlYRestoresAutoAfterYolo(t *testing.T) {
 	if err := m.cfg.SetUIShortcutLayout("desktop"); err != nil {
 		t.Fatal(err)
 	}
+	authorizeTestYoloFolder(t, &m)
 
 	ctrlY := tea.KeyPressMsg{Code: 'y', Mod: tea.ModCtrl}
 	out, _ := m.Update(ctrlY)
@@ -4535,12 +4549,10 @@ func TestClassicShortcutLayoutCtrlYTogglesYolo(t *testing.T) {
 	if err := m.cfg.SetUIShortcutLayout("classic"); err != nil {
 		t.Fatal(err)
 	}
+	authorizeTestYoloFolder(t, &m)
 
 	ctrlY := tea.KeyPressMsg{Code: 'y', Mod: tea.ModCtrl}
-	out, cmd := m.Update(ctrlY)
-	if cmd != nil {
-		t.Fatal("Ctrl+Y should toggle YOLO directly, not return a paste command")
-	}
+	out, _ := m.Update(ctrlY)
 	m = out.(chatTUI)
 	if got := m.ctrl.ToolApprovalMode(); got != control.ToolApprovalYolo {
 		t.Fatalf("Ctrl+Y approval mode = %q, want yolo", got)
@@ -4561,6 +4573,7 @@ func TestPrimaryYShortcutRestoresAutoUnderClassicShortcutLayout(t *testing.T) {
 	if err := m.cfg.SetUIShortcutLayout("classic"); err != nil {
 		t.Fatal(err)
 	}
+	authorizeTestYoloFolder(t, &m)
 
 	cmdY := tea.KeyPressMsg{Code: 'y', Mod: tea.ModSuper}
 	out, _ := m.Update(cmdY)
@@ -4573,6 +4586,65 @@ func TestPrimaryYShortcutRestoresAutoUnderClassicShortcutLayout(t *testing.T) {
 	m = out.(chatTUI)
 	if got := m.ctrl.ToolApprovalMode(); got != control.ToolApprovalAuto {
 		t.Fatalf("second Cmd/Super+Y approval mode = %q, want restored auto", got)
+	}
+}
+
+func TestCtrlYShowsYoloConfirmForUnauthorizedFolder(t *testing.T) {
+	m := newTestChatTUI()
+	m.ctrl = control.New(control.Options{})
+	m.cfg = config.Default()
+	// Fresh isolated PATTY_HOME + an unapproved cwd: the folder gate must fire.
+	t.Setenv("PATTY_HOME", t.TempDir())
+	m.cwd = t.TempDir()
+
+	ctrlY := tea.KeyPressMsg{Code: 'y', Mod: tea.ModCtrl}
+	out, _ := m.Update(ctrlY)
+	m = out.(chatTUI)
+	if m.yoloConfirm == nil {
+		t.Fatalf("Ctrl+Y on an unapproved folder should open the YOLO confirmation, not activate directly (mode=%q)", m.ctrl.ToolApprovalMode())
+	}
+	if got := m.ctrl.ToolApprovalMode(); got == control.ToolApprovalYolo {
+		t.Fatalf("YOLO must not activate before the folder is approved")
+	}
+
+	// Decline (Esc) returns to the prior mode without activating or persisting.
+	out, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = out.(chatTUI)
+	if m.yoloConfirm != nil {
+		t.Fatalf("Esc should close the YOLO confirmation")
+	}
+	if got := m.ctrl.ToolApprovalMode(); got == control.ToolApprovalYolo {
+		t.Fatalf("Esc must not activate YOLO")
+	}
+	if config.IsYoloAuthorized(m.cwd) {
+		t.Fatalf("declining must not authorize the folder")
+	}
+
+	// Reopen and approve: YOLO activates and the folder is persisted.
+	out, _ = m.Update(ctrlY)
+	m = out.(chatTUI)
+	if m.yoloConfirm == nil {
+		t.Fatalf("Ctrl+Y should reopen the YOLO confirmation")
+	}
+	out, _ = m.Update(tea.KeyPressMsg{Code: 'y'})
+	m = out.(chatTUI)
+	if got := m.ctrl.ToolApprovalMode(); got != control.ToolApprovalYolo {
+		t.Fatalf("approving should activate YOLO, got %q", got)
+	}
+	if !config.IsYoloAuthorized(m.cwd) {
+		t.Fatalf("approving should persist the folder for YOLO")
+	}
+
+	// Subsequent Ctrl+Y on the now-approved folder toggles directly (no modal).
+	out, _ = m.Update(ctrlY) // leave YOLO
+	m = out.(chatTUI)
+	out, _ = m.Update(ctrlY) // re-enter on the approved folder
+	m = out.(chatTUI)
+	if m.yoloConfirm != nil {
+		t.Fatalf("approved folder should not show the confirmation again")
+	}
+	if got := m.ctrl.ToolApprovalMode(); got != control.ToolApprovalYolo {
+		t.Fatalf("Ctrl+Y on an approved folder should activate YOLO directly, got %q", got)
 	}
 }
 

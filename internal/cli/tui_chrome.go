@@ -2,10 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
 
+	"patty/internal/control"
 	"patty/internal/i18n"
 	pattyassets "patty/products/patty/assets"
 )
@@ -406,9 +408,13 @@ const minTranscriptRowsWithComposerHints = 3
 // fixed rows, so cursor and viewport accounting remain exact as the input grows.
 func renderComposerChrome(m chatTUI, width int) string {
 	width = max(width, 1)
-	titleText := i18n.M.ChatComposerInputTitle
-	title := themeStyle(activeCLITheme.signal).Bold(true).Render(titleText)
-	header := renderComposerTopBorder(title, width)
+	yolo := m.ctrl != nil && m.ctrl.ToolApprovalMode() == control.ToolApprovalYolo
+	border := activeCLITheme.border
+	if yolo {
+		border = yoloBorderColor(m.yoloFrame)
+	}
+	title := renderComposerTitle(yolo)
+	header := renderComposerTopBorder(title, width, border)
 
 	inputWidth := max(width-4, 1)
 	inputRows := strings.Split(m.renderComposerInput(), "\n")
@@ -420,15 +426,56 @@ func renderComposerChrome(m chatTUI, width int) string {
 		// not create additional unaccounted rows from a long placeholder.
 		inputRows[row] = ansi.Truncate(inputRows[row], inputWidth, "")
 	}
-	input := renderComposerInputPlate(strings.Join(inputRows, "\n"), inputWidth, m.composerInputVerticalPaddingRows())
-	bottom := renderComposerBottomBorder(width)
+	input := renderComposerInputPlate(strings.Join(inputRows, "\n"), inputWidth, m.composerInputVerticalPaddingRows(), border)
+	bottom := renderComposerBottomBorder(width, border)
 	if m.isMinimalTerminal() {
 		return ansi.Truncate(title+"  "+ansi.Strip(input), width, "")
 	}
 	return header + "\n" + input + "\n" + bottom
 }
 
-func renderComposerInputPlate(input string, width int, verticalPaddingRows int) string {
+// renderComposerTitle renders the bordered input title. In YOLO mode it appends
+// a dot separator and a steady red bold "YOLO" tag so the active mode is
+// unmistakable even before the eye catches the pulsing border.
+func renderComposerTitle(yolo bool) string {
+	base := themeStyle(activeCLITheme.signal).Bold(true).Render(i18n.M.ChatComposerInputTitle)
+	if !yolo {
+		return base
+	}
+	sep := themeFg(activeCLITheme.faint, " \u00b7 ")
+	yoloLabel := themeStyle(activeCLITheme.danger).Bold(true).Render("YOLO")
+	return base + sep + yoloLabel
+}
+
+// yoloBorderColor returns the pulsing red composer border color for a given
+// YOLO animation frame. It breathes between a dim red and the theme's danger
+// red via a cosine ease so the motion is subtle and continuous; on 256-colour
+// terminals it falls back to the theme danger colour (still unmistakably red).
+func yoloBorderColor(frame int) cliColor {
+	const period = 22.0                                          // frames (~2s at 90ms) per breathe cycle
+	t := 0.5 - 0.5*math.Cos(2*math.Pi*float64(frame%256)/period) // 0..1
+	bright := activeCLITheme.danger
+	if bright.hex == "" {
+		bright = cliColor{hex: "#e5484d", xterm: 167}
+	}
+	dimHex := blendHex("#2a0a0c", bright.hex, 0.35)
+	return cliColor{hex: blendHex(dimHex, bright.hex, t), xterm: bright.xterm}
+}
+
+// blendHex linearly interpolates between two #rrggbb colours by t in [0,1].
+func blendHex(a, b string, t float64) string {
+	ar, ag, ab, aok := parseHexColor(a)
+	br, bg, bb, bok := parseHexColor(b)
+	if !aok || !bok {
+		return b
+	}
+	mix := func(x, y int) string {
+		return fmt.Sprintf("%02x", int(float64(x)+(float64(y)-float64(x))*t))
+	}
+	return "#" + mix(ar, br) + mix(ag, bg) + mix(ab, bb)
+}
+
+func renderComposerInputPlate(input string, width int, verticalPaddingRows int, border cliColor) string {
 	width = max(width, 1)
 	lines := strings.Split(input, "\n")
 	for i, line := range lines {
@@ -436,37 +483,37 @@ func renderComposerInputPlate(input string, width int, verticalPaddingRows int) 
 		line = ansi.Truncate(line, width, "")
 		padding := strings.Repeat(" ", max(width-visibleWidth(line), 0))
 		if width <= 1 {
-			lines[i] = themeFg(activeCLITheme.border, "│") + ansi.Truncate(ansi.Strip(line), 1, "") + themeFg(activeCLITheme.border, "│")
+			lines[i] = themeFg(border, "│") + ansi.Truncate(ansi.Strip(line), 1, "") + themeFg(border, "│")
 			continue
 		}
-		lines[i] = themeFg(activeCLITheme.border, "│") + " " + line + padding + " " + themeFg(activeCLITheme.border, "│")
+		lines[i] = themeFg(border, "│") + " " + line + padding + " " + themeFg(border, "│")
 	}
 	if width > 1 && verticalPaddingRows >= composerInputVerticalPaddingRows {
-		blank := themeFg(activeCLITheme.border, "│") + strings.Repeat(" ", width+2) + themeFg(activeCLITheme.border, "│")
+		blank := themeFg(border, "│") + strings.Repeat(" ", width+2) + themeFg(border, "│")
 		lines = append([]string{blank}, lines...)
 		lines = append(lines, blank)
 	}
 	return strings.Join(lines, "\n")
 }
 
-func renderComposerTopBorder(title string, width int) string {
+func renderComposerTopBorder(title string, width int, border cliColor) string {
 	width = max(width, 1)
 	if width < 4 {
 		return ansi.Truncate("╭"+ansi.Strip(title), width, "")
 	}
-	left := themeFg(activeCLITheme.border, "╭─")
-	right := themeFg(activeCLITheme.border, "╮")
+	left := themeFg(border, "╭─")
+	right := themeFg(border, "╮")
 	title = " " + title + " "
 	fillWidth := max(width-visibleWidth(left)-visibleWidth(title)-visibleWidth(right), 0)
-	return left + title + themedRule(fillWidth, activeCLITheme.border) + right
+	return left + title + themedRule(fillWidth, border) + right
 }
 
-func renderComposerBottomBorder(width int) string {
+func renderComposerBottomBorder(width int, border cliColor) string {
 	width = max(width, 1)
 	if width < 3 {
 		return ansi.Truncate("╰╯", width, "")
 	}
-	return themeFg(activeCLITheme.border, "╰") + themedRule(max(width-2, 0), activeCLITheme.border) + themeFg(activeCLITheme.border, "╯")
+	return themeFg(border, "╰") + themedRule(max(width-2, 0), border) + themeFg(border, "╯")
 }
 
 // composerHintGroup restores the leading symbol a localized placeholder hint

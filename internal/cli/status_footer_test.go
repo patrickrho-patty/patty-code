@@ -276,9 +276,9 @@ func TestStatusFooterUsesReadableLocalizedHintAndWrapsCleanly(t *testing.T) {
 	for _, tt := range []struct {
 		lang, compact string
 	}{
-		{lang: "en", compact: "Shift+Tab ask/auto/plan · Ctrl+Y YOLO"},
-		{lang: "ko", compact: "Shift+Tab 일반/자동/계획 · Ctrl+Y YOLO"},
-		{lang: "en-US", compact: "Shift+Tab ask/auto/plan · Ctrl+Y YOLO"},
+		{lang: "en", compact: "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode"},
+		{lang: "ko", compact: "Shift+Tab 확인/자동/계획 · Ctrl+Y YOLO 모드"},
+		{lang: "en-US", compact: "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode"},
 	} {
 		t.Run(tt.lang, func(t *testing.T) {
 			i18n.DetectLanguage(tt.lang)

@@ -135,7 +135,7 @@ func TestIdleStatuslineIsCompact(t *testing.T) {
 	if !strings.Contains(plain, "ready") {
 		t.Fatalf("idle status line missing operational state:\n%s", plain)
 	}
-	if !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
+	if !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode") {
 		t.Fatalf("idle status line missing plan-toggle hint:\n%s", plain)
 	}
 	for _, old := range []string{"Shift-Tab", "Ctrl-O", "Ctrl-D", "Enter sends", "Esc clears/exits state", "PgUp/PgDn"} {
@@ -160,7 +160,7 @@ func TestYoloStatuslineUsesOperationalWarningWithoutModePill(t *testing.T) {
 
 	content := renderStatuslineView(t, true)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "approvals skipped") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
+	if !strings.Contains(plain, "approvals skipped") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode") {
 		t.Fatalf("YOLO status line missing warning text:\n%s", plain)
 	}
 	if raw := lastRenderedLine(content); strings.Contains(raw, "\x1b[48;") {
@@ -175,7 +175,7 @@ func TestPlanStatuslineKeepsModeInMasthead(t *testing.T) {
 
 	content := renderPlanStatuslineView(t)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "ready") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
+	if !strings.Contains(plain, "ready") || !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode") {
 		t.Fatalf("plan status line missing operational state:\n%s", plain)
 	}
 	if strings.Contains(plain, " Plan ") {
@@ -192,7 +192,7 @@ func TestStatuslineCycleHintFollowsLanguage(t *testing.T) {
 
 	content := renderStatuslineView(t, false)
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "대기") || !strings.Contains(plain, i18n.M.ChatStatusCycleHintCompact) {
+	if !strings.Contains(plain, "확인") || !strings.Contains(plain, i18n.M.ChatStatusCycleHintCompact) {
 		t.Fatalf("status line hint missing after ko-KR detection:\n%s", plain)
 	}
 }
@@ -202,7 +202,7 @@ func TestDesktopShortcutStatuslineUsesPlanToggleHint(t *testing.T) {
 
 	content := renderStatuslineViewWithShortcutLayout(t, "desktop")
 	plain := bottomStatusPlain(content)
-	if !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO") {
+	if !strings.Contains(plain, "Shift+Tab ask/auto/plan · Ctrl+Y YOLO Mode") {
 		t.Fatalf("desktop shortcut status line missing unified plan-toggle hint:\n%s", plain)
 	}
 	if strings.Contains(plain, " Ask ") {
