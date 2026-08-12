@@ -11,11 +11,11 @@ func TestExpandVars(t *testing.T) {
 
 	cases := []struct{ in, want string }{
 		{"Bearer ${PATTY_TEST_TOKEN}", "Bearer sk-123"},
-		{"${PATTY_TEST_MISSING}", ""},                                   // unset, no default → empty
-		{"${PATTY_TEST_MISSING:-fallback}", "fallback"},                 // unset → default
-		{"${PATTY_TEST_EMPTY:-fallback}", "fallback"},                   // set-but-empty → default
-		{"${PATTY_TEST_TOKEN:-fallback}", "sk-123"},                     // set → value, default ignored
-		{"no vars here", "no vars here"},                                   // untouched
+		{"${PATTY_TEST_MISSING}", ""},                                // unset, no default → empty
+		{"${PATTY_TEST_MISSING:-fallback}", "fallback"},              // unset → default
+		{"${PATTY_TEST_EMPTY:-fallback}", "fallback"},                // set-but-empty → default
+		{"${PATTY_TEST_TOKEN:-fallback}", "sk-123"},                  // set → value, default ignored
+		{"no vars here", "no vars here"},                             // untouched
 		{"a${PATTY_TEST_TOKEN}b${PATTY_TEST_MISSING}c", "ask-123bc"}, // multiple refs
 	}
 	for _, c := range cases {

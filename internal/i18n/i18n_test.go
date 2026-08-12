@@ -205,7 +205,7 @@ func TestSeoulFlowChromeCopyIsCompleteInKoreanAndEnglish(t *testing.T) {
 			want: []string{
 				"명령 / 메시지", "명령 또는 질문을 입력해보세요",
 				"/ 명령어", "@ 파일", "! 셸", "? 단축키",
-				"작업", "모델", "추론", "여유", "자동", "보통",
+				"모델", "추론", "여유", "보통",
 			},
 		},
 		{
@@ -214,7 +214,7 @@ func TestSeoulFlowChromeCopyIsCompleteInKoreanAndEnglish(t *testing.T) {
 			want: []string{
 				"COMMAND / MESSAGE", "Type a command or ask a question",
 				"/ commands", "@ files", "! shell", "? shortcuts",
-				"MODE", "MODEL", "EFFORT", "HEADROOM", "AUTO", "MEDIUM",
+				"MODEL", "EFFORT", "HEADROOM", "MEDIUM",
 			},
 		},
 	} {
@@ -227,11 +227,9 @@ func TestSeoulFlowChromeCopyIsCompleteInKoreanAndEnglish(t *testing.T) {
 				M.ChatComposerFilesHint,
 				M.ChatComposerShellHint,
 				M.ChatComposerShortcutsHint,
-				M.ChatStatusModeLabel,
 				M.ChatStatusModelLabel,
 				M.ChatStatusEffortLabel,
 				M.ChatStatusHeadroomLabel,
-				M.ChatModeAuto,
 				M.ChatEffortMedium,
 			}
 			if strings.Join(got, "\n") != strings.Join(tt.want, "\n") {

@@ -152,19 +152,7 @@ func (m *chatTUI) runtimeSettingChangeReady() bool {
 	if m == nil || m.ctrl == nil {
 		return true
 	}
-	if m.buildController == nil {
-		m.notice(i18n.M.RuntimeRefreshUnavailable)
-		return false
-	}
-	if m.runtimeSwitchBusy() {
-		m.notice(i18n.M.RuntimeRefreshBusy)
-		return false
-	}
-	if m.modelSwitchPending {
-		m.notice(i18n.M.RuntimeSwitchPending)
-		return false
-	}
-	return true
+	return !m.unavailableOrBusyNotice(i18n.M.RuntimeRefreshUnavailable, i18n.M.RuntimeRefreshBusy)
 }
 
 // scheduleCurrentControllerRebuild refreshes configuration-backed runtime state
@@ -174,52 +162,21 @@ func (m *chatTUI) scheduleCurrentControllerRebuild(reason, successNotice string)
 	if m == nil || m.ctrl == nil {
 		return nil
 	}
-	if m.buildController == nil {
-		m.notice(i18n.M.RuntimeRefreshUnavailable)
-		return nil
-	}
-	if err := m.ctrl.Snapshot(); err != nil {
-		m.notice(reason + ": snapshot failed: " + err.Error())
-	}
-	carried := m.ctrl.History()
-	resumePath := m.ctrl.SessionPath()
-	if err := m.rebindSessionLease(resumePath); err != nil {
-		m.notice(reason + ": " + sessionLeaseHeldNotice(err))
-		return nil
-	}
-
-	oldCtrl := m.ctrl
-	build := m.buildController
-	ref := m.modelRef
-	profile := m.runtimeProfile
-	m.modelSwitchPending = true
-	m.pendingModelSwitch = func() tea.Msg {
-		c, err := build(controllerBuildSpec{
-			ModelRef:         ref,
-			RuntimeProfile:   profile,
-			ToolApprovalMode: oldCtrl.ToolApprovalMode(),
-			PlanMode:         oldCtrl.PlanMode(),
-		}, carried, resumePath, oldCtrl)
-		if err != nil {
-			return modelSwitchMsg{ref: ref, failurePrefix: reason, err: err}
-		}
-		return modelSwitchMsg{
-			ref:           ref,
-			ctrl:          c,
-			oldCtrl:       oldCtrl,
-			label:         c.Label(),
-			commands:      c.Commands(),
-			skills:        c.SlashSkills(),
-			host:          c.Host(),
-			successNotice: successNotice,
-		}
-	}
-	return m.pendingModelSwitch
+	return m.beginRuntimeRebuild(controllerBuildSpec{
+		ModelRef:         m.modelRef,
+		RuntimeProfile:   m.runtimeProfile,
+		ToolApprovalMode: m.ctrl.ToolApprovalMode(),
+		PlanMode:         m.ctrl.PlanMode(),
+	}, reason, reason+"…", successNotice, "")
 }
 
-func (m *chatTUI) bindRuntimeRebuilder(maxSteps int, sink event.Sink, yolo bool, overrides cliBuildOverrides, buildOpts func(string, int, bool, event.Sink, string, cliBuildOverrides) boot.Options) {
+// bindRuntimeRebuilder wires the /reload rebuild seam. overrides is captured
+// by pointer so the seam sees the session's current effort/output-style after
+// runtime switches mutate it — a value capture would rebuild with launch-time
+// settings.
+func (m *chatTUI) bindRuntimeRebuilder(maxSteps int, sink event.Sink, yolo bool, overrides *cliBuildOverrides, buildOpts func(string, int, bool, event.Sink, string, cliBuildOverrides) boot.Options) {
 	m.rebuildRuntime = func(ctx context.Context, spec controllerBuildSpec, old *control.Controller) (*boot.BuildResult, error) {
-		effectiveOverrides := overrides
+		effectiveOverrides := *overrides
 		if spec.EffortOverride != nil {
 			effectiveOverrides.Effort = spec.EffortOverride
 		}

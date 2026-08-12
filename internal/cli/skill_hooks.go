@@ -2,12 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"slices"
 	"strings"
-
-	tea "charm.land/bubbletea/v2"
 
 	"patty/internal/config"
 	"patty/internal/control"
@@ -143,24 +140,29 @@ func (m *chatTUI) skillSaveEnabledChanges(changes map[string]bool) {
 	// Lock only the load-modify-save cycle; the session refresh below runs
 	// off-lock. The closure returns a non-empty notice on failure.
 	if failNotice := func() string {
-		unlock := config.LockUserConfigEdits()
-		defer unlock()
-		cfg := config.LoadForEdit(config.UserConfigPath())
-		for name, enabled := range changes {
-			key := config.SkillNameKey(name)
-			if key == "" {
-				key = strings.TrimPrefix(strings.TrimSpace(name), "/")
+		var verb string
+		_, applyErr, saveErr := config.EditUserConfigLocked(func(c *config.Config) error {
+			for name, enabled := range changes {
+				verb = enableVerb(enabled)
+				key := config.SkillNameKey(name)
+				if key == "" {
+					key = strings.TrimPrefix(strings.TrimSpace(name), "/")
+				}
+				canonical, ok := known[key]
+				if !ok {
+					return fmt.Errorf("unknown skill: %s", name)
+				}
+				if err := c.SetSkillEnabled(canonical, enabled); err != nil {
+					return err
+				}
 			}
-			canonical, ok := known[key]
-			if !ok {
-				return "skill " + enableVerb(enabled) + ": unknown skill: " + name
-			}
-			if err := cfg.SetSkillEnabled(canonical, enabled); err != nil {
-				return "skill " + enableVerb(enabled) + ": " + err.Error()
-			}
-		}
-		if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
-			return "skill toggle: " + err.Error()
+			return nil
+		})
+		switch {
+		case applyErr != nil:
+			return "skill " + verb + ": " + applyErr.Error()
+		case saveErr != nil:
+			return "skill toggle: " + saveErr.Error()
 		}
 		return ""
 	}(); failNotice != "" {
@@ -186,65 +188,16 @@ func (m *chatTUI) skillSaveEnabledChanges(changes map[string]bool) {
 }
 
 func (m *chatTUI) scheduleSkillSessionRefresh(reason, notice string) bool {
-	if m.buildController == nil {
-		m.notice("skill refresh unavailable in this session")
+	if m.unavailableOrBusyNotice("skill refresh unavailable in this session", "finish or cancel active work and stop background jobs before refreshing skills") {
 		return false
 	}
-	if m.ctrl == nil {
-		return false
-	}
-	if m.runtimeSwitchBusy() {
-		m.notice("finish or cancel active work and stop background jobs before refreshing skills")
-		return false
-	}
-	if m.modelSwitchPending {
-		m.notice("wait for the current runtime switch to finish")
-		return false
-	}
-	if err := m.ctrl.Snapshot(); err != nil {
-		slog.Warn(reason+": snapshot failed", "err", err)
-	}
-	// Snapshot can retarget the controller to a recovery branch. Carry the
-	// post-snapshot path so the rebuild does not bind recovered history back to
-	// the stale original transcript.
-	carried := m.ctrl.History()
-	prevPath := m.ctrl.SessionPath()
-	// Move the lease before the rebuilt controller binds prevPath for writing
-	// (AdoptHistory resumes there): after a snapshot retarget the lease still
-	// guards the old path, and the async build must not open an unguarded
-	// writer on the recovery branch.
-	if err := m.rebindSessionLease(prevPath); err != nil {
-		m.notice(reason + ": " + sessionLeaseHeldNotice(err))
-		return false
-	}
-	if notice != "" {
-		m.notice(notice)
-	}
-	oldCtrl := m.ctrl
-	build := m.buildController
-	ref := m.modelRef
-	m.modelSwitchPending = true
-	m.pendingModelSwitch = func() tea.Msg {
-		c, err := build(controllerBuildSpec{
-			ModelRef:         ref,
-			RuntimeProfile:   m.runtimeProfile,
-			ToolApprovalMode: oldCtrl.ToolApprovalMode(),
-			PlanMode:         oldCtrl.PlanMode(),
-		}, carried, prevPath, oldCtrl)
-		if err != nil {
-			return modelSwitchMsg{ref: ref, err: err}
-		}
-		return modelSwitchMsg{
-			ref:      ref,
-			ctrl:     c,
-			oldCtrl:  oldCtrl,
-			label:    c.Label(),
-			commands: c.Commands(),
-			skills:   c.SlashSkills(),
-			host:     c.Host(),
-		}
-	}
-	return true
+	m.beginRuntimeRebuild(controllerBuildSpec{
+		ModelRef:         m.modelRef,
+		RuntimeProfile:   m.runtimeProfile,
+		ToolApprovalMode: m.ctrl.ToolApprovalMode(),
+		PlanMode:         m.ctrl.PlanMode(),
+	}, reason, notice, "", "")
+	return m.pendingModelSwitch != nil
 }
 
 func enableVerb(enabled bool) string {

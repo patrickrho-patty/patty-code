@@ -10,6 +10,7 @@ import (
 	"patty/internal/config"
 	"patty/internal/control"
 	"patty/internal/event"
+	"patty/internal/i18n"
 	"patty/internal/provider"
 	"patty/internal/skill"
 )
@@ -38,6 +39,25 @@ func TestQuickPickerNavigationFilterAndConfirm(t *testing.T) {
 	result := p.handleKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if result.choice == nil || result.choice.ID != "two" {
 		t.Fatalf("enter choice = %+v, want two", result.choice)
+	}
+}
+
+func TestQuickPickerUsesKoreanCatalog(t *testing.T) {
+	previous := i18n.CurrentLanguage()
+	defer i18n.DetectLanguage(previous)
+	i18n.DetectLanguage("ko-KR")
+	label, description := modelPickerPresentation("patty/medium", nil)
+
+	p := &quickPicker{
+		kind:  quickPickerModel,
+		title: i18n.M.QuickPickerModelTitle,
+		items: []quickPickerItem{{Label: label, Description: description}},
+	}
+	out := p.render(80)
+	for _, want := range []string{"모델 선택", "제공자: patty", "입력하여 필터", "Enter 선택", "Esc 취소"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("Korean picker output missing %q: %q", want, out)
+		}
 	}
 }
 

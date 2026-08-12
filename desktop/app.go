@@ -52,7 +52,6 @@ import (
 	"patty/internal/memory"
 	"patty/internal/notify"
 	"patty/internal/plugin"
-	"patty/internal/pluginpkg"
 	"patty/internal/provider"
 	"patty/internal/repair"
 	"patty/internal/sessiontemp"
@@ -7448,9 +7447,6 @@ func (a *App) SlashArgs(input string) SlashArgsResult {
 		ConfiguredMCP:   ctrl.ConfiguredMCPNames(),
 		DisconnectedMCP: ctrl.DisconnectedMCPNames(),
 		CurrentModel:    model,
-	}
-	if names, err := pluginpkg.InstalledNames(config.PattyHomeDir()); err == nil {
-		data.PluginNames = names
 	}
 	seen := map[string]bool{}
 	for _, m := range a.Models() {

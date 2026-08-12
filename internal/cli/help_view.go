@@ -6,6 +6,7 @@ import (
 
 	"patty/internal/command"
 	"patty/internal/control"
+	"patty/internal/i18n"
 	"patty/internal/plugin"
 	"patty/internal/skill"
 )
@@ -21,22 +22,23 @@ func renderHelp(width int, commands []command.Command, skills []skill.Skill, pro
 	docsOwner := control.ResolveSlashCommandOwner(control.DocsSlashName, commands, skills)
 	docsBuiltin := "/" + control.ResolvedBuiltinSlashName(control.DocsSlashName, commands, skills)
 	builtins := renameSlashItem(builtinHelpItems(), "/docs", docsBuiltin)
-	fmt.Fprintf(&b, "%s\n", viewHeader("commands"))
-	writeHelpItems(&b, width, "built-in", builtins, 0)
+	builtins = removeHiddenBuiltinSlashItems(builtins, docsBuiltin)
+	fmt.Fprintf(&b, "%s\n", viewHeader("%s", i18n.M.ViewCommandsHeader))
+	writeHelpItems(&b, width, i18n.M.ViewBuiltInSection, builtins, 0)
 	if len(commands) > 0 {
-		writeHelpItems(&b, width, "custom", customHelpItems(commands), helpMaxDynamicItems)
+		writeHelpItems(&b, width, i18n.M.ViewCustomSection, customHelpItems(commands), helpMaxDynamicItems)
 	}
 	if len(skills) > 0 {
 		items := skillHelpItems(skills)
 		if docsOwner == control.SlashOwnerCustom {
 			items = removeSlashItems(items, "/docs")
 		}
-		writeHelpItems(&b, width, "skills", items, helpMaxDynamicItems)
+		writeHelpItems(&b, width, i18n.M.ViewSkillsSection, items, helpMaxDynamicItems)
 	}
 	if len(prompts) > 0 {
-		writeHelpItems(&b, width, "MCP prompts", promptHelpItems(prompts), helpMaxDynamicItems)
+		writeHelpItems(&b, width, i18n.M.ViewMCPPromptsSection, promptHelpItems(prompts), helpMaxDynamicItems)
 	}
-	b.WriteString(viewHint("type a command, or press Tab after / for completion"))
+	b.WriteString(viewHint(i18n.M.ViewHelpHint))
 	return strings.TrimRight(b.String(), "\n")
 }
 

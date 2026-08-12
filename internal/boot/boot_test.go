@@ -2153,7 +2153,7 @@ model = "x"
 
 	fullReq, _ := captureTokenProfileSurface(t, TokenModeFull)
 	economyReq, _ := captureTokenProfileSurface(t, TokenModeEconomy)
-	doc, err := os.ReadFile(filepath.Join(pkgDir, "..", "..", "docs", "TOOL_CONTRACT.md"))
+	doc, err := os.ReadFile(filepath.Join(pkgDir, "..", "..", "docs", "reference", "TOOL_CONTRACT.md"))
 	if err != nil {
 		t.Fatalf("read tool contract doc: %v", err)
 	}
@@ -4764,6 +4764,28 @@ func pathListContains(paths []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func TestBootReasoningLanguageOverrideWinsOverConfig(t *testing.T) {
+	cfg := config.Default()
+	cfg.Agent.ReasoningLanguage = "en"
+	if got := bootReasoningLanguage(Options{}, cfg); got != "en" {
+		t.Fatalf("empty override must defer to config, got %q", got)
+	}
+	if got := bootReasoningLanguage(Options{ReasoningLanguage: "ko-KR"}, cfg); got != "ko-KR" {
+		t.Fatalf("frontend override must win over config, got %q", got)
+	}
+}
+
+func TestBootOutputStyleOverrideWinsOverConfig(t *testing.T) {
+	cfg := config.Default()
+	cfg.Agent.OutputStyle = "explanatory"
+	if got := bootOutputStyle(Options{}, cfg); got != "explanatory" {
+		t.Fatalf("empty override must defer to config, got %q", got)
+	}
+	if got := bootOutputStyle(Options{OutputStyle: "concise"}, cfg); got != "concise" {
+		t.Fatalf("frontend override must win over config, got %q", got)
+	}
 }
 
 func TestNormalizeAdditionalDirsRejectsInvalidPaths(t *testing.T) {

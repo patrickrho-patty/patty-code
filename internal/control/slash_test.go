@@ -57,7 +57,6 @@ func TestSlashArgItems(t *testing.T) {
 		CurrentModel:    "deepseek-flash/deepseek-v4-flash",
 		ProviderNames:   []string{"deepseek-flash", "deepseek-pro", "custom"},
 		CurrentProvider: "deepseek-flash",
-		PluginNames:     []string{"superpowers", "workflow-kit"},
 		MemoryRefs:      []string{"mem-cache", "cache-first"},
 		MemoryArchives:  []string{"/tmp/memory archive/cache-first.md"},
 	}
@@ -167,10 +166,10 @@ func TestSlashArgItems(t *testing.T) {
 	if items, _ := SlashArgItems("/goal --research ", data); len(items) != 0 {
 		t.Errorf("/goal after a research flag should accept free-form objectives; got %v", labelsOf(items))
 	}
-	// /reasoning-language
-	items, _ = SlashArgItems("/reasoning-language ", data)
-	if !has(items, "auto") || !has(items, "ko-KR") || !has(items, "en") || has(items, "기능정리검토") {
-		t.Errorf("/reasoning-language should offer only auto/ko-KR/en; got %v", labelsOf(items))
+	// /reasoning-language offers no structured args: the command is removed
+	// from the chat surface (locked to Korean), so completion would be a dead end.
+	if items, _ := SlashArgItems("/reasoning-language ", data); len(items) != 0 {
+		t.Errorf("/reasoning-language should offer no suggestions; got %v", labelsOf(items))
 	}
 	// /currency
 	items, _ = SlashArgItems("/currency ", data)
@@ -199,14 +198,10 @@ func TestSlashArgItems(t *testing.T) {
 	if items, _ := SlashArgItems("/skills li", data); len(items) != 0 {
 		t.Errorf("/skills li should not offer hidden list suggestion; got %v", labelsOf(items))
 	}
-	// /plugins mirrors the session-facing plugin inventory command.
-	items, _ = SlashArgItems("/plugins ", data)
-	if !has(items, "show") {
-		t.Errorf("/plugins should offer show; got %v", labelsOf(items))
-	}
-	items, _ = SlashArgItems("/plugins show ", data)
-	if !has(items, "superpowers") || !has(items, "workflow-kit") {
-		t.Errorf("/plugins show should list plugin names; got %v", labelsOf(items))
+	// /plugins offers no structured args: the CLI answers every form with the
+	// coming-soon notice, so arg completion would be a dead end.
+	if items, _ := SlashArgItems("/plugins ", data); len(items) != 0 {
+		t.Errorf("/plugins should offer no suggestions; got %v", labelsOf(items))
 	}
 	// /memory diagnostics and recovery commands.
 	items, _ = SlashArgItems("/memory ", data)

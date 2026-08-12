@@ -1,4 +1,4 @@
-"""Emit docs/THEME_ASSETS.md + .ko-KR.md — provenance & licence ledger for the
+"""Emit docs/themes/THEME_ASSETS.md — provenance & licence ledger for the
 official theme assets. Reads hashes from out/report.json (produced by build.py).
 """
 from __future__ import annotations
@@ -68,32 +68,11 @@ def main():
         en.append(f"| {name} (`{tid}`) | `{prompt}` | `{bg}` | `{pv}` |")
     en.append("")
 
-    ko = []
-    ko.append("# 공식 테마 에셋 출처 기록\n")
-    ko.append("Patty Code의 공식 테마 8종은 모두 `scripts/official-theme-art/` 아래의 스크립트로")
-    ko.append("처음부터 절차적으로 생성한 **오리지널** 이미지입니다. (numpy + Pillow, 고정 시드, 완전 재현 가능)")
-    ko.append("시각적 *방향성*은 MIT 라이선스의")
-    ko.append("[Codex-Dream-Skin](https://github.com/Fei-Away/Codex-Dream-Skin) 콘셉트 갤러리에서 영감을 받았지만, 다음을 보장합니다:\n")
-    ko.append("- 참조 프로젝트나 제3자 에셋의 **픽셀, 레이아웃, UI 요소, 텍스트, 로고, 워터마크를 복제하지 않았습니다**.")
-    ko.append("  모든 배경은 코드로 다시 생성한 독립 결과물입니다.")
-    ko.append("- 등장 인물은 모두 생성기가 만든 **오리지널 성인 가상 인물**입니다: 일러스트 뮤즈(Rose Dawn),")
-    ko.append("  행운의 프로그래머 마스코트(Fortune Forge), 독서하는 인물(Sage Breeze), 애니메이션풍 성인 인물(Spark Notebook),")
-    ko.append("  실루엣 뮤즈(Violet Starlight), 디지털 퍼포머(Cyan Stage), 신사(Noir Gold). Crimson Horizon에는 인물이 없습니다.")
-    ko.append("- 배경에는 창, 사이드바, 카드, 버튼, 입력창, 읽을 수 있는 텍스트가 없으며 EXIF/작성자 메타데이터도 제거되어 있습니다.\n")
-    ko.append("에셋은 Patty Code 저장소의 일부로 MIT 라이선스 아래 배포되며, © Patty Code Contributors입니다.")
-    ko.append("사람 검수: Patty Code Contributors (릴리스 PR 검토).\n")
-    ko.append(f"생성 날짜: {today}\n")
-    ko.append("| 테마 | 생성기(최종 프롬프트 등가 표현) | background.webp SHA-256 | preview.webp SHA-256 |")
-    ko.append("| --- | --- | --- | --- |")
-    for tid, name, prompt, bg, pv in rows:
-        ko.append(f"| {name} (`{tid}`) | `{prompt}` | `{bg}` | `{pv}` |")
-    ko.append("")
-
-    with open(os.path.join(DOCS, "THEME_ASSETS.md"), "w") as f:
+    themes = os.path.join(DOCS, "themes")
+    os.makedirs(themes, exist_ok=True)
+    with open(os.path.join(themes, "THEME_ASSETS.md"), "w") as f:
         f.write("\n".join(en))
-    with open(os.path.join(DOCS, "THEME_ASSETS.ko-KR.md"), "w") as f:
-        f.write("\n".join(ko))
-    print("wrote docs/THEME_ASSETS.md + .ko-KR.md")
+    print("wrote docs/themes/THEME_ASSETS.md")
 
 
 if __name__ == "__main__":

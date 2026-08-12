@@ -238,7 +238,7 @@ func (*docsTool) Schema() json.RawMessage {
 			"operation":{"type":"string","enum":["search","read","list"],"description":"search ranks relevant sections; read returns one section or lists a document's sections; list shows the embedded document catalog."},
 			"query":{"type":"string","maxLength":4096,"description":"Question, command, configuration key, error phrase, or topic for operation=search."},
 			"section_id":{"type":"string","description":"Exact section_id returned by search or by a document section listing. Used by operation=read."},
-			"path":{"type":"string","description":"Exact docs/*.md path returned by search/list. With operation=read and no section_id, lists that document's sections."},
+			"path":{"type":"string","description":"Exact embedded documentation path returned by search/list. With operation=read and no section_id, lists that document's sections."},
 			"language":{"type":"string","enum":["auto","all","en","ko-KR"],"description":"Language preference. search defaults to auto from the query; list defaults to all. Explicit en or ko-KR filters results."},
 			"audience":{"type":"string","enum":["all","user","developer","maintainer"],"description":"Optional audience filter; defaults to all."},
 			"limit":{"type":"integer","minimum":1,"maximum":10,"description":"Maximum search results, default 5, max 10."}
@@ -430,29 +430,35 @@ func loadCatalog(fsys fs.FS) (*catalog, error) {
 }
 
 func loadCatalogWithReleaseNotes(docsFS, releaseNotesFS fs.FS) (*catalog, error) {
-	entries, err := fs.ReadDir(docsFS, ".")
-	if err != nil {
+	var names []string
+	if err := fs.WalkDir(docsFS, ".", func(name string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".md") {
+			return nil
+		}
+		names = append(names, name)
+		return nil
+	}); err != nil {
 		return nil, err
 	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	sort.Strings(names)
 	hash := sha256.New()
 	_, _ = hash.Write([]byte("patty-product-docs-v1\x00"))
 	markdownParser := goldmark.DefaultParser()
 	c := &catalog{byPath: map[string]*document{}, byID: map[string]*section{}}
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".md") {
-			continue
-		}
-		data, err := fs.ReadFile(docsFS, entry.Name())
+	for _, name := range names {
+		data, err := fs.ReadFile(docsFS, name)
 		if err != nil {
-			return nil, fmt.Errorf("read %s: %w", entry.Name(), err)
+			return nil, fmt.Errorf("read %s: %w", name, err)
 		}
 		if !utf8.Valid(data) {
-			return nil, fmt.Errorf("read %s: Markdown is not valid UTF-8", entry.Name())
+			return nil, fmt.Errorf("read %s: Markdown is not valid UTF-8", name)
 		}
-		writeDigestRecord(hash, entry.Name(), data)
-		doc := parseDocumentWithParser(entry.Name(), string(data), markdownParser)
-		doc.source = "docs/" + entry.Name()
+		writeDigestRecord(hash, name, data)
+		doc := parseDocumentWithParser(name, string(data), markdownParser)
+		doc.source = "docs/" + name
 		if len(doc.sections) == 0 {
 			continue
 		}
@@ -542,7 +548,7 @@ func parseDocumentWithParser(name, content string, markdownParser parser.Parser)
 	source := []byte(content)
 	doc := &document{
 		path:     path.Clean(name),
-		title:    strings.TrimSuffix(strings.TrimSuffix(name, ".md"), ".ko-KR"),
+		title:    strings.TrimSuffix(strings.TrimSuffix(path.Base(name), ".md"), ".ko-KR"),
 		locale:   detectDocumentLanguage(name, content),
 		audience: documentAudience(name),
 	}
@@ -738,7 +744,7 @@ func detectDocumentLanguage(name, content string) string {
 }
 
 func documentAudience(name string) string {
-	stem := strings.TrimSuffix(strings.TrimSuffix(name, ".md"), ".ko-KR")
+	stem := strings.TrimSuffix(strings.TrimSuffix(path.Base(name), ".md"), ".ko-KR")
 	switch strings.ToUpper(stem) {
 	case "RELEASING", "SIGNPATH_WINDOWS_ADMIN_SOP", "PRODUCTION_CHECKLIST", "THEME_ASSETS":
 		return "maintainer"

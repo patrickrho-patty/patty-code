@@ -65,6 +65,7 @@ func Run(args []string, version string) int {
 func RunWithBuildInfo(args []string, info BuildInfo) int {
 	info = info.withDefaults()
 	version := info.Version
+	activeBuildVersion = version
 	// Usage recording is asynchronous so provider/UI paths never wait on disk.
 	// Drain records accepted by this process before a normal CLI exit.
 	defer func() {
@@ -274,6 +275,7 @@ func setupProfile(ctx context.Context, modelName string, maxStepsOverride int, r
 
 type cliBuildOverrides struct {
 	Effort               *string
+	OutputStyle          string
 	PermissionAllow      []string
 	AdditionalDirs       []string
 	WorkspaceRoot        string
@@ -304,12 +306,15 @@ func setupProfileWithOverrides(ctx context.Context, modelName string, maxStepsOv
 
 func cliProfileBuildOptions(modelName string, maxStepsOverride int, requireKey bool, sink event.Sink, profile string, overrides cliBuildOverrides) boot.Options {
 	return boot.Options{
-		Model:                modelName,
-		MaxSteps:             maxStepsOverride,
-		MaxStepsKey:          "--max-steps",
-		RequireKey:           requireKey,
-		Sink:                 sink,
-		TokenMode:            profile,
+		Model:       modelName,
+		MaxSteps:    maxStepsOverride,
+		MaxStepsKey: "--max-steps",
+		RequireKey:  requireKey,
+		Sink:        sink,
+		TokenMode:   profile,
+		// Reasoning stays Korean for the Korean-first CLI regardless of config.
+		ReasoningLanguage:    "ko-KR",
+		OutputStyle:          overrides.OutputStyle,
 		SessionDir:           resolveCLISessionDir(),
 		WorkspaceRoot:        overrides.WorkspaceRoot,
 		EffortOverride:       overrides.Effort,
@@ -1277,6 +1282,9 @@ func chatREPL(args []string, version string) int {
 		if spec.EffortOverride != nil {
 			effectiveOverrides.Effort = spec.EffortOverride
 		}
+		if spec.OutputStyle != "" {
+			effectiveOverrides.OutputStyle = spec.OutputStyle
+		}
 		// Keep the logical-session private temporary directory across model /
 		// profile switches (Issue #7575).
 		effectiveOverrides.SessionTemp = sessionTempFromCLIController(oldCtrl)
@@ -1286,6 +1294,9 @@ func chatREPL(args []string, version string) int {
 		}
 		if spec.EffortOverride != nil {
 			overrides.Effort = spec.EffortOverride
+		}
+		if spec.OutputStyle != "" {
+			overrides.OutputStyle = spec.OutputStyle
 		}
 		// Keep the carried conversation in its existing file so the switch doesn't
 		// orphan a duplicate (#2807).
@@ -1307,7 +1318,7 @@ func chatREPL(args []string, version string) int {
 	// goal/recovery state, lifecycle). Same construction inputs as
 	// buildController so the replacement matches this session's launch wiring;
 	// the CLI holds no SharedHost, so each rebuild owns its plugin host.
-	m.bindRuntimeRebuilder(*maxSteps, sink, *yolo, overrides, cliProfileBuildOptions)
+	m.bindRuntimeRebuilder(*maxSteps, sink, *yolo, &overrides, cliProfileBuildOptions)
 	m.runtimeProfile = profile
 	if effortOverride != nil {
 		m.effortLevel = *effortOverride

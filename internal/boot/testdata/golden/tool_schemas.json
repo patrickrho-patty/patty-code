@@ -320,7 +320,7 @@
           "type": "string"
         },
         "path": {
-          "description": "Exact docs/*.md path returned by search/list. With operation=read and no section_id, lists that document's sections.",
+          "description": "Exact embedded documentation path returned by search/list. With operation=read and no section_id, lists that document's sections.",
           "type": "string"
         },
         "query": {

@@ -134,14 +134,12 @@ func (m *chatTUI) shouldSuppressKittyHangulResidualCommit(msg tea.KeyPressMsg, p
 	if !isKittyHangulResidualCandidate(msg) {
 		return false
 	}
-	key := msg.Key()
-	if key.Code == tea.KeyBackspace {
-		return true
+	// A Backspace-coded event preserved the physical key identity, so the
+	// terminal handed the composition to the app: let the composer cancel the
+	// jamo. Only text-only legacy residuals are suppressed behind tmux.
+	if msg.Key().Code == tea.KeyBackspace {
+		return false
 	}
-	// Kitty's legacy macOS IME stream sends only the residual jamo. Tmux then
-	// has no Backspace identity to preserve, so use the physical key edge
-	// recorded before terminal transport erased it. Deliberate jamo input keeps
-	// working because its physical key is a two-set letter, not Backspace.
 	return m.kittyHangulIMEBehindTmux && physicalBackspaceEvidence &&
 		m.keyboardInputSourceID != nil &&
 		isKoreanKeyboardInputSource(m.keyboardInputSourceID())
@@ -153,8 +151,7 @@ func applyKittyHangulKeyboardEnhancements(view *tea.View, enabled bool) {
 	}
 	// Kitty normally emits only the IME-produced text, losing the physical key
 	// identity when macOS clears a Hangul pre-edit with Backspace. Associated-text
-	// reporting keeps both: the event arrives as Backspace with text "ㄴ", which
-	// is distinguishable from an intentional standalone ㄴ commit.
+	// reporting keeps both: Backspace with text "ㄴ" is not a deliberate commit.
 	view.KeyboardEnhancements.ReportAllKeysAsEscapeCodes = true
 	view.KeyboardEnhancements.ReportAssociatedText = true
 }

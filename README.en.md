@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.svg" alt="Patty Code — Korean-first coding agent" width="680"/>
+  <img src="docs/assets/branding/logo.svg" alt="Patty Code — Korean-first coding agent" width="680"/>
 </p>
 
 <p align="center">
@@ -9,7 +9,7 @@
   &nbsp;·&nbsp;
   <a href="https://code.patty.io">Website</a>
   &nbsp;·&nbsp;
-  <a href="./docs/GUIDE.md">Guide</a>
+  <a href="./docs/guides/GUIDE.md">Guide</a>
   &nbsp;·&nbsp;
   <a href="https://github.com/patrickrho-patty/patty-code/releases">Releases</a>
 </p>
@@ -149,13 +149,13 @@ theme_style = "seoul-night"    # seoul-night | ink-night | hanji-light | jade-ni
 
 ## Documentation
 
-- [Guide](./docs/GUIDE.md)
-- [CLI reference](./docs/CLI.md)
-- [Configuration and credential paths](./docs/CONFIG_PATHS.md)
-- [ACP editor integration](./docs/ACP.md)
-- [Extensions and plugins](./docs/EXTENSIONS.md)
-- [Product specification](./docs/SPEC.md)
-- [Migration guide](./docs/MIGRATING.md)
+- [Guide](./docs/guides/GUIDE.md)
+- [CLI reference](./docs/guides/CLI.md)
+- [Configuration and credential paths](./docs/guides/CONFIG_PATHS.md)
+- [ACP editor integration](./docs/guides/ACP.md)
+- [Extensions and plugins](./docs/extensions/EXTENSIONS.md)
+- [Product specification](./docs/reference/SPEC.md)
+- [Migration guide](./docs/guides/MIGRATING.md)
 
 ## Development
 

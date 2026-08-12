@@ -64,6 +64,26 @@ func TestLaunchArtworkUsesNationalAndThemeSemanticColors(t *testing.T) {
 	}
 }
 
+func TestSessionFactsIncludeBuildVersionWhenInjected(t *testing.T) {
+	previousLanguage := i18n.CurrentLanguage()
+	defer i18n.DetectLanguage(previousLanguage)
+	i18n.DetectLanguage("en")
+	previous := activeBuildVersion
+	defer func() { activeBuildVersion = previous }()
+	m := newTestChatTUI()
+	activeBuildVersion = "desktop-v1.21.3-79-ge3575885e"
+	m.ctrl = control.New(control.Options{})
+	m.label = "deepseek-v4"
+	m.effortLevel = "medium"
+
+	plain := ansi.Strip(renderSessionFacts(m, 120))
+	for _, want := range []string{"VERSION", "desktop-v1.21.3-79-ge3575885e", "MODEL", "deepseek-v4", "HEADROOM"} {
+		if !strings.Contains(plain, want) {
+			t.Fatalf("fact strip missing %q alongside the version:\n%s", want, plain)
+		}
+	}
+}
+
 func TestSessionFactsAreKoreanFirstAndCoLocated(t *testing.T) {
 	previousLanguage := i18n.CurrentLanguage()
 	defer i18n.DetectLanguage(previousLanguage)
@@ -74,7 +94,7 @@ func TestSessionFactsAreKoreanFirstAndCoLocated(t *testing.T) {
 	m.effortLevel = "medium"
 
 	plain := ansi.Strip(renderSessionFacts(m, 100))
-	for _, want := range []string{"작업", "자동", "모델", "deepseek-v4", "추론", "보통", "여유"} {
+	for _, want := range []string{"모델", "deepseek-v4", "추론", "보통", "여유"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("Korean fact strip missing %q:\n%s", want, plain)
 		}
@@ -96,7 +116,7 @@ func TestSessionFactsUseEnglishModelLabelAndWrapBySemanticGroup(t *testing.T) {
 	m.effortLevel = "medium"
 
 	plain := ansi.Strip(renderSessionFacts(m, 30))
-	for _, want := range []string{"MODE", "AUTO", "MODEL", "deepseek-v4", "EFFORT", "MEDIUM", "HEADROOM"} {
+	for _, want := range []string{"MODEL", "deepseek-v4", "EFFORT", "MEDIUM", "HEADROOM"} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("English fact strip missing %q:\n%s", want, plain)
 		}
@@ -220,7 +240,6 @@ func TestComposerChromeIsKoreanFirstRoundedAndComplete(t *testing.T) {
 		"명령 또는 질문을 입력해보세요",
 		"╰",
 		"╯",
-		"도움말",
 		"/ 명령어",
 		"@ 파일",
 		"! 셸",
@@ -249,10 +268,10 @@ func TestComposerChromeIsKoreanFirstRoundedAndComplete(t *testing.T) {
 		t.Fatalf("composer should include bottom input padding inside the rounded rectangle:\n%s", plain)
 	}
 	if !strings.HasPrefix(lines[4], "╰") || !strings.HasSuffix(lines[4], "╯") {
-		t.Fatalf("composer should close the rounded input rectangle before hints:\n%s", plain)
+		t.Fatalf("composer should close the rounded input rectangle:\n%s", plain)
 	}
-	if got := len(lines); got != 7 {
-		t.Fatalf("one-row composer chrome has %d rows, want top border + top padding + input + bottom padding + bottom border + spacer + hints:\n%s", got, plain)
+	if got := len(lines); got != 5 {
+		t.Fatalf("one-row composer chrome has %d rows, want only the rounded input rectangle:\n%s", got, plain)
 	}
 }
 
@@ -270,12 +289,8 @@ func TestComposerChromeUsesEnglishCatalogAndFitsWidth(t *testing.T) {
 		"╭─ MESSAGE INPUT",
 		"MESSAGE INPUT",
 		"Type a command or ask a question",
+		"( /",
 		"╰",
-		"HELP",
-		"/ commands",
-		"@ files",
-		"! shell",
-		"? shortcuts",
 	} {
 		if !strings.Contains(flattened, want) {
 			t.Fatalf("English composer chrome missing %q:\n%s", want, plain)
@@ -298,10 +313,8 @@ func TestComposerChromeCompactsHintsBeforeCrowdingOutEditor(t *testing.T) {
 	m.commitLine("active transcript")
 
 	plain := ansi.Strip(renderComposerChrome(m, 16))
-	for _, symbol := range []string{"/", "@", "!", "?"} {
-		if !strings.Contains(plain, symbol) {
-			t.Fatalf("compact composer hints missing %q:\n%s", symbol, plain)
-		}
+	if m.composerHintRowCount(m.width) != 0 {
+		t.Fatalf("empty compact composer should keep the command legend inside the placeholder:\n%s", plain)
 	}
 	if m.input.MaxHeight < 3 {
 		t.Fatalf("compact hints left only %d editor rows, want at least 3", m.input.MaxHeight)

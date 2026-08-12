@@ -5,7 +5,7 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 check="$repo_root/scripts/check-docs-impact.sh"
 
 PR_BODY='Documentation-impact: updated - documented the new command' \
-	"$check" internal/cli/cli.go docs/CLI.md >/dev/null
+	"$check" internal/cli/cli.go docs/guides/CLI.md >/dev/null
 
 PR_BODY='Documentation-impact: none - internal behavior keeps the existing contract' \
 	"$check" internal/boot/boot.go >/dev/null

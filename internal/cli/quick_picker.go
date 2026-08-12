@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"patty/internal/i18n"
 )
 
 const quickPickerMaxVisible = 8
@@ -17,6 +20,7 @@ const (
 	quickPickerProvider      quickPickerKind = "provider"
 	quickPickerProviderModel quickPickerKind = "provider-model"
 	quickPickerResume        quickPickerKind = "resume"
+	quickPickerOutputStyle   quickPickerKind = "output-style"
 )
 
 type quickPickerItem struct {
@@ -129,14 +133,14 @@ func (p *quickPicker) render(width int) string {
 	var b strings.Builder
 	b.WriteString(accent(p.title) + "\n")
 	if p.query != "" {
-		b.WriteString("  " + dim("Search: ") + p.query + "\n")
+		b.WriteString("  " + dim(i18n.M.QuickPickerSearchLabel+" ") + p.query + "\n")
 	}
 	if len(items) == 0 {
-		b.WriteString(dim("  No matches") + "\n")
+		b.WriteString(dim("  "+i18n.M.QuickPickerNoMatches) + "\n")
 	} else {
 		start, end := quickPickerWindow(len(items), p.selected)
 		if start > 0 {
-			b.WriteString(dim("  ↑ more") + "\n")
+			b.WriteString(dim(fmt.Sprintf(i18n.M.QuickPickerMoreAboveFmt, start)) + "\n")
 		}
 		for i := start; i < end; i++ {
 			item := items[i]
@@ -144,18 +148,18 @@ func (p *quickPicker) render(width int) string {
 			if item.Status != "" {
 				label += " " + dim("("+item.Status+")")
 			}
-			b.WriteString(rowLine(i == p.selected, i+1, "", label, item.Status == "active") + "\n")
+			b.WriteString(rowLine(i == p.selected, i+1, "", label, item.Status == i18n.M.QuickPickerActive) + "\n")
 			if item.Description != "" {
 				b.WriteString(dim("     "+ansi.Truncate(item.Description, contentWidth, "…")) + "\n")
 			}
 		}
 		if end < len(items) {
-			b.WriteString(dim("  ↓ more") + "\n")
+			b.WriteString(dim(fmt.Sprintf(i18n.M.QuickPickerMoreBelowFmt, len(items)-end)) + "\n")
 		}
 	}
 	hint := p.hint
 	if hint == "" {
-		hint = "Type to filter · ↑/↓ navigate · Enter select · Esc cancel"
+		hint = i18n.M.QuickPickerHint
 	}
 	b.WriteString(dim(hint))
 	return choicePanelStyle.Width(w).Render(b.String())

@@ -455,24 +455,61 @@ func nextComposerGraphemeBoundary(value string, offset int) int {
 	return boundaries[len(boundaries)-1]
 }
 
-func composerHangulBackspaceReplacement(r rune) (rune, bool) {
-	const (
-		hangulSBase  = 0xAC00
-		hangulSLast  = 0xD7A3
-		hangulVCount = 21
-		hangulTCount = 28
-		hangulNCount = hangulVCount * hangulTCount
-	)
+// deleteComposerHangulJamo cancels the last jamo of the syllable before the
+// cursor when the Backspace carried the IME preedit as associated text (Kitty
+// protocol mode). Committed-text Backspaces carry no text and delete the
+// whole grapheme instead.
+func (m *chatTUI) deleteComposerHangulJamo(value string, offset int, associatedText string) bool {
+	if associatedText == "" || offset <= 0 {
+		return false
+	}
+	runes := []rune(value)
+	if offset > len(runes) {
+		return false
+	}
+	previous := offset - 1
+	replacement, ok := composerHangulBackspaceReplacement(runes[previous])
+	if !ok {
+		return false
+	}
+	m.replaceComposerRuneRange(previous, offset, string(replacement))
+	return true
+}
+
+// Hangul decomposition constants for the composer's IME backspace handling.
+const (
+	hangulSBase   = 0xAC00
+	hangulSLast   = 0xD7A3
+	hangulVCount  = 21
+	hangulTCount  = 28
+	hangulNCount  = hangulVCount * hangulTCount
+	hangulLeading = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"
+)
+
+// hangulLeadingRunes is the precomputed rune table for hangulLeading; the
+// conversion runs per Hangul backspace, so it must not reallocate.
+var hangulLeadingRunes = []rune(hangulLeading)
+
+// hangulLeadingJamo returns the leading consonant (초성) of a precomposed
+// Hangul syllable, or 0 when r is not a syllable.
+func hangulLeadingJamo(r rune) rune {
 	if r < hangulSBase || r > hangulSLast {
+		return 0
+	}
+	return hangulLeadingRunes[(r-hangulSBase)/hangulNCount]
+}
+
+func composerHangulBackspaceReplacement(r rune) (rune, bool) {
+	leading := hangulLeadingJamo(r)
+	if leading == 0 {
 		return 0, false
 	}
-	leading := []rune("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
 	index := r - hangulSBase
 	l := index / hangulNCount
 	v := (index % hangulNCount) / hangulTCount
 	t := index % hangulTCount
 	if t == 0 {
-		return leading[l], true
+		return leading, true
 	}
 	return hangulSBase + l*hangulNCount + v*hangulTCount, true
 }
@@ -495,13 +532,8 @@ func (m *chatTUI) handleComposerGraphemeKey(msg tea.KeyPressMsg) bool {
 		if value == "" || offset <= 0 {
 			return true
 		}
-		runes := []rune(value)
-		if offset <= len(runes) {
-			previous := offset - 1
-			if replacement, ok := composerHangulBackspaceReplacement(runes[previous]); ok {
-				m.replaceComposerRuneRange(previous, offset, string(replacement))
-				return true
-			}
+		if m.deleteComposerHangulJamo(value, offset, msg.Text) {
+			return true
 		}
 		start := previousComposerGraphemeBoundary(value, offset)
 		m.replaceComposerRuneRange(start, offset, "")
@@ -526,16 +558,25 @@ func (m *chatTUI) handleComposerGraphemeKey(msg tea.KeyPressMsg) bool {
 	}
 }
 
+// composerCommandMods are the modifiers that make a key a command rather
+// than text input. Alt stays out of the base: alt+letter still produces text
+// on some layouts and must reach the NFC normalizer; the backspace matcher
+// adds it back so alt+backspace keeps its word-delete binding.
+const composerCommandMods = tea.ModCtrl | tea.ModMeta | tea.ModHyper | tea.ModSuper
+
 func composerBackspaceKey(msg tea.KeyPressMsg, keyMap textarea.KeyMap) bool {
-	return key.Matches(msg, keyMap.DeleteCharacterBackward) || msg.Code == 8
+	// Match by code as well as binding name: with the Kitty protocol active a
+	// composition Backspace carries the preedit in Text, so key.Matches (which
+	// compares Text) would miss it. Command modifiers keep their word bindings.
+	return key.Matches(msg, keyMap.DeleteCharacterBackward) ||
+		(msg.Code == tea.KeyBackspace || msg.Code == 8) && msg.Key().Mod&(composerCommandMods|tea.ModAlt) == 0
 }
 
 func normalizeComposerKeyPress(msg tea.KeyPressMsg) tea.KeyPressMsg {
 	if msg.Text == "" {
 		return msg
 	}
-	commandMods := tea.ModCtrl | tea.ModMeta | tea.ModHyper | tea.ModSuper
-	if msg.Key().Mod&commandMods != 0 {
+	if msg.Key().Mod&composerCommandMods != 0 {
 		return msg
 	}
 	if !norm.NFC.IsNormalString(msg.Text) {
@@ -577,8 +618,7 @@ func composerSelectionReplaces(msg tea.KeyPressMsg, keyMap textarea.KeyMap) bool
 	if msg.Text == "" {
 		return false
 	}
-	commandMods := tea.ModCtrl | tea.ModMeta | tea.ModHyper | tea.ModSuper
-	return msg.Key().Mod&commandMods == 0
+	return msg.Key().Mod&composerCommandMods == 0
 }
 
 func composerRowSelectionSpan(row composerVisualRow, start, end int) (lo, hi int, ok bool) {
@@ -607,17 +647,28 @@ func composerRowSelectionSpan(row composerVisualRow, start, end int) (lo, hi int
 }
 
 func (m chatTUI) renderComposerInput() string {
+	if !m.validComposerSelection() || m.composerSel.empty() {
+		if m.input.Value() == "" && !m.composerScrollDetached {
+			if !m.chooserTyping() {
+				// Render the expanded placeholder through the textarea itself so
+				// its ANSI placeholder styling remains intact. Replacing the plain
+				// string in View() is unreliable once color styling is enabled.
+				display := m.input
+				display.Placeholder = composerPlaceholderWithHints()
+				return shiftEmptyComposerPlaceholder(display.View())
+			}
+			return shiftEmptyComposerPlaceholder(m.input.View())
+		}
+		if m.composerScrollDetached {
+			return m.renderDetachedComposerInput()
+		}
+		return m.input.View()
+	}
 	view := m.input.View()
 	visualStart := m.input.ScrollYOffset()
 	if m.composerScrollDetached {
 		view = m.renderDetachedComposerInput()
 		visualStart = m.composerViewOffset()
-	}
-	if !m.validComposerSelection() || m.composerSel.empty() {
-		if m.input.Value() == "" && !m.composerScrollDetached {
-			return shiftEmptyComposerPlaceholder(view)
-		}
-		return view
 	}
 	start, end := m.composerSel.ordered()
 	rows := m.composerRowsForRender()

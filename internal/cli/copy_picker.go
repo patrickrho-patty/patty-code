@@ -73,6 +73,6 @@ func (m chatTUI) renderCopyPicker() string {
 	for i, part := range p.parts {
 		b.WriteString(rowLine(i == p.sel, i+1, "", firstLine(part), false) + "\n")
 	}
-	b.WriteString(dim("↑/↓ navigate · Enter copy · Esc cancel"))
+	b.WriteString(dim(i18n.M.CopyPickerHint))
 	return choicePanelStyle.Width(w).Render(b.String())
 }

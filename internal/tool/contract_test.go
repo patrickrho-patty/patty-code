@@ -16,9 +16,9 @@ func TestBuiltinToolContractDocumentation(t *testing.T) {
 	if len(entries) == 0 {
 		t.Fatal("no built-in tool contract entries")
 	}
-	doc, err := os.ReadFile("../../docs/TOOL_CONTRACT.md")
+	doc, err := os.ReadFile("../../docs/reference/TOOL_CONTRACT.md")
 	if err != nil {
-		t.Fatalf("read docs/TOOL_CONTRACT.md: %v", err)
+		t.Fatalf("read docs/reference/TOOL_CONTRACT.md: %v", err)
 	}
 	text := string(doc)
 	for _, e := range entries {

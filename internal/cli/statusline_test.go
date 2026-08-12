@@ -68,6 +68,25 @@ func TestRunStatuslineDisabled(t *testing.T) {
 	}
 }
 
+func TestRunStatuslineIncludesSessionIdentityContext(t *testing.T) {
+	path := "/tmp/patty-session-identity.jsonl"
+	ctrl := control.New(control.Options{SessionPath: path})
+	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
+	m.statuslineCmd = "cat"
+
+	cmd := m.runStatusline()
+	if cmd == nil {
+		t.Fatal("configured statusline should return a command")
+	}
+	msg, ok := cmd().(statuslineMsg)
+	if !ok {
+		t.Fatalf("statusline command message = %T, want statuslineMsg", cmd())
+	}
+	if !strings.Contains(msg.out, `"sessionId":"`+agent.BranchID(path)+`"`) {
+		t.Fatalf("statusline context missing session identity: %s", msg.out)
+	}
+}
+
 func TestModelSwitchRefreshesCustomStatusline(t *testing.T) {
 	oldCtrl := control.New(control.Options{Label: "old-model"})
 	newCtrl := control.New(control.Options{Label: "new-model"})

@@ -48,7 +48,7 @@ func (m *chatTUI) openResumePicker() {
 	for i, session := range sessions {
 		status := ""
 		if i == activeIdx {
-			status = "active"
+			status = i18n.M.QuickPickerActive
 		}
 		items = append(items, quickPickerItem{
 			ID: session.Path, Label: sessionPickerLabel(session),

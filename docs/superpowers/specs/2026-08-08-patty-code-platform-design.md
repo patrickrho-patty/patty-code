@@ -5,7 +5,7 @@
 **Repository:** `github.com/patrickrho-patty/patty-code`
 **Base product:** Patty Code
 **First derived harness:** GongCode / 공코드
-**Related authority:** `docs/GongCode_Master_Plan.md`
+**Related historical context:** [`docs/archive/internal/GongCode_Master_Plan.md`](../../archive/internal/GongCode_Master_Plan.md)
 
 ## 1. Purpose
 
@@ -20,7 +20,7 @@ This document defines the target design. It does not authorize a bulk search-and
 3. Patty Code is the base harness. GongCode and future public-sector or enterprise products derive from it through product profiles and modules, not repository forks.
 4. Product profiles are resolved at build time. A shipped artifact has one immutable product identity and cannot switch brands at runtime.
 5. Optional modules are easy to install and remove. Harness-enforced modules are signed, required, and non-disableable through supported runtime controls.
-6. GongCode governance is a separate program following the phased scope and architecture in `GongCode_Master_Plan.md`.
+6. GongCode governance is a separate historical program; its archived plan is retained for context but is not part of Patty Code's current product contract.
 7. GongCode Control is a separate administrative web application and service plane. Governance inspection is not an engineer-facing TUI menu.
 8. Korean is the default and completeness baseline. English is optional. Retired locale support is removed completely.
 9. Built-in slash commands use Korean canonical names, full 초성 aliases, and searchable English keywords. Skills and user commands retain their declared names.
@@ -264,7 +264,7 @@ GongCode work is divided into three programs:
 
 1. Patty Code rebrand, Korean-first UX, and harness-profile architecture.
 2. Mandatory-module framework and a real GongCode distribution with fail-closed contracts.
-3. Production government controls and certification work based on authoritative specifications and the phased `GongCode_Master_Plan.md`.
+3. Production government controls and certification work based on authoritative specifications and the archived GongCode plan where historical context is required.
 
 The first program must not fabricate government requirements. The third program requires official source texts, reviewed interpretations, schemas, cryptographic requirements, identity integration, retention rules, deployment scope, and named compliance ownership.
 

@@ -43,12 +43,12 @@ const goVer = 'latest';
       </nav>
       <div class="docs-side-links">
         <span class="side-card-kicker">Source docs</span>
-        <a href={`${repo}/blob/main-v2/docs/GUIDE.md`}>Guide</a>
-        <a href={`${repo}/blob/main-v2/docs/ACP.md`}>ACP editor integration</a>
-        <a href={`${repo}/blob/main-v2/docs/EXTENSIONS.md`}>Extensions &amp; sidecars</a>
-        <a href={`${repo}/blob/main-v2/docs/CAPABILITY_DIAGNOSTICS.md`}>Capability diagnostics</a>
-        <a href={`${repo}/blob/main-v2/docs/SPEC.md`}>Engineering spec</a>
-        <a href={`${repo}/blob/main-v2/docs/CONFIG_PATHS.md`}>Config paths</a>
+        <a href={`${repo}/blob/main-v2/docs/guides/GUIDE.md`}>Guide</a>
+        <a href={`${repo}/blob/main-v2/docs/guides/ACP.md`}>ACP editor integration</a>
+        <a href={`${repo}/blob/main-v2/docs/extensions/EXTENSIONS.md`}>Extensions &amp; sidecars</a>
+        <a href={`${repo}/blob/main-v2/docs/reference/CAPABILITY_DIAGNOSTICS.md`}>Capability diagnostics</a>
+        <a href={`${repo}/blob/main-v2/docs/reference/SPEC.md`}>Engineering spec</a>
+        <a href={`${repo}/blob/main-v2/docs/guides/CONFIG_PATHS.md`}>Config paths</a>
       </div>
     </aside>
 
@@ -234,7 +234,7 @@ patcode plugin install "$plugin_root" --link --replace --yes
 /reload</div>
       <p>On Windows PowerShell, set <code>$pluginRoot = (Resolve-Path .).Path</code> and pass <code>$pluginRoot</code> to both install commands. Then send <code>starter: explain sidecars</code> to verify the intercept. The first public Go SDK release is <code>sdk/go/v1.0.0</code>; before that immutable tag exists, use the starter from a source checkout.</p>
       <div class="callout"><span class="ico">!</span><span><strong>Full trust:</strong> a code Sidecar runs outside the Patty Code sandbox with the inherited environment and can override permission decisions. Dry-run the install, review the runtime command and declared capabilities, and install only code you trust completely.</span></div>
-      <p>Continue with the <a href={`${repo}/blob/main-v2/docs/EXTENSIONS.md`}>extension guide</a>, <a href={`${repo}/blob/main-v2/docs/PLUGIN_PACKAGES.md#manifest-v1-extensions`}>Manifest v1 reference</a>, <a href={`${repo}/blob/main-v2/sdk/go/README.md`}>Go SDK</a>, and <a href={`${repo}/blob/main-v2/docs/EXTENSION_PROTOCOL.md`}>wire protocol</a>.</p>
+      <p>Continue with the <a href={`${repo}/blob/main-v2/docs/extensions/EXTENSIONS.md`}>extension guide</a>, <a href={`${repo}/blob/main-v2/docs/extensions/PLUGIN_PACKAGES.md#manifest-v1-extensions`}>Manifest v1 reference</a>, <a href={`${repo}/blob/main-v2/sdk/go/README.md`}>Go SDK</a>, and <a href={`${repo}/blob/main-v2/docs/extensions/EXTENSION_PROTOCOL.md`}>wire protocol</a>.</p>
 
       <h2 id="mcp">Plugins (MCP)</h2>
       <p>Patty Code is an MCP client. A <code>[[plugins]]</code> entry's <code>type</code> selects the transport: <code>stdio</code> launches a local subprocess, while <code>http</code> connects to a Streamable HTTP server with optional headers expanded from the environment. Tools surface to the model as <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>.</p>
@@ -267,7 +267,7 @@ patcode acp --profile delivery <span class="c"># economy | balanced | delivery</
         </div>
       </div>
       <p>Patty Code also advertises the vendor method <code>_patty-code.io/session/steer</code> through <code>agentCapabilities._meta</code>. A host may call it while <code>session/prompt</code> is active to queue user guidance for the next safe model boundary without cancelling the turn. Clients must discover the method first and treat <code>InvalidRequest</code> as not queued.</p>
-      <div class="callout"><span class="ico">i</span><span>ACP steering is a namespaced ACP v1 extension, not a core <code>session/steer</code> method and not the unreleased ACP v2 <code>session/inject</code> proposal. See the <a href={`${repo}/blob/main-v2/docs/ACP.md`}>complete ACP integration guide</a> for lifecycle methods, capability negotiation, MCP transport shapes, compatibility, errors, and a client checklist.</span></div>
+      <div class="callout"><span class="ico">i</span><span>ACP steering is a namespaced ACP v1 extension, not a core <code>session/steer</code> method and not the unreleased ACP v2 <code>session/inject</code> proposal. See the <a href={`${repo}/blob/main-v2/docs/guides/ACP.md`}>complete ACP integration guide</a> for lifecycle methods, capability negotiation, MCP transport shapes, compatibility, errors, and a client checklist.</span></div>
 
       <h2 id="memory">Memory &amp; rewind</h2>
       <p>Patty Code keeps project memory in <code>PATTY.md</code> or <code>AGENTS.md</code>, and stores approved auto-memory facts under Patty Code home. During turns, read-only <code>history</code> and <code>memory</code> tools retrieve prior sessions, compacted archives, and saved facts on demand instead of injecting noisy dynamic state into the stable prompt prefix.</p>
@@ -308,7 +308,7 @@ patcode upgrade</div>
 /docs 1.19.5 changelog             <span class="c"># non-English queries return matching-language evidence</span></div>
       <p>Bare <code>/docs</code> only displays local corpus information and does not call a model. With a question, Patty Code retrieves version-matched evidence first, then asks the AI configured for the current session to produce a sourced answer. Ordinary natural-language questions can also trigger the read-only <code>docs</code> tool automatically, but the slash command guarantees retrieval before the answer instead of relying on the model to choose the tool.</p>
       <div class="callout"><span class="ico">i</span><span>Custom commands and compatible plugin or skill aliases keep ownership of <code>/docs</code>. If it is already taken, choose the built-in entry shown in the slash menu—normally <code>/patty:docs</code>, or the next free <code>patty:</code>-qualified name. Patty Code never overwrites the existing command. CLI and Desktop use the same rule; a remote Desktop displays the command catalog resolved by its host.</span></div>
-      <p>For the complete retrieval contract, corpus filters, tool schema, and maintainer release checks, see the <a href={`${repo}/blob/main-v2/docs/GUIDE.md#embedded-documentation-retrieval`}>full guide</a> and <a href={`${repo}/blob/main-v2/docs/TOOL_CONTRACT.md`}>tool contract</a>.</p>
+      <p>For the complete retrieval contract, corpus filters, tool schema, and maintainer release checks, see the <a href={`${repo}/blob/main-v2/docs/guides/GUIDE.md#embedded-documentation-retrieval`}>full guide</a> and <a href={`${repo}/blob/main-v2/docs/reference/TOOL_CONTRACT.md`}>tool contract</a>.</p>
 
       <h2 id="configfile">Config file</h2>
       <p>Resolution order: flags &gt; <code>./patty.toml</code> &gt; global <code>config.toml</code> under Patty Code home &gt; compatible legacy config &gt; built-in defaults. Starting with v1.8.1, Patty Code home is <code>~/.patty</code> on macOS/Linux and <code>%APPDATA%\patty</code> on Windows; set <code>PATTY_HOME</code> only for tests, CI, or portable installs.</p>

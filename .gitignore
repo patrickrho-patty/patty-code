@@ -1,3 +1,6 @@
+# Worktrees
+.worktrees/
+
 # Build artifacts
 /bin/
 /dist/
@@ -70,6 +73,9 @@ temp/
 
 # Local agent session transcripts (never commit)
 session-*.md
+
+# Local planning artifacts (keep out of the public repository)
+/docs/superpowers/
 
 # Official theme art intermediate outputs / caches
 scripts/official-theme-art/out/

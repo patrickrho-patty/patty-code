@@ -27,6 +27,10 @@ type BuildInfo struct {
 	BuildTarget  string
 }
 
+// activeBuildVersion is the build identity rendered on the status footer's
+// left rail. Empty in tests and `go run`, which keeps footer snapshots stable.
+var activeBuildVersion string
+
 // versionCommand handles `patcode version [flags]`. When allowFlags is false
 // (top-level --version / -v), output is always the single-line form.
 func versionCommand(args []string, info BuildInfo, allowFlags bool) int {

@@ -46,11 +46,11 @@ the manifest or binary fails validation.
 
 - [`../../README.md`](../../README.md) documents SDK callbacks and the
   concurrency contract.
-- [`../../../../docs/EXTENSIONS.md`](../../../../docs/EXTENSIONS.md) explains
+- [`../../../../docs/extensions/EXTENSIONS.md`](../../../../docs/extensions/EXTENSIONS.md) explains
   reload, performance, cache behavior, compatibility, and trust.
-- [`../../../../docs/PLUGIN_PACKAGES.md`](../../../../docs/PLUGIN_PACKAGES.md)
+- [`../../../../docs/extensions/PLUGIN_PACKAGES.md`](../../../../docs/extensions/PLUGIN_PACKAGES.md)
   defines every Manifest v2 field.
-- [`../../../../docs/EXTENSION_PROTOCOL.md`](../../../../docs/EXTENSION_PROTOCOL.md)
+- [`../../../../docs/extensions/EXTENSION_PROTOCOL.md`](../../../../docs/extensions/EXTENSION_PROTOCOL.md)
   is the wire-protocol reference.
 - [`../fullsidecar/main.go`](../fullsidecar/main.go) demonstrates providers,
   structured UI, strategies, tools, content references, and shutdown.

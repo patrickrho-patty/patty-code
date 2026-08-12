@@ -17,7 +17,7 @@
 //     vanilla reasoning_effort scale (low/medium/high), unless its config
 //     declares a custom supported_efforts validation contract.
 //
-// See docs/REASONING_PROVIDERS.md for the per-backend protocol reference.
+// See docs/reference/REASONING_PROVIDERS.md for the per-backend protocol reference.
 package openai
 
 import (

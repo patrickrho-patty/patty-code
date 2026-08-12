@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.svg" alt="Patty Code — 한국어 퍼스트 코딩 에이전트" width="680"/>
+  <img src="docs/assets/branding/logo.svg" alt="Patty Code — 한국어 퍼스트 코딩 에이전트" width="680"/>
 </p>
 
 <p align="center">
@@ -9,7 +9,7 @@
   &nbsp;·&nbsp;
   <a href="https://code.patty.io">웹사이트</a>
   &nbsp;·&nbsp;
-  <a href="./docs/GUIDE.ko-KR.md">가이드</a>
+  <a href="./docs/guides/GUIDE.ko-KR.md">가이드</a>
   &nbsp;·&nbsp;
   <a href="https://github.com/patrickrho-patty/patty-code/releases">릴리스</a>
 </p>
@@ -149,13 +149,13 @@ theme_style = "seoul-night"    # seoul-night | ink-night | hanji-light | jade-ni
 
 ## 문서
 
-- [한국어 가이드](./docs/GUIDE.ko-KR.md)
-- [CLI 레퍼런스](./docs/CLI.md)
-- [구성 파일과 자격 증명 경로](./docs/CONFIG_PATHS.md)
-- [ACP 에디터 연동](./docs/ACP.md)
-- [확장과 플러그인](./docs/EXTENSIONS.ko-KR.md)
-- [제품 명세](./docs/SPEC.md)
-- [마이그레이션 가이드](./docs/MIGRATING.md)
+- [한국어 가이드](./docs/guides/GUIDE.ko-KR.md)
+- [CLI 레퍼런스](./docs/guides/CLI.md)
+- [구성 파일과 자격 증명 경로](./docs/guides/CONFIG_PATHS.md)
+- [ACP 에디터 연동](./docs/guides/ACP.md)
+- [확장과 플러그인](./docs/extensions/EXTENSIONS.ko-KR.md)
+- [제품 명세](./docs/reference/SPEC.md)
+- [마이그레이션 가이드](./docs/guides/MIGRATING.md)
 
 ## 개발
 

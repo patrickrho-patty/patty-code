@@ -13,10 +13,10 @@ func renderModels(width int, refs []string, active string) string {
 	for _, ref := range refs {
 		status := ""
 		if ref == active {
-			status = "  " + viewStatus("active")
+			status = "  " + viewStatus(i18n.M.QuickPickerActive)
 		}
 		fmt.Fprintf(&b, "  %s%s\n", viewCompactText(ref, viewBudget(width, 2+visibleWidth(status))), status)
 	}
-	b.WriteString(viewHint(viewCompactText("switch with /model <provider/model>", viewBudget(width, 2))))
+	b.WriteString(viewHint(viewCompactText(i18n.M.ViewModelHint, viewBudget(width, 2))))
 	return strings.TrimRight(b.String(), "\n")
 }

@@ -301,7 +301,7 @@ TypeScript line; a new codebase that becomes the default (`main-v2`).
 ### Notes
 
 - Versions: the legacy TypeScript line stays in `0.x`; the Go line starts at
-  `1.0.0`. See [docs/MIGRATING.md](docs/MIGRATING.md).
+  `1.0.0`. See [docs/guides/MIGRATING.md](docs/guides/MIGRATING.md).
 - Release archives ship a bare binary; CodeGraph is fetched on first use. Windows
   support for the fetched runtime is unverified — install `codegraph` on PATH if
   the auto-fetch doesn't resolve there.

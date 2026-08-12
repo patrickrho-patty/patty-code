@@ -111,6 +111,7 @@ func (m *chatTUI) buildSlashCatalog() []compItem {
 	docsOwner := control.ResolveSlashCommandOwner(control.DocsSlashName, m.commands, m.skills)
 	docsBuiltin := "/" + control.ResolvedBuiltinSlashName(control.DocsSlashName, m.commands, m.skills)
 	items := renameSlashItem(builtinSlashItems(), "/docs", docsBuiltin)
+	items = removeHiddenBuiltinSlashItems(items, docsBuiltin)
 	for _, c := range m.commands {
 		if c.Hidden {
 			continue
@@ -138,17 +139,27 @@ func (m *chatTUI) buildSlashCatalog() []compItem {
 	return items
 }
 
+// renameSlashItem relabels the builtin item whose label or locale-independent
+// aliases match oldLabel, and rewrites its insert prefix the same way so the
+// ko alias insert follows the rename (e.g. /문서검색 → /patty:docs).
 func renameSlashItem(items []compItem, oldLabel, newLabel string) []compItem {
 	if oldLabel == newLabel {
 		return items
 	}
 	for i := range items {
-		if items[i].label != oldLabel {
+		if items[i].label != oldLabel && !slices.Contains(items[i].aliases, oldLabel) {
 			continue
 		}
 		items[i].label = newLabel
 		if after, ok := strings.CutPrefix(items[i].insert, oldLabel); ok {
 			items[i].insert = newLabel + after
+		} else {
+			for _, alias := range items[i].aliases {
+				if after, ok := strings.CutPrefix(items[i].insert, alias); ok {
+					items[i].insert = newLabel + after
+					break
+				}
+			}
 		}
 		break
 	}
@@ -159,6 +170,33 @@ func removeSlashItems(items []compItem, label string) []compItem {
 	out := make([]compItem, 0, len(items))
 	for _, item := range items {
 		if item.label != label {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+// removeHiddenBuiltinSlashItems drops builtin commands the user asked to hide
+// (spec.hidden) from the menu while keeping them functional when typed. Items
+// are matched by their locale-independent aliases (the ko/초성/en names), not
+// the display label, which is localized. The /docs entry is exempt once a
+// runtime owner renamed it: the compatibility alias must stay discoverable.
+func removeHiddenBuiltinSlashItems(items []compItem, docsBuiltin string) []compItem {
+	specs := builtinSlashSpecs()
+	out := make([]compItem, 0, len(items))
+	for _, item := range items {
+		if slices.Contains(item.aliases, "/docs") && docsBuiltin != "/docs" {
+			out = append(out, item)
+			continue
+		}
+		hidden := false
+		for _, spec := range specs {
+			if spec.hidden && slices.Contains(item.aliases, spec.name) {
+				hidden = true
+				break
+			}
+		}
+		if !hidden {
 			out = append(out, item)
 		}
 	}
@@ -273,9 +311,6 @@ func runeOffsetToByte(val string, runeOff int) int {
 // currently /mcp; custom commands and MCP prompts take free-form template args,
 // so they yield nothing.
 func (m *chatTUI) slashArgItems(val string) ([]compItem, int, bool) {
-	if items, from, ok := m.workModeArgItems(val); ok {
-		return items, from, len(items) > 0
-	}
 	if items, from, ok := m.branchArgItems(val); ok {
 		return items, from, len(items) > 0
 	}
@@ -307,7 +342,6 @@ func (m *chatTUI) slashArgData() control.ArgData {
 		CurrentModel:    m.modelRef,
 		ProviderNames:   providerNames(),
 		CurrentProvider: curProvider,
-		PluginNames:     pluginArgNames(),
 	}
 	if m.ctrl != nil {
 		data.DisabledSkills = m.ctrl.DisabledSkills()
@@ -328,7 +362,7 @@ func (m *chatTUI) explicitSubcommandItems(val string) ([]compItem, int, bool) {
 	}
 	cmd = canonicalBuiltinSlashCommand(cmd)
 	switch cmd {
-	case "/mcp", "/skill", "/skills", "/plugin", "/plugins", "/memory":
+	case "/mcp", "/skill", "/skills", "/memory":
 	default:
 		return nil, 0, false
 	}

@@ -44,7 +44,7 @@ func (m *chatTUI) openProviderPicker() {
 		}
 		status := ""
 		if p.Name == curProvider {
-			status = "active"
+			status = i18n.M.QuickPickerActive
 			selected = len(items)
 		}
 		items = append(items, quickPickerItem{
@@ -56,7 +56,7 @@ func (m *chatTUI) openProviderPicker() {
 		m.notice("provider: no configured providers")
 		return
 	}
-	m.quickPick = &quickPicker{kind: quickPickerProvider, title: "Select provider", items: items, selected: selected}
+	m.quickPick = &quickPicker{kind: quickPickerProvider, title: i18n.M.QuickPickerProviderTitle, items: items, selected: selected}
 }
 
 // switchToProvider switches the session to the named provider's default model.
@@ -114,7 +114,7 @@ func (m *chatTUI) switchToProvider(name string) {
 		ref := entry.Name + "/" + model
 		status := ""
 		if ref == m.modelRef {
-			status = "active"
+			status = i18n.M.QuickPickerActive
 			selected = len(items)
 		}
 		items = append(items, quickPickerItem{ID: ref, Label: model, Description: entry.Name, Status: status})
@@ -149,6 +149,11 @@ func (m chatTUI) handleQuickPickerKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) 
 		}
 	case quickPickerProvider:
 		m.switchToProvider(choice.ID)
+		if m.pendingModelSwitch != nil {
+			return m, m.pendingModelSwitch
+		}
+	case quickPickerOutputStyle:
+		m.applyOutputStyle(choice.ID, choice.Label)
 		if m.pendingModelSwitch != nil {
 			return m, m.pendingModelSwitch
 		}

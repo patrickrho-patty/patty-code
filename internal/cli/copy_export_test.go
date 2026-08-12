@@ -17,6 +17,7 @@ import (
 
 func newTestChatTUIWithMessages(t *testing.T, workspaceRoot string, msgs ...provider.Message) chatTUI {
 	t.Helper()
+	activeBuildVersion = ""
 	sess := agent.NewSession("system prompt should not export")
 	for _, msg := range msgs {
 		sess.Add(msg)

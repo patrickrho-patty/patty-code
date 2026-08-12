@@ -12,7 +12,7 @@ import (
 
 // Theme Pack V2 is a controlled, non-executable desktop skin. V1 manifests
 // remain readable and fall back to one shared scene image.
-// See docs/THEME_PACK.md for the public contract.
+// See docs/themes/THEME_PACK.md for the public contract.
 
 const (
 	themePackSchemaVersion    = 2

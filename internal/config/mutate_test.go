@@ -19,8 +19,7 @@ import (
 // Without the lock, two editors load the same base config, each append their
 // own connection, and the second save silently erases the first one's entry —
 // the bot auto-session persistence vs. settings-save race this lock exists for.
-func TestLockUserConfigEditsSerializesRMW(t *testing.T) {
-	// Point the user config at a temp home: SaveTo renders bot connections only
+func TestLockUserConfigEditsSerializesRMW(t *testing.T) { // Point the user config at a temp home: SaveTo renders bot connections only
 	// for user-scope paths (project configs save incrementally without them).
 	home := t.TempDir()
 	t.Setenv("PATTY_HOME", home)
@@ -53,6 +52,36 @@ func TestLockUserConfigEditsSerializesRMW(t *testing.T) {
 	cfg := LoadForEdit(path)
 	if got := len(cfg.Bot.Connections); got != writers {
 		t.Fatalf("connections = %d, want %d (concurrent read-modify-write dropped updates)", got, writers)
+	}
+}
+
+// TestEditUserConfigLockedRunsApplyAndSave pins the shared load-modify-save
+// cycle: the apply closure mutates the loaded config, the save lands on disk,
+// and apply/save failures are reported separately.
+func TestEditUserConfigLockedRunsApplyAndSave(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("PATTY_HOME", home)
+
+	path, applyErr, saveErr := EditUserConfigLocked(func(c *Config) error {
+		if err := c.UpsertProvider(ProviderEntry{Name: "test-provider", Kind: "openai", Model: "test-model", BaseURL: "https://example.test/v1"}); err != nil {
+			return err
+		}
+		return c.SetDefaultModel("test-provider/test-model")
+	})
+	if path == "" {
+		t.Fatal("EditUserConfigLocked returned an empty path with PATTY_HOME set")
+	}
+	if applyErr != nil || saveErr != nil {
+		t.Fatalf("applyErr=%v saveErr=%v, want both nil", applyErr, saveErr)
+	}
+	if got := LoadForEdit(path).DefaultModel; got != "test-provider/test-model" {
+		t.Fatalf("default model after edit = %q, want test-provider/test-model", got)
+	}
+
+	if _, applyErr, saveErr = EditUserConfigLocked(func(c *Config) error {
+		return fmt.Errorf("boom")
+	}); applyErr == nil || saveErr != nil {
+		t.Fatalf("apply failure: applyErr=%v saveErr=%v, want applyErr only", applyErr, saveErr)
 	}
 }
 

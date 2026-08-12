@@ -13,11 +13,13 @@ type Messages struct {
 
 	ChatTip                   string // tip line under the chat banner
 	ChatComposerTitle         string // heading above the borderless composer
+	ChatComposerInputTitle    string // title on the bordered text input
 	ChatComposerPlaceholder   string // default empty-composer prompt
 	ChatComposerCommandsHint  string // slash palette hint below the composer
 	ChatComposerFilesHint     string // file reference hint below the composer
 	ChatComposerShellHint     string // shell mode hint below the composer
 	ChatComposerShortcutsHint string // shortcut help hint below the composer
+	ChatComposerHelpLabel     string // heading label of the hint legend below the composer
 	ChatMastheadTitle         string // brand line below the launch artwork
 	ChatUserLabel             string // transcript timeline label for the human turn
 	ChatPlanLabel             string // transcript timeline modifier for a plan-mode turn
@@ -60,14 +62,20 @@ type Messages struct {
 	ChatStatusCancellingFmt                string // "%s stopping… (%ds · Ctrl+C exits)" — %s = spinner, %d = elapsed s
 	ChatStatusIdle                         string // shortcuts hint when idle
 	ChatStatusYoloIdle                     string // shortcuts hint when idle in YOLO/bypass mode
-	ChatStatusCycleHint                    string // plan-toggle shortcut hint shown when no modal prompt owns the status row
 	ChatStatusCycleHintCompact             string // readable shortcut hint used by the persistent footer
 	ChatTurnReceiptLabel                   string // compact per-turn usage receipt attached to the completed assistant response
-	ChatStatusModeLabel                    string
+	ChatTurnReceiptIn                      string // prompt token input marker in the turn receipt
+	ChatTurnReceiptCached                  string // cache-hit token marker in the turn receipt
+	ChatTurnReceiptNew                     string // fresh (cache-miss) token marker in the turn receipt
+	ChatTurnReceiptOut                     string // completion token output marker in the turn receipt
+	ChatTurnReceiptReasoning               string // reasoning token marker in the turn receipt
+	ChatTurnReceiptEstimated               string // estimated-usage marker in the turn receipt
+	ChatTurnReceiptPrefixChanged           string // cache prefix invalidation warning in the turn receipt
+	ChatTurnReceiptUnknownReason           string // fallback reason code when the prefix change has none
 	ChatStatusModelLabel                   string
 	ChatStatusEffortLabel                  string
 	ChatStatusHeadroomLabel                string
-	ChatStatusWorkLabel                    string
+	ChatStatusVersionLabel                 string
 	ChatStatusCacheLabel                   string
 	ChatStatusContextLabel                 string
 	ChatStatusCompactLabel                 string
@@ -75,14 +83,6 @@ type Messages struct {
 	ChatStatusBalanceLabel                 string
 	ChatStatusCacheNowFmt                  string // cache status tag, "%s" = latest-turn hit rate with percent sign
 	ChatStatusCacheAvgFmt                  string // cache status tag, "%s" = session-average hit rate with percent sign
-	ChatModeAsk                            string
-	ChatModeAuto                           string
-	ChatModePlan                           string
-	ChatModeGoal                           string
-	ChatModeShell                          string
-	ChatModeYOLO                           string
-	ChatModeDontAsk                        string
-	ChatModeApprove                        string
 	ChatEffortAuto                         string
 	ChatEffortLow                          string
 	ChatEffortMedium                       string
@@ -156,19 +156,31 @@ type Messages struct {
 	AskUnanswered      string // placeholder for an unanswered ask question
 	AskSubmitHint      string // submit-tab keyboard hint
 
-	OutputStyleNone           string // no styles available
-	ThemeHeader               string // header above the /theme listing
-	ThemeHint                 string // how to select a theme
-	ThemeChangedFmt           string // "/theme <name>" succeeded
-	ThemeUnknownFmt           string // "/theme <name>" unknown
-	LanguageHeader            string // header above the /language listing
-	LanguageHint              string // how to select a language
-	LanguageChangedFmt        string // "/language <tag>" succeeded, %s = saved tag, %s = resolved tag
-	CurrencyHeader            string // header above the /currency listing
-	CurrencyHint              string // how to select a pricing currency
-	CurrencyChangedFmt        string // "/currency <mode>" succeeded, %s = saved mode, %s = resolved currency
-	RuntimeRefreshBusy        string // runtime-affecting setting cannot change while work is active
-	RuntimeRefreshUnavailable string // current session cannot rebuild after a runtime-affecting setting change
+	OutputStyleNone              string // no styles available
+	OutputStylePickerTitle       string // /output-style picker title
+	OutputStyleExplanatory       string // builtin explanatory style label
+	OutputStyleExplanatoryDesc   string // builtin explanatory style description
+	OutputStyleLearning          string // builtin learning style label
+	OutputStyleLearningDesc      string // builtin learning style description
+	OutputStyleConcise           string // builtin concise style label
+	OutputStyleConciseDesc       string // builtin concise style description
+	OutputStyleAlreadyFmt        string // picking the active style again
+	OutputStyleSwitchUnavailable string // rebuild unavailable in this session
+	OutputStyleSwitchBusy        string // active work blocks the style switch
+	OutputStyleSwitchingFmt      string // style switch in progress
+	OutputStyleSwitchedFmt       string // style switch succeeded
+	ThemeHeader                  string // header above the /theme listing
+	ThemeHint                    string // how to select a theme
+	ThemeChangedFmt              string // "/theme <name>" succeeded
+	ThemeUnknownFmt              string // "/theme <name>" unknown
+	LanguageHeader               string // header above the /language listing
+	LanguageHint                 string // how to select a language
+	LanguageChangedFmt           string // "/language <tag>" succeeded, %s = saved tag, %s = resolved tag
+	CurrencyHeader               string // header above the /currency listing
+	CurrencyHint                 string // how to select a pricing currency
+	CurrencyChangedFmt           string // "/currency <mode>" succeeded, %s = saved mode, %s = resolved currency
+	RuntimeRefreshBusy           string // runtime-affecting setting cannot change while work is active
+	RuntimeRefreshUnavailable    string // current session cannot rebuild after a runtime-affecting setting change
 
 	CompactionWorking string // shown while the summarizer runs
 	CompactionTitle   string // card header before "· N messages · <trigger>"
@@ -222,7 +234,6 @@ type Messages struct {
 	CmdRename           string // /rename
 	CmdModel            string // /model
 	CmdStatus           string // /status
-	CmdWorkMode         string // /work-mode
 	CmdDocs             string // /docs
 	CmdMemory           string // /memory
 	CmdMigrate          string // /migrate
@@ -233,6 +244,7 @@ type Messages struct {
 	CmdRemote           string // /remote
 	CmdHooks            string // /hooks
 	CmdPlugins          string // /plugins
+	PluginComingSoon    string // /plugins placeholder notice
 	CmdPasteImage       string // /paste-image
 	CmdOutputStyle      string // /output-style
 	CmdTheme            string // /theme
@@ -311,25 +323,32 @@ type Messages struct {
 	ModelSwitchingFmt            string
 	ModelSwitchedFmt             string
 	ModelListHeader              string
+	QuickPickerModelTitle        string
+	QuickPickerProviderTitle     string
+	QuickPickerSearchLabel       string
+	QuickPickerNoMatches         string
+	QuickPickerMoreAboveFmt      string
+	QuickPickerMoreBelowFmt      string
+	QuickPickerHint              string
+	QuickPickerActive            string
+	QuickPickerProviderFmt       string
+	QuickPickerExtensionFmt      string
+	QuickPickerExtensionModel    string
+	ViewCommandsHeader           string
+	ViewBuiltInSection           string
+	ViewCustomSection            string
+	ViewSkillsSection            string
+	ViewMCPPromptsSection        string
+	ViewHelpHint                 string
+	ViewModelHint                string
+	ClearContextDetails          string
+	ConfirmLabel                 string
+	CancelLabel                  string
+	CopyPickerHint               string
 	RuntimeSwitchPending         string
 	RuntimeReloadQueued          string // /reload queued behind active work; the idle drain runs it
 	RuntimeReloaded              string // /reload completed (no generation available)
 	RuntimeReloadedGenerationFmt string // /reload completed; %d is the runtime build generation
-	WorkModeStatusFmt            string
-	WorkModeListHeaderFmt        string
-	WorkModeListHint             string
-	WorkModeEconomyLabel         string
-	WorkModeBalancedLabel        string
-	WorkModeDeliveryLabel        string
-	WorkModeEconomyDesc          string
-	WorkModeBalancedDesc         string
-	WorkModeDeliveryDesc         string
-	WorkModeUsage                string
-	WorkModeSwitchUnavailable    string
-	WorkModeSwitchBusy           string
-	WorkModeAlreadyOnFmt         string
-	WorkModeSwitchingFmt         string
-	WorkModeSwitchedFmt          string
 	RewindNone                   string
 	RewindCodeConversation       string
 	RewindConversationOnly       string

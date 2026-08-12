@@ -64,13 +64,6 @@ func TestRuntimeSwitchesRejectRunningBackgroundJobs(t *testing.T) {
 		}
 	})
 
-	t.Run("work mode", func(t *testing.T) {
-		m := chatTUIWithRunningBackgroundJob(t)
-		if cmd := m.runWorkModeCommand("/work-mode delivery"); cmd != nil {
-			t.Fatal("work-mode switch queued a rebuild while a background job was running")
-		}
-	})
-
 	t.Run("language", func(t *testing.T) {
 		isolateUserConfig(t)
 		m := chatTUIWithRunningBackgroundJob(t)
@@ -290,40 +283,6 @@ func TestSkillRefreshCarriesRecoveryPathAfterSnapshotConflict(t *testing.T) {
 	}
 	if got := m.ctrl.SessionPath(); got != gotResumePath {
 		t.Fatalf("old controller session path = %q, want recovery path %q", got, gotResumePath)
-	}
-}
-
-func TestWorkModeSwitchCarriesRecoveryPathAndMovesLeaseBeforeRebuild(t *testing.T) {
-	dir := t.TempDir()
-	originalPath := filepath.Join(dir, "work-mode-conflict.jsonl")
-
-	m := newTestChatTUI()
-	m.ctrl = divergedSessionController(t, dir, originalPath)
-	m.modelRef = "deepseek-flash/deepseek-v4-flash"
-	m.runtimeProfile = "full"
-	m.leases = control.NewSessionLeaseKeeper()
-	t.Cleanup(m.leases.Release)
-	if err := m.leases.Rebind(originalPath); err != nil {
-		t.Fatalf("seed active lease: %v", err)
-	}
-	var gotResumePath, heldAtBuild string
-	m.buildController = func(_ controllerBuildSpec, _ []provider.Message, resumePath string, _ control.SessionAPI) (*control.Controller, error) {
-		gotResumePath = resumePath
-		heldAtBuild = m.leases.HeldPath()
-		return control.New(control.Options{Label: "deepseek-flash"}), nil
-	}
-
-	cmd := m.runWorkModeCommand("/work-mode delivery")
-	if cmd == nil {
-		t.Fatal("work-mode switch did not queue a rebuild")
-	}
-	cmd()
-
-	if gotResumePath == "" || gotResumePath == originalPath || !strings.Contains(filepath.Base(gotResumePath), "-recovery-") {
-		t.Fatalf("resume path = %q, want recovery path distinct from %q", gotResumePath, originalPath)
-	}
-	if got, want := heldAtBuild, agent.CanonicalSessionPath(gotResumePath); got != want {
-		t.Fatalf("lease at build = %q, want recovery path %q", got, want)
 	}
 }
 
@@ -642,7 +601,7 @@ func resumeIndexForPath(t *testing.T, dir, path string) int {
 }
 
 // TestAdoptCarriedHistoryRefreshesLeadingSystemPrompt pins the fix for the
-// bug where /model, /effort, /work-mode, and skill-toggle rebuilds carried
+// bug where /model, /effort, and skill-toggle rebuilds carried
 // the outgoing profile's system prompt forward: the freshly built controller
 // already has its own leading system message for the target profile, but
 // AdoptHistory replaces the whole history (including that message) with the
@@ -676,8 +635,8 @@ func TestAdoptCarriedHistoryRefreshesLeadingSystemPrompt(t *testing.T) {
 // TestAdoptCarriedHistoryRestoresSessionAuthorizations pins the fix for a
 // rebuild dropping same-session "Allow for this session" tool grants and
 // Plan-mode read-only command trust, forcing the user to re-approve
-// something already granted this session after every /model, /effort, or
-// /work-mode switch.
+// something already granted this session after every /model or /effort
+// switch.
 func TestAdoptCarriedHistoryRestoresSessionAuthorizations(t *testing.T) {
 	old := control.New(control.Options{})
 	old.RestoreSessionAuthorizations(control.SessionAuthorizations{
@@ -706,7 +665,7 @@ func TestAdoptCarriedHistoryRestoresSessionAuthorizations(t *testing.T) {
 // half of the splice in adoptCarriedHistoryPreservingProfileAndGrants: the
 // refreshed leading system message must be persisted at switch time, because
 // nothing saves again until the next turn ends — quitting right after a
-// /model, /effort, or /work-mode switch and resuming would otherwise revive
+// /model or /effort switch and resuming would otherwise revive
 // the outgoing profile's contract from disk.
 func TestAdoptCarriedHistoryPersistsRefreshedSystemPromptToDisk(t *testing.T) {
 	dir := t.TempDir()

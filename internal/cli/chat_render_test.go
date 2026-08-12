@@ -14,6 +14,7 @@ import (
 // newTestChatTUI builds a chatTUI with just the pieces the streaming/commit and
 // completion paths need, for unit tests that don't run the bubbletea loop.
 func newTestChatTUI() chatTUI {
+	activeBuildVersion = ""
 	commit := []string{}
 	ti := textarea.New()
 	configureChatTextarea(&ti)

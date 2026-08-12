@@ -25,6 +25,37 @@ func reloadTestModel(ctrl control.SessionAPI, rebuild runtimeRebuilder) *chatTUI
 	return &chatTUI{ctrl: ctrl, rebuildRuntime: rebuild, pendingCommit: &pending}
 }
 
+// TestReloadRebuilderSeesLiveOverrides pins the pointer capture in
+// bindRuntimeRebuilder: a runtime switch (/effort, /output-style) mutates the
+// cliBuildOverrides the /reload seam must see, not the launch-time snapshot.
+func TestReloadRebuilderSeesLiveOverrides(t *testing.T) {
+	m := newTestChatTUI()
+	overrides := cliBuildOverrides{OutputStyle: "explanatory"}
+	var got cliBuildOverrides
+	m.bindRuntimeRebuilder(10, nil, false, &overrides, func(_ string, _ int, _ bool, _ event.Sink, _ string, o cliBuildOverrides) boot.Options {
+		got = o
+		return boot.Options{}
+	})
+	// A runtime switch mutates the live overrides after the seam was bound.
+	overrides.OutputStyle = "concise"
+	effort := "max"
+	overrides.Effort = &effort
+
+	// Nil-controller BuildResult makes RebuildFrom fail fast after buildOpts
+	// recorded the effective overrides.
+	m.lastBuildResult = &boot.BuildResult{}
+	old := control.New(control.Options{})
+	if _, err := m.rebuildRuntime(context.Background(), controllerBuildSpec{ModelRef: "m"}, old); err == nil {
+		t.Fatal("expected the stub rebuild to fail")
+	}
+	if got.OutputStyle != "concise" {
+		t.Fatalf("reload carried OutputStyle = %q, want the live value concise", got.OutputStyle)
+	}
+	if got.Effort == nil || *got.Effort != "max" {
+		t.Fatalf("reload carried Effort = %v, want the live value max", got.Effort)
+	}
+}
+
 // TestReloadDispositionDecisionTable pins the /reload queue semantics: no
 // rebuild seam reports unavailable, idle rebuilds now, and a turn/approval or
 // runtime switch in flight queues exactly one reload.

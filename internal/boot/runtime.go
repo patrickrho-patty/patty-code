@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"patty/internal/command"
+	"patty/internal/config"
 	"patty/internal/control"
 	"patty/internal/extension"
 	"patty/internal/extension/dispatch"
@@ -580,4 +581,16 @@ func gateExtensionUIRequest(reqCtx context.Context, load func() *control.Control
 	case <-reqCtx.Done():
 		return nil, false, reqCtx.Err()
 	}
+}
+
+// bootReasoningLanguage resolves the visible-reasoning language for an agent:
+// a frontend-provided Options.ReasoningLanguage wins over the config value.
+func bootReasoningLanguage(opts Options, cfg *config.Config) string {
+	return firstNonEmpty(opts.ReasoningLanguage, cfg.ReasoningLanguage())
+}
+
+// bootOutputStyle resolves the persona/tone style folded into the system
+// prompt: a frontend-provided Options.OutputStyle wins over the config value.
+func bootOutputStyle(opts Options, cfg *config.Config) string {
+	return firstNonEmpty(opts.OutputStyle, cfg.Agent.OutputStyle)
 }

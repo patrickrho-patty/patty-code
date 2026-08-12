@@ -45,7 +45,7 @@ func TestMergeChildPropagatesRealWrites(t *testing.T) {
 
 func TestClassifyMutationRisk(t *testing.T) {
 	low := []Receipt{
-		ReceiptFromToolCall("edit_file", json.RawMessage(`{"path":"docs/GUIDE.md"}`), true, false),
+		ReceiptFromToolCall("edit_file", json.RawMessage(`{"path":"docs/guides/GUIDE.md"}`), true, false),
 	}
 	if got := ClassifyMutationRisk(low, 0); got != RiskLow {
 		t.Fatalf("docs risk = %s, want low", got)

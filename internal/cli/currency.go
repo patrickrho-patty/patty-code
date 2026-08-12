@@ -35,25 +35,26 @@ func (m *chatTUI) runCurrencySubcommand(input string) tea.Cmd {
 		return nil
 	}
 
-	path := config.UserConfigPath()
+	var resolved string
+	path, applyErr, saveErr := config.EditUserConfigLocked(func(c *config.Config) error {
+		if err := c.SetDesktopCurrency(mode); err != nil {
+			return err
+		}
+		resolved = c.DeepSeekOfficialPricingCurrency()
+		if mode == "" && c.DesktopLanguage() == "" {
+			resolved = cliAutoPricingCurrency()
+		}
+		return nil
+	})
 	if path == "" {
 		m.notice("currency: cannot resolve user config path")
 		return nil
 	}
-	var resolved string
-	if err := func() error {
-		unlock := config.LockUserConfigEdits()
-		defer unlock()
-		edit := config.LoadForEdit(path)
-		if err := edit.SetDesktopCurrency(mode); err != nil {
-			return err
+	if applyErr != nil || saveErr != nil {
+		err := applyErr
+		if saveErr != nil {
+			err = saveErr
 		}
-		resolved = edit.DeepSeekOfficialPricingCurrency()
-		if mode == "" && edit.DesktopLanguage() == "" {
-			resolved = cliAutoPricingCurrency()
-		}
-		return edit.SaveTo(path)
-	}(); err != nil {
 		m.notice("currency: " + err.Error())
 		return nil
 	}

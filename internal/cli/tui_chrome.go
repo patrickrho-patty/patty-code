@@ -78,14 +78,27 @@ func renderLaunchMasthead(m chatTUI, missing string, width int) string {
 		return renderCompactLaunchMasthead(m, missing, width)
 	}
 	var b strings.Builder
-	b.WriteString(renderLaunchArtwork(width))
-	b.WriteByte('\n')
-	b.WriteString(dim(i18n.M.ChatTip))
+	b.WriteString(centerLaunchArtwork(renderLaunchArtwork(width), width))
+	// Give the centered marks a quiet breathing row before the explanatory
+	// context line; otherwise the artwork and tip read as one dense block.
+	b.WriteString("\n\n")
+	b.WriteString(centerLine(dim(i18n.M.ChatTip), width))
 	if strings.TrimSpace(missing) != "" {
 		b.WriteByte('\n')
 		b.WriteString(wrapForViewport("! "+localizedMissingProviderWarning(missing), width, activeCLITheme.warn))
 	}
 	return b.String()
+}
+
+// centerLaunchArtwork pads each artwork row so the logos keep the centered
+// rail of the launch frame when they move into transcript scrollback —
+// otherwise the first committed line makes them appear to jump left.
+func centerLaunchArtwork(artwork string, width int) string {
+	lines := strings.Split(strings.TrimRight(artwork, "\n"), "\n")
+	for i, line := range lines {
+		lines[i] = centerLine(line, width)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m chatTUI) isNaturalStartupFrame() bool {
@@ -205,10 +218,9 @@ func (m chatTUI) sessionHeaderRowCount() int {
 		return rows
 	}
 	minimumBottom := m.bottomRows()
-	// On very short panes, preserve the masthead and one transcript row before
-	// preserving a second transcript row. The header is the user's orientation
-	// anchor; a one-row transcript is still useful, while a missing header makes
-	// the entire frame look like an unstyled input prompt.
+	// On very short panes, keep the masthead and one transcript row: the
+	// header is the user's orientation anchor, while a missing one makes the
+	// frame look like an unstyled input prompt.
 	if rows+minimumBottom+1 > m.height {
 		return 0
 	}
@@ -330,22 +342,21 @@ func colorASCIIRuns(row string, colorFor func(rune) (cliColor, bool)) string {
 }
 
 func renderSessionFacts(m chatTUI, width int) string {
-	mode := localizedModeFact(m)
-	model := strings.TrimSpace(m.label)
+	metadata := m.displayMetadata()
+	model := metadata.Model
 	if model == "" {
 		model = "—"
 	}
-	effort := localizedEffortFact(m.effortLevel)
-
-	used, window := 0, 0
-	if m.ctrl != nil {
-		used, window = m.ctrl.ContextSnapshot()
-	}
+	effort := localizedEffortFact(metadata.Effort)
 	groups := []string{
-		sessionFactPill(i18n.M.ChatStatusModeLabel, themeFg(activeCLITheme.accent, mode)),
 		sessionFactPill(i18n.M.ChatStatusModelLabel, themeFg(activeCLITheme.strong, model)),
 		sessionFactPill(i18n.M.ChatStatusEffortLabel, themeFg(activeCLITheme.strong, effort)),
-		sessionFactPill(i18n.M.ChatStatusHeadroomLabel, themeFg(activeCLITheme.signal, contextHeadroom(used, window))),
+		sessionFactPill(i18n.M.ChatStatusHeadroomLabel, themeFg(activeCLITheme.signal, contextHeadroom(metadata.ContextUsed, metadata.ContextWindow))),
+	}
+	if metadata.BuildVersion != "" {
+		// Lead the right-aligned cluster with the immutable build identity so
+		// the live stats keep their exact right rail when the version is shown.
+		groups = append([]string{sessionFactPill(i18n.M.ChatStatusVersionLabel, themeFg(activeCLITheme.faint, metadata.BuildVersion))}, groups...)
 	}
 	return packStatusGroups(groups, width)
 }
@@ -356,35 +367,6 @@ func sessionFactPill(label, value string) string {
 		" " +
 		value +
 		themeFg(activeCLITheme.border, " ]")
-}
-
-func localizedModeFact(m chatTUI) string {
-	if strings.HasPrefix(strings.TrimSpace(m.input.Value()), "!") {
-		return i18n.M.ChatModeShell
-	}
-	if m.ctrl == nil {
-		return i18n.M.ChatModeAuto
-	}
-	parts := strings.Split(m.modeTagText(), "+")
-	for i, part := range parts {
-		switch part {
-		case "Ask":
-			parts[i] = i18n.M.ChatModeAsk
-		case "Auto":
-			parts[i] = i18n.M.ChatModeAuto
-		case "Plan":
-			parts[i] = i18n.M.ChatModePlan
-		case "Goal":
-			parts[i] = i18n.M.ChatModeGoal
-		case "YOLO":
-			parts[i] = i18n.M.ChatModeYOLO
-		case "Don't Ask":
-			parts[i] = i18n.M.ChatModeDontAsk
-		case "Approve":
-			parts[i] = i18n.M.ChatModeApprove
-		}
-	}
-	return strings.Join(parts, "+")
 }
 
 func localizedEffortFact(effort string) string {
@@ -426,10 +408,7 @@ const minTranscriptRowsWithComposerHints = 3
 // accounting remain exact as the input grows.
 func renderComposerChrome(m chatTUI, width int) string {
 	width = max(width, 1)
-	titleText := "메시지 입력"
-	if i18n.CurrentLanguage() == "en" {
-		titleText = "MESSAGE INPUT"
-	}
+	titleText := i18n.M.ChatComposerInputTitle
 	title := themeStyle(activeCLITheme.signal).Bold(true).Render(titleText)
 	header := renderComposerTopBorder(title, width)
 
@@ -506,16 +485,13 @@ func renderComposerBottomBorder(width int) string {
 }
 
 func renderComposerHints(width int) string {
-	label := "도움말"
-	if i18n.CurrentLanguage() == "en" {
-		label = "HELP"
-	}
+	label := i18n.M.ChatComposerHelpLabel
 	hintGroups := []string{
 		themeFg(activeCLITheme.faint, label),
-		themeFg(activeCLITheme.muted, "/ "+strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerCommandsHint, "/"))),
-		themeFg(activeCLITheme.muted, "@ "+strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerFilesHint, "@"))),
-		themeFg(activeCLITheme.muted, "! "+strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerShellHint, "!"))),
-		themeFg(activeCLITheme.muted, "? "+strings.TrimSpace(strings.TrimPrefix(i18n.M.ChatComposerShortcutsHint, "?"))),
+		themeFg(activeCLITheme.muted, composerHintGroup("/", i18n.M.ChatComposerCommandsHint)),
+		themeFg(activeCLITheme.muted, composerHintGroup("@", i18n.M.ChatComposerFilesHint)),
+		themeFg(activeCLITheme.muted, composerHintGroup("!", i18n.M.ChatComposerShellHint)),
+		themeFg(activeCLITheme.muted, composerHintGroup("?", i18n.M.ChatComposerShortcutsHint)),
 	}
 	if width < 28 {
 		// Labels would consume four or more rows here and crowd out the actual
@@ -531,8 +507,38 @@ func renderComposerHints(width int) string {
 	return insetComposerLine(packStatusGroups(hintGroups, max(width-composerChromeInset, 1)), width)
 }
 
+// composerHintGroup restores the leading symbol a localized hint omits, so the
+// below-composer legend and the empty-placeholder legend render identically.
+func composerHintGroup(symbol, hint string) string {
+	return symbol + " " + strings.TrimSpace(strings.TrimPrefix(hint, symbol))
+}
+
+var composerPlaceholderMemo struct {
+	lang string
+	text string
+}
+
+func composerPlaceholderWithHints() string {
+	lang := i18n.CurrentLanguage()
+	if composerPlaceholderMemo.lang == lang {
+		return composerPlaceholderMemo.text
+	}
+	composerPlaceholderMemo.lang = lang
+	composerPlaceholderMemo.text = fmt.Sprintf("%s ( %s  %s  %s  %s )",
+		i18n.M.ChatComposerPlaceholder,
+		composerHintGroup("/", i18n.M.ChatComposerCommandsHint),
+		composerHintGroup("@", i18n.M.ChatComposerFilesHint),
+		composerHintGroup("!", i18n.M.ChatComposerShellHint),
+		composerHintGroup("?", i18n.M.ChatComposerShortcutsHint),
+	)
+	return composerPlaceholderMemo.text
+}
+
 func (m chatTUI) composerHintRowCount(width int) int {
 	width = max(width, 1)
+	if m.input.Value() == "" && !m.chooserTyping() {
+		return 0
+	}
 	hintRows := strings.Count(renderComposerHints(width), "\n") + 1
 	if m.height > 0 {
 		fixedBottom := m.bottomRowsWithoutComposer()
@@ -547,6 +553,9 @@ func (m chatTUI) composerHintRowCount(width int) int {
 
 func (m chatTUI) composerHintSpacerRows(width int) int {
 	width = max(width, 1)
+	if m.input.Value() == "" && !m.chooserTyping() {
+		return 0
+	}
 	if m.height <= 0 {
 		return 1
 	}

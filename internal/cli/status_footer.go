@@ -114,11 +114,11 @@ func parseMissingProviderEnv(text string) (string, string, bool) {
 	return providerName, keyName, true
 }
 
-// renderTurnReceipt attaches the completed turn's token and cost breakdown to
-// the assistant response. Unlike the persistent footer, this is historical
-// message metadata: it stays in transcript scrollback and deliberately uses a
-// quieter palette than runtime/session state.
-func renderTurnReceipt(u *provider.Usage, p *provider.Pricing, d *event.CacheDiagnostics) string {
+// renderTurnReceipt attaches the completed turn's token breakdown to the
+// assistant response. Unlike the persistent footer, this is historical message
+// metadata: it stays in transcript scrollback and deliberately uses a quieter
+// palette than runtime/session state.
+func renderTurnReceipt(u *provider.Usage, d *event.CacheDiagnostics) string {
 	if u == nil || u.TotalTokens == 0 {
 		return ""
 	}
@@ -135,20 +135,17 @@ func renderTurnReceipt(u *provider.Usage, p *provider.Pricing, d *event.CacheDia
 			fresh = max(u.PromptTokens-cached, 0)
 		}
 		groups = append(groups,
-			"in "+shortTokens(u.PromptTokens),
-			"cached "+shortTokens(cached),
-			"new "+shortTokens(fresh),
+			i18n.M.ChatTurnReceiptIn+" "+shortTokens(u.PromptTokens),
+			i18n.M.ChatTurnReceiptCached+" "+shortTokens(cached),
+			i18n.M.ChatTurnReceiptNew+" "+shortTokens(fresh),
 		)
 	}
-	groups = append(groups, "out "+shortTokens(u.CompletionTokens))
+	groups = append(groups, i18n.M.ChatTurnReceiptOut+" "+shortTokens(u.CompletionTokens))
 	if u.ReasoningTokens > 0 {
-		groups = append(groups, "reasoning "+shortTokens(u.ReasoningTokens))
-	}
-	if p != nil {
-		groups = append(groups, fmt.Sprintf("%s%.4f", p.Symbol(), p.Cost(u)))
+		groups = append(groups, i18n.M.ChatTurnReceiptReasoning+" "+shortTokens(u.ReasoningTokens))
 	}
 	if u.Estimated {
-		groups = append(groups, "estimated")
+		groups = append(groups, i18n.M.ChatTurnReceiptEstimated)
 	}
 
 	separator := footerHint(" · ")
@@ -160,9 +157,9 @@ func renderTurnReceipt(u *provider.Usage, p *provider.Pricing, d *event.CacheDia
 	if d != nil && d.PrefixChanged {
 		reasons := strings.Join(d.PrefixChangeReasons, "+")
 		if reasons == "" {
-			reasons = "unknown"
+			reasons = i18n.M.ChatTurnReceiptUnknownReason
 		}
-		receipt += separator + themeFg(activeCLITheme.warn, "cache prefix changed: "+reasons)
+		receipt += separator + themeFg(activeCLITheme.warn, fmt.Sprintf(i18n.M.ChatTurnReceiptPrefixChanged, reasons))
 	}
 	return receipt
 }
@@ -275,12 +272,12 @@ func (m chatTUI) statusTelemetryGroups() []string {
 		return []string{m.statuslineOut}
 	}
 	var data []string
+	metadata := m.displayMetadata()
 	if m.ctrl != nil {
 		if body, rate, ok := m.cacheStatus(); ok {
 			data = append(data, footerMetric(i18n.M.ChatStatusCacheLabel, themeFg(cacheStatusColor(rate), body)))
 		}
-		used, window := m.ctrl.ContextSnapshot()
-		data = append(data, renderContextStatusGroups(used, window, m.ctrl.CompactRatio())...)
+		data = append(data, renderContextStatusGroups(metadata.ContextUsed, metadata.ContextWindow, m.ctrl.CompactRatio())...)
 		if jt := m.jobsTag(); jt != "" {
 			data = append(data, footerMetric(i18n.M.ChatStatusJobsLabel, footerInfo(ansi.Strip(jt))))
 		}
@@ -319,12 +316,29 @@ func (m chatTUI) renderFrameStatusBlock(primary string, width int) string {
 		return m.renderStartupInstructionBlock(primary, width)
 	}
 	if !m.isCompactTerminal() {
-		return m.renderStatusBlock(primary, width)
+		return alignStatusBlockRight(m.renderStatusBlock(primary, width), width)
 	}
 	if m.isMinimalTerminal() {
 		return ""
 	}
 	return wrapStatusGroups(hideStatusHintWhenKeyNamesCannotFit(primary, width), width)
+}
+
+// alignStatusBlockRight keeps the persistent interaction/status bands anchored
+// to the same right-side rail as the launch frame. Without this, the first
+// completed turn switches to the generic left-packed footer and makes the
+// status/Git identity appear to jump horizontally.
+func alignStatusBlockRight(block string, width int) string {
+	width = max(width, 1)
+	lines := strings.Split(block, "\n")
+	for i, line := range lines {
+		plain := ansi.Strip(line)
+		if strings.TrimSpace(plain) == "" || strings.Trim(plain, "─ ") == "" {
+			continue
+		}
+		lines[i] = alignRightStatusLine(line, width)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m chatTUI) renderStartupInstructionBlock(primary string, width int) string {

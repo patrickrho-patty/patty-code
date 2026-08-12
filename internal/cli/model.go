@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
-
 	"patty/internal/config"
 	"patty/internal/extension/providerext"
 	"patty/internal/i18n"
@@ -23,16 +21,7 @@ func (m *chatTUI) runModelSubcommand(input string) {
 		return
 	}
 	ref := args[1]
-	if m.buildController == nil {
-		m.notice(i18n.M.ModelSwitchUnavailable)
-		return
-	}
-	if m.runtimeSwitchBusy() {
-		m.notice(i18n.M.ModelSwitchBusy)
-		return
-	}
-	if m.modelSwitchPending {
-		m.notice(i18n.M.RuntimeSwitchPending)
+	if m.unavailableOrBusyNotice(i18n.M.ModelSwitchUnavailable, i18n.M.ModelSwitchBusy) {
 		return
 	}
 	if ref == m.modelRef {
@@ -44,62 +33,12 @@ func (m *chatTUI) runModelSubcommand(input string) {
 	// default. Mirrors the pattern used by /theme (persistTheme), /effort, and
 	// /language.
 	m.persistModel(ref)
-	if err := m.ctrl.Snapshot(); err != nil {
-		m.notice("model: snapshot failed: " + err.Error())
-	}
-	// Capture the resume path and history only after Snapshot: a snapshot
-	// conflict can retarget the controller to a recovery branch (or adopt the
-	// newer disk transcript), and a pre-snapshot capture would bind the rebuilt
-	// controller back to the original file, re-conflicting on every later save.
-	carried := m.ctrl.History()
-	prevPath := m.ctrl.SessionPath()
-	// Move the lease before the rebuilt controller binds prevPath for writing
-	// (AdoptHistory resumes there): after a snapshot retarget the lease still
-	// guards the old path, and the async build must not open an unguarded
-	// writer on the recovery branch.
-	if err := m.rebindSessionLease(prevPath); err != nil {
-		m.notice("model: " + sessionLeaseHeldNotice(err))
-		return
-	}
-	m.notice(fmt.Sprintf(i18n.M.ModelSwitchingFmt, ref))
-
-	// Capture old controller for cleanup after the async build succeeds.
-	oldCtrl := m.ctrl
-	build := m.buildController
-
-	// Fire the build off the event loop; the result arrives as a tea.Cmd.
-	// Both the build AND the old-controller close run in the goroutine so
-	// neither blocks the bubbletea event loop. The old controller's Close
-	// kills plugin subprocesses (incl. CodeGraph), which can disrupt the
-	// terminal's cancelReader if called synchronously inside Update — so it
-	// must happen here, before we hand the new controller back.
-	m.modelSwitchPending = true
-	m.pendingModelSwitch = func() tea.Msg {
-		c, err := build(controllerBuildSpec{
-			ModelRef:         ref,
-			RuntimeProfile:   m.runtimeProfile,
-			ToolApprovalMode: oldCtrl.ToolApprovalMode(),
-			PlanMode:         oldCtrl.PlanMode(),
-		}, carried, prevPath, oldCtrl)
-		if err != nil {
-			return modelSwitchMsg{ref: ref, err: err}
-		}
-		// Do NOT close the old controller here. Controller.Close() runs
-		// SessionEnd hooks (arbitrary shell commands) and kills plugin
-		// subprocesses — operations that corrupt bubbletea's terminal raw
-		// mode when executed from a goroutine. Instead, pass the old
-		// controller back in the message so the Update handler can defer
-		// its cleanup as a tea.Cmd that runs after the next render.
-		return modelSwitchMsg{
-			ref:      ref,
-			ctrl:     c,
-			oldCtrl:  oldCtrl,
-			label:    c.Label(),
-			commands: c.Commands(),
-			skills:   c.SlashSkills(),
-			host:     c.Host(),
-		}
-	}
+	m.beginRuntimeRebuild(controllerBuildSpec{
+		ModelRef:         ref,
+		RuntimeProfile:   m.runtimeProfile,
+		ToolApprovalMode: m.ctrl.ToolApprovalMode(),
+		PlanMode:         m.ctrl.PlanMode(),
+	}, "model", fmt.Sprintf(i18n.M.ModelSwitchingFmt, ref), "", "")
 }
 
 func (m *chatTUI) openModelPicker() {
@@ -124,12 +63,12 @@ func (m *chatTUI) openModelPicker() {
 		label, description := modelPickerPresentation(ref, descriptorsByRef)
 		status := ""
 		if ref == m.modelRef {
-			status = "active"
+			status = i18n.M.QuickPickerActive
 			selected = len(items)
 		}
 		items = append(items, quickPickerItem{ID: ref, Label: label, Description: description, Status: status})
 	}
-	m.quickPick = &quickPicker{kind: quickPickerModel, title: "Select model", items: items, selected: selected}
+	m.quickPick = &quickPicker{kind: quickPickerModel, title: i18n.M.QuickPickerModelTitle, items: items, selected: selected}
 }
 
 func modelPickerPresentation(ref string, descriptorsByRef map[string]provider.Descriptor) (label, description string) {
@@ -142,16 +81,16 @@ func modelPickerPresentation(ref string, descriptorsByRef map[string]provider.De
 			if label == "" {
 				label = ref
 			}
-			return label, "Extension: " + ref
+			return label, fmt.Sprintf(i18n.M.QuickPickerExtensionFmt, ref)
 		}
-		return ref, "Extension model"
+		return ref, i18n.M.QuickPickerExtensionModel
 	}
 	parts := strings.SplitN(ref, "/", 2)
 	if len(parts) == 2 {
 		providerName := strings.TrimSpace(parts[0])
 		modelName := strings.TrimSpace(parts[1])
 		if providerName != "" && modelName != "" {
-			return modelName, "Provider: " + providerName
+			return modelName, fmt.Sprintf(i18n.M.QuickPickerProviderFmt, providerName)
 		}
 	}
 	return ref, ""
@@ -166,24 +105,19 @@ func modelPickerPresentation(ref string, descriptorsByRef map[string]provider.De
 // Snapshot/ModelSwitchingFmt so the persistence outcome shows up first in
 // the notice area.
 func (m *chatTUI) persistModel(ref string) {
-	path := config.UserConfigPath()
-	if path == "" {
+	path, applyErr, saveErr := config.EditUserConfigLocked(func(c *config.Config) error {
+		return c.SetDefaultModel(ref)
+	})
+	switch {
+	case path == "":
 		return
+	case applyErr != nil:
+		m.notice(fmt.Sprintf("model: persist refused: %v (ref=%s)", applyErr, ref))
+	case saveErr != nil:
+		m.notice(fmt.Sprintf("model: persist save failed: %v (ref=%s, path=%s)", saveErr, ref, path))
+	default:
+		m.notice(fmt.Sprintf("model: persisted (ref=%s, path=%s)", ref, path))
 	}
-	// Serialize the load-modify-save against other in-process user-config
-	// editors so concurrent writers don't drop each other's fields.
-	unlock := config.LockUserConfigEdits()
-	defer unlock()
-	edit := config.LoadForEdit(path)
-	if err := edit.SetDefaultModel(ref); err != nil {
-		m.notice(fmt.Sprintf("model: persist refused: %v (ref=%s)", err, ref))
-		return
-	}
-	if err := edit.SaveTo(path); err != nil {
-		m.notice(fmt.Sprintf("model: persist save failed: %v (ref=%s, path=%s)", err, ref, path))
-		return
-	}
-	m.notice(fmt.Sprintf("model: persisted (ref=%s, path=%s)", ref, path))
 }
 
 // modelRefs returns the configured provider/model refs for slash completion.

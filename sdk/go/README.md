@@ -114,7 +114,7 @@ constructors, enum helpers) lives in `types_ext.go`.
 
 ## Protocol reference
 
-- Method/DTO contract: [`docs/EXTENSION_PROTOCOL.generated.md`](../../docs/EXTENSION_PROTOCOL.generated.md)
+- Method/DTO contract: [`docs/extensions/EXTENSION_PROTOCOL.generated.md`](../../docs/extensions/EXTENSION_PROTOCOL.generated.md)
 - Canonical JSON schema: [`internal/extension/protocol/schema.generated.json`](../../internal/extension/protocol/schema.generated.json)
 - Transport: strict JSON-RPC 2.0 over NDJSON (one object per line), integer
   request ids, object params, 8 MiB frames.

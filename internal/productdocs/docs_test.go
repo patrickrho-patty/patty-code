@@ -33,10 +33,10 @@ func TestEmbeddedCatalogLoadsDeterministically(t *testing.T) {
 	if first.digest == "" || first.digest != second.digest {
 		t.Fatalf("digest mismatch: %q != %q", first.digest, second.digest)
 	}
-	if _, ok := first.byPath["GUIDE.ko-KR.md"]; !ok {
+	if _, ok := first.byPath["guides/GUIDE.ko-KR.md"]; !ok {
 		t.Fatal("Korean guide is missing from the embedded catalog")
 	}
-	if _, ok := first.byPath["GUIDE.md"]; !ok {
+	if _, ok := first.byPath["guides/GUIDE.md"]; !ok {
 		t.Fatal("English guide is missing from the embedded catalog")
 	}
 }
@@ -96,12 +96,12 @@ func TestExtensionDeveloperGuidesAreEmbeddedAndSearchable(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, path := range []string{
-		"EXTENSIONS.md",
-		"EXTENSIONS.ko-KR.md",
-		"EXTENSION_PROTOCOL.md",
-		"EXTENSION_PROTOCOL.ko-KR.md",
-		"PLUGIN_PACKAGES.md",
-		"PLUGIN_PACKAGES.ko-KR.md",
+		"extensions/EXTENSIONS.md",
+		"extensions/EXTENSIONS.ko-KR.md",
+		"extensions/EXTENSION_PROTOCOL.md",
+		"extensions/EXTENSION_PROTOCOL.ko-KR.md",
+		"extensions/PLUGIN_PACKAGES.md",
+		"extensions/PLUGIN_PACKAGES.ko-KR.md",
 	} {
 		if _, ok := c.byPath[path]; !ok {
 			t.Fatalf("extension developer guide %q is missing from the embedded catalog", path)
@@ -113,7 +113,7 @@ func TestExtensionDeveloperGuidesAreEmbeddedAndSearchable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(english, "path=docs/EXTENSIONS.md") || !strings.Contains(english, "path=docs/PLUGIN_PACKAGES.md") {
+	if !strings.Contains(english, "path=docs/extensions/EXTENSIONS.md") || !strings.Contains(english, "path=docs/extensions/PLUGIN_PACKAGES.md") {
 		t.Fatalf("English extension search did not expose the overview and manifest reference:\n%s", english)
 	}
 
@@ -121,7 +121,7 @@ func TestExtensionDeveloperGuidesAreEmbeddedAndSearchable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(koreanResults, "path=docs/EXTENSIONS.ko-KR.md") || !strings.Contains(koreanResults, "path=docs/PLUGIN_PACKAGES.ko-KR.md") {
+	if !strings.Contains(koreanResults, "path=docs/extensions/EXTENSIONS.ko-KR.md") || !strings.Contains(koreanResults, "path=docs/extensions/PLUGIN_PACKAGES.ko-KR.md") {
 		t.Fatalf("Korean extension search did not expose the overview and manifest reference:\n%s", koreanResults)
 	}
 }
@@ -333,7 +333,7 @@ func TestSearchPrefersRelevantKoreanAndEnglishSections(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Korean search: %v", err)
 	}
-	if !strings.Contains(koResults, "docs/TOOL_APPROVAL_MODES.ko-KR.md") {
+	if !strings.Contains(koResults, "docs/reference/TOOL_APPROVAL_MODES.ko-KR.md") {
 		t.Fatalf("Korean search did not find the permission guide:\n%s", koResults)
 	}
 
@@ -341,7 +341,7 @@ func TestSearchPrefersRelevantKoreanAndEnglishSections(t *testing.T) {
 	if err != nil {
 		t.Fatalf("English search: %v", err)
 	}
-	if !strings.Contains(en, "docs/CONFIG_PATHS.md") {
+	if !strings.Contains(en, "docs/guides/CONFIG_PATHS.md") {
 		t.Fatalf("English search did not find configuration paths:\n%s", en)
 	}
 }
@@ -439,7 +439,7 @@ func TestDocsToolContractIsStableAndReadOnly(t *testing.T) {
 	}
 	contract := tl.Name() + "\n" + tl.Description() + "\n" + string(canonical)
 	got := fmt.Sprintf("%x", sha256.Sum256([]byte(contract)))
-	const want = "8d1b99e3eb4082a2a454f6b1b25c27d7859d7c42db3df5418ba74903c560dc7b"
+	const want = "41e16cc98d3c95123d1321fb5edc9adf0c01129115bbf632899c5c475f168551"
 	if got != want {
 		t.Fatalf("provider-visible docs contract changed: got %s, want %s", got, want)
 	}

@@ -15,7 +15,7 @@
 // After Serve returns nil from an orderly extension/shutdown the process
 // should exit with code 0; the host reaps it by that exit status.
 //
-// Protocol reference: docs/EXTENSION_PROTOCOL.generated.md and
+// Protocol reference: docs/extensions/EXTENSION_PROTOCOL.generated.md and
 // internal/extension/protocol/schema.generated.json in the patty
 // repository.
 package extension

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -16,9 +17,11 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 
 	"patty/internal/agent"
+	"patty/internal/boot"
 	"patty/internal/checkpoint"
 	"patty/internal/command"
 	"patty/internal/config"
@@ -278,6 +281,43 @@ func TestCompletionMenuPadsWithNonBreakingSpaces(t *testing.T) {
 		if strings.HasSuffix(line, " ") {
 			t.Fatalf("line %d should not end with clearable ASCII space, got %q", i, line)
 		}
+	}
+}
+
+func TestHangulCompletionRendererRepaintsWideLine(t *testing.T) {
+	var output bytes.Buffer
+	renderer := uv.NewTerminalRenderer(&output, []string{"TERM=xterm-256color"})
+	renderer.SetBackspace(true)
+	renderer.SetRelativeCursor(true)
+
+	makeLine := func(label string) *uv.RenderBuffer {
+		line := uv.NewRenderBuffer(32, 1)
+		x := 0
+		for _, r := range label {
+			content := string(r)
+			width := ansi.StringWidth(content)
+			if width == 0 {
+				continue
+			}
+			line.SetCell(x, 0, &uv.Cell{Content: content, Width: width})
+			x += width
+		}
+		return line
+	}
+
+	renderer.Render(makeLine("/브랜치만들기"))
+	if err := renderer.Flush(); err != nil {
+		t.Fatalf("initial Hangul completion render: %v", err)
+	}
+	output.Reset()
+
+	renderer.Render(makeLine("/브랜치전환"))
+	if err := renderer.Flush(); err != nil {
+		t.Fatalf("updated Hangul completion render: %v", err)
+	}
+	got := output.String()
+	if !bytes.Contains([]byte(got), []byte("/브랜치전환")) {
+		t.Fatalf("updated Hangul completion label missing from renderer output: %q", got)
 	}
 }
 
@@ -1239,6 +1279,21 @@ func TestModalPanelsHideComposerBox(t *testing.T) {
 				t.Fatalf("bottomRows with %s = %d, want %d (panel + status rows, no composer box)", tt.name, got, want)
 			}
 		})
+	}
+}
+
+func TestBottomRowsIncludesQueuedInterjectRows(t *testing.T) {
+	m := newTestChatTUI()
+	m.width = 80
+	m.height = 24
+	m.state = tuiRunning
+	m.pendingInterject = []string{"first queued message", "second queued message"}
+	m.statusLineCount = m.computeStatusLineCount(m.width)
+
+	queueRows := strings.Count(m.renderQueueIndicator(), "\n") + 1
+	want := m.composerRowCount() + m.statusLineCount + queueRows
+	if got := m.bottomRows(); got != want {
+		t.Fatalf("bottomRows with queued interjects = %d, want %d (composer + status + queue rows)", got, want)
 	}
 }
 
@@ -2683,52 +2738,13 @@ func TestEffortCommandAutoClearsProviderEffort(t *testing.T) {
 	}
 }
 
-func TestReasoningLanguageCommandPersistsAndUpdatesController(t *testing.T) {
-	isolateUserConfig(t)
-
-	ctrl := control.New(control.Options{ReasoningLanguage: "auto"})
-	m := newTestChatTUI()
-	m.ctrl = ctrl
-
-	m.runReasoningLanguageCommand("/reasoning-language ko-KR")
-
-	body, err := os.ReadFile(config.UserConfigPath())
-	if err != nil {
-		t.Fatalf("read saved config: %v", err)
-	}
-	if !strings.Contains(string(body), `reasoning_language = "ko-KR"`) {
-		t.Fatalf("saved config missing reasoning_language=ko-KR:\n%s", body)
-	}
-	composed := ctrl.Compose("hello")
-	if !strings.HasPrefix(composed, "<reasoning-language>") || !strings.Contains(composed, "한국어로 작성해야 합니다") {
-		t.Fatalf("/reasoning-language ko-KR should affect current controller, got %q", composed)
-	}
-}
-
-func TestReasoningLanguageCommandWritesUserConfigNotProjectConfig(t *testing.T) {
-	isolateUserConfig(t)
-	projectPath := filepath.Join(mustGetwd(t), "patty.toml")
-	if err := os.WriteFile(projectPath, []byte("[agent]\nreasoning_language = \"en\"\n"), 0o644); err != nil {
-		t.Fatalf("write project config: %v", err)
-	}
-
-	m := newTestChatTUI()
-	m.ctrl = control.New(control.Options{ReasoningLanguage: "en"})
-	m.runReasoningLanguageCommand("/reasoning-language ko-KR")
-
-	userBody, err := os.ReadFile(config.UserConfigPath())
-	if err != nil {
-		t.Fatalf("read user config: %v", err)
-	}
-	if !strings.Contains(string(userBody), `reasoning_language = "ko-KR"`) {
-		t.Fatalf("user config missing reasoning_language=ko-KR:\n%s", userBody)
-	}
-	projectBody, err := os.ReadFile(projectPath)
-	if err != nil {
-		t.Fatalf("read project config: %v", err)
-	}
-	if string(projectBody) != "[agent]\nreasoning_language = \"en\"\n" {
-		t.Fatalf("/reasoning-language should not rewrite project config:\n%s", projectBody)
+// Reasoning language is locked to Korean for the CLI: the boot options force
+// ko-KR regardless of what the config says, so no /reasoning-language surface
+// is offered.
+func TestCLIProfileBuildOptionsForceKoreanReasoning(t *testing.T) {
+	opts := cliProfileBuildOptions("deepseek-flash/deepseek-v4", 40, false, event.Discard, boot.TokenModeFull, cliBuildOverrides{})
+	if got := opts.ReasoningLanguage; got != "ko-KR" {
+		t.Fatalf("CLI build reasoning language = %q, want ko-KR", got)
 	}
 }
 

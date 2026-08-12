@@ -15,7 +15,7 @@ require (
 	github.com/aymanbagabas/go-udiff v0.4.1
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/charmbracelet/colorprofile v0.4.3
-	github.com/charmbracelet/x/ansi v0.11.7
+	github.com/charmbracelet/x/ansi v0.11.8
 	github.com/ebitengine/purego v0.10.2
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/joho/godotenv v1.5.1
@@ -38,7 +38,7 @@ require (
 	golang.org/x/image v0.43.0
 	golang.org/x/mod v0.37.0
 	golang.org/x/net v0.56.0
-	golang.org/x/sys v0.46.0
+	golang.org/x/sys v0.47.0
 	golang.org/x/term v0.44.0
 	golang.org/x/text v0.39.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -46,7 +46,7 @@ require (
 )
 
 require (
-	github.com/charmbracelet/ultraviolet v0.0.0-20260601155805-6cf7526a1b3f // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260811164956-006e29f97886 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.2.2 // indirect
@@ -56,9 +56,9 @@ require (
 	github.com/dlclark/regexp2/v2 v2.2.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/kr/fs v0.1.0 // indirect
-	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
+	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 )

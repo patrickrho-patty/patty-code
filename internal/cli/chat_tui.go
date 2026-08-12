@@ -32,7 +32,6 @@ import (
 	"patty/internal/i18n"
 	"patty/internal/memory"
 	"patty/internal/migration"
-	"patty/internal/outputstyle"
 	"patty/internal/permission"
 	"patty/internal/plugin"
 	"patty/internal/provider"
@@ -47,9 +46,13 @@ import (
 // normal buffer and commits finalized output to native scrollback via
 // tea.Println so taps can still focus the soft keyboard.
 type chatTUI struct {
-	ctrl    control.SessionAPI
-	label   string
-	missing string // missing-key warning surfaced once in the banner, "" when ready
+	ctrl  control.SessionAPI
+	label string
+	// displayIdentity is optional frontend metadata. It is kept as one typed
+	// projection input so future harness/user identifiers do not become fields
+	// copied through every renderer and model-switch branch.
+	displayIdentity tuiSessionIdentity
+	missing         string // missing-key warning surfaced once in the banner, "" when ready
 	// diagnostics is the process-owned TUI log/watchdog started before terminal
 	// takeover. Nil in unit tests that construct chatTUI without chatREPL.
 	diagnostics      *tuiDiagnostics
@@ -415,8 +418,8 @@ type chatTUI struct {
 	// modelSwitchPending is true while any async controller rebuild is in flight.
 	modelSwitchPending bool
 	// pendingModelSwitch holds the tea.Cmd that triggers the async build. The
-	// historical field name is retained because model, effort, skill refresh,
-	// and work-mode changes all share the same atomic swap path.
+	// historical field name is retained because model, effort, and skill refresh
+	// changes all share the same atomic swap path.
 	pendingModelSwitch tea.Cmd
 	// oldControllers accumulates controllers retired by runtime switches.
 	// They cannot be closed during the switch (Close runs SessionEnd hooks
@@ -445,6 +448,7 @@ type controllerBuildSpec struct {
 	ToolApprovalMode string
 	PlanMode         bool
 	EffortOverride   *string
+	OutputStyle      string
 }
 
 func (m *chatTUI) runtimeSwitchBusy() bool {
@@ -513,14 +517,8 @@ func (m chatTUI) runStatusline() tea.Cmd {
 	if cmd == "" {
 		return nil
 	}
-	used, window := m.ctrl.ContextSnapshot()
 	cwd, _ := os.Getwd()
-	payload, _ := json.Marshal(map[string]any{
-		"model":         m.label,
-		"contextUsed":   used,
-		"contextWindow": window,
-		"cwd":           cwd,
-	})
+	payload, _ := json.Marshal(m.statuslineContext(cwd))
 	return func() tea.Msg { return statuslineMsg{out: runStatuslineCmd(cmd, string(payload))} }
 }
 
@@ -571,7 +569,10 @@ type modelSwitchMsg struct {
 	host          *plugin.Host
 	failurePrefix string
 	successNotice string
-	err           error
+	// outputStyle carries the newly selected output style for the /output-style
+	// switch; empty means a model/profile switch.
+	outputStyle string
+	err         error
 }
 
 // fetchBalance queries the provider's wallet balance off the event loop. It's a
@@ -1560,8 +1561,6 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Shift+Tab encodings are recognized via modeToggleKey so both
 		// "shift+tab" and CSI-Z "backtab" stay covered by one helper (#6660).
 		if modeToggleKey(msg.String()) {
-			// Shift+Tab toggles Plan only. Tool approval stays on its own
-			// axis: Ask/Auto are explicit choices; YOLO is Ctrl+Y.
 			m.cycleMode()
 			return m, nil
 		}
@@ -1931,6 +1930,9 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.profile != "" {
 				m.runtimeProfile = msg.profile
 			}
+			if msg.outputStyle != "" {
+				m.outputStyle = msg.outputStyle
+			}
 			m.refreshEffortStatus()
 			// Defer Close to exit; skip when subgraph rebuild reused the pointer.
 			if msg.oldCtrl != nil && msg.oldCtrl != msg.ctrl {
@@ -2292,43 +2294,12 @@ func (m *chatTUI) commitSpacer() {
 // and skills normally render inside the main transcript area; in native
 // scrollback mode they join the bottom rail because there is no main viewport.
 func (m chatTUI) bottomRows() int {
-	rows := m.bottomRowsWithoutComposer()
-	if !m.hideComposer() {
-		rows += m.composerRowCount()
-	}
-	return rows
+	layout := m.frameLayout(max(m.width, 10))
+	return layout.rowsWithoutComposer + layout.composerRows
 }
 
 func (m chatTUI) bottomRowsWithoutComposer() int {
-	rows := 0
-	for _, s := range []string{
-		m.renderTodoPanel(),
-		m.renderApprovalBanner(),
-		m.renderChooser(),
-		m.renderRewind(),
-		m.renderMCPImport(),
-		m.renderResumePicker(),
-		m.renderQuickPicker(),
-		m.renderCopyPicker(),
-		m.renderCompletion(),
-	} {
-		if s != "" {
-			rows += strings.Count(s, "\n") + 1
-		}
-	}
-	// The working line and operational footer are counted together inside
-	// statusLineCount via computeStatusLineCount, which accounts for wrapping.
-	// A zero count is valid before the first resize; the first rendered frame
-	// synchronizes it from the same layout used by View.
-	if m.nativeScrollback {
-		if main := m.renderMainManager(); main != "" {
-			rows += strings.Count(main, "\n") + 1
-		}
-	}
-	if footer := m.renderMainManagerFooter(); footer != "" {
-		rows += strings.Count(footer, "\n") + 1
-	}
-	return rows + max(m.statusLineCount, 0)
+	return m.buildFrameLayout(max(m.width, 10), false).rowsWithoutComposer
 }
 
 // composerRowCount mirrors the exact composer string appended by View. The
@@ -3638,91 +3609,20 @@ func (m chatTUI) View() tea.View {
 		return v
 	}
 	boxW := max(m.width, 10)
-	hideComposer := m.hideComposer()
-	shellMode := strings.HasPrefix(strings.TrimSpace(m.input.Value()), "!")
-	cancelRequested := m.cancelRequested()
+	layout := m.frameLayout(boxW)
+	hideComposer := layout.hideComposer
 	var composer string
 	if !hideComposer {
 		composer = renderComposerChrome(m, boxW)
 	}
-
-	primaryStatus := m.primaryStatusLine(shellMode, cancelRequested)
-	// The spinning "thinking…" indicator is its own line ABOVE the input box (shown
-	// only while a turn runs); the status/data rows stay below. This mirrors Claude
-	// Code: live progress over the composer, shortcuts + stats under it.
-	working := m.runningWorkingLine(cancelRequested, true)
-	// Bottom region pinned under the transcript viewport: optional panels, the
-	// composer when visible, then the two status rows. Its height feeds
-	// transcriptHeight so the viewport above fills exactly the rest of the screen.
-	var parts []string
-	rowsAboveBox := 0 // terminal rows occupied by panels/working line before the composer
-	if todo := m.renderTodoPanel(); todo != "" {
-		parts = append(parts, todo)
-		rowsAboveBox += strings.Count(todo, "\n") + 1
-	}
-	if banner := m.renderApprovalBanner(); banner != "" {
-		parts = append(parts, banner)
-		rowsAboveBox += strings.Count(banner, "\n") + 1
-	}
-	if card := m.renderChooser(); card != "" {
-		parts = append(parts, card)
-		rowsAboveBox += strings.Count(card, "\n") + 1
-	}
-	if card := m.renderRewind(); card != "" {
-		parts = append(parts, card)
-		rowsAboveBox += strings.Count(card, "\n") + 1
-	}
-	if card := m.renderMCPImport(); card != "" {
-		parts = append(parts, card)
-		rowsAboveBox += strings.Count(card, "\n") + 1
-	}
-	if card := m.renderResumePicker(); card != "" {
-		parts = append(parts, card)
-		rowsAboveBox += strings.Count(card, "\n") + 1
-	}
-	if card := m.renderQuickPicker(); card != "" {
-		parts = append(parts, card)
-		rowsAboveBox += strings.Count(card, "\n") + 1
-	}
-	if card := m.renderCopyPicker(); card != "" {
-		parts = append(parts, card)
-		rowsAboveBox += strings.Count(card, "\n") + 1
-	}
-	if menu := m.renderCompletion(); menu != "" {
-		parts = append(parts, menu)
-		rowsAboveBox += strings.Count(menu, "\n") + 1
-	}
-	if m.nativeScrollback {
-		if card := m.renderMainManager(); card != "" {
-			parts = append(parts, card)
-			rowsAboveBox += strings.Count(card, "\n") + 1
-		}
-	}
-	// Layout: the working spinner (when running), then the composer when visible,
-	// then the persistent status block. Wide terminals keep two information rows
-	// separated by a quiet rule: interaction + model/profile, then flexible Git
-	// + fixed telemetry. Narrow
-	// terminals break only between those semantic groups. Padding to full width
-	// prevents stale cells.
-	if working != "" {
-		parts = append(parts, workingStyle.Width(boxW).MaxWidth(boxW).Render(wrapStatusLine(working, boxW)))
-		rowsAboveBox++
-	}
-	if footer := m.renderMainManagerFooter(); footer != "" {
-		parts = append(parts, footer)
-		rowsAboveBox += strings.Count(footer, "\n") + 1
-	}
-	statusBlock := m.renderFrameStatusBlock(primaryStatus, boxW)
+	parts := append([]string(nil), layout.preComposerParts...)
 	if !hideComposer {
-		if qi := m.renderQueueIndicator(); qi != "" {
-			parts = append(parts, qi)
-			rowsAboveBox += strings.Count(qi, "\n") + 1
-		}
 		parts = append(parts, composer)
 	}
-	if statusBlock != "" {
-		parts = append(parts, statusBlockStyle.Width(boxW).MaxWidth(boxW).Render(statusBlock))
+	if layout.statusBlock != "" {
+		parts = append(parts, statusBlockStyle.Width(boxW).MaxWidth(boxW).Render(layout.statusBlock))
 	}
+	rowsAboveBox := layout.rowsAboveComposer
 
 	if m.nativeScrollback {
 		content := strings.Join(parts, "\n")
@@ -3822,6 +3722,8 @@ func (m chatTUI) renderNaturalStartupTranscript(width, height int) string {
 	var blocks []string
 	if width >= visibleWidth(approvedTaegeukgiRows[0]) {
 		blocks = append(blocks, renderLaunchArtwork(min(width, fullLaunchArtworkWidth)))
+		// Breathing row so the context line does not sit on the artwork.
+		blocks = append(blocks, "")
 	}
 	if tip := strings.TrimSpace(i18n.M.ChatTip); tip != "" {
 		blocks = append(blocks, ansi.Truncate(dim(tip), width, ""))
@@ -3850,6 +3752,7 @@ func (m chatTUI) launchStageHeight(width int) int {
 	rows := 1
 	if width >= visibleWidth(approvedTaegeukgiRows[0]) {
 		rows = strings.Count(renderLaunchArtwork(min(width, fullLaunchArtworkWidth)), "\n") + 1
+		rows++ // breathing row between the artwork and the context line
 	}
 	if strings.TrimSpace(i18n.M.ChatTip) != "" {
 		rows++
@@ -4059,13 +3962,6 @@ func (m chatTUI) jobsTag() string {
 		return ""
 	}
 	return dim(fmt.Sprintf("⚙ %d", n))
-}
-
-func (m chatTUI) workModeTag() string {
-	if m.runtimeProfile == "" {
-		return ""
-	}
-	return dim(fmt.Sprintf(i18n.M.WorkModeStatusFmt, runtimeProfileDisplay(m.runtimeProfile)))
 }
 
 func (m chatTUI) effortTag() string {
@@ -4337,26 +4233,7 @@ func wrapStatusLine(s string, width int) string {
 // bottomRows().
 // Use the same width (m.width) that View() passes to wrapStatusLine.
 func (m chatTUI) computeStatusLineCount(width int) int {
-	shellMode := strings.HasPrefix(strings.TrimSpace(m.input.Value()), "!")
-	cancelRequested := m.cancelRequested()
-
-	// Replicate the operational interaction line from View().
-	primaryStatus := m.primaryStatusLine(shellMode, cancelRequested)
-	statusBlock := m.renderFrameStatusBlock(primaryStatus, width)
-
-	// Replicate the working (spinner) line from View(), shown only while a turn runs.
-	working := m.runningWorkingLine(cancelRequested, false)
-
-	// Count wrapped rows for every piece that View() renders as wrapped.
-	var lines int
-	if m.state == tuiRunning {
-		// working (spinner) line — wraps independently of the status block below.
-		lines += strings.Count(wrapStatusLine(working, width), "\n") + 1
-	}
-	if statusBlock != "" {
-		lines += strings.Count(statusBlock, "\n") + 1
-	}
-	return lines
+	return m.buildFrameLayout(width, false).statusRows
 }
 
 // The composer grows with its content up to this comfort cap. The effective
@@ -4815,7 +4692,7 @@ func (m *chatTUI) ingestEvent(e event.Event) {
 			m.turnTokens += e.Usage.CompletionTokens
 		}
 		if m.showTurnUsage {
-			if line := renderTurnReceipt(e.Usage, e.Pricing, e.CacheDiagnostics); line != "" {
+			if line := renderTurnReceipt(e.Usage, e.CacheDiagnostics); line != "" {
 				m.finalizeStreamed()
 				m.commitSpacer()
 				m.commitTranscriptSource(transcriptSource{kind: transcriptSourceTurnReceipt, raw: line})
@@ -5040,12 +4917,6 @@ func (m *chatTUI) runSlashCommand(input string) tea.Cmd {
 		m.showSandboxStatus()
 	case "/effort":
 		return m.runEffortCommand(input)
-	case "/work-mode", "/profile":
-		m.echoLocalCommand(input)
-		return m.runWorkModeCommand(input)
-	case "/reasoning-language":
-		m.echoLocalCommand(input)
-		m.runReasoningLanguageCommand(input)
 	case "/rewind":
 		m.echoLocalCommand(input)
 		m.openRewind()
@@ -5116,13 +4987,7 @@ func (m *chatTUI) runSlashCommand(input string) tea.Cmd {
 	case "/paste-image":
 		return m.beginClipboardImagePaste()
 	case "/output-style", "/output-styles":
-		m.echoLocalCommand(input)
-		styles := outputstyle.List(outputstyle.Dirs())
-		if len(styles) == 0 {
-			m.notice(i18n.M.OutputStyleNone)
-		} else {
-			m.commitLine(renderOutputStyles(m.width, styles, m.outputStyle))
-		}
+		m.openOutputStylePicker()
 	case "/diff-fold":
 		m.echoLocalCommand(input)
 		if m.diffMaxLines == 0 {

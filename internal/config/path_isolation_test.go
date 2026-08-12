@@ -19,7 +19,7 @@ func TestProcessTestEnvironmentContainsAllUserStatePaths(t *testing.T) {
 	home := os.Getenv("HOME")
 	paths := map[string]string{
 		"operating system cache": osUserCacheDir(),
-		"Patty Code cache":         CacheDir(),
+		"Patty Code cache":       CacheDir(),
 		"workspace leases":       WorkspaceLeaseDir(),
 		"delivery worktrees":     DeliveryWorktreeDir(),
 	}

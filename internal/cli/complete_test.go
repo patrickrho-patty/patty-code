@@ -616,23 +616,6 @@ func TestSlashArgCompletionCurrency(t *testing.T) {
 	}
 }
 
-func TestSlashArgCompletionReasoningLanguage(t *testing.T) {
-	m := newTestChatTUI()
-	m.input.SetValue("/reasoning-language ")
-	m.updateCompletion()
-	if !m.completion.active || m.completion.kind != compSlashArg {
-		t.Fatalf("/reasoning-language should open arg completion: %+v", m.completion)
-	}
-	for _, want := range []string{"auto", "ko-KR", "en"} {
-		if !hasLabel(m.completion.items, want) {
-			t.Fatalf("/reasoning-language completion missing %q: %v", want, labels(m.completion.items))
-		}
-	}
-	if hasLabel(m.completion.items, "fr") || hasLabel(m.completion.items, "french") {
-		t.Fatalf("/reasoning-language completion should expose only auto|ko-KR|en: %v", labels(m.completion.items))
-	}
-}
-
 func labels(items []compItem) []string {
 	out := make([]string, len(items))
 	for i, it := range items {
@@ -648,6 +631,63 @@ func hasLabel(items []compItem, label string) bool {
 		}
 	}
 	return false
+}
+
+// TestHiddenSlashCommandsStayHiddenInKorean pins the alias-based filter: the
+// menu runs in Korean by default, where builtin labels are spec.ko + " (en)",
+// so hiding must match aliases, not the localized label.
+func TestHiddenSlashCommandsStayHiddenInKorean(t *testing.T) {
+	previousLanguage := i18n.CurrentLanguage()
+	defer i18n.DetectLanguage(previousLanguage)
+	i18n.DetectLanguage("ko")
+
+	m := newTestChatTUI()
+	m.ctrl = control.New(control.Options{})
+	got := labels(m.slashItems())
+	for _, want := range []string{
+		"/문서검색 (docs)", "/원격호스트 (remote)", "/통화설정 (currency)", "/마우스 (mouse)",
+		"/명령새로고침 (reload-cmd)", "/공급자전환 (provider)", "/마이그레이션 (migrate)", "/도움말 (help)",
+	} {
+		if hasLabel(m.slashItems(), want) {
+			t.Fatalf("Korean slash menu still shows hidden command %q:\n%v", want, got)
+		}
+	}
+	for _, want := range []string{"/압축 (compact)", "/지우기 (clear)", "/모델전환 (model)", "/출력스타일 (output-style)"} {
+		if !hasLabel(m.slashItems(), want) {
+			t.Fatalf("Korean slash menu missing visible command %q:\n%v", want, got)
+		}
+	}
+	if help := renderHelp(80, nil, nil, nil); strings.Contains(help, "/도움말") {
+		t.Fatalf("Korean help output still shows hidden command /도움말:\n%s", help)
+	}
+}
+
+// TestSlashCompletionDocsRenameWorksInKorean pins the alias-based rename: with
+// a runtime docs owner, the builtin /docs entry (labeled /문서검색 (docs) in
+// ko) must become the /patty:docs compatibility fallback, including its insert.
+func TestSlashCompletionDocsRenameWorksInKorean(t *testing.T) {
+	previousLanguage := i18n.CurrentLanguage()
+	defer i18n.DetectLanguage(previousLanguage)
+	i18n.DetectLanguage("ko")
+
+	m := newTestChatTUI()
+	m.ctrl = control.New(control.Options{})
+	m.commands = []command.Command{{Name: "docs", Description: "custom docs"}}
+	items := m.slashItems()
+	if !hasLabel(items, "/docs") {
+		t.Fatalf("custom docs command missing from Korean menu:\n%v", labels(items))
+	}
+	if !hasLabel(items, "/patty:docs") {
+		t.Fatalf("renamed builtin fallback /patty:docs missing from Korean menu:\n%v", labels(items))
+	}
+	if hasLabel(items, "/문서검색 (docs)") {
+		t.Fatalf("hidden builtin /docs label leaked in Korean menu:\n%v", labels(items))
+	}
+	for _, it := range items {
+		if it.label == "/patty:docs" && !strings.HasPrefix(it.insert, "/patty:docs ") {
+			t.Fatalf("renamed fallback insert = %q, want /patty:docs prefix", it.insert)
+		}
+	}
 }
 
 // fuzzy matching for / completion
@@ -674,8 +714,8 @@ func TestFuzzyFilterSlashSubsequence(t *testing.T) {
 
 // TestFuzzyFilterSlashPrefixFirst proves prefix hits rank ahead of
 // subsequence-only hits, matching the menu behavior we want: typing "/mo"
-// should put /model and /mouse (both true "/mo" prefixes) at the top, not
-// buried after non-prefix matches.
+// should put /model (a true "/mo" prefix) at the top, not buried after
+// non-prefix matches. /mouse is user-hidden and must not surface.
 func TestFuzzyFilterSlashPrefixFirst(t *testing.T) {
 	m := newTestChatTUI()
 	m.input.SetValue("/mo")
@@ -684,15 +724,12 @@ func TestFuzzyFilterSlashPrefixFirst(t *testing.T) {
 	if !m.completion.active {
 		t.Fatal("menu should open for /mo")
 	}
-	// /model and /mouse are the only built-ins whose label starts with /mo;
-	// slashItems() declares /model first, and the filter is stable, so it
-	// leads.
-	if len(m.completion.items) < 2 || m.completion.items[0].label != "/model" || m.completion.items[1].label != "/mouse" {
-		t.Fatalf("prefix hits /model, /mouse should rank first in declaration order, got %v", labels(m.completion.items))
+	// /model is the only visible built-in whose label starts with /mo;
+	// slashItems() declares it first, and the filter is stable, so it leads.
+	if len(m.completion.items) < 1 || m.completion.items[0].label != "/model" {
+		t.Fatalf("prefix hit /model should rank first, got %v", labels(m.completion.items))
 	}
-	// Any other built-ins in the list are subsequence-only matches and must
-	// therefore NOT be prefix hits of /mo.
-	for _, it := range m.completion.items[2:] {
+	for _, it := range m.completion.items[1:] {
 		if strings.HasPrefix(it.label, "/mo") {
 			t.Errorf("%q should not appear after the /mo prefix hits", it.label)
 		}

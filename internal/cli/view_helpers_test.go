@@ -1,15 +1,20 @@
 package cli
 
 import (
+	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"patty/internal/command"
+	"patty/internal/config"
+	"patty/internal/control"
 	"patty/internal/hook"
+	"patty/internal/i18n"
 	"patty/internal/memory"
-	"patty/internal/outputstyle"
 	"patty/internal/plugin"
+	"patty/internal/provider"
 	"patty/internal/skill"
 )
 
@@ -76,21 +81,87 @@ func TestRenderMemoryGroupsDocsAndStore(t *testing.T) {
 	assertLinesWithin(t, got, width)
 }
 
-func TestRenderOutputStylesUsesActiveStatus(t *testing.T) {
-	width := 72
-	got := renderOutputStyles(width, []outputstyle.OutputStyle{
-		{Name: "concise", Description: "short answers", Builtin: true},
-		{Name: "team", Description: strings.Repeat("custom ", 20), Builtin: false},
-	}, "team")
-	for _, want := range []string{"output styles", "concise", "(builtin)", "team", "(custom)", "active", "…"} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("output style view missing %q:\n%s", want, got)
+func TestOutputStylePickerLocalizesBuiltinsAndMarksActive(t *testing.T) {
+	previousLanguage := i18n.CurrentLanguage()
+	defer i18n.DetectLanguage(previousLanguage)
+	i18n.DetectLanguage("ko")
+
+	m := newTestChatTUI()
+	m.outputStyle = "concise"
+	m.openOutputStylePicker()
+
+	p := m.quickPick
+	if p == nil {
+		t.Fatal("output-style picker did not open")
+	}
+	if p.kind != quickPickerOutputStyle {
+		t.Fatalf("picker kind = %q, want output-style", p.kind)
+	}
+	var labels []string
+	for _, it := range p.items {
+		labels = append(labels, it.Label)
+	}
+	for _, want := range []string{"설명형", "학습형", "원시인"} {
+		if !slices.Contains(labels, want) {
+			t.Fatalf("picker missing %q: %v", want, labels)
 		}
 	}
-	if strings.Contains(got, "*") {
-		t.Fatalf("output style view should use active status instead of star:\n%s", got)
+	active := p.items[p.selected]
+	if active.ID != "concise" || active.Status != i18n.M.QuickPickerActive {
+		t.Fatalf("active entry = %+v, want concise marked active", active)
 	}
-	assertLinesWithin(t, got, width)
+}
+
+func TestApplyOutputStyleQueuesRebuildAndPersists(t *testing.T) {
+	isolateUserConfig(t)
+	dir := t.TempDir()
+	originalPath := filepath.Join(dir, "style-switch-conflict.jsonl")
+
+	m := newTestChatTUI()
+	m.ctrl = divergedSessionController(t, dir, originalPath)
+	m.modelRef = "deepseek-flash/deepseek-v4-flash"
+	m.outputStyle = "explanatory"
+	var builtSpec controllerBuildSpec
+	m.buildController = func(spec controllerBuildSpec, _ []provider.Message, _ string, _ control.SessionAPI) (*control.Controller, error) {
+		builtSpec = spec
+		return control.New(control.Options{Label: "deepseek-flash"}), nil
+	}
+
+	m.applyOutputStyle("concise", "원시인")
+	if m.pendingModelSwitch == nil {
+		t.Fatal("applyOutputStyle did not queue a rebuild")
+	}
+	next, _ := m.Update(m.pendingModelSwitch())
+	m = next.(chatTUI)
+	if builtSpec.OutputStyle != "concise" {
+		t.Fatalf("rebuild spec.OutputStyle = %q, want concise (style must not depend on disk config)", builtSpec.OutputStyle)
+	}
+	if !strings.EqualFold(m.outputStyle, "concise") {
+		t.Fatalf("output style after switch = %q, want concise", m.outputStyle)
+	}
+
+	body, err := os.ReadFile(config.UserConfigPath())
+	if err != nil {
+		t.Fatalf("read saved config: %v", err)
+	}
+	if !strings.Contains(string(body), `output_style = "concise"`) {
+		t.Fatalf("saved config missing output_style=concise:\n%s", body)
+	}
+}
+
+func TestApplyOutputStyleAlreadyActiveIsNoop(t *testing.T) {
+	m := newTestChatTUI()
+	m.ctrl = control.New(control.Options{})
+	m.buildController = func(controllerBuildSpec, []provider.Message, string, control.SessionAPI) (*control.Controller, error) {
+		t.Fatal("already-active style must not rebuild")
+		return nil, nil
+	}
+	m.outputStyle = "concise"
+
+	m.applyOutputStyle("concise", "원시인")
+	if m.pendingModelSwitch != nil {
+		t.Fatal("already-active style queued a rebuild")
+	}
 }
 
 func TestRenderModelsUsesActiveStatus(t *testing.T) {

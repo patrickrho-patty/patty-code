@@ -38,7 +38,6 @@ type ArgData struct {
 	CurrentModel    string
 	ProviderNames   []string
 	CurrentProvider string
-	PluginNames     []string
 	MemoryRefs      []string
 	MemoryArchives  []string
 }
@@ -47,8 +46,7 @@ type ArgData struct {
 // (everything after the command word). It returns the suggestions filtered by
 // the token being typed and the byte offset where that token begins, so a caller
 // replaces just that token. Only structured commands participate (/mcp /model
-// /skills /plugins /hooks /effort /goal /reasoning-language
-// /theme /language /currency /memory);
+// /skills /hooks /effort /goal /theme /language /currency /memory);
 // others yield nil. Single source of truth for CLI + desktop.
 func SlashArgItems(line string, d ArgData) ([]SlashItem, int) {
 	cmdEnd := strings.IndexAny(line, " \t")
@@ -68,16 +66,12 @@ func SlashArgItems(line string, d ArgData) ([]SlashItem, int) {
 		raw = providerArgItems(prior, d)
 	case "/skill", "/skills":
 		raw = skillArgItems(prior, d)
-	case "/plugin", "/plugins":
-		raw = pluginArgItems(prior, d)
 	case "/hooks":
 		raw = hooksArgItems(prior)
 	case "/effort":
 		raw = effortArgItems(prior, d)
 	case "/goal":
 		raw = goalArgItems(prior)
-	case "/reasoning-language":
-		raw = reasoningLanguageArgItems(prior)
 	case "/theme":
 		raw = themeArgItems(prior)
 	case "/language":
@@ -137,17 +131,6 @@ func goalArgItems(prior []string) []SlashItem {
 		{Label: "pause", Insert: "pause", Hint: "pause the running goal (keeps all state)"},
 		{Label: "resume", Insert: "resume", Hint: "resume a paused goal (adds one turn slice)"},
 		{Label: "clear", Insert: "clear", Hint: "stop goal mode"},
-	}
-}
-
-func reasoningLanguageArgItems(prior []string) []SlashItem {
-	if len(prior) > 1 {
-		return nil
-	}
-	return []SlashItem{
-		{Label: "auto", Insert: "auto", Hint: "follow conversation language"},
-		{Label: "ko-KR", Insert: "ko-KR", Hint: "prefer Korean visible reasoning"},
-		{Label: "en", Insert: "en", Hint: "prefer English visible reasoning"},
 	}
 }
 
@@ -353,22 +336,6 @@ func skillArgItems(prior []string, d ArgData) []SlashItem {
 		var items []SlashItem
 		for _, s := range d.DisabledSkills {
 			items = append(items, SlashItem{Label: s.Name, Insert: s.Name, Hint: string(s.Scope)})
-		}
-		return items
-	}
-	return nil
-}
-
-func pluginArgItems(prior []string, d ArgData) []SlashItem {
-	if len(prior) <= 1 {
-		return []SlashItem{
-			{Label: "show", Insert: "show ", Hint: "show plugin capabilities and usage", Descend: true},
-		}
-	}
-	if (prior[1] == "show" || prior[1] == "cat") && len(prior) == 2 {
-		var items []SlashItem
-		for _, name := range d.PluginNames {
-			items = append(items, SlashItem{Label: name, Insert: name})
 		}
 		return items
 	}

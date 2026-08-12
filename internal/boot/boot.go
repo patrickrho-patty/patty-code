@@ -132,11 +132,11 @@ type Options struct {
 	// (for example ACP session/new). They are connected eagerly for this
 	// controller but are not persisted to patty.toml.
 	ExtraPlugins []plugin.Spec
-	// TokenMode selects the session's runtime profile. Empty/full/balanced preserves
-	// the normal capability surface. "economy" keeps the core coding tools visible
-	// and moves optional sources behind connect_tool_source. "delivery" keeps the
-	// full surface and adds a stable completion-and-verification contract.
-	TokenMode string
+	// TokenMode selects the session's runtime profile: full/balanced (default),
+	// economy (leaner tool surface), or delivery (verified completion contract).
+	TokenMode         string
+	ReasoningLanguage string // pins the visible-reasoning language; empty defers to config
+	OutputStyle       string // folds this persona/tone style into the system prompt; empty defers to config
 	// SessionDir overrides where persisted chat transcripts are written. When
 	// empty, the shared CLI/global session directory is used.
 	SessionDir string
@@ -543,7 +543,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	// Output style: fold the selected persona/tone block into the base prompt
 	// before language/memory/skills append, so a "replace" style (keep-coding
 	// false) still keeps those. Applied once, into the cache-stable prefix.
-	if st, ok := outputstyle.Resolve(cfg.Agent.OutputStyle, outputstyle.Dirs()); ok {
+	if st, ok := outputstyle.Resolve(bootOutputStyle(opts, cfg), outputstyle.Dirs()); ok {
 		sysPrompt = outputstyle.Apply(sysPrompt, st)
 	}
 	sysPrompt = appendCorePolicies(sysPrompt)
@@ -1799,7 +1799,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		RecentKeep:                   cfg.Agent.RecentKeep,
 		ArchiveDir:                   config.ArchiveDir(),
 		KeepPolicy:                   keepPolicy,
-		ReasoningLanguage:            cfg.ReasoningLanguage(),
+		ReasoningLanguage:            bootReasoningLanguage(opts, cfg),
 		PlanModeReadOnlyCommands:     cfg.Agent.PlanModeReadOnlyCommands,
 		SubagentDepth:                0,
 		MaxSubagentDepth:             maxSubagentDepth,
@@ -1854,7 +1854,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 				RecentKeep:                   cfg.Agent.RecentKeep,
 				ArchiveDir:                   config.ArchiveDir(),
 				KeepPolicy:                   keepPolicy,
-				ReasoningLanguage:            cfg.ReasoningLanguage(),
+				ReasoningLanguage:            bootReasoningLanguage(opts, cfg),
 				PlanModeReadOnlyCommands:     cfg.Agent.PlanModeReadOnlyCommands,
 				CapabilityLedger:             plannerLedger,
 				CapabilityAudit:              plannerAudit,
@@ -1915,7 +1915,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		WorkspaceRoot:          root,
 		ExternalFolderToolRefs: readPathResolver,
 		ResponseLanguage:       cfg.ResponseLanguage(),
-		ReasoningLanguage:      cfg.ReasoningLanguage(),
+		ReasoningLanguage:      bootReasoningLanguage(opts, cfg),
 		DisableColdResumePrune: !cfg.ColdResumePruneEnabled(),
 		Shell:                  shell,
 		ApprovalTimeout:        opts.ApprovalTimeout,

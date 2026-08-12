@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
-const files = execFileSync("git", ["ls-files", "README.md", "docs/*.md", "site/src/pages/*", "site/src/pages/**/*"], {
+const files = execFileSync("git", ["ls-files", "README.md", ":(glob)docs/**/*.md", "site/src/pages/*", "site/src/pages/**/*"], {
   encoding: "utf8",
 }).trim().split("\n").filter(Boolean);
 const migrationReferences = new Set([
-  "docs/RELEASING.md",
-  "docs/SIGNPATH_WINDOWS_ADMIN_SOP.md",
-  "docs/CLI.md",
-  "docs/CLI.ko-KR.md",
+  "docs/operations/RELEASING.md",
+  "docs/operations/SIGNPATH_WINDOWS_ADMIN_SOP.md",
+  "docs/guides/CLI.md",
 ]);
 const rules = [
   [/release-channel-switch/, "public release channel selector"],
@@ -22,6 +21,7 @@ const rules = [
 const failures = [];
 for (const file of files) {
   if (migrationReferences.has(file) || file.includes("/changelog/")) continue;
+  if (!existsSync(file)) continue; // tracked-but-deleted or sparse-checkout
   const source = readFileSync(file, "utf8");
   for (const [pattern, description] of rules) {
     if (pattern.test(source)) failures.push(`${file}: ${description}`);

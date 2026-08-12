@@ -19,6 +19,7 @@ type builtinSlashSpec struct {
 	hint       string
 	descend    bool
 	showInHelp bool
+	hidden     bool
 }
 
 func builtinSlashSpecs() []builtinSlashSpec {
@@ -34,32 +35,30 @@ func builtinSlashSpecs() []builtinSlashSpec {
 		{name: "/branch", ko: "/브랜치만들기", insert: "/branch ", hint: i18n.M.CmdBranch, showInHelp: true},
 		{name: "/switch", ko: "/브랜치전환", insert: "/switch ", hint: i18n.M.CmdSwitchBranch, showInHelp: true},
 		{name: "/todo", ko: "/작업목록", insert: "/todo", hint: i18n.M.CmdTodo, showInHelp: true},
-		{name: "/mcp", ko: "/서버관리", insert: "/mcp", hint: i18n.M.CmdMcp, showInHelp: true},
-		{name: "/remote", ko: "/원격호스트", insert: "/remote", hint: i18n.M.CmdRemote, showInHelp: true},
+		{name: "/mcp", ko: "/mcp서버", insert: "/mcp", hint: i18n.M.CmdMcp, showInHelp: true},
+		{name: "/remote", ko: "/원격호스트", insert: "/remote", hint: i18n.M.CmdRemote, showInHelp: true, hidden: true},
 		{name: "/plugins", ko: "/플러그인", aliases: []string{"/plugin"}, insert: "/plugins", hint: i18n.M.CmdPlugins, showInHelp: true},
 		{name: "/model", ko: "/모델전환", insert: "/model", hint: i18n.M.CmdModel, descend: true, showInHelp: true},
 		{name: "/status", ko: "/상태보기", insert: "/status", hint: i18n.M.CmdStatus, showInHelp: true},
-		{name: "/work-mode", ko: "/작업모드", aliases: []string{"/profile"}, insert: "/work-mode ", hint: i18n.M.CmdWorkMode, descend: true, showInHelp: false},
-		{name: "/provider", ko: "/공급자전환", insert: "/provider", hint: i18n.M.CmdProvider, descend: true, showInHelp: true},
+		{name: "/provider", ko: "/공급자전환", insert: "/provider", hint: i18n.M.CmdProvider, descend: true, showInHelp: true, hidden: true},
 		{name: "/skills", ko: "/스킬관리", aliases: []string{"/skill"}, insert: "/skills", hint: i18n.M.CmdSkill, showInHelp: true},
-		{name: "/reload-cmd", ko: "/명령새로고침", insert: "/reload-cmd", hint: i18n.M.CmdReloadCmd, showInHelp: true},
+		{name: "/reload-cmd", ko: "/명령새로고침", insert: "/reload-cmd", hint: i18n.M.CmdReloadCmd, showInHelp: true, hidden: true},
 		{name: "/reload", ko: "/런타임새로고침", insert: "/reload", hint: i18n.M.CmdReload, showInHelp: true},
 		{name: "/hooks", ko: "/훅관리", insert: "/hooks ", hint: i18n.M.CmdHooks, descend: true, showInHelp: true},
 		{name: "/paste-image", ko: "/이미지붙여넣기", insert: "/paste-image", hint: i18n.M.CmdPasteImage},
 		{name: "/output-style", ko: "/출력스타일", aliases: []string{"/output-styles"}, insert: "/output-style", hint: i18n.M.CmdOutputStyle, showInHelp: true},
 		{name: "/verbose", ko: "/생각표시", insert: "/verbose", hint: i18n.M.CmdVerbose, showInHelp: true},
-		{name: "/mouse", ko: "/마우스", insert: "/mouse", hint: i18n.M.CmdMouse, showInHelp: true},
+		{name: "/mouse", ko: "/마우스", insert: "/mouse", hint: i18n.M.CmdMouse, showInHelp: true, hidden: true},
 		{name: "/diff-fold", ko: "/차이접기", insert: "/diff-fold", hint: i18n.M.CmdDiffFold, showInHelp: true},
 		{name: "/sandbox", ko: "/샌드박스", insert: "/sandbox", hint: i18n.M.CmdSandbox, showInHelp: true},
 		{name: "/effort", ko: "/추론강도", insert: "/effort ", hint: i18n.M.CmdEffort, descend: true},
-		{name: "/reasoning-language", ko: "/추론언어", insert: "/reasoning-language ", hint: i18n.M.CmdReasonLang, descend: true, showInHelp: true},
 		{name: "/theme", ko: "/테마전환", insert: "/theme ", hint: i18n.M.CmdTheme, descend: true},
 		{name: "/language", ko: "/언어설정", insert: "/language ", hint: i18n.M.CmdLanguage, descend: true, showInHelp: true},
-		{name: "/currency", ko: "/통화설정", insert: "/currency ", hint: i18n.M.CmdCurrency, descend: true, showInHelp: true},
-		{name: "/help", ko: "/도움말", insert: "/help", hint: i18n.M.CmdHelp, showInHelp: true},
-		{name: "/docs", ko: "/문서검색", aliases: []string{"/patty:docs"}, insert: "/docs ", hint: i18n.M.CmdDocs, showInHelp: true},
+		{name: "/currency", ko: "/통화설정", insert: "/currency ", hint: i18n.M.CmdCurrency, descend: true, showInHelp: true, hidden: true},
+		{name: "/help", ko: "/도움말", insert: "/help", hint: i18n.M.CmdHelp, hidden: true},
+		{name: "/docs", ko: "/문서검색", aliases: []string{"/patty:docs"}, insert: "/docs ", hint: i18n.M.CmdDocs, showInHelp: true, hidden: true},
 		{name: "/memory", ko: "/메모리", insert: "/memory ", hint: i18n.M.CmdMemory, showInHelp: true},
-		{name: "/migrate", ko: "/마이그레이션", aliases: []string{"/migration"}, insert: "/migrate", hint: i18n.M.CmdMigrate, showInHelp: true},
+		{name: "/migrate", ko: "/마이그레이션", aliases: []string{"/migration"}, insert: "/migrate", hint: i18n.M.CmdMigrate, showInHelp: true, hidden: true},
 		{name: "/goal", ko: "/목표", insert: "/goal ", hint: i18n.M.CmdGoal, descend: true},
 		{name: "/remember", ko: "/기억하기", insert: "/remember ", hint: i18n.M.CmdRemember},
 		{name: "/forget", ko: "/잊기", insert: "/forget ", hint: i18n.M.CmdForget},
@@ -82,11 +81,10 @@ func populateChosung(specs []builtinSlashSpec) {
 // e.g. "/이어하기" → "/ㅇㅇㅎㄱ". Non-Hangul runes pass through unchanged so a
 // "/" prefix and any Latin command suffix survive.
 func chosungOf(s string) string {
-	cho := []rune("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
 	var b strings.Builder
 	for _, r := range s {
-		if r >= 0xAC00 && r <= 0xD7A3 {
-			b.WriteRune(cho[(r-0xAC00)/(21*28)])
+		if leading := hangulLeadingJamo(r); leading != 0 {
+			b.WriteRune(leading)
 		} else {
 			b.WriteRune(r)
 		}

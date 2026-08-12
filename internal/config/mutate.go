@@ -44,6 +44,25 @@ type configEditTarget struct {
 	lockPath     string
 }
 
+// EditUserConfigLocked runs one lock-protected LoadForEdit→apply→SaveTo cycle
+// on the user config. It returns the resolved config path (empty when there is
+// no user config to edit — a silent no-op for the caller) and the apply and
+// save errors separately, so callers can report which step failed. Callers
+// must not hold LockUserConfigEdits already.
+func EditUserConfigLocked(apply func(*Config) error) (path string, applyErr, saveErr error) {
+	path = UserConfigPath()
+	if path == "" {
+		return "", nil, nil
+	}
+	unlock := LockUserConfigEdits()
+	defer unlock()
+	edit := LoadForEdit(path)
+	if err := apply(edit); err != nil {
+		return path, err, nil
+	}
+	return path, nil, edit.SaveTo(path)
+}
+
 // LockUserConfigEdits acquires the process-wide user-config edit lock and
 // returns the unlock. Hold it across the full LoadForEdit→mutate→SaveTo
 // cycle; do not hold it across controller rebuilds or other slow non-config

@@ -213,6 +213,13 @@ func (c *Config) SetReasoningLanguage(lang string) error {
 	return nil
 }
 
+// SetOutputStyle pins the persona/tone style folded into the system prompt.
+// Empty clears it back to the default.
+func (c *Config) SetOutputStyle(name string) error {
+	c.Agent.OutputStyle = strings.TrimSpace(name)
+	return nil
+}
+
 // SetDesktopLanguage pins the desktop UI language. It intentionally does not
 // modify Config.Language, which is used by the CLI/model-facing runtime.
 func (c *Config) SetDesktopLanguage(lang string) error {
