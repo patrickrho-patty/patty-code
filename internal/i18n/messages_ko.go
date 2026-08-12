@@ -294,7 +294,7 @@ var Korean = Messages{
 	CmdSkill:            "스킬 관리",
 	CmdVerbose:          "생각 텍스트 전환",
 	CmdReloadCmd:        "사용자 정의 명령 다시 로드",
-	CmdReload:           "에이전트 런타임 다시 로드 (도구, 스킬, 명령, 훅, 공급자) — 이 세션 유지",
+	CmdReload:           "에이전트 런타임 다시 로드 (도구, 스킬, 명령, 훅) — 이 세션 유지",
 	CmdDiffFold:         "diff 접기/펼치기 전환",
 	CmdSandbox:          "샌드박스 상태 표시",
 	CmdEffort:           "추론 강도 설정",

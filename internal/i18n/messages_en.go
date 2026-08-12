@@ -294,7 +294,7 @@ var English = Messages{
 	CmdSkill:            "manage skills",
 	CmdVerbose:          "toggle thinking text",
 	CmdReloadCmd:        "reload custom commands",
-	CmdReload:           "reload the agent runtime (tools, skills, commands, hooks, providers) keeping this session",
+	CmdReload:           "reload the agent runtime (tools, skills, commands, hooks) keeping this session",
 	CmdDiffFold:         "toggle diff fold/expand",
 	CmdSandbox:          "show sandbox status",
 	CmdEffort:           "set reasoning effort",

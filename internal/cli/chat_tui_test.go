@@ -305,7 +305,7 @@ func TestHangulCompletionRendererRepaintsWideLine(t *testing.T) {
 		return line
 	}
 
-	renderer.Render(makeLine("/브랜치만들기"))
+	renderer.Render(makeLine("/새브랜치"))
 	if err := renderer.Flush(); err != nil {
 		t.Fatalf("initial Hangul completion render: %v", err)
 	}

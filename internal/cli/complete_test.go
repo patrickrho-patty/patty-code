@@ -646,13 +646,13 @@ func TestHiddenSlashCommandsStayHiddenInKorean(t *testing.T) {
 	got := labels(m.slashItems())
 	for _, want := range []string{
 		"/문서검색 (docs)", "/원격호스트 (remote)", "/통화설정 (currency)", "/마우스 (mouse)",
-		"/명령새로고침 (reload-cmd)", "/공급자전환 (provider)", "/마이그레이션 (migrate)", "/도움말 (help)",
+		"/명령어갱신 (reload-cmd)", "/공급자변경 (provider)", "/마이그레이션 (migrate)", "/도움말 (help)",
 	} {
 		if hasLabel(m.slashItems(), want) {
 			t.Fatalf("Korean slash menu still shows hidden command %q:\n%v", want, got)
 		}
 	}
-	for _, want := range []string{"/압축 (compact)", "/지우기 (clear)", "/모델전환 (model)", "/출력스타일 (output-style)"} {
+	for _, want := range []string{"/압축 (compact)", "/초기화 (clear)", "/모델변경 (model)", "/출력스타일 (output-style)"} {
 		if !hasLabel(m.slashItems(), want) {
 			t.Fatalf("Korean slash menu missing visible command %q:\n%v", want, got)
 		}
