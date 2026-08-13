@@ -132,6 +132,31 @@ func (tc *TransportConn) SendControl(msgType MessageType, header, payload []byte
 	})
 }
 
+// RecvAuthChallenge receives and decodes an AUTH_CHALLENGE control message.
+func (tc *TransportConn) RecvAuthChallenge() (*AuthChallengeMessage, error) {
+	record, err := tc.RecvRecord()
+	if err != nil {
+		return nil, err
+	}
+	if record.Kind != KindControl || MessageType(record.MessageType) != MsgAuthChallenge {
+		return nil, fmt.Errorf("paper: expected AUTH_CHALLENGE, got kind=%d msg=%d", record.Kind, record.MessageType)
+	}
+	var challenge AuthChallengeMessage
+	if err := UnmarshalCBOR(record.Payload, &challenge); err != nil {
+		return nil, fmt.Errorf("paper: decode AUTH_CHALLENGE: %w", err)
+	}
+	return &challenge, nil
+}
+
+// AuthProof encodes and sends an AUTH_PROOF control message.
+func (tc *TransportConn) AuthProof(proof *AuthProofMessage) error {
+	payload, err := MarshalCBOR(proof)
+	if err != nil {
+		return fmt.Errorf("paper: encode AUTH_PROOF: %w", err)
+	}
+	return tc.SendControl(MsgAuthProof, nil, payload)
+}
+
 // Close closes the underlying connection.
 func (tc *TransportConn) Close() error {
 	return tc.conn.Close()

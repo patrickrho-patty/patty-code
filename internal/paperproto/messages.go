@@ -46,6 +46,7 @@ type AuthProofMessage struct {
 	Signature    []byte        `cbor:"2,keyasint"`
 	KeyAlgorithm COSEAlgorithm `cbor:"3,keyasint"`
 	ChallengeID  []byte        `cbor:"4,keyasint"`
+	RevocationEvidence []byte  `cbor:"5,keyasint,omitempty"`
 }
 
 // AIRequestPayload is the payload for AI_OPEN (PAPER §10B).
