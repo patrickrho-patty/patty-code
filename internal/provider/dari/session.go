@@ -1,6 +1,7 @@
 package dari
 
 import (
+	"context"
 	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
@@ -186,4 +187,31 @@ func (p *Provider) ensureSessionIDLocked() string {
 	}
 	p.sessionID = fmt.Sprintf("sess-%d", time.Now().UnixMilli())
 	return p.sessionID
+}
+
+// Prewarm prepares the transport for the NEXT turn (harness plan F2,
+// parity with cached-WS prewarm): ensures the authenticated connection
+// and session governance are live so the next Stream pays no setup
+// cost, and re-acquires the lease when it enters its renewal window.
+// Failures are returned for the caller's audit log; prewarm never
+// invalidates an existing healthy session.
+func (p *Provider) Prewarm(ctx context.Context) error {
+	p.mu.Lock()
+	healthy := p.conn != nil
+	p.mu.Unlock()
+	if !healthy {
+		return p.connect(ctx)
+	}
+	// Connection alive: check lease renewal window.
+	if p.leaseClient != nil && p.leaseClient.NeedsRenewal() {
+		// A renewal is a fresh SESSION_OPEN cycle on the live
+		// connection; the relay re-runs setup and pushes a new lease.
+		p.mu.Lock()
+		conn := p.conn
+		p.mu.Unlock()
+		if err := p.openSession(conn); err != nil {
+			return fmt.Errorf("dari: prewarm session refresh: %w", err)
+		}
+	}
+	return nil
 }
