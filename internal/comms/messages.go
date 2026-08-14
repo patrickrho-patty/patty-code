@@ -15,6 +15,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -136,14 +137,7 @@ func (i *Inbox) ListConversation(conversationID string) []*Message {
 			out = append(out, m)
 		}
 	}
-	// Sort by IssuedAt ascending.
-	for i := 0; i < len(out); i++ {
-		for j := i + 1; j < len(out); j++ {
-			if out[i].IssuedAt > out[j].IssuedAt {
-				out[i], out[j] = out[j], out[i]
-			}
-		}
-	}
+	sort.Slice(out, func(a, b int) bool { return out[a].IssuedAt < out[b].IssuedAt })
 	return out
 }
 
@@ -159,13 +153,7 @@ func (i *Inbox) ListBroadcasts() []*Message {
 			out = append(out, m)
 		}
 	}
-	for i := 0; i < len(out); i++ {
-		for j := i + 1; j < len(out); j++ {
-			if out[i].IssuedAt > out[j].IssuedAt {
-				out[i], out[j] = out[j], out[i]
-			}
-		}
-	}
+	sort.Slice(out, func(a, b int) bool { return out[a].IssuedAt < out[b].IssuedAt })
 	return out
 }
 
