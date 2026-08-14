@@ -257,20 +257,28 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 	}
 
 	// Stream one governed exchange.
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	prompt := "Reply with the single word: pong"
+	if livePIAURL != "" {
+		// Live model: elicit a multi-token answer so token-by-token
+		// streaming is observable (chunks > 1).
+		prompt = "Count from one to five, one number per word."
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	ch, err := pp.Stream(ctx, provider.Request{
-		Messages: []provider.Message{{Role: provider.RoleUser, Content: "Reply with the single word: pong"}},
+		Messages: []provider.Message{{Role: provider.RoleUser, Content: prompt}},
 	})
 	if err != nil {
 		t.Fatalf("stream: %v", err)
 	}
 	var text string
+	var chunkCount int
 	var usage *provider.Usage
 	for chunk := range ch {
 		switch chunk.Type {
 		case provider.ChunkText:
 			text += chunk.Text
+			chunkCount++
 		case provider.ChunkUsage:
 			usage = chunk.Usage
 		case provider.ChunkError:
@@ -281,7 +289,10 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 	if strings.TrimSpace(text) == "" {
 		t.Fatal("no completion text received")
 	}
-	t.Logf("governed completion: %q (usage=%+v)", text, usage)
+	t.Logf("governed completion: %q chunks=%d (usage=%+v)", text, chunkCount, usage)
+	if livePIAURL != "" && chunkCount < 2 {
+		t.Fatalf("live model must stream token-by-token, got %d chunk(s)", chunkCount)
+	}
 
 	// Lease must be held and healthy (A3 e2e).
 	metrics := pp.LeaseMetrics()
@@ -372,6 +383,25 @@ func startMockPIA(t *testing.T) *httptestServerShim {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasSuffix(r.URL.Path, "/chat/completions") {
 			http.NotFound(w, r)
+			return
+		}
+		var body struct {
+			Stream bool `json:"stream"`
+		}
+		json.NewDecoder(r.Body).Decode(&body)
+		if body.Stream {
+			// SSE streaming: multiple deltas then usage, exercising the
+			// relay's governed token streaming (F1).
+			w.Header().Set("Content-Type", "text/event-stream")
+			flusher := w.(http.Flusher)
+			deltas := []string{"po", "n", "g"}
+			for _, d := range deltas {
+				fmt.Fprintf(w, "data: {\"choices\":[{\"delta\":{\"content\":\"%s\"}}]}\n\n", d)
+				flusher.Flush()
+			}
+			fmt.Fprint(w, "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":9,\"completion_tokens\":3,\"total_tokens\":12}}\n\n")
+			fmt.Fprint(w, "data: [DONE]\n\n")
+			flusher.Flush()
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
