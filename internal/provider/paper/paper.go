@@ -46,6 +46,14 @@ type Provider struct {
 	// expired, or subject-mismatched lease fails closed before any
 	// governance-gated exchange reaches the relay. See A3.
 	leaseClient *paperproto.LeaseClient
+	// policyEpochClient owns the session's bound policy epoch. The
+	// provider pins the lease's PolicyEpochID to the bound epoch so
+	// a stale credential cannot survive a policy change. See A4.
+	policyEpochClient *paperproto.PolicyEpochClient
+	// catalogClient owns the server-authoritative model catalog. The
+	// provider refuses to dispatch against a model the relay never
+	// advertised. See A5.
+	catalogClient *paperproto.CatalogClient
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
@@ -445,14 +453,24 @@ var _ time.Duration
 // validateLease enforces the A3 / A4 / A5 fail-closed checks before the
 // connector dispatches an AI_OPEN. The single AuthorizeExchange call
 // chains the subject/session verify (A3), the policy-epoch pin (A4),
-// and the model allow-list check (A5). Each failure returns a
-// sentinel error the harness UI surfaces to the operator without
-// translation.
+// the renewal-window check, and the model allow-list check (A5).
+// The catalog client (A5) is consulted in parallel: a model the
+// relay never advertised is rejected before the lease allow-list
+// even runs. Each failure returns a sentinel error the harness UI
+// surfaces to the operator without translation.
 func (p *Provider) validateLease(model string) error {
 	if p.leaseClient == nil {
 		return errors.New("paper: no lease held; connect to a relay and acquire a capability lease before dispatching inference")
 	}
-	return p.leaseClient.AuthorizeExchange(p.subjectPeerID, p.sessionID, p.policyEpoch, model)
+	if err := p.leaseClient.AuthorizeExchange(p.subjectPeerID, p.sessionID, p.policyEpoch, model); err != nil {
+		return err
+	}
+	if p.catalogClient != nil {
+		if _, err := p.catalogClient.FindModel(model); err != nil {
+			return fmt.Errorf("paper: model %q is not in the relay's catalog: %w", model, err)
+		}
+	}
+	return nil
 }
 
 // SetLeaseClient attaches a lease client to the provider. The connector
@@ -497,6 +515,95 @@ func (p *Provider) LeaseMetrics() paperproto.LeaseMetrics {
 		return paperproto.LeaseMetrics{}
 	}
 	return p.leaseClient.MetricsFor()
+}
+
+// SetPolicyEpochClient attaches the policy-epoch tracker. The
+// connector binds the lease's PolicyEpochID to the client's bound
+// epoch on every exchange. A nil client leaves the provider in
+// fail-closed mode (validateLease rejects every AI_OPEN).
+func (p *Provider) SetPolicyEpochClient(client *paperproto.PolicyEpochClient) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.policyEpochClient = client
+}
+
+// SetCatalogClient attaches the catalog client. The connector
+// cross-checks the requested model against the held catalog on every
+// exchange. A nil client skips the catalog check (the lease
+// allow-list is the only model filter in that mode).
+func (p *Provider) SetCatalogClient(client *paperproto.CatalogClient) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.catalogClient = client
+}
+
+// PolicyEpochMetrics exposes the connector's policy-epoch health for
+// the harness status bar (E1).
+func (p *Provider) PolicyEpochMetrics() paperproto.PolicyEpochMetrics {
+	if p.policyEpochClient == nil {
+		return paperproto.PolicyEpochMetrics{}
+	}
+	return p.policyEpochClient.MetricsFor()
+}
+
+// CatalogMetrics exposes the connector's catalog health for the
+// harness status bar (E1).
+func (p *Provider) CatalogMetrics() paperproto.CatalogMetrics {
+	if p.catalogClient == nil {
+		return paperproto.CatalogMetrics{}
+	}
+	return p.catalogClient.MetricsFor()
+}
+
+// BindPolicyEpoch binds the connector to the supplied epoch. The
+// connector calls this once at AUTH_PROOF time when the relay pushes
+// the active policy epoch alongside the trust bundle.
+func (p *Provider) BindPolicyEpoch(epoch *paperproto.PolicyEpoch) error {
+	if p.policyEpochClient == nil {
+		return errors.New("paper: no policy epoch client; SetPolicyEpochClient before binding")
+	}
+	if err := p.policyEpochClient.Bind(epoch); err != nil {
+		return err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.policyEpoch = epoch.EpochID
+	return nil
+}
+
+// RebindPolicyEpoch replaces the bound policy epoch with a fresh one
+// (typically from a POLICY message). The connector surfaces the
+// new epoch to the lease allow-list on subsequent exchanges.
+func (p *Provider) RebindPolicyEpoch(epoch *paperproto.PolicyEpoch) error {
+	if p.policyEpochClient == nil {
+		return errors.New("paper: no policy epoch client; SetPolicyEpochClient before rebinding")
+	}
+	if err := p.policyEpochClient.Rebind(epoch); err != nil {
+		return err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.policyEpoch = epoch.EpochID
+	return nil
+}
+
+// ApplyCatalogSnapshot replaces the held catalog. The connector
+// calls this when the relay pushes CATALOG_SNAPSHOT.
+func (p *Provider) ApplyCatalogSnapshot(snap *paperproto.CatalogSnapshot) error {
+	if p.catalogClient == nil {
+		return errors.New("paper: no catalog client; SetCatalogClient before applying")
+	}
+	expectedEpoch := p.policyEpoch
+	return p.catalogClient.ApplySnapshot(snap, expectedEpoch)
+}
+
+// ApplyCatalogDelta applies an incremental catalog update.
+func (p *Provider) ApplyCatalogDelta(delta *paperproto.CatalogDelta) error {
+	if p.catalogClient == nil {
+		return errors.New("paper: no catalog client; SetCatalogClient before applying")
+	}
+	expectedEpoch := p.policyEpoch
+	return p.catalogClient.ApplyDelta(delta, expectedEpoch)
 }
 
 // defaultAutoRenewBefore is the connector's proactive renewal lead time.
