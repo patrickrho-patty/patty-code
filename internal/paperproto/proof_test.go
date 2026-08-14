@@ -60,8 +60,11 @@ func testIdentity(t *testing.T) (subjectPub ed25519.PublicKey, subjectPriv ed255
 	if err != nil {
 		t.Fatalf("marshal body: %v", err)
 	}
-	sign1 := coseSign1STAForTest(bodyBytes, issuerPriv, []byte("test-kid"))
-	credential, err = MarshalCBOR(sign1)
+	encoded, err := CreateCOSESign1(bodyBytes, issuerPriv, []byte("test-kid"))
+	if err != nil {
+		t.Fatalf("marshal COSE-Sign1: %v", err)
+	}
+	credential = encoded
 	if err != nil {
 		t.Fatalf("marshal COSE-Sign1: %v", err)
 	}
