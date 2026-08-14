@@ -119,6 +119,16 @@ func (c *LeaseClient) Current() *Lease {
 	return c.current
 }
 
+// Drop clears the held lease without verifying a replacement. The
+// transport layer calls this when the relay pushes LEASE_REVOKE:
+// every subsequent AuthorizeExchange fails closed until a fresh
+// lease arrives.
+func (c *LeaseClient) Drop() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.current = nil
+}
+
 // Renew validates a fresh lease returned by the relay and updates the
 // cached copy. The new lease MUST carry a higher `LeaseSequence` than the
 // current lease; otherwise the connector refuses to clobber a fresh

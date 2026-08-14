@@ -21,6 +21,7 @@ import (
 
 	"patty/internal/paperproto"
 	"patty/internal/provider"
+	"patty/internal/provenancewire"
 )
 
 func init() {
@@ -54,9 +55,17 @@ type Provider struct {
 	// provider refuses to dispatch against a model the relay never
 	// advertised. See A5.
 	catalogClient *paperproto.CatalogClient
+	// receiptHandler stores relay-pushed evidence receipts (B3) and
+	// acks them over the live connection. Nil until
+	// SetReceiptHandler installs it.
+	receiptHandler *provenancewire.IncomingAckHandler
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
+	// userID is the acting user identifier reported at SESSION_OPEN.
+	// Defaults to a peer-derived value; the harness sets it via
+	// SetSessionContext.
+	userID string
 	// sessionID is the open session ID. The lease's SessionID MUST
 	// match this value.
 	sessionID string
@@ -227,6 +236,10 @@ func (p *Provider) connect(ctx context.Context) error {
 		RevocationEpoch: challenge.RevocationEpoch,
 		ChannelBinding:  []byte("tcp-exporter"),
 	})
+	if err == nil && os.Getenv("PAPER_DEBUG_AUTH") == "1" {
+		slog.Info("paper: AUTH_DEBUG", "transcript", fmt.Sprintf("%x", paperproto.DebugLastAuthTranscript()),
+			"challengeID", fmt.Sprintf("%x", challenge.ChallengeID), "epoch", challenge.RevocationEpoch)
+	}
 	if err != nil {
 		conn.Close()
 		return fmt.Errorf("paper: build AUTH_PROOF: %w", err)
@@ -255,26 +268,62 @@ func (p *Provider) connect(ctx context.Context) error {
 		return fmt.Errorf("paper: authentication rejected")
 	}
 
+	// AUTH_ACK carries the relay's governance trust payload (policy
+	// issuer key). Install the lease client from it when none is set.
+	if paperproto.MessageType(rec.MessageType) == paperproto.MsgAuthAck {
+		if err := p.installGovernanceClientsFromAuthAck(rec.Payload); err != nil {
+			conn.Close()
+			return err
+		}
+	}
+
+	// Resolve the authenticated subject peer ID from the enrolled
+	// credential. The lease the relay issues binds this value.
+	if p.subjectPeerID == "" && p.identity != nil {
+		peerID, err := p.identity.PeerID()
+		if err != nil {
+			conn.Close()
+			return fmt.Errorf("paper: %w", err)
+		}
+		p.subjectPeerID = peerID
+	}
+
+	// Session-governance handshake (A3/A4/A5): SESSION_OPEN → epoch →
+	// catalog → lease → grant. Fail-closed — no session, no dispatch.
+	if err := p.openSession(conn); err != nil {
+		conn.Close()
+		return err
+	}
+
+	// Default evidence-receipt handler (B3): store + ack over this
+	// connection. SendRecord is mutex-guarded so the reader goroutine
+	// can ack concurrently with outbound sends.
+	if p.receiptHandler == nil {
+		p.receiptHandler = provenancewire.NewIncomingAckHandler(
+			provenancewire.NewReceiptStore(), connAckSender{conn: conn})
+	}
+
 	p.conn = conn
 	p.authenticated = true
-	slog.Info("paper: authenticated with relay", "addr", p.relayAddr)
+	slog.Info("paper: authenticated with relay", "addr", p.relayAddr, "session", p.sessionID)
 
 	return nil
 }
 
 // Stream starts a PAPER streaming completion.
 func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
+	// Ensure connected + session-governed (the connect path runs the
+	// SESSION_OPEN → epoch → catalog → lease handshake, A3/A4/A5).
+	if err := p.connect(ctx); err != nil {
+		return nil, err
+	}
+
 	// Fail-closed authorization boundary: no lease, no AI_OPEN. The
 	// lease is the per-session capability grant from the relay's
 	// policy issuer; without it, the relay's governance path would
 	// reject the request anyway, but the connector surfaces the error
 	// locally so the operator gets a clear message.
 	if err := p.validateLease(p.model); err != nil {
-		return nil, err
-	}
-
-	// Ensure connected
-	if err := p.connect(ctx); err != nil {
 		return nil, err
 	}
 
@@ -409,6 +458,48 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 			case paperproto.MsgPing:
 				p.conn.SendControl(paperproto.MsgPong, nil, []byte("pong"))
 
+			case paperproto.MsgEvidenceReceipt:
+				// B3 e2e: the relay pushes a signed evidence receipt
+				// after each governed exchange. Store it as local
+				// tamper-evidence and ack via the receipt handler.
+				if env, err := provenancewire.DecodeEvidenceReceiptEnvelope(rec.Payload); err == nil && p.receiptHandler != nil {
+					_, _ = p.receiptHandler.HandleReceipt(env)
+				}
+
+			case paperproto.MsgLeaseRevoke:
+				// A3 e2e: the relay revoked the session's lease
+				// mid-flight. Drop the lease (fail-closed for any
+				// subsequent exchange) and surface the termination.
+				if p.leaseClient != nil {
+					p.leaseClient.Drop()
+				}
+				out <- provider.Chunk{
+					Type: provider.ChunkError,
+					Err:  errors.New("paper: capability lease revoked by relay"),
+				}
+				return
+
+			case paperproto.MsgPolicyEpochPush:
+				// A4 e2e: policy changed mid-session. Rebind; the next
+				// exchange's lease pin enforces the new epoch.
+				if epoch, err := paperproto.DecodePolicyEpochMessage(rec.Payload); err == nil {
+					if p.policyEpochClient == nil {
+						p.policyEpochClient = paperproto.NewPolicyEpochClient()
+					}
+					if err := p.policyEpochClient.Rebind(epoch); err == nil {
+						p.policyEpoch = epoch.EpochID
+					}
+				}
+
+			case paperproto.MsgCatalogDelta:
+				// A5 e2e: apply an incremental catalog update.
+				if delta, err := paperproto.DecodeCatalogDelta(rec.Payload); err == nil {
+					if p.catalogClient == nil {
+						p.catalogClient = paperproto.NewCatalogClient()
+					}
+					_ = p.catalogClient.ApplyDelta(delta, p.policyEpoch)
+				}
+
 			case paperproto.MsgClose:
 				var errMsg map[string]string
 				json.Unmarshal(rec.Payload, &errMsg)
@@ -493,6 +584,23 @@ func (p *Provider) SetSessionContext(subjectPeerID, sessionID, policyEpoch strin
 	p.subjectPeerID = subjectPeerID
 	p.sessionID = sessionID
 	p.policyEpoch = policyEpoch
+}
+
+// SetUserContext records the acting user identifier reported at
+// SESSION_OPEN. The relay binds the issued lease to it.
+func (p *Provider) SetUserContext(userID string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.userID = userID
+}
+
+// SetReceiptHandler installs the evidence-receipt store + ack handler
+// (B3). The transport reader routes relay-pushed EVIDENCE_RECEIPT
+// messages here.
+func (p *Provider) SetReceiptHandler(h *provenancewire.IncomingAckHandler) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.receiptHandler = h
 }
 
 // SetAutoRenewBefore overrides the connector's proactive renewal lead

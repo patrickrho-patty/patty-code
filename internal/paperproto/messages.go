@@ -2,6 +2,8 @@ package paperproto
 
 import (
 	"encoding/json"
+	"errors"
+	"sort"
 
 	"github.com/fxamacker/cbor/v2"
 )
@@ -107,4 +109,106 @@ func MarshalCBOR(v interface{}) ([]byte, error) {
 // UnmarshalCBOR wraps cbor.Unmarshal.
 func UnmarshalCBOR(data []byte, v interface{}) error {
 	return cbor.Unmarshal(data, v)
+}
+
+// canonicalKV / canonicalHello / canonicalAck are the deterministic
+// (map-order-free) forms both peers hash into the AUTH transcript.
+// They mirror the relay's paper.CanonicalHelloCBOR / CanonicalAckCBOR.
+type canonicalKV struct {
+	Key   string `cbor:"1,keyasint"`
+	Value uint8  `cbor:"2,keyasint"`
+}
+
+type canonicalHello struct {
+	CoreVersions          []uint8       `cbor:"1,keyasint"`
+	PeerProfile           PeerProfile   `cbor:"2,keyasint"`
+	TransportFeatures     []string      `cbor:"3,keyasint"`
+	Extensions            []canonicalKV `cbor:"4,keyasint"`
+	EncodingProfiles      []string      `cbor:"5,keyasint"`
+	CryptoProfiles        []string      `cbor:"6,keyasint"`
+	ClientNonce           []byte        `cbor:"7,keyasint"`
+	CredentialHint        []byte        `cbor:"8,keyasint,omitempty"`
+	ImplementationName    string        `cbor:"9,keyasint,omitempty"`
+	ImplementationVersion string        `cbor:"10,keyasint,omitempty"`
+}
+
+type canonicalLimitKV struct {
+	Key   string `cbor:"1,keyasint"`
+	Value uint64 `cbor:"2,keyasint"`
+}
+
+type canonicalAckMsg struct {
+	CoreVersion       uint8            `cbor:"1,keyasint"`
+	ExtensionVersions []canonicalKV    `cbor:"2,keyasint"`
+	CryptoProfile     string           `cbor:"3,keyasint"`
+	ServerNonce       []byte           `cbor:"4,keyasint"`
+	RelayCredential   []byte           `cbor:"5,keyasint"`
+	AuthChallenge     []byte           `cbor:"6,keyasint"`
+	MinHarnessVersion string           `cbor:"7,keyasint,omitempty"`
+	ResourceLimits    []canonicalLimitKV `cbor:"8,keyasint,omitempty"`
+}
+
+func sortedKVPairs(m map[string]uint8) []canonicalKV {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := make([]canonicalKV, 0, len(m))
+	for _, k := range keys {
+		out = append(out, canonicalKV{Key: k, Value: m[k]})
+	}
+	return out
+}
+
+func sortedLimitPairs(m map[string]uint64) []canonicalLimitKV {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := make([]canonicalLimitKV, 0, len(m))
+	for _, k := range keys {
+		out = append(out, canonicalLimitKV{Key: k, Value: m[k]})
+	}
+	return out
+}
+
+// CanonicalHelloCBOR renders a HELLO into deterministic CBOR (maps as
+// key-sorted arrays) for the AUTH transcript hash. Mirrors the relay's
+// paper.CanonicalHelloCBOR byte-for-byte.
+func CanonicalHelloCBOR(h *HelloMessage) ([]byte, error) {
+	if h == nil {
+		return nil, errors.New("paper: nil hello")
+	}
+	return MarshalCBOR(canonicalHello{
+		CoreVersions:          h.CoreVersions,
+		PeerProfile:           h.PeerProfile,
+		TransportFeatures:     h.TransportFeatures,
+		Extensions:            sortedKVPairs(h.Extensions),
+		EncodingProfiles:      h.EncodingProfiles,
+		CryptoProfiles:        h.CryptoProfiles,
+		ClientNonce:           h.ClientNonce,
+		CredentialHint:        h.CredentialHint,
+		ImplementationName:    h.ImplementationName,
+		ImplementationVersion: h.ImplementationVersion,
+	})
+}
+
+// CanonicalAckCBOR renders a HELLO_ACK into deterministic CBOR.
+// Mirrors the relay's paper.CanonicalAckCBOR byte-for-byte.
+func CanonicalAckCBOR(a *HelloAckMessage) ([]byte, error) {
+	if a == nil {
+		return nil, errors.New("paper: nil ack")
+	}
+	return MarshalCBOR(canonicalAckMsg{
+		CoreVersion:       a.CoreVersion,
+		ExtensionVersions: sortedKVPairs(a.ExtensionVersions),
+		CryptoProfile:     a.CryptoProfile,
+		ServerNonce:       a.ServerNonce,
+		RelayCredential:   a.RelayCredential,
+		AuthChallenge:     a.AuthChallenge,
+		MinHarnessVersion: a.MinHarnessVersion,
+		ResourceLimits:    sortedLimitPairs(a.ResourceLimits),
+	})
 }

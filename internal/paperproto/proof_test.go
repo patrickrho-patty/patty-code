@@ -43,7 +43,7 @@ func testIdentity(t *testing.T) (subjectPub ed25519.PublicKey, subjectPriv ed255
 		t.Fatalf("subject key: %v", err)
 	}
 
-	body := peerCredentialBody{
+	body := testPeerCredentialBody{
 		CredentialVersion:       1,
 		Issuer:                  testIssuerID,
 		SubjectPeerID:           testSubjectPeerID,
@@ -71,14 +71,14 @@ func testIdentity(t *testing.T) (subjectPub ed25519.PublicKey, subjectPriv ed255
 	return subjectPub, subjectPriv, issuerPub, issuerPriv, credential
 }
 
-// peerCredentialBody mirrors the relay's `peerCredentialSigningBody` (see
+// testPeerCredentialBody mirrors the relay's `peerCredentialSigningBody` (see
 // internal/paper/peer.go `peerCredentialSigningBody`). Keeping the field shape
 // in lockstep with the relay is a contract requirement: the connector MUST
 // produce COSE-Sign1 credential bodies whose canonical CBOR is byte-for-byte
 // the same input the relay's `paper.DecodePeerCredential` will re-parse. A
 // field re-order, a different int width, or an extra field makes the
 // issuer/verifier pubkey match but the payload digest diverge.
-type peerCredentialBody struct {
+type testPeerCredentialBody struct {
 	CredentialVersion       uint16     `cbor:"credential_version"`
 	Issuer                  string     `cbor:"issuer"`
 	SubjectPeerID           string     `cbor:"subject_peer_id"`

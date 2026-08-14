@@ -35,13 +35,17 @@ func (d Digest) String() string {
 // PAPER object per PAPER §32. The encoding MUST match the relay's
 // `internal/paper/crypto.go::ComputeObjectDigest` byte-for-byte:
 //
-//	digest = SHA256("PAPER-OBJ-v1\0" || uint16(T) || canonical_cbor(O))
+//	digest = SHA256("PAPER-OBJ-v1\0" || 0x00 || uint16BE(T) || canonical_cbor(O))
 //
-// The COSE-Sign1 credential bytes (NOT the parsed payload) MUST be the input;
-// the relay hashes the same byte string when it verifies the proof.
+// The relay writes an explicit zero byte between the domain prefix and
+// the object-type uint16 (a reserved flags byte); the connector mirrors
+// it exactly. The COSE-Sign1 credential bytes (NOT the parsed payload)
+// MUST be the input; the relay hashes the same byte string when it
+// verifies the proof.
 func ComputeObjectDigest(objType ObjectType, canonicalCBOR []byte) Digest {
 	h := sha256.New()
 	h.Write([]byte("PAPER-OBJ-v1\x00"))
+	h.Write([]byte{0})
 	var typeBytes [2]byte
 	binary.BigEndian.PutUint16(typeBytes[:], uint16(objType))
 	h.Write(typeBytes[:])
@@ -52,9 +56,11 @@ func ComputeObjectDigest(objType ObjectType, canonicalCBOR []byte) Digest {
 }
 
 // AuthContextDomain is the domain-separation prefix used by the relay's
-// transcript hash (PAPER §18.2). The connector and the relay MUST agree on
-// this constant down to the trailing NUL byte.
-const AuthContextDomain = "PAPER-AUTH-v1\x00"
+// transcript hash (PAPER §18.2). The connector and the relay MUST agree
+// on this constant EXACTLY — the relay's `paper.AuthContext` writes
+// "PAPER-AUTH-v1" with NO trailing NUL (verified against the live
+// verifier; the e2e suite exercises the real bytes).
+const AuthContextDomain = "PAPER-AUTH-v1"
 
 // AuthProofDomain is the domain-separation prefix used by the relay's
 // proof-of-possession signing (PAPER §18.2). Matches the relay's
@@ -151,11 +157,11 @@ func BuildAuthProof(in AuthProofInput) (*AuthProofMessage, error) {
 		return nil, errors.New("paper: empty channel binding")
 	}
 
-	helloCBOR, err := MarshalCBOR(in.Hello)
+	helloCBOR, err := CanonicalHelloCBOR(in.Hello)
 	if err != nil {
 		return nil, fmt.Errorf("paper: marshal HELLO: %w", err)
 	}
-	ackCBOR, err := MarshalCBOR(in.HelloAck)
+	ackCBOR, err := CanonicalAckCBOR(in.HelloAck)
 	if err != nil {
 		return nil, fmt.Errorf("paper: marshal HELLO_ACK: %w", err)
 	}
@@ -167,14 +173,24 @@ func BuildAuthProof(in AuthProofInput) (*AuthProofMessage, error) {
 		credDigest[:],
 	)
 
-	return &AuthProofMessage{
+	proof := &AuthProofMessage{
 		Credential:         append([]byte(nil), in.Credential...),
 		Signature:          SignAuthProof(in.PrivateKey, transcript[:], in.ChallengeID, in.RevocationEpoch),
 		KeyAlgorithm:       COSEAlgEdDSA,
 		ChallengeID:        append([]byte(nil), in.ChallengeID...),
 		RevocationEvidence: EncodeRevocationEpoch(in.RevocationEpoch),
-	}, nil
+	}
+	debugAuthTranscript = append([]byte(nil), transcript[:]...)
+	return proof, nil
 }
+
+// debugAuthTranscript holds the last proof's transcript bytes for
+// cross-repo debugging (PAPER_DEBUG_AUTH). Never serialized.
+var debugAuthTranscript []byte
+
+// DebugLastAuthTranscript returns the transcript bytes of the most
+// recent BuildAuthProof call (development aid).
+func DebugLastAuthTranscript() []byte { return append([]byte(nil), debugAuthTranscript...) }
 
 // Identity is the loaded enrolled-credential pair the connector uses to
 // authenticate against a PAPER relay. The credential bytes are the raw
@@ -183,6 +199,53 @@ func BuildAuthProof(in AuthProofInput) (*AuthProofMessage, error) {
 type Identity struct {
 	PrivateKey ed25519.PrivateKey
 	Credential []byte
+}
+
+// peerCredentialBody mirrors the relay's `paper.PeerCredential` body.
+// The issuer encodes with snake_case NAMED cbor keys (verified against
+// the live issuer's bytes; see the lease conformance suite). Only the
+// fields the connector needs are decoded; the signature stays opaque.
+type peerCredentialBody struct {
+	CredentialVersion uint16 `cbor:"credential_version"`
+	Issuer            string `cbor:"issuer"`
+	SubjectPeerID     string `cbor:"subject_peer_id"`
+	Organization      string `cbor:"organization"`
+}
+
+// PeerID decodes the enrolled credential's SubjectPeerID. The lease the
+// relay issues binds this value; LeaseClient.Acquire verifies it.
+func (i *Identity) PeerID() (string, error) {
+	if i == nil || len(i.Credential) == 0 {
+		return "", errors.New("paper: no enrolled credential")
+	}
+	sign1, err := DecodeCOSESign1(i.Credential)
+	if err != nil {
+		return "", fmt.Errorf("paper: decode credential: %w", err)
+	}
+	var body peerCredentialBody
+	if err := UnmarshalCBOR(sign1.Payload, &body); err != nil {
+		return "", fmt.Errorf("paper: decode credential body: %w", err)
+	}
+	if body.SubjectPeerID == "" {
+		return "", errors.New("paper: credential carries no subject peer id")
+	}
+	return body.SubjectPeerID, nil
+}
+
+// Organization decodes the enrolled credential's organization binding.
+func (i *Identity) Organization() (string, error) {
+	if i == nil || len(i.Credential) == 0 {
+		return "", errors.New("paper: no enrolled credential")
+	}
+	sign1, err := DecodeCOSESign1(i.Credential)
+	if err != nil {
+		return "", fmt.Errorf("paper: decode credential: %w", err)
+	}
+	var body peerCredentialBody
+	if err := UnmarshalCBOR(sign1.Payload, &body); err != nil {
+		return "", fmt.Errorf("paper: decode credential body: %w", err)
+	}
+	return body.Organization, nil
 }
 
 // LoadIdentityFromDisk reads the connector's enrolled identity from a pair of
@@ -228,3 +291,4 @@ func writeLengthPrefixed(h interface{ Write([]byte) (int, error) }, value []byte
 	h.Write(length[:])
 	h.Write(value)
 }
+

@@ -26,6 +26,10 @@ const (
 	MsgSessionOpen  MessageType = 0x0200
 	MsgSessionGrant MessageType = 0x0201
 	MsgSessionClose MessageType = 0x0202
+	// Lease lifecycle (0x0210–0x0212) — mirrors the relay registry.
+	MsgLeaseIssue  MessageType = 0x0210
+	MsgLeaseRevoke MessageType = 0x0211
+	MsgLeaseRenew  MessageType = 0x0212
 
 	// Auth (0x0100–0x01FF)
 	MsgAuthChallenge MessageType = 0x0100
@@ -41,29 +45,37 @@ const (
 	MsgAITokenChunk     MessageType = 0x0402
 	MsgAIComplete       MessageType = 0x0403
 
-	// Model catalog (0x0500–0x05FF) — paper.models/1 extension
-	MsgCatalogRequest    MessageType = 0x0500
-	MsgCatalogSnapshot   MessageType = 0x0501
-	MsgCatalogDelta      MessageType = 0x0502
-	MsgModelAnnounce     MessageType = 0x0503
-	MsgModelWithdraw     MessageType = 0x0504
-	MsgModelDefault      MessageType = 0x0505
-	MsgModelAvailability MessageType = 0x0506
-	MsgModelCapChanged   MessageType = 0x0507
-	MsgModelUpgradeReq   MessageType = 0x0508
-	MsgCatalogAck        MessageType = 0x0509
+	// Model catalog (0x0D00–0x0DFF) — paper.models/1 extension,
+	// mirrors the relay's internal/paper/models.go registry.
+	MsgCatalogRequest    MessageType = 0x0D00
+	MsgCatalogSnapshot   MessageType = 0x0D01
+	MsgCatalogDelta      MessageType = 0x0D02
+	MsgModelAnnounce     MessageType = 0x0D03
+	MsgModelWithdraw     MessageType = 0x0D04
+	MsgModelDefault      MessageType = 0x0D05
+	MsgModelAvailability MessageType = 0x0D06
+	MsgModelCapChanged   MessageType = 0x0D07
+	MsgModelUpgradeReq   MessageType = 0x0D08
+	MsgCatalogAck        MessageType = 0x0D09
+	// Policy-epoch push (0x0D10) — relay pushes the active epoch at
+	// session setup and on policy change.
+	MsgPolicyEpochPush MessageType = 0x0D10
 
-	// Provenance (0x0700–0x07FF) — paper.provenance/1 extension
-	MsgProvenanceChangeSet   MessageType = 0x0700
-	MsgProvenanceSpan        MessageType = 0x0701
-	MsgProvenanceCommitBind  MessageType = 0x0702
-	MsgEvidenceReceipt       MessageType = 0x0703
-	MsgEvidenceReceiptAck    MessageType = 0x0704
-	MsgActionEnvelope        MessageType = 0x0705
+	// Governance / evidence (0x0300–0x03FF) — mirrors the relay registry.
+	MsgEvidenceReceipt    MessageType = 0x0307
+	MsgEvidenceReceiptAck MessageType = 0x0308
 
-	// Admin (0x0B00–0x0BFF) — admin fleet actions
-	MsgAdminCommand         MessageType = 0x0B00
-	MsgAdminCommandResult   MessageType = 0x0B01
+	// Provenance (0x0700–0x07FF) — mirrors the relay registry:
+	// 0x0700 span, 0x0701 changeset, 0x0702 commit-bind, 0x0703 action.
+	MsgProvenanceSpan       MessageType = 0x0700
+	MsgProvenanceChangeSet  MessageType = 0x0701
+	MsgProvenanceCommitBind MessageType = 0x0702
+	MsgActionEnvelope       MessageType = 0x0703
+
+	// Admin / broadcast (0x0B00–0x0BFF) — mirrors the relay registry:
+	// 0x0B00 broadcast, 0x0B01 admin directive, 0x0B02 result.
+	MsgAdminCommand       MessageType = 0x0B01
+	MsgAdminCommandResult MessageType = 0x0B02
 )
 
 func (m MessageType) String() string {
@@ -131,9 +143,17 @@ func (m MessageType) String() string {
 	case MsgActionEnvelope:
 		return "ACTION_ENVELOPE"
 	case MsgAdminCommand:
-		return "ADMIN_COMMAND"
+		return "ADMIN_DIRECTIVE"
 	case MsgAdminCommandResult:
 		return "ADMIN_COMMAND_RESULT"
+	case MsgLeaseIssue:
+		return "LEASE_ISSUE"
+	case MsgLeaseRevoke:
+		return "LEASE_REVOKE"
+	case MsgLeaseRenew:
+		return "LEASE_RENEW"
+	case MsgPolicyEpochPush:
+		return "POLICY_EPOCH"
 	default:
 		return "UNKNOWN"
 	}
