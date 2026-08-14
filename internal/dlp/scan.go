@@ -1,5 +1,5 @@
 // Package dlp is the connector-side data-loss prevention scanner.
-// It runs on the harness before PAPER dispatch (PRD §16.3, §16.5)
+// It runs on the harness before DARI dispatch (PRD §16.3, §16.5)
 // so secrets and PII never leave the host. The detection logic
 // mirrors the relay's `internal/security/service.go::CheckContext`
 // so the harness and the control plane agree on what constitutes
@@ -203,7 +203,7 @@ func DefaultInjectionRules() []DetectionRule {
 
 // Scanner is the harness-side DLP engine. It owns the active
 // rule pack and runs every outbound message through it before
-// PAPER dispatch.
+// DARI dispatch.
 type Scanner struct {
 	mu    sync.RWMutex
 	rules []DetectionRule

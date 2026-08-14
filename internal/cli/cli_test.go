@@ -1049,24 +1049,24 @@ func TestConfigCurrencyRejectsProjectScope(t *testing.T) {
 func TestProvidersWithMissingKeysOnlyChecksActiveDefaultModel(t *testing.T) {
 	isolateCLIConfigHome(t)
 	cfg := config.Default()
-	t.Setenv("PAPER_HARNESS_KEY", "")
+	t.Setenv("DARI_HARNESS_KEY", "")
 	t.Setenv("MIMO_API_KEY", "")
 
 	missing := providersWithMissingKeys(cfg)
 	if len(missing) != 1 {
 		t.Fatalf("missing providers = %+v, want only active default model provider", missing)
 	}
-	if missing[0].APIKeyEnv != "PAPER_HARNESS_KEY" {
-		t.Fatalf("missing key env = %q, want PAPER_HARNESS_KEY", missing[0].APIKeyEnv)
+	if missing[0].APIKeyEnv != "DARI_HARNESS_KEY" {
+		t.Fatalf("missing key env = %q, want DARI_HARNESS_KEY", missing[0].APIKeyEnv)
 	}
 }
 
 func TestProvidersWithMissingKeysIgnoresInheritedEnvironment(t *testing.T) {
 	isolateCLIConfigHome(t)
-	t.Setenv("PAPER_HARNESS_KEY", "inherited-only")
+	t.Setenv("DARI_HARNESS_KEY", "inherited-only")
 
 	missing := providersWithMissingKeys(config.Default())
-	if len(missing) != 1 || missing[0].APIKeyEnv != "PAPER_HARNESS_KEY" {
+	if len(missing) != 1 || missing[0].APIKeyEnv != "DARI_HARNESS_KEY" {
 		t.Fatalf("inherited process key suppressed missing-store prompt: %+v", missing)
 	}
 }
@@ -1074,7 +1074,7 @@ func TestProvidersWithMissingKeysIgnoresInheritedEnvironment(t *testing.T) {
 func TestProvidersWithMissingKeysIgnoresUnusedBuiltInPresets(t *testing.T) {
 	isolateCLIConfigHome(t)
 	cfg := config.Default()
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 	t.Setenv("MIMO_API_KEY", "")
@@ -1096,7 +1096,7 @@ func TestProvidersWithMissingKeysIncludesReferencedSecondaryModels(t *testing.T)
 	cfg.Agent.SubagentModels = map[string]string{
 		"review": "mimo-pro/mimo-v2.5-pro",
 	}
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 	t.Setenv("MIMO_API_KEY", "")
@@ -1506,7 +1506,7 @@ func TestSetupOverwritePromptShowsYNDefault(t *testing.T) {
 // TestConfigureKeys verifies that a shared api_key_env (each vendors SKUs use
 func TestConfigureKeys(t *testing.T) {
 	// by the new "reuse existing" path and the prompt would be skipped,
-	t.Setenv("PAPER_HARNESS_KEY", "")
+	t.Setenv("DARI_HARNESS_KEY", "")
 
 	selected := config.Default().Providers
 
@@ -1516,7 +1516,7 @@ func TestConfigureKeys(t *testing.T) {
 	if len(env) != 1 {
 		t.Fatalf("env = %v (want 1: Patty asked once)", env)
 	}
-	if env[0] != "PAPER_HARNESS_KEY=patty-key" {
+	if env[0] != "DARI_HARNESS_KEY=patty-key" {
 		t.Errorf("env[0] = %q", env[0])
 	}
 }
@@ -1526,7 +1526,7 @@ func TestConfigureKeys(t *testing.T) {
 // must NOT consume from the input stream — otherwise the user's next typed
 // line bleeds into the next providers prompt. It also must include the
 func TestConfigureKeysReusesExistingEnv(t *testing.T) {
-	t.Setenv("PAPER_HARNESS_KEY", "preset-patty-key")
+	t.Setenv("DARI_HARNESS_KEY", "preset-patty-key")
 
 	selected := config.Default().Providers
 	var output bytes.Buffer
@@ -1535,16 +1535,16 @@ func TestConfigureKeysReusesExistingEnv(t *testing.T) {
 	if len(env) != 1 {
 		t.Fatalf("env = %v (want 1: Patty reused)", env)
 	}
-	if env[0] != "PAPER_HARNESS_KEY=preset-patty-key" {
+	if env[0] != "DARI_HARNESS_KEY=preset-patty-key" {
 		t.Errorf("env[0] = %q, want re-pinned existing value", env[0])
 	}
-	if !strings.Contains(output.String(), "PAPER_HARNESS_KEY") {
-		t.Errorf("expected a 'reusing' confirmation for PAPER_HARNESS_KEY, got:\n%s", output.String())
+	if !strings.Contains(output.String(), "DARI_HARNESS_KEY") {
+		t.Errorf("expected a 'reusing' confirmation for DARI_HARNESS_KEY, got:\n%s", output.String())
 	}
 }
 
 func TestConfigureKeysCanResetExistingEnv(t *testing.T) {
-	t.Setenv("PAPER_HARNESS_KEY", "stale-patty-key")
+	t.Setenv("DARI_HARNESS_KEY", "stale-patty-key")
 
 	selected := config.Default().Providers
 	var output bytes.Buffer
@@ -1553,16 +1553,16 @@ func TestConfigureKeysCanResetExistingEnv(t *testing.T) {
 	if len(env) != 1 {
 		t.Fatalf("env = %v (want 1: Patty reset)", env)
 	}
-	if env[0] != "PAPER_HARNESS_KEY=fresh-patty-key" {
+	if env[0] != "DARI_HARNESS_KEY=fresh-patty-key" {
 		t.Errorf("env[0] = %q, want freshly entered value", env[0])
 	}
-	if !strings.Contains(output.String(), "[y/N]:") || !strings.Contains(output.String(), "PAPER_HARNESS_KEY") {
-		t.Errorf("expected a reset confirmation for PAPER_HARNESS_KEY, got:\n%s", output.String())
+	if !strings.Contains(output.String(), "[y/N]:") || !strings.Contains(output.String(), "DARI_HARNESS_KEY") {
+		t.Errorf("expected a reset confirmation for DARI_HARNESS_KEY, got:\n%s", output.String())
 	}
 }
 
 func TestConfigureKeysAllSetDefaultsToReusingInput(t *testing.T) {
-	t.Setenv("PAPER_HARNESS_KEY", "patty")
+	t.Setenv("DARI_HARNESS_KEY", "patty")
 
 	selected := config.Default().Providers
 	env := configureKeys(selected, strings.NewReader("\n"), io.Discard)
@@ -2204,7 +2204,7 @@ func captureCLIOutput(t *testing.T, fn func()) (stdout, stderr string) {
 
 func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
 	isolateCLIConfigHome(t)
-	t.Setenv("PAPER_HARNESS_KEY", "")
+	t.Setenv("DARI_HARNESS_KEY", "")
 	t.Setenv("MIMO_API_KEY", "")
 	cfg := config.Default()
 
@@ -2213,7 +2213,7 @@ func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
 	for _, p := range got {
 		envs[p.APIKeyEnv] = true
 	}
-	if !envs["PAPER_HARNESS_KEY"] {
+	if !envs["DARI_HARNESS_KEY"] {
 		t.Errorf("the default model's missing key must be prompted, got %v", got)
 	}
 	if envs["MIMO_API_KEY"] {
@@ -2223,7 +2223,7 @@ func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
 
 func TestProvidersWithMissingKeysIncludesPlannerModel(t *testing.T) {
 	isolateCLIConfigHome(t)
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 	t.Setenv("MIMO_API_KEY", "")

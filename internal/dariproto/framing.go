@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"encoding/binary"
@@ -13,7 +13,7 @@ const PrefaceSize = 32
 // MaxPayloadLen is the maximum single payload length.
 const MaxPayloadLen = 1024 * 1024
 
-// Record is a PAPER record after parsing the 32-byte prelude.
+// Record is a DARI record after parsing the 32-byte prelude.
 type Record struct {
 	VersionMajor byte
 	Kind         RecordKind
@@ -25,13 +25,13 @@ type Record struct {
 	LaneSequence uint64
 }
 
-// EncodeRecord writes a PAPER record (32-byte prelude + header + payload) to w.
+// EncodeRecord writes a DARI record (32-byte prelude + header + payload) to w.
 func EncodeRecord(w io.Writer, r *Record) error {
 	if r.VersionMajor == 0 {
 		r.VersionMajor = VersionMajor
 	}
 	if len(r.Payload) > MaxPayloadLen {
-		return fmt.Errorf("paper: payload exceeds max length %d", MaxPayloadLen)
+		return fmt.Errorf("dari: payload exceeds max length %d", MaxPayloadLen)
 	}
 
 	var prelude [PrefaceSize]byte
@@ -45,26 +45,26 @@ func EncodeRecord(w io.Writer, r *Record) error {
 	binary.BigEndian.PutUint64(prelude[20:28], r.LaneSequence)
 
 	if _, err := w.Write(prelude[:]); err != nil {
-		return fmt.Errorf("paper: write prelude: %w", err)
+		return fmt.Errorf("dari: write prelude: %w", err)
 	}
 	if len(r.Header) > 0 {
 		if _, err := w.Write(r.Header); err != nil {
-			return fmt.Errorf("paper: write header: %w", err)
+			return fmt.Errorf("dari: write header: %w", err)
 		}
 	}
 	if len(r.Payload) > 0 {
 		if _, err := w.Write(r.Payload); err != nil {
-			return fmt.Errorf("paper: write payload: %w", err)
+			return fmt.Errorf("dari: write payload: %w", err)
 		}
 	}
 	return nil
 }
 
-// DecodeRecord reads a single PAPER record from r.
+// DecodeRecord reads a single DARI record from r.
 func DecodeRecord(r io.Reader) (*Record, error) {
 	var prelude [PrefaceSize]byte
 	if _, err := io.ReadFull(r, prelude[:]); err != nil {
-		return nil, fmt.Errorf("paper: read prelude: %w", err)
+		return nil, fmt.Errorf("dari: read prelude: %w", err)
 	}
 
 	rec := &Record{
@@ -79,22 +79,22 @@ func DecodeRecord(r io.Reader) (*Record, error) {
 	rec.LaneSequence = binary.BigEndian.Uint64(prelude[20:28])
 
 	if rec.VersionMajor != VersionMajor {
-		return nil, fmt.Errorf("paper: unsupported version %d", rec.VersionMajor)
+		return nil, fmt.Errorf("dari: unsupported version %d", rec.VersionMajor)
 	}
 	if payloadLen > MaxPayloadLen {
-		return nil, fmt.Errorf("paper: payload length %d exceeds max", payloadLen)
+		return nil, fmt.Errorf("dari: payload length %d exceeds max", payloadLen)
 	}
 
 	if headerLen > 0 {
 		rec.Header = make([]byte, headerLen)
 		if _, err := io.ReadFull(r, rec.Header); err != nil {
-			return nil, fmt.Errorf("paper: read header: %w", err)
+			return nil, fmt.Errorf("dari: read header: %w", err)
 		}
 	}
 	if payloadLen > 0 {
 		rec.Payload = make([]byte, payloadLen)
 		if _, err := io.ReadFull(r, rec.Payload); err != nil {
-			return nil, fmt.Errorf("paper: read payload: %w", err)
+			return nil, fmt.Errorf("dari: read payload: %w", err)
 		}
 	}
 	return rec, nil

@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"errors"

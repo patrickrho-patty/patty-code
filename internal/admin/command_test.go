@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 )
 
 // fakeExecutor records every command it executes.
@@ -28,8 +28,8 @@ func (e *fakeExecutor) Execute(cmd *Command) error {
 // fakeTransport is the dispatcher-side seam for the harness's
 // PAPER transport layer. The harness builds a fakeTransport to
 // test the admin command dispatch path without a live relay.
-func fakeTransport() *paperproto.TransportConn {
-	return &paperproto.TransportConn{}
+func fakeTransport() *dariproto.TransportConn {
+	return &dariproto.TransportConn{}
 }
 
 func sampleCommand() *Command {

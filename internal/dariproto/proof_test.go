@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"bytes"
@@ -102,17 +102,17 @@ func TestBuildAuthContextMatchesRelayVector(t *testing.T) {
 		CoreVersions:          []uint8{1},
 		PeerProfile:           ProfileHarness,
 		TransportFeatures:     []string{"tcp-tls"},
-		Extensions:            map[string]uint8{"paper.ai/1": 1, "paper.models/1": 1},
+		Extensions:            map[string]uint8{"dari.ai/1": 1, "dari.models/1": 1},
 		EncodingProfiles:      []string{"cbor"},
-		CryptoProfiles:        []string{"PAPER-BASE-1"},
+		CryptoProfiles:        []string{"DARI-BASE-1"},
 		ClientNonce:           bytes.Repeat([]byte{0x11}, 32),
 		ImplementationName:    "patty-code",
 		ImplementationVersion: "v2-paper",
 	}
 	ack := &HelloAckMessage{
 		CoreVersion:       1,
-		ExtensionVersions: map[string]uint8{"paper.ai/1": 1},
-		CryptoProfile:     "PAPER-BASE-1",
+		ExtensionVersions: map[string]uint8{"dari.ai/1": 1},
+		CryptoProfile:     "DARI-BASE-1",
 		ServerNonce:       bytes.Repeat([]byte{0x22}, 32),
 		ResourceLimits:    map[string]uint64{"max_payload_len": 1 << 20},
 	}
@@ -134,13 +134,13 @@ func TestBuildAuthContextMatchesRelayVector(t *testing.T) {
 		credDigest[:],
 	)
 
-	// Independent recomputation: SHA-256("PAPER-AUTH-v1" || canonical(HELLO) ||
+	// Independent recomputation: SHA-256("DARI-AUTH-v1" || canonical(HELLO) ||
 	// canonical(HELLO_ACK) || clientNonce || serverNonce || channelBinding ||
 	// credentialDigest). The domain has NO trailing NUL and the HELLO/ACK
 	// bytes are the map-order-free canonical encodings — pinned against
 	// the live relay by the PAPER_LIVE_E2E suite.
 	h := sha256.New()
-	h.Write([]byte("PAPER-AUTH-v1"))
+	h.Write([]byte("DARI-AUTH-v1"))
 	h.Write(helloCBOR)
 	h.Write(ackCBOR)
 	h.Write(hello.ClientNonce)
@@ -161,7 +161,7 @@ func TestBuildAuthContextMatchesRelayVector(t *testing.T) {
 func TestHelloAckResourceLimitsRoundTrip(t *testing.T) {
 	connector := &HelloAckMessage{
 		CoreVersion:       1,
-		CryptoProfile:     "PAPER-BASE-1",
+		CryptoProfile:     "DARI-BASE-1",
 		ServerNonce:       bytes.Repeat([]byte{0x33}, 32),
 		ResourceLimits:    map[string]uint64{"max_payload_len": 1024},
 	}
@@ -171,7 +171,7 @@ func TestHelloAckResourceLimitsRoundTrip(t *testing.T) {
 	}
 	relay := &HelloAckMessage{
 		CoreVersion:       1,
-		CryptoProfile:     "PAPER-BASE-1",
+		CryptoProfile:     "DARI-BASE-1",
 		ServerNonce:       bytes.Repeat([]byte{0x33}, 32),
 		ResourceLimits:    map[string]uint64{"max_payload_len": 1024},
 	}
@@ -304,15 +304,15 @@ func TestBuildAuthProofEmitsRelayShape(t *testing.T) {
 		CoreVersions:       []uint8{1},
 		PeerProfile:        ProfileHarness,
 		TransportFeatures:  []string{"tcp-tls"},
-		Extensions:         map[string]uint8{"paper.ai/1": 1},
+		Extensions:         map[string]uint8{"dari.ai/1": 1},
 		EncodingProfiles:   []string{"cbor"},
-		CryptoProfiles:     []string{"PAPER-BASE-1"},
+		CryptoProfiles:     []string{"DARI-BASE-1"},
 		ClientNonce:        bytes.Repeat([]byte{0xAA}, 32),
 		ImplementationName: "patty-code",
 	}
 	ack := &HelloAckMessage{
 		CoreVersion:    1,
-		CryptoProfile:  "PAPER-BASE-1",
+		CryptoProfile:  "DARI-BASE-1",
 		ServerNonce:    bytes.Repeat([]byte{0xBB}, 32),
 		ResourceLimits: map[string]uint64{"max_payload_len": 1 << 20},
 	}

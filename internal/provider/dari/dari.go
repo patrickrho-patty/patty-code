@@ -1,10 +1,10 @@
-// Package paper implements the PAPER protocol provider for Patty Code.
-// It connects to a PCCP PAPER Relay and sends inference requests as
-// PAPER AI_OPEN records (§9.2, §38.1), receiving AI_TOKEN_CHUNK streaming.
+// Package paper implements the DARI protocol provider for Patty Code.
+// It connects to a PCCP DARI Relay and sends inference requests as
+// DARI AI_OPEN records (§9.2, §38.1), receiving AI_TOKEN_CHUNK streaming.
 //
 // This replaces the OpenAI/Anthropic-compatible HTTP path for Patty service.
 // The harness sends only Catalog Model ID + epoch, never a base URL or API key.
-package paper
+package dari
 
 import (
 	"context"
@@ -19,42 +19,42 @@ import (
 	"sync"
 	"time"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 	"patty/internal/provider"
 	"patty/internal/provenancewire"
 )
 
 func init() {
-	provider.Register("paper", New)
+	provider.Register("dari", New)
 }
 
-// Provider implements provider.Provider via the PAPER protocol.
+// Provider implements provider.Provider via the DARI protocol.
 type Provider struct {
 	name          string
 	model         string
 	relayAddr     string
 	harnessID     string
-	identity      *paperproto.Identity
+	identity      *dariproto.Identity
 	credPath      string
 	keyPath       string
 	tlsConfig     *tls.Config
 	mu            sync.Mutex
-	conn          *paperproto.TransportConn
+	conn          *dariproto.TransportConn
 	authenticated bool
 
 	// leaseClient owns the currently-held capability lease. The provider
 	// calls `validateLease` before dispatching an AI_OPEN so a missing,
 	// expired, or subject-mismatched lease fails closed before any
 	// governance-gated exchange reaches the relay. See A3.
-	leaseClient *paperproto.LeaseClient
+	leaseClient *dariproto.LeaseClient
 	// policyEpochClient owns the session's bound policy epoch. The
 	// provider pins the lease's PolicyEpochID to the bound epoch so
 	// a stale credential cannot survive a policy change. See A4.
-	policyEpochClient *paperproto.PolicyEpochClient
+	policyEpochClient *dariproto.PolicyEpochClient
 	// catalogClient owns the server-authoritative model catalog. The
 	// provider refuses to dispatch against a model the relay never
 	// advertised. See A5.
-	catalogClient *paperproto.CatalogClient
+	catalogClient *dariproto.CatalogClient
 	// receiptHandler stores relay-pushed evidence receipts (B3) and
 	// acks them over the live connection. Nil until
 	// SetReceiptHandler installs it.
@@ -82,33 +82,33 @@ type Provider struct {
 	autoRenewBefore time.Duration
 }
 
-// New builds a PAPER provider from a resolved config.
+// New builds a DARI provider from a resolved config.
 func New(cfg provider.Config) (provider.Provider, error) {
 	// relayAddr comes from BaseURL in config (e.g. "relay.example.com:8444")
 	relayAddr := cfg.BaseURL
 	if relayAddr == "" {
-		return nil, fmt.Errorf("paper: relay address (base_url) is required for provider %q", cfg.Name)
+		return nil, fmt.Errorf("dari: relay address (base_url) is required for provider %q", cfg.Name)
 	}
 	if cfg.Model == "" {
-		return nil, fmt.Errorf("paper: model (Catalog Model ID) is required for provider %q", cfg.Name)
+		return nil, fmt.Errorf("dari: model (Catalog Model ID) is required for provider %q", cfg.Name)
 	}
 
-	credPath := envOr("PAPER_HARNESS_CREDENTIAL_FILE", "")
-	keyPath := envOr("PAPER_HARNESS_KEY_FILE", "")
-	harnessID := os.Getenv("PCCP_HARNESS_ID")
+	credPath := envOr("DARI_HARNESS_CREDENTIAL_FILE", "")
+	keyPath := envOr("DARI_HARNESS_KEY_FILE", "")
+	harnessID := envOr("DARI_HARNESS_ID", "")
 
 	// Eager-load the identity so configuration errors surface during
 	// `patcode setup` instead of on the first inference request. The auth
 	// path never falls back to placeholder credentials.
-	var identity *paperproto.Identity
+	var identity *dariproto.Identity
 	if credPath != "" && keyPath != "" {
-		loaded, err := paperproto.LoadIdentityFromDisk(credPath, keyPath)
+		loaded, err := dariproto.LoadIdentityFromDisk(credPath, keyPath)
 		if err != nil {
-			return nil, fmt.Errorf("paper: load harness identity: %w", err)
+			return nil, fmt.Errorf("dari: load harness identity: %w", err)
 		}
 		identity = loaded
 	} else if credPath != "" || keyPath != "" {
-		return nil, errors.New("paper: PAPER_HARNESS_CREDENTIAL_FILE and PAPER_HARNESS_KEY_FILE must both be set")
+		return nil, errors.New("dari: DARI_HARNESS_CREDENTIAL_FILE and DARI_HARNESS_KEY_FILE must both be set")
 	}
 
 	return &Provider{
@@ -124,7 +124,7 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		tlsConfig: &tls.Config{
 			InsecureSkipVerify: true, // dev: PCCP uses self-signed certs
 			MinVersion:         tls.VersionTLS13,
-			NextProtos:         []string{paperproto.ALPNProtocol},
+			NextProtos:         dariproto.ALPNProtocols(),
 		},
 	}, nil
 }
@@ -133,20 +133,24 @@ func envOr(name, fallback string) string {
 	if v := strings.TrimSpace(os.Getenv(name)); v != "" {
 		return v
 	}
+	// Legacy PAPER_* names still resolve during the migration window.
+	if legacy := strings.TrimSpace(os.Getenv("PAPER_" + name[len("DARI_"):])) ; legacy != "" {
+		return legacy
+	}
 	return fallback
 }
 
 // Name returns the provider instance name.
 func (p *Provider) Name() string { return p.name }
 
-// connect establishes a PAPER connection to the Relay and performs handshake/auth.
+// connect establishes a DARI connection to the Relay and performs handshake/auth.
 func (p *Provider) connect(ctx context.Context) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	if p.conn != nil {
 		// Test connection with ping
-		if err := p.conn.SendControl(paperproto.MsgPing, nil, []byte("ping")); err != nil {
+		if err := p.conn.SendControl(dariproto.MsgPing, nil, []byte("ping")); err != nil {
 			p.conn.Close()
 			p.conn = nil
 		} else {
@@ -154,57 +158,57 @@ func (p *Provider) connect(ctx context.Context) error {
 		}
 	}
 
-	slog.Info("paper: connecting to relay", "addr", p.relayAddr, "model", p.model)
+	slog.Info("dari: connecting to relay", "addr", p.relayAddr, "model", p.model)
 
-	// Dial PAPER Relay
-	conn, err := paperproto.DialTCP(p.relayAddr, p.tlsConfig, paperproto.DefaultTransportConfig())
+	// Dial DARI Relay
+	conn, err := dariproto.DialTCP(p.relayAddr, p.tlsConfig, dariproto.DefaultTransportConfig())
 	if err != nil {
-		return fmt.Errorf("paper: dial relay %s: %w", p.relayAddr, err)
+		return fmt.Errorf("dari: dial relay %s: %w", p.relayAddr, err)
 	}
 
 	// PAPER HELLO handshake
-	hello := &paperproto.HelloMessage{
+	hello := &dariproto.HelloMessage{
 		CoreVersions:          []uint8{1},
-		PeerProfile:           paperproto.ProfileHarness,
+		PeerProfile:           dariproto.ProfileHarness,
 		TransportFeatures:     []string{"tcp-tls"},
-		Extensions:            map[string]uint8{"paper.ai/1": 1, "paper.models/1": 1},
+		Extensions:            map[string]uint8{"dari.ai/1": 1, "dari.models/1": 1},
 		EncodingProfiles:      []string{"cbor", "json"},
-		CryptoProfiles:        []string{"PAPER-BASE-1"},
+		CryptoProfiles:        []string{"DARI-BASE-1"},
 		ClientNonce:           make([]byte, 32),
 		ImplementationName:    "patty-code",
 		ImplementationVersion: "v2-paper",
 	}
 
-	helloBytes, err := paperproto.MarshalCBOR(hello)
+	helloBytes, err := dariproto.MarshalCBOR(hello)
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: marshal HELLO: %w", err)
+		return fmt.Errorf("dari: marshal HELLO: %w", err)
 	}
 
-	if err := conn.SendControl(paperproto.MsgHello, nil, helloBytes); err != nil {
+	if err := conn.SendControl(dariproto.MsgHello, nil, helloBytes); err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: send HELLO: %w", err)
+		return fmt.Errorf("dari: send HELLO: %w", err)
 	}
 
 	// Receive HELLO_ACK
 	rec, err := conn.RecvRecord()
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: recv HELLO_ACK: %w", err)
+		return fmt.Errorf("dari: recv HELLO_ACK: %w", err)
 	}
 
-	if rec.Kind != paperproto.KindControl || paperproto.MessageType(rec.MessageType) != paperproto.MsgHelloAck {
+	if rec.Kind != dariproto.KindControl || dariproto.MessageType(rec.MessageType) != dariproto.MsgHelloAck {
 		conn.Close()
-		return fmt.Errorf("paper: expected HELLO_ACK, got kind=%d msg=%d", rec.Kind, rec.MessageType)
+		return fmt.Errorf("dari: expected HELLO_ACK, got kind=%d msg=%d", rec.Kind, rec.MessageType)
 	}
 
-	var ack paperproto.HelloAckMessage
-	if err := paperproto.UnmarshalCBOR(rec.Payload, &ack); err != nil {
+	var ack dariproto.HelloAckMessage
+	if err := dariproto.UnmarshalCBOR(rec.Payload, &ack); err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: decode HELLO_ACK: %w", err)
+		return fmt.Errorf("dari: decode HELLO_ACK: %w", err)
 	}
 
-	slog.Info("paper: HELLO_ACK received",
+	slog.Info("dari: HELLO_ACK received",
 		"core_version", ack.CoreVersion,
 		"extensions", ack.ExtensionVersions,
 		"min_harness_version", ack.MinHarnessVersion)
@@ -213,13 +217,13 @@ func (p *Provider) connect(ctx context.Context) error {
 	rec, err = conn.RecvRecord()
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: recv AUTH_CHALLENGE: %w", err)
+		return fmt.Errorf("dari: recv AUTH_CHALLENGE: %w", err)
 	}
 
-	var challenge paperproto.AuthChallengeMessage
-	if err := paperproto.UnmarshalCBOR(rec.Payload, &challenge); err != nil {
+	var challenge dariproto.AuthChallengeMessage
+	if err := dariproto.UnmarshalCBOR(rec.Payload, &challenge); err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: decode AUTH_CHALLENGE: %w", err)
+		return fmt.Errorf("dari: decode AUTH_CHALLENGE: %w", err)
 	}
 
 	// Send AUTH_PROOF with the enrolled COSE-Sign1 peer credential and a
@@ -228,9 +232,9 @@ func (p *Provider) connect(ctx context.Context) error {
 	// subject public key embedded in the credential body.
 	if p.identity == nil {
 		conn.Close()
-		return fmt.Errorf("paper: harness identity is not enrolled; set PAPER_HARNESS_CREDENTIAL_FILE and PAPER_HARNESS_KEY_FILE, then run `patcode setup`")
+		return fmt.Errorf("dari: harness identity is not enrolled; set DARI_HARNESS_CREDENTIAL_FILE and DARI_HARNESS_KEY_FILE, then run `patcode setup`")
 	}
-	proof, err := paperproto.BuildAuthProof(paperproto.AuthProofInput{
+	proof, err := dariproto.BuildAuthProof(dariproto.AuthProofInput{
 		PrivateKey:      p.identity.PrivateKey,
 		Credential:      p.identity.Credential,
 		Hello:           hello,
@@ -239,41 +243,41 @@ func (p *Provider) connect(ctx context.Context) error {
 		RevocationEpoch: challenge.RevocationEpoch,
 		ChannelBinding:  []byte("tcp-exporter"),
 	})
-	if err == nil && os.Getenv("PAPER_DEBUG_AUTH") == "1" {
-		slog.Info("paper: AUTH_DEBUG", "transcript", fmt.Sprintf("%x", paperproto.DebugLastAuthTranscript()),
+	if err == nil && os.Getenv("DARI_DEBUG_AUTH") == "1" {
+		slog.Info("dari: AUTH_DEBUG", "transcript", fmt.Sprintf("%x", dariproto.DebugLastAuthTranscript()),
 			"challengeID", fmt.Sprintf("%x", challenge.ChallengeID), "epoch", challenge.RevocationEpoch)
 	}
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: build AUTH_PROOF: %w", err)
+		return fmt.Errorf("dari: build AUTH_PROOF: %w", err)
 	}
 
-	proofBytes, err := paperproto.MarshalCBOR(proof)
+	proofBytes, err := dariproto.MarshalCBOR(proof)
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: marshal AUTH_PROOF: %w", err)
+		return fmt.Errorf("dari: marshal AUTH_PROOF: %w", err)
 	}
 
-	if err := conn.SendControl(paperproto.MsgAuthProof, nil, proofBytes); err != nil {
+	if err := conn.SendControl(dariproto.MsgAuthProof, nil, proofBytes); err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: send AUTH_PROOF: %w", err)
+		return fmt.Errorf("dari: send AUTH_PROOF: %w", err)
 	}
 
 	// Receive AUTH_ACK
 	rec, err = conn.RecvRecord()
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("paper: recv AUTH_ACK: %w", err)
+		return fmt.Errorf("dari: recv AUTH_ACK: %w", err)
 	}
 
-	if paperproto.MessageType(rec.MessageType) == paperproto.MsgClose {
+	if dariproto.MessageType(rec.MessageType) == dariproto.MsgClose {
 		conn.Close()
-		return fmt.Errorf("paper: authentication rejected")
+		return fmt.Errorf("dari: authentication rejected")
 	}
 
 	// AUTH_ACK carries the relay's governance trust payload (policy
 	// issuer key). Install the lease client from it when none is set.
-	if paperproto.MessageType(rec.MessageType) == paperproto.MsgAuthAck {
+	if dariproto.MessageType(rec.MessageType) == dariproto.MsgAuthAck {
 		if err := p.installGovernanceClientsFromAuthAck(rec.Payload); err != nil {
 			conn.Close()
 			return err
@@ -286,7 +290,7 @@ func (p *Provider) connect(ctx context.Context) error {
 		peerID, err := p.identity.PeerID()
 		if err != nil {
 			conn.Close()
-			return fmt.Errorf("paper: %w", err)
+			return fmt.Errorf("dari: %w", err)
 		}
 		p.subjectPeerID = peerID
 	}
@@ -308,12 +312,12 @@ func (p *Provider) connect(ctx context.Context) error {
 
 	p.conn = conn
 	p.authenticated = true
-	slog.Info("paper: authenticated with relay", "addr", p.relayAddr, "session", p.sessionID)
+	slog.Info("dari: authenticated with relay", "addr", p.relayAddr, "session", p.sessionID)
 
 	return nil
 }
 
-// Stream starts a PAPER streaming completion.
+// Stream starts a DARI streaming completion.
 func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
 	// Fail-closed fast path: when a lease is already held, validate it
 	// BEFORE touching the network so an expired/revoked/subject-
@@ -341,9 +345,9 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 	}
 
 	// Build AI request payload
-	messages := make([]paperproto.AIMessage, len(req.Messages))
+	messages := make([]dariproto.AIMessage, len(req.Messages))
 	for i, m := range req.Messages {
-		messages[i] = paperproto.AIMessage{
+		messages[i] = dariproto.AIMessage{
 			Role:    string(m.Role),
 			Content: m.Content,
 		}
@@ -354,7 +358,7 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 		maxTokens = 4096
 	}
 
-	payload := paperproto.AIRequestPayload{
+	payload := dariproto.AIRequestPayload{
 		Model:     p.model,
 		Messages:  messages,
 		MaxTokens: maxTokens,
@@ -367,9 +371,9 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 
 	// Convert tools
 	for _, t := range req.Tools {
-		payload.Tools = append(payload.Tools, paperproto.AIToolDef{
+		payload.Tools = append(payload.Tools, dariproto.AIToolDef{
 			Type: "function",
-			Function: paperproto.AIToolFunction{
+			Function: dariproto.AIToolFunction{
 				Name:        t.Name,
 				Description: t.Description,
 				Parameters:  t.Parameters,
@@ -379,14 +383,14 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("paper: marshal request: %w", err)
+		return nil, fmt.Errorf("dari: marshal request: %w", err)
 	}
 
 	// Send AI_OPEN
-	if err := p.conn.SendMessage(paperproto.MsgAIOpen, nil, payloadBytes, 1, 1); err != nil {
+	if err := p.conn.SendMessage(dariproto.MsgAIOpen, nil, payloadBytes, 1, 1); err != nil {
 		p.conn.Close()
 		p.conn = nil
-		return nil, fmt.Errorf("paper: send AI_OPEN: %w", err)
+		return nil, fmt.Errorf("dari: send AI_OPEN: %w", err)
 	}
 
 	// Create output channel
@@ -409,7 +413,7 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 				// Connection broken — report as stream interrupt
 				out <- provider.Chunk{
 					Type: provider.ChunkError,
-					Err:  provider.StreamInterrupt(fmt.Errorf("paper: connection lost: %w", err), provider.StreamInterruptConnectionReset),
+					Err:  provider.StreamInterrupt(fmt.Errorf("dari: connection lost: %w", err), provider.StreamInterruptConnectionReset),
 				}
 				p.mu.Lock()
 				if p.conn != nil {
@@ -420,11 +424,11 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 				return
 			}
 
-			msgType := paperproto.MessageType(rec.MessageType)
+			msgType := dariproto.MessageType(rec.MessageType)
 
 			switch msgType {
-			case paperproto.MsgAITokenChunk:
-				var chunk paperproto.AITokenChunkPayload
+			case dariproto.MsgAITokenChunk:
+				var chunk dariproto.AITokenChunkPayload
 				if err := json.Unmarshal(rec.Payload, &chunk); err != nil {
 					continue
 				}
@@ -436,10 +440,10 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 					}
 				}
 
-			case paperproto.MsgAIComplete:
-				var result paperproto.AICompletePayload
+			case dariproto.MsgAIComplete:
+				var result dariproto.AICompletePayload
 				if err := json.Unmarshal(rec.Payload, &result); err != nil {
-					out <- provider.Chunk{Type: provider.ChunkError, Err: fmt.Errorf("paper: decode AI_COMPLETE: %w", err)}
+					out <- provider.Chunk{Type: provider.ChunkError, Err: fmt.Errorf("dari: decode AI_COMPLETE: %w", err)}
 					return
 				}
 
@@ -468,10 +472,10 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 				out <- provider.Chunk{Type: provider.ChunkDone}
 				return
 
-			case paperproto.MsgPing:
-				p.conn.SendControl(paperproto.MsgPong, nil, []byte("pong"))
+			case dariproto.MsgPing:
+				p.conn.SendControl(dariproto.MsgPong, nil, []byte("pong"))
 
-			case paperproto.MsgEvidenceReceipt:
+			case dariproto.MsgEvidenceReceipt:
 				// B3 e2e: the relay pushes a signed evidence receipt
 				// after each governed exchange. Store it as local
 				// tamper-evidence and ack via the receipt handler.
@@ -479,7 +483,7 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 					_, _ = p.receiptHandler.HandleReceipt(env)
 				}
 
-			case paperproto.MsgLeaseRevoke:
+			case dariproto.MsgLeaseRevoke:
 				// A3 e2e: the relay revoked the session's lease
 				// mid-flight. Drop the lease (fail-closed for any
 				// subsequent exchange) and surface the termination.
@@ -488,37 +492,37 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 				}
 				out <- provider.Chunk{
 					Type: provider.ChunkError,
-					Err:  errors.New("paper: capability lease revoked by relay"),
+					Err:  errors.New("dari: capability lease revoked by relay"),
 				}
 				return
 
-			case paperproto.MsgPolicyEpochPush:
+			case dariproto.MsgPolicyEpochPush:
 				// A4 e2e: policy changed mid-session. Rebind; the next
 				// exchange's lease pin enforces the new epoch.
-				if epoch, err := paperproto.DecodePolicyEpochMessage(rec.Payload); err == nil {
+				if epoch, err := dariproto.DecodePolicyEpochMessage(rec.Payload); err == nil {
 					if p.policyEpochClient == nil {
-						p.policyEpochClient = paperproto.NewPolicyEpochClient()
+						p.policyEpochClient = dariproto.NewPolicyEpochClient()
 					}
 					if err := p.policyEpochClient.Rebind(epoch); err == nil {
 						p.policyEpoch = epoch.EpochID
 					}
 				}
 
-			case paperproto.MsgCatalogDelta:
+			case dariproto.MsgCatalogDelta:
 				// A5 e2e: apply an incremental catalog update.
-				if delta, err := paperproto.DecodeCatalogDelta(rec.Payload); err == nil {
+				if delta, err := dariproto.DecodeCatalogDelta(rec.Payload); err == nil {
 					if p.catalogClient == nil {
-						p.catalogClient = paperproto.NewCatalogClient()
+						p.catalogClient = dariproto.NewCatalogClient()
 					}
 					_ = p.catalogClient.ApplyDelta(delta, p.policyEpoch)
 				}
 
-			case paperproto.MsgClose:
+			case dariproto.MsgClose:
 				var errMsg map[string]string
 				json.Unmarshal(rec.Payload, &errMsg)
 				out <- provider.Chunk{
 					Type: provider.ChunkError,
-					Err:  fmt.Errorf("paper: relay closed: %s", errMsg["error"]),
+					Err:  fmt.Errorf("dari: relay closed: %s", errMsg["error"]),
 				}
 				p.mu.Lock()
 				if p.conn != nil {
@@ -564,14 +568,14 @@ var _ time.Duration
 // surfaces to the operator without translation.
 func (p *Provider) validateLease(model string) error {
 	if p.leaseClient == nil {
-		return errors.New("paper: no lease held; connect to a relay and acquire a capability lease before dispatching inference")
+		return errors.New("dari: no lease held; connect to a relay and acquire a capability lease before dispatching inference")
 	}
 	if err := p.leaseClient.AuthorizeExchange(p.subjectPeerID, p.sessionID, p.policyEpoch, model); err != nil {
 		return err
 	}
 	if p.catalogClient != nil {
 		if _, err := p.catalogClient.FindModel(model); err != nil {
-			return fmt.Errorf("paper: model %q is not in the relay's catalog: %w", model, err)
+			return fmt.Errorf("dari: model %q is not in the relay's catalog: %w", model, err)
 		}
 	}
 	return nil
@@ -581,7 +585,7 @@ func (p *Provider) validateLease(model string) error {
 // pings the relay for a LEASE_ISSUE after AUTH_PROOF and feeds the
 // result here. A nil client leaves the provider in fail-closed mode
 // (validateLease rejects every AI_OPEN).
-func (p *Provider) SetLeaseClient(client *paperproto.LeaseClient) {
+func (p *Provider) SetLeaseClient(client *dariproto.LeaseClient) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.leaseClient = client
@@ -631,9 +635,9 @@ func (p *Provider) SetAutoRenewBefore(d time.Duration) {
 // LeaseMetrics exposes the connector's lease health for the harness
 // status bar (E1). The connector surfaces the lease's ID, sequence,
 // and expiry without exposing the underlying private key.
-func (p *Provider) LeaseMetrics() paperproto.LeaseMetrics {
+func (p *Provider) LeaseMetrics() dariproto.LeaseMetrics {
 	if p.leaseClient == nil {
-		return paperproto.LeaseMetrics{}
+		return dariproto.LeaseMetrics{}
 	}
 	return p.leaseClient.MetricsFor()
 }
@@ -642,7 +646,7 @@ func (p *Provider) LeaseMetrics() paperproto.LeaseMetrics {
 // connector binds the lease's PolicyEpochID to the client's bound
 // epoch on every exchange. A nil client leaves the provider in
 // fail-closed mode (validateLease rejects every AI_OPEN).
-func (p *Provider) SetPolicyEpochClient(client *paperproto.PolicyEpochClient) {
+func (p *Provider) SetPolicyEpochClient(client *dariproto.PolicyEpochClient) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.policyEpochClient = client
@@ -652,7 +656,7 @@ func (p *Provider) SetPolicyEpochClient(client *paperproto.PolicyEpochClient) {
 // cross-checks the requested model against the held catalog on every
 // exchange. A nil client skips the catalog check (the lease
 // allow-list is the only model filter in that mode).
-func (p *Provider) SetCatalogClient(client *paperproto.CatalogClient) {
+func (p *Provider) SetCatalogClient(client *dariproto.CatalogClient) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.catalogClient = client
@@ -660,18 +664,18 @@ func (p *Provider) SetCatalogClient(client *paperproto.CatalogClient) {
 
 // PolicyEpochMetrics exposes the connector's policy-epoch health for
 // the harness status bar (E1).
-func (p *Provider) PolicyEpochMetrics() paperproto.PolicyEpochMetrics {
+func (p *Provider) PolicyEpochMetrics() dariproto.PolicyEpochMetrics {
 	if p.policyEpochClient == nil {
-		return paperproto.PolicyEpochMetrics{}
+		return dariproto.PolicyEpochMetrics{}
 	}
 	return p.policyEpochClient.MetricsFor()
 }
 
 // CatalogMetrics exposes the connector's catalog health for the
 // harness status bar (E1).
-func (p *Provider) CatalogMetrics() paperproto.CatalogMetrics {
+func (p *Provider) CatalogMetrics() dariproto.CatalogMetrics {
 	if p.catalogClient == nil {
-		return paperproto.CatalogMetrics{}
+		return dariproto.CatalogMetrics{}
 	}
 	return p.catalogClient.MetricsFor()
 }
@@ -679,9 +683,9 @@ func (p *Provider) CatalogMetrics() paperproto.CatalogMetrics {
 // BindPolicyEpoch binds the connector to the supplied epoch. The
 // connector calls this once at AUTH_PROOF time when the relay pushes
 // the active policy epoch alongside the trust bundle.
-func (p *Provider) BindPolicyEpoch(epoch *paperproto.PolicyEpoch) error {
+func (p *Provider) BindPolicyEpoch(epoch *dariproto.PolicyEpoch) error {
 	if p.policyEpochClient == nil {
-		return errors.New("paper: no policy epoch client; SetPolicyEpochClient before binding")
+		return errors.New("dari: no policy epoch client; SetPolicyEpochClient before binding")
 	}
 	if err := p.policyEpochClient.Bind(epoch); err != nil {
 		return err
@@ -695,9 +699,9 @@ func (p *Provider) BindPolicyEpoch(epoch *paperproto.PolicyEpoch) error {
 // RebindPolicyEpoch replaces the bound policy epoch with a fresh one
 // (typically from a POLICY message). The connector surfaces the
 // new epoch to the lease allow-list on subsequent exchanges.
-func (p *Provider) RebindPolicyEpoch(epoch *paperproto.PolicyEpoch) error {
+func (p *Provider) RebindPolicyEpoch(epoch *dariproto.PolicyEpoch) error {
 	if p.policyEpochClient == nil {
-		return errors.New("paper: no policy epoch client; SetPolicyEpochClient before rebinding")
+		return errors.New("dari: no policy epoch client; SetPolicyEpochClient before rebinding")
 	}
 	if err := p.policyEpochClient.Rebind(epoch); err != nil {
 		return err
@@ -710,18 +714,18 @@ func (p *Provider) RebindPolicyEpoch(epoch *paperproto.PolicyEpoch) error {
 
 // ApplyCatalogSnapshot replaces the held catalog. The connector
 // calls this when the relay pushes CATALOG_SNAPSHOT.
-func (p *Provider) ApplyCatalogSnapshot(snap *paperproto.CatalogSnapshot) error {
+func (p *Provider) ApplyCatalogSnapshot(snap *dariproto.CatalogSnapshot) error {
 	if p.catalogClient == nil {
-		return errors.New("paper: no catalog client; SetCatalogClient before applying")
+		return errors.New("dari: no catalog client; SetCatalogClient before applying")
 	}
 	expectedEpoch := p.policyEpoch
 	return p.catalogClient.ApplySnapshot(snap, expectedEpoch)
 }
 
 // ApplyCatalogDelta applies an incremental catalog update.
-func (p *Provider) ApplyCatalogDelta(delta *paperproto.CatalogDelta) error {
+func (p *Provider) ApplyCatalogDelta(delta *dariproto.CatalogDelta) error {
 	if p.catalogClient == nil {
-		return errors.New("paper: no catalog client; SetCatalogClient before applying")
+		return errors.New("dari: no catalog client; SetCatalogClient before applying")
 	}
 	expectedEpoch := p.policyEpoch
 	return p.catalogClient.ApplyDelta(delta, expectedEpoch)

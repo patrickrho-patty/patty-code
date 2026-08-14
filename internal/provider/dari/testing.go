@@ -1,4 +1,4 @@
-package paper
+package dari
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 	"patty/internal/provider"
 )
 
@@ -29,8 +29,8 @@ func newTestLeaseIssuer(t *testing.T) *testLeaseIssuer {
 	return &testLeaseIssuer{pub: pub, priv: priv, id: "pccp-policy"}
 }
 
-func (i *testLeaseIssuer) Lease(t *testing.T, body paperproto.LeaseBody) *paperproto.Lease {
-	lease := &paperproto.Lease{
+func (i *testLeaseIssuer) Lease(t *testing.T, body dariproto.LeaseBody) *dariproto.Lease {
+	lease := &dariproto.Lease{
 		Version:         1,
 		Issuer:          i.id,
 		LeaseID:         body.LeaseID,
@@ -48,7 +48,7 @@ func (i *testLeaseIssuer) Lease(t *testing.T, body paperproto.LeaseBody) *paperp
 		Status:          "active",
 	}
 	bodyBytes := lease.SigningBytes()
-	encoded, err := paperproto.CreateCOSESign1(bodyBytes, i.priv, []byte(i.id))
+	encoded, err := dariproto.CreateCOSESign1(bodyBytes, i.priv, []byte(i.id))
 	if err != nil {
 		if t != nil {
 			t.Fatalf("sign lease: %v", err)
@@ -92,7 +92,7 @@ type testConfig struct {
 
 // NewForTest constructs a Provider from a test-only config. The
 // provider's connection is a stub (no real dial) so the test can
-// observe the lease-validation path without touching a PAPER relay.
+// observe the lease-validation path without touching a DARI relay.
 func NewForTest(cfg *testConfig) *Provider {
 	leaseClient := newLeaseClientForTest(cfg)
 	// The session's bound policy epoch may differ from the lease's
@@ -126,7 +126,7 @@ func NewForTest(cfg *testConfig) *Provider {
 // acquireLease constructs and acquires a signed lease for the connector.
 // It mirrors the NewForTest's lease-acquisition path but returns the
 // lease so the test can inspect intermediate state if needed.
-func acquireLease(t *testing.T, cfg *testConfig, client *paperproto.LeaseClient) {
+func acquireLease(t *testing.T, cfg *testConfig, client *dariproto.LeaseClient) {
 	t.Helper()
 	if err := client.Acquire(cfg.LeaseSubject, cfg.LeaseSession, signedLeaseForTest(cfg)); err != nil {
 		t.Fatalf("lease acquire failed in test setup: %v", err)
@@ -135,11 +135,11 @@ func acquireLease(t *testing.T, cfg *testConfig, client *paperproto.LeaseClient)
 
 // newLeaseClientForTest wires a lease client with the issuer's pub key
 // and a fixed clock so the test can drive expiry deterministically.
-func newLeaseClientForTest(cfg *testConfig) *paperproto.LeaseClient {
+func newLeaseClientForTest(cfg *testConfig) *dariproto.LeaseClient {
 	if cfg.LeaseIssuer == nil {
-		return paperproto.NewLeaseClient(ed25519.PublicKey{}, "")
+		return dariproto.NewLeaseClient(ed25519.PublicKey{}, "")
 	}
-	client := paperproto.NewLeaseClient(cfg.LeaseIssuer.pub, cfg.LeaseIssuer.id).
+	client := dariproto.NewLeaseClient(cfg.LeaseIssuer.pub, cfg.LeaseIssuer.id).
 		WithAutoRenewBefore(time.Minute)
 	if cfg.AdvanceTime != nil {
 		client.WithNowFunc(cfg.AdvanceTime)
@@ -150,7 +150,7 @@ func newLeaseClientForTest(cfg *testConfig) *paperproto.LeaseClient {
 // signedLeaseForTest builds the lease body the connector holds for the
 // duration of the test. The body mirrors the relay's
 // `policy.IssueCapabilityLease` signing input.
-func signedLeaseForTest(cfg *testConfig) *paperproto.Lease {
+func signedLeaseForTest(cfg *testConfig) *dariproto.Lease {
 	now := cfg.LeaseAt
 	if now.IsZero() {
 		now = time.Now()
@@ -159,7 +159,7 @@ func signedLeaseForTest(cfg *testConfig) *paperproto.Lease {
 	if cfg.LeaseSubjectOverride != "" {
 		subject = cfg.LeaseSubjectOverride
 	}
-	body := paperproto.LeaseBody{
+	body := dariproto.LeaseBody{
 		LeaseID:         "lease-test",
 		SubjectPeerID:   subject,
 		UserID:          "alice",

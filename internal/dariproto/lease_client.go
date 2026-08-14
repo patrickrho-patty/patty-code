@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"context"
@@ -34,7 +34,7 @@ type LeaseRequest struct {
 // it before expiry, and fails closed when the lease is missing, expired,
 // revoked, or bound to a stale subject/session/policy epoch.
 //
-// The lease is presented per exchange (PAPER §22, §26). The connector
+// The lease is presented per exchange (DARI §22, §26). The connector
 // holds the lease in memory + persists the COSE-Sign1 bytes to disk so
 // reconnect-after-restart can resume sessions without re-issuing.
 type LeaseClient struct {
@@ -90,7 +90,7 @@ func (c *LeaseClient) WithNowFunc(fn func() time.Time) *LeaseClient {
 }
 
 // Acquire stores a freshly-issued lease as the client's current lease.
-// The caller (the connector's PAPER listener) supplies the lease the
+// The caller (the connector's DARI listener) supplies the lease the
 // relay returned; Acquire validates it under the issuer trust bundle
 // before storing. A3 requires the harness to *fail-closed* on missing
 // credentials, so a faulty lease at session start terminates the
@@ -103,7 +103,7 @@ func (c *LeaseClient) Acquire(subjectPeerID, sessionID string, lease *Lease) err
 	defer c.mu.Unlock()
 	nowMs := c.nowFn().UnixMilli()
 	if err := c.verifier.Verify(lease, subjectPeerID, sessionID, nowMs); err != nil {
-		return fmt.Errorf("paper: lease acquire verification failed: %w", err)
+		return fmt.Errorf("dari: lease acquire verification failed: %w", err)
 	}
 	c.current = lease
 	c.lastRenewedAtUnixMs.Store(nowMs)
@@ -143,10 +143,10 @@ func (c *LeaseClient) Renew(subjectPeerID, sessionID string, lease *Lease) error
 	nowMs := c.nowFn().UnixMilli()
 	if err := c.verifier.Verify(lease, subjectPeerID, sessionID, nowMs); err != nil {
 		c.renewFailureCount.Add(1)
-		return fmt.Errorf("paper: lease renew verification failed: %w", err)
+		return fmt.Errorf("dari: lease renew verification failed: %w", err)
 	}
 	if c.current != nil && lease.LeaseSequence <= c.current.LeaseSequence {
-		return fmt.Errorf("paper: renewed lease sequence %d is not greater than current %d", lease.LeaseSequence, c.current.LeaseSequence)
+		return fmt.Errorf("dari: renewed lease sequence %d is not greater than current %d", lease.LeaseSequence, c.current.LeaseSequence)
 	}
 	c.current = lease
 	c.lastRenewedAtUnixMs.Store(nowMs)
@@ -208,7 +208,7 @@ func (c *LeaseClient) NeedsRenewal() bool {
 // ErrLeaseRenewalDue is returned by Present when the lease is within the
 // configured auto-renewal lead time. The connector upgrades the call
 // site to a LEASE_RENEW handshake rather than a protocol failure.
-var ErrLeaseRenewalDue = errors.New("paper: lease renewal due")
+var ErrLeaseRenewalDue = errors.New("dari: lease renewal due")
 
 // MetricsFor surfaces the connector's lease health for the quota/status
 // surfaces (E1). The values are returned as a snapshot; concurrent
@@ -271,7 +271,7 @@ func (c *LeaseClient) VerifySessionContext(subjectPeerID, sessionID, expectedPol
 		return ErrLeaseInvalid
 	}
 	if expectedPolicyEpoch != "" && c.current.PolicyEpochID != "" && c.current.PolicyEpochID != expectedPolicyEpoch {
-		return fmt.Errorf("paper: lease policy epoch %q does not match bound session epoch %q", c.current.PolicyEpochID, expectedPolicyEpoch)
+		return fmt.Errorf("dari: lease policy epoch %q does not match bound session epoch %q", c.current.PolicyEpochID, expectedPolicyEpoch)
 	}
 	nowMs := c.nowFn().UnixMilli()
 	if err := c.verifier.Verify(c.current, subjectPeerID, sessionID, nowMs); err != nil {
@@ -299,7 +299,7 @@ func (c *LeaseClient) AuthorizeExchange(subjectPeerID, sessionID, expectedPolicy
 		return err
 	}
 	if expectedPolicyEpoch != "" && c.current.PolicyEpochID != "" && c.current.PolicyEpochID != expectedPolicyEpoch {
-		return fmt.Errorf("paper: lease policy epoch %q does not match bound session epoch %q", c.current.PolicyEpochID, expectedPolicyEpoch)
+		return fmt.Errorf("dari: lease policy epoch %q does not match bound session epoch %q", c.current.PolicyEpochID, expectedPolicyEpoch)
 	}
 	// Check the renewal window after the structural checks so a
 	// missing/expired/tampered lease still surfaces its own sentinel
@@ -309,7 +309,7 @@ func (c *LeaseClient) AuthorizeExchange(subjectPeerID, sessionID, expectedPolicy
 		return ErrLeaseRenewalDue
 	}
 	if len(c.current.AllowedModels) == 0 {
-		return fmt.Errorf("paper: lease carries no allowed-models list; refusing to dispatch to %q", model)
+		return fmt.Errorf("dari: lease carries no allowed-models list; refusing to dispatch to %q", model)
 	}
 	allowed := false
 	for _, m := range c.current.AllowedModels {
@@ -319,7 +319,7 @@ func (c *LeaseClient) AuthorizeExchange(subjectPeerID, sessionID, expectedPolicy
 		}
 	}
 	if !allowed {
-		return fmt.Errorf("paper: requested model %q is not in lease's allowed models", model)
+		return fmt.Errorf("dari: requested model %q is not in lease's allowed models", model)
 	}
 	c.lastVerifiedAtUnixMs.Store(nowMs)
 	return nil
@@ -331,7 +331,7 @@ func (c *LeaseClient) AuthorizeExchange(subjectPeerID, sessionID, expectedPolicy
 // decoder or the connector's request is silently dropped.
 func EncodeLeaseRequest(req *LeaseRequest) ([]byte, error) {
 	if req == nil {
-		return nil, errors.New("paper: nil lease request")
+		return nil, errors.New("dari: nil lease request")
 	}
 	msg := &leaseRequestWire{
 		SubjectPeerID:    req.SubjectPeerID,
@@ -353,11 +353,11 @@ func EncodeLeaseRequest(req *LeaseRequest) ([]byte, error) {
 // received from the relay.
 func DecodeLeaseRequest(data []byte) (*LeaseRequest, error) {
 	if len(data) == 0 {
-		return nil, errors.New("paper: empty lease request body")
+		return nil, errors.New("dari: empty lease request body")
 	}
 	var msg leaseRequestWire
 	if err := UnmarshalCBOR(data, &msg); err != nil {
-		return nil, fmt.Errorf("paper: decode lease request: %w", err)
+		return nil, fmt.Errorf("dari: decode lease request: %w", err)
 	}
 	return &LeaseRequest{
 		SubjectPeerID:    msg.SubjectPeerID,
@@ -379,7 +379,7 @@ func DecodeLeaseRequest(data []byte) (*LeaseRequest, error) {
 // it through `LeaseClient.Acquire`.
 func EncodeLeaseResponse(lease *Lease) ([]byte, error) {
 	if lease == nil {
-		return nil, errors.New("paper: nil lease")
+		return nil, errors.New("dari: nil lease")
 	}
 	return MarshalCBOR(lease)
 }
@@ -387,11 +387,11 @@ func EncodeLeaseResponse(lease *Lease) ([]byte, error) {
 // DecodeLeaseResponse parses the relay's signed lease body.
 func DecodeLeaseResponse(data []byte) (*Lease, error) {
 	if len(data) == 0 {
-		return nil, errors.New("paper: empty lease response body")
+		return nil, errors.New("dari: empty lease response body")
 	}
 	var lease Lease
 	if err := UnmarshalCBOR(data, &lease); err != nil {
-		return nil, fmt.Errorf("paper: decode lease response: %w", err)
+		return nil, fmt.Errorf("dari: decode lease response: %w", err)
 	}
 	return &lease, nil
 }

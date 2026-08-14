@@ -11,7 +11,7 @@ func TestDefaultUsesPattyCodeStandard(t *testing.T) {
 		t.Fatalf("default model/providers = %q/%+v", cfg.DefaultModel, cfg.Providers)
 	}
 	p := cfg.Providers[0]
-	if p.Name != "patty" || p.Kind != "paper" || p.BaseURL != "localhost:8444" || p.Model != "patty-code-standard" || p.APIKeyEnv != "PAPER_HARNESS_KEY" || p.ContextWindow != 262144 {
+	if p.Name != "patty" || p.Kind != "dari" || p.BaseURL != "localhost:8444" || p.Model != "patty-code-standard" || p.APIKeyEnv != "DARI_HARNESS_KEY" || p.ContextWindow != 262144 {
 		t.Fatalf("default provider = %+v", p)
 	}
 	if cfg.Agent.CompactForceRatio != 0.98 {

@@ -1,4 +1,4 @@
-package paper
+package dari
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 	"patty/internal/provider"
 )
 
@@ -69,7 +69,7 @@ func TestProviderRejectsStreamWithExpiredLease(t *testing.T) {
 	if err == nil {
 		t.Fatal("stream must fail when the held lease is expired")
 	}
-	if !errors.Is(err, paperproto.ErrLeaseExpired) {
+	if !errors.Is(err, dariproto.ErrLeaseExpired) {
 		t.Errorf("expected ErrLeaseExpired sentinel, got %v", err)
 	}
 }
@@ -99,7 +99,7 @@ func TestProviderRejectsStreamWithMismatchedSubject(t *testing.T) {
 	if err == nil {
 		t.Fatal("stream must fail when the lease subject does not match")
 	}
-	if !errors.Is(err, paperproto.ErrLeaseSubjectMismatch) {
+	if !errors.Is(err, dariproto.ErrLeaseSubjectMismatch) {
 		t.Errorf("expected ErrLeaseSubjectMismatch sentinel, got %v", err)
 	}
 }
@@ -215,7 +215,7 @@ func TestProviderRequiresLeaseRenewalBeforeExpiry(t *testing.T) {
 	if err == nil {
 		t.Fatal("stream must fail when the lease is in the renewal window")
 	}
-	if !errors.Is(err, paperproto.ErrLeaseRenewalDue) {
+	if !errors.Is(err, dariproto.ErrLeaseRenewalDue) {
 		t.Errorf("expected ErrLeaseRenewalDue sentinel, got %v", err)
 	}
 }
@@ -242,7 +242,7 @@ func TestProviderAcceptsValidLease(t *testing.T) {
 	// expected to fail because we don't have a real relay. The error
 	// must NOT mention "lease".
 	_, err := provider.Stream(testRequestContext(t), stubRequest("patty-code-standard"))
-	if err != nil && (strings.Contains(err.Error(), "lease") || errors.Is(err, paperproto.ErrLeaseExpired)) {
+	if err != nil && (strings.Contains(err.Error(), "lease") || errors.Is(err, dariproto.ErrLeaseExpired)) {
 		t.Errorf("lease validation must pass with valid lease, got %v", err)
 	}
 	// The actual error is a dial failure. We just check that the
@@ -298,7 +298,7 @@ func TestProviderSetSessionContextUpdatesBinding(t *testing.T) {
 	if err == nil {
 		t.Fatal("stream must fail after SetSessionContext to a different subject")
 	}
-	if !errors.Is(err, paperproto.ErrLeaseSubjectMismatch) {
+	if !errors.Is(err, dariproto.ErrLeaseSubjectMismatch) {
 		t.Errorf("expected ErrLeaseSubjectMismatch after rebind, got %v", err)
 	}
 }

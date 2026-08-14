@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 )
 
 // Dispatcher sends accumulated provenance envelopes over the PAPER
@@ -23,11 +23,11 @@ type Dispatcher struct {
 	flushCount int
 }
 
-// DispatchConn is the subset of paperproto.TransportConn the
+// DispatchConn is the subset of dariproto.TransportConn the
 // dispatcher needs. The harness can substitute a fake connection
 // for tests; production wires this to the real conn.
 type DispatchConn interface {
-	SendRecord(rec *paperproto.Record) error
+	SendRecord(rec *dariproto.Record) error
 }
 
 // NewDispatcher wires the emitter to a transport. The harness
@@ -83,9 +83,9 @@ func (d *Dispatcher) Flush(ctx context.Context) error {
 			d.flushErr = wrapped
 			return wrapped
 		}
-		rec := &paperproto.Record{
-			Kind:        paperproto.KindMessage,
-			MessageType: uint16(paperproto.MsgProvenanceChangeSet),
+		rec := &dariproto.Record{
+			Kind:        dariproto.KindMessage,
+			MessageType: uint16(dariproto.MsgProvenanceChangeSet),
 			Payload:     data,
 		}
 		if err := d.conn.SendRecord(rec); err != nil {
@@ -103,9 +103,9 @@ func (d *Dispatcher) Flush(ctx context.Context) error {
 			d.flushErr = wrapped
 			return wrapped
 		}
-		rec := &paperproto.Record{
-			Kind:        paperproto.KindMessage,
-			MessageType: uint16(paperproto.MsgProvenanceSpan),
+		rec := &dariproto.Record{
+			Kind:        dariproto.KindMessage,
+			MessageType: uint16(dariproto.MsgProvenanceSpan),
 			Payload:     data,
 		}
 		if err := d.conn.SendRecord(rec); err != nil {
@@ -123,9 +123,9 @@ func (d *Dispatcher) Flush(ctx context.Context) error {
 			d.flushErr = wrapped
 			return wrapped
 		}
-		rec := &paperproto.Record{
-			Kind:        paperproto.KindMessage,
-			MessageType: uint16(paperproto.MsgActionEnvelope),
+		rec := &dariproto.Record{
+			Kind:        dariproto.KindMessage,
+			MessageType: uint16(dariproto.MsgActionEnvelope),
 			Payload:     data,
 		}
 		if err := d.conn.SendRecord(rec); err != nil {
@@ -144,9 +144,9 @@ func (d *Dispatcher) Flush(ctx context.Context) error {
 			d.flushErr = wrapped
 			return wrapped
 		}
-		rec := &paperproto.Record{
-			Kind:        paperproto.KindMessage,
-			MessageType: uint16(paperproto.MsgProvenanceCommitBind),
+		rec := &dariproto.Record{
+			Kind:        dariproto.KindMessage,
+			MessageType: uint16(dariproto.MsgProvenanceCommitBind),
 			Payload:     data,
 		}
 		if err := d.conn.SendRecord(rec); err != nil {

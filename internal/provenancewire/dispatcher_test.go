@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"patty/internal/evidence"
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 )
 
 // fakeConn is a thread-safe in-memory transport used by the
@@ -15,11 +15,11 @@ import (
 // test can assert what was sent.
 type fakeConn struct {
 	mu     sync.Mutex
-	recs   []*paperproto.Record
+	recs   []*dariproto.Record
 	sendErr error
 }
 
-func (c *fakeConn) SendRecord(rec *paperproto.Record) error {
+func (c *fakeConn) SendRecord(rec *dariproto.Record) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.sendErr != nil {
@@ -29,10 +29,10 @@ func (c *fakeConn) SendRecord(rec *paperproto.Record) error {
 	return nil
 }
 
-func (c *fakeConn) Records() []*paperproto.Record {
+func (c *fakeConn) Records() []*dariproto.Record {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	out := make([]*paperproto.Record, len(c.recs))
+	out := make([]*dariproto.Record, len(c.recs))
 	copy(out, c.recs)
 	return out
 }
@@ -109,14 +109,14 @@ func TestDispatcherEmitsCoherentFamily(t *testing.T) {
 		t.Fatalf("records = %d, want 3", len(recs))
 	}
 	// Verify ordering: change set, span, action.
-	if paperproto.MessageType(recs[0].MessageType) != paperproto.MsgProvenanceChangeSet {
-		t.Errorf("first record = %s, want MsgProvenanceChangeSet", paperproto.MessageType(recs[0].MessageType))
+	if dariproto.MessageType(recs[0].MessageType) != dariproto.MsgProvenanceChangeSet {
+		t.Errorf("first record = %s, want MsgProvenanceChangeSet", dariproto.MessageType(recs[0].MessageType))
 	}
-	if paperproto.MessageType(recs[1].MessageType) != paperproto.MsgProvenanceSpan {
-		t.Errorf("second record = %s, want MsgProvenanceSpan", paperproto.MessageType(recs[1].MessageType))
+	if dariproto.MessageType(recs[1].MessageType) != dariproto.MsgProvenanceSpan {
+		t.Errorf("second record = %s, want MsgProvenanceSpan", dariproto.MessageType(recs[1].MessageType))
 	}
-	if paperproto.MessageType(recs[2].MessageType) != paperproto.MsgActionEnvelope {
-		t.Errorf("third record = %s, want MsgActionEnvelope", paperproto.MessageType(recs[2].MessageType))
+	if dariproto.MessageType(recs[2].MessageType) != dariproto.MsgActionEnvelope {
+		t.Errorf("third record = %s, want MsgActionEnvelope", dariproto.MessageType(recs[2].MessageType))
 	}
 
 	// Emitter cleared.
@@ -202,8 +202,8 @@ func TestDispatcherEmitsCommitBindings(t *testing.T) {
 	if len(recs) != 1 {
 		t.Fatalf("records = %d, want 1", len(recs))
 	}
-	if paperproto.MessageType(recs[0].MessageType) != paperproto.MsgProvenanceCommitBind {
-		t.Errorf("record = %s, want MsgProvenanceCommitBind", paperproto.MessageType(recs[0].MessageType))
+	if dariproto.MessageType(recs[0].MessageType) != dariproto.MsgProvenanceCommitBind {
+		t.Errorf("record = %s, want MsgProvenanceCommitBind", dariproto.MessageType(recs[0].MessageType))
 	}
 }
 

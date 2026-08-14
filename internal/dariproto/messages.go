@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/fxamacker/cbor/v2"
 )
 
-// HelloMessage is the HELLO message (PAPER §15.1).
+// HelloMessage is the HELLO message (DARI §15.1).
 type HelloMessage struct {
 	CoreVersions          []uint8          `cbor:"1,keyasint"`
 	PeerProfile           PeerProfile      `cbor:"2,keyasint"`
@@ -22,10 +22,10 @@ type HelloMessage struct {
 	ImplementationVersion string           `cbor:"10,keyasint,omitempty"`
 }
 
-// HelloAckMessage is the HELLO_ACK (PAPER §15.2). Field 8 (ResourceLimits) MUST
+// HelloAckMessage is the HELLO_ACK (DARI §15.2). Field 8 (ResourceLimits) MUST
 // be present in the CBOR transcript even when empty so the relay's canonical
 // ack encoding matches the connector's decoded view: the AUTH_PROOF verifies
-// against SHA256("PAPER-AUTH-v1\0" || canonical(HELLO) || canonical(HELLO_ACK)
+// against SHA256("DARI-AUTH-v1\0" || canonical(HELLO) || canonical(HELLO_ACK)
 // || …), and a missing field 8 silently changes the canonical bytes.
 type HelloAckMessage struct {
 	CoreVersion       uint8             `cbor:"1,keyasint"`
@@ -38,7 +38,7 @@ type HelloAckMessage struct {
 	ResourceLimits    map[string]uint64 `cbor:"8,keyasint,omitempty"`
 }
 
-// AuthChallengeMessage is the AUTH_CHALLENGE (PAPER §18.1).
+// AuthChallengeMessage is the AUTH_CHALLENGE (DARI §18.1).
 type AuthChallengeMessage struct {
 	ServerNonce       []byte   `cbor:"1,keyasint"`
 	ChallengeID       []byte   `cbor:"2,keyasint"`
@@ -47,7 +47,7 @@ type AuthChallengeMessage struct {
 	AuthDeadlineMs    uint64   `cbor:"5,keyasint"`
 }
 
-// AuthProofMessage is the AUTH_PROOF (PAPER §18.2).
+// AuthProofMessage is the AUTH_PROOF (DARI §18.2).
 type AuthProofMessage struct {
 	Credential   []byte        `cbor:"1,keyasint"`
 	Signature    []byte        `cbor:"2,keyasint"`
@@ -56,7 +56,7 @@ type AuthProofMessage struct {
 	RevocationEvidence []byte  `cbor:"5,keyasint,omitempty"`
 }
 
-// AIRequestPayload is the payload for AI_OPEN (PAPER §10B).
+// AIRequestPayload is the payload for AI_OPEN (DARI §10B).
 // Uses JSON for the request body so it can carry OpenAI-compatible messages.
 type AIRequestPayload struct {
 	Model       string        `json:"model"`
@@ -83,14 +83,14 @@ type AIToolFunction struct {
 	Parameters  json.RawMessage `json:"parameters,omitempty"`
 }
 
-// AITokenChunkPayload is the streaming token chunk (PAPER §10B.20).
+// AITokenChunkPayload is the streaming token chunk (DARI §10B.20).
 type AITokenChunkPayload struct {
 	Text      string `json:"text"`
 	Done      bool   `json:"done"`
 	FinishReason string `json:"finish_reason,omitempty"`
 }
 
-// AICompletePayload is the completion message (PAPER §10B.18).
+// AICompletePayload is the completion message (DARI §10B.18).
 type AICompletePayload struct {
 	Content       string `json:"content"`
 	FinishReason  string `json:"finish_reason"`
@@ -179,7 +179,7 @@ func sortedLimitPairs(m map[string]uint64) []canonicalLimitKV {
 // paper.CanonicalHelloCBOR byte-for-byte.
 func CanonicalHelloCBOR(h *HelloMessage) ([]byte, error) {
 	if h == nil {
-		return nil, errors.New("paper: nil hello")
+		return nil, errors.New("dari: nil hello")
 	}
 	return MarshalCBOR(canonicalHello{
 		CoreVersions:          h.CoreVersions,
@@ -199,7 +199,7 @@ func CanonicalHelloCBOR(h *HelloMessage) ([]byte, error) {
 // Mirrors the relay's paper.CanonicalAckCBOR byte-for-byte.
 func CanonicalAckCBOR(a *HelloAckMessage) ([]byte, error) {
 	if a == nil {
-		return nil, errors.New("paper: nil ack")
+		return nil, errors.New("dari: nil ack")
 	}
 	return MarshalCBOR(canonicalAckMsg{
 		CoreVersion:       a.CoreVersion,

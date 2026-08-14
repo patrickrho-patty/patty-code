@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 )
 
 // fakeAckSender records the records the connector sends. It is
@@ -13,11 +13,11 @@ import (
 // invocations.
 type fakeAckSender struct {
 	mu   sync.Mutex
-	recs []*paperproto.Record
+	recs []*dariproto.Record
 	err  error
 }
 
-func (f *fakeAckSender) SendRecord(rec *paperproto.Record) error {
+func (f *fakeAckSender) SendRecord(rec *dariproto.Record) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.err != nil {
@@ -27,10 +27,10 @@ func (f *fakeAckSender) SendRecord(rec *paperproto.Record) error {
 	return nil
 }
 
-func (f *fakeAckSender) Records() []*paperproto.Record {
+func (f *fakeAckSender) Records() []*dariproto.Record {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	out := make([]*paperproto.Record, len(f.recs))
+	out := make([]*dariproto.Record, len(f.recs))
 	copy(out, f.recs)
 	return out
 }
@@ -76,8 +76,8 @@ func TestReceiptStoreStoresAndAcknowledge(t *testing.T) {
 	if len(recs) != 1 {
 		t.Fatalf("records = %d, want 1", len(recs))
 	}
-	if paperproto.MessageType(recs[0].MessageType) != paperproto.MsgEvidenceReceiptAck {
-		t.Errorf("record = %s, want MsgEvidenceReceiptAck", paperproto.MessageType(recs[0].MessageType))
+	if dariproto.MessageType(recs[0].MessageType) != dariproto.MsgEvidenceReceiptAck {
+		t.Errorf("record = %s, want MsgEvidenceReceiptAck", dariproto.MessageType(recs[0].MessageType))
 	}
 }
 

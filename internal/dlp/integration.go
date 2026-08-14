@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 	"patty/internal/provider"
 )
 
@@ -111,7 +111,7 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 }
 
 // Ensure the wrapper satisfies the provider interface used by the
-// harness. paperproto is imported so the linter doesn't strip the
+// harness. dariproto is imported so the linter doesn't strip the
 // same-package use; the wrapper itself proxies the inner provider.
 var _ provider.Provider = (*Provider)(nil)
-var _ = paperproto.ALPNProtocol
+var _ = dariproto.DARIProtocol

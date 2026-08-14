@@ -1,4 +1,4 @@
-package paper
+package dari
 
 import (
 	"context"
@@ -17,18 +17,18 @@ import (
 	"time"
 
 	"patty/internal/evidence"
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 	"patty/internal/provider"
 	"patty/internal/provenancewire"
 )
 
-// live_e2e_test.go is the end-to-end validation of the PAPER
+// live_e2e_test.go is the end-to-end validation of the DARI
 // governance loop (harness plans A1/A3/A4/A5 + B1/B3, e2e). It is
 // gated so normal CI skips it:
 //
-//   PAPER_LIVE_E2E=1      — full loop against a REAL relay binary with
+//   DARI_LIVE_E2E=1      — full loop against a REAL relay binary with
 //                            an in-test OpenAI-compatible PIA (offline).
-//   PAPER_LIVE_E2E_LIVE=1 — additionally drive real inference through
+//   DARI_LIVE_E2E_LIVE=1 — additionally drive real inference through
 //                            the yolo-auto gateway (credentials from the
 //                            parent repo's .env), mimicking a vLLM/SGLang
 //                            deployment.
@@ -47,7 +47,7 @@ func parentRepoRoot(t *testing.T) string {
 	if root := os.Getenv("PCCP_ROOT"); root != "" {
 		return root
 	}
-	// internal/provider/paper → up 4 levels = patty-code-pccp's parent.
+	// internal/provider/dari → up 4 levels = patty-code-pccp's parent.
 	_, thisFile, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("cannot locate test file")
@@ -152,8 +152,8 @@ func enrollHarness(t *testing.T, adminAddr, harnessID string, dir string) {
 	if err := os.WriteFile(keyPath, priv, 0o600); err != nil {
 		t.Fatalf("write key: %v", err)
 	}
-	t.Setenv("PAPER_HARNESS_CREDENTIAL_FILE", credPath)
-	t.Setenv("PAPER_HARNESS_KEY_FILE", keyPath)
+	t.Setenv("DARI_HARNESS_CREDENTIAL_FILE", credPath)
+	t.Setenv("DARI_HARNESS_KEY_FILE", keyPath)
 }
 
 // runLiveE2E drives the whole loop. livePIA, when non-nil, is the
@@ -181,15 +181,15 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 		piaURL = mockPIA.url
 	}
 
-	paperPort := freePort(t)
+	dariPort := freePort(t)
 	adminPort := freePort(t)
-	paperAddr := fmt.Sprintf("127.0.0.1:%d", paperPort)
+	dariAddr := fmt.Sprintf("127.0.0.1:%d", dariPort)
 	adminAddr := fmt.Sprintf("127.0.0.1:%d", adminPort)
 
 	relayCmd := exec.Command(relayBin)
 	relayCmd.Env = append(os.Environ(),
 		"PCCP_DB_DSN="+filepath.Join(tmp, "e2e.db"),
-		fmt.Sprintf("PCCP_RELAY_PAPER_ADDR=%s", paperAddr),
+		fmt.Sprintf("PCCP_RELAY_DARI_ADDR=%s", dariAddr),
 		fmt.Sprintf("PCCP_RELAY_HTTP_ADDR=%s", adminAddr),
 		"PCCP_PIA_URL="+piaURL,
 		"PCCP_PIA_API_KEY="+piaKey,
@@ -225,7 +225,7 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 
 	prov, err := New(provider.Config{
 		Name:    "paper-e2e",
-		BaseURL: paperAddr,
+		BaseURL: dariAddr,
 		Model:   model,
 		APIKey:  "unused-paper-auth-is-mutual-tls",
 	})
@@ -359,7 +359,7 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 // The reader goroutine only invokes the handler while the connection
 // is up, so the assertion is on conn presence at call time.
 func liveConnAckSenderFor(t *testing.T, p *Provider) provenancewire.AckSender {
-	return ackSenderFunc(func(rec *paperproto.Record) error {
+	return ackSenderFunc(func(rec *dariproto.Record) error {
 		p.mu.Lock()
 		conn := p.conn
 		p.mu.Unlock()
@@ -370,9 +370,9 @@ func liveConnAckSenderFor(t *testing.T, p *Provider) provenancewire.AckSender {
 	})
 }
 
-type ackSenderFunc func(rec *paperproto.Record) error
+type ackSenderFunc func(rec *dariproto.Record) error
 
-func (f ackSenderFunc) SendRecord(rec *paperproto.Record) error { return f(rec) }
+func (f ackSenderFunc) SendRecord(rec *dariproto.Record) error { return f(rec) }
 
 const mockPIAModel = "e2e-mock-model"
 
@@ -440,15 +440,15 @@ type httptestServerShim struct {
 }
 
 func TestPaperLiveE2EOffline(t *testing.T) {
-	if os.Getenv("PAPER_LIVE_E2E") != "1" {
-		t.Skip("set PAPER_LIVE_E2E=1 to run the live relay e2e loop")
+	if os.Getenv("DARI_LIVE_E2E") != "1" {
+		t.Skip("set DARI_LIVE_E2E=1 to run the live relay e2e loop")
 	}
 	runLiveE2E(t, "", "", "")
 }
 
 func TestPaperLiveE2ERealModel(t *testing.T) {
-	if os.Getenv("PAPER_LIVE_E2E_LIVE") != "1" {
-		t.Skip("set PAPER_LIVE_E2E_LIVE=1 to run the live-model e2e (yolo-auto)")
+	if os.Getenv("DARI_LIVE_E2E_LIVE") != "1" {
+		t.Skip("set DARI_LIVE_E2E_LIVE=1 to run the live-model e2e (yolo-auto)")
 	}
 	env := loadDotEnv(t, parentRepoRoot(t))
 	endpoint := env["YOLO_AUTO_ENDPOINT"]

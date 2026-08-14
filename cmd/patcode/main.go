@@ -11,12 +11,12 @@ import (
 
 	// Blank imports wire compile-time built-ins into their registries.
 	//
-	// PAPER-only policy (PRD v2 §0.2): the official Harness must not contain
+	// DARI-only policy (PRD v2 §0.2): the official Harness must not contain
 	// generic OpenAI/Anthropic/Responses providers for Patty service inference.
 	// Only the PAPER provider is registered; the openai/anthropic/responses
 	// packages are still in the source tree for PATTY_ALLOW_GENERIC=1 dev mode
 	// but are NOT imported here, so they cannot be used in official builds.
-	_ "patty/internal/provider/paper"
+	_ "patty/internal/provider/dari"
 	_ "patty/internal/tool/builtin"
 )
 

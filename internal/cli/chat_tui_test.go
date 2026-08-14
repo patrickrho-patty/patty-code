@@ -77,8 +77,8 @@ func TestMain(m *testing.M) {
 	}
 
 	// CLI tests instantiate providers from `kind = "openai"` test configs to
-	// validate the lifecycle flow without dialing a real PAPER relay. The
-	// PRD-mandated PAPER-only policy blocks those generic kinds unless
+	// validate the lifecycle flow without dialing a real DARI relay. The
+	// PRD-mandated DARI-only policy blocks those generic kinds unless
 	// PATTY_ALLOW_GENERIC=1 is set, so the test binary always opts in.
 	os.Setenv("PATTY_ALLOW_GENERIC", "1")
 	// Some CLI tests exercise startup, which installs the product's default

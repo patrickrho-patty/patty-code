@@ -1417,16 +1417,16 @@ func Default() *Config {
 			Pairing:            BotPairingConfig{Enabled: true, RequestTTLMinutes: 60, MaxPendingPerPlatform: 3},
 			Allowlist:          BotAllowlist{Enabled: true},
 		},
-		// PRD v2 §0.2: The official Harness uses PAPER protocol only.
-		// The default provider connects to a PCCP PAPER Relay, not an
-		// OpenAI-compatible HTTP endpoint. Set PAPER_RELAY_ADDR to point
-		// at your Relay's PAPER listener (default localhost:8444).
+		// PRD v2 §0.2: The official Harness uses the DARI protocol only.
+		// The default provider connects to a PCCP DARI Relay, not an
+		// OpenAI-compatible HTTP endpoint. Set DARI_RELAY_ADDR to point
+		// at your Relay's DARI listener (default localhost:8444).
 		Providers: []ProviderEntry{{
 			Name:          "patty",
-			Kind:          "paper",
+			Kind:          "dari",
 			BaseURL:       "localhost:8444",
 			Model:         "patty-code-standard",
-			APIKeyEnv:     "PAPER_HARNESS_KEY",
+			APIKeyEnv:     "DARI_HARNESS_KEY",
 			ContextWindow: 262144,
 		}},
 	}

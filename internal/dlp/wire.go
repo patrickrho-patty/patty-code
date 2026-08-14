@@ -4,11 +4,11 @@ import (
 	"errors"
 	"sync"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 )
 
 // OutboundHook is the connector-side wrapper the harness applies
-// to every AI_OPEN payload before PAPER dispatch. The hook
+// to every AI_OPEN payload before DARI dispatch. The hook
 // delegates to a Scanner instance and short-circuits dispatch when
 // the scan verdict is DENY (PRD §16.3, §16.5).
 type OutboundHook struct {
@@ -28,7 +28,7 @@ type OutboundHook struct {
 }
 
 // NewOutboundHook constructs the hook with fail-closed semantics.
-// Production wires this in front of the PAPER transport so every
+// Production wires this in front of the DARI transport so every
 // outbound context passes through the scan.
 func NewOutboundHook(scanner *Scanner) *OutboundHook {
 	return &OutboundHook{
@@ -85,13 +85,13 @@ func (h *OutboundHook) Apply(payload []byte) (HookResult, error) {
 	}, nil
 }
 
-// ApplyMessage applies the hook to a PAPER control record's
+// ApplyMessage applies the hook to a DARI control record's
 // payload. The harness's transport layer invokes this on every
 // outgoing record before the call to SendRecord. When the scan
 // passes (or allow-after-redact is on) the record's payload is
 // replaced in place with the redacted text; the caller MUST use
 // the returned record rather than the original.
-func (h *OutboundHook) ApplyMessage(rec *paperproto.Record) (HookResult, error) {
+func (h *OutboundHook) ApplyMessage(rec *dariproto.Record) (HookResult, error) {
 	if rec == nil {
 		return HookResult{}, errors.New("dlp: nil record")
 	}

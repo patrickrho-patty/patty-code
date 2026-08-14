@@ -1149,7 +1149,7 @@ var registry = map[string]Factory{}
 
 // Register adds a factory under a kind (e.g. "openai"). Intended for init().
 // genericBlockedKinds are the generic HTTP LLM protocol providers blocked
-// by the PAPER-only policy (PRD v2 §0.2, §826). The official Harness must
+// by the DARI-only policy (PRD v2 §0.2, §826). The official Harness must
 // not use OpenAI/Anthropic/REST for Patty service inference.
 // PATTY_ALLOW_GENERIC=1 re-enables for development.
 var genericBlockedKinds = map[string]bool{
@@ -1159,7 +1159,11 @@ var genericBlockedKinds = map[string]bool{
 	"dashscope-responses": true,
 }
 
-// IsBlockedKind reports whether kind is blocked by the PAPER-only policy.
+// IsBlockedKind reports whether kind is blocked by the DARI-only policy.
+// LegacyPaperKind maps the historical provider kind to its DARI
+// successor so pre-migration configs keep resolving.
+const LegacyPaperKind = "paper"
+
 func IsBlockedKind(kind string) bool {
 	if os.Getenv("PATTY_ALLOW_GENERIC") == "1" {
 		return false
@@ -1176,11 +1180,16 @@ func Register(kind string, f Factory) {
 }
 
 // New instantiates the provider of the given kind. Generic HTTP protocol
-// providers are blocked unless PATTY_ALLOW_GENERIC=1 (PRD v2 §0.2).
+// providers are blocked unless PATTY_ALLOW_GENERIC=1 (PRD v2 §0.2). The
+// historical "paper" kind resolves to its DARI successor so
+// pre-migration configs keep working.
 func New(kind string, cfg Config) (Provider, error) {
+	if kind == LegacyPaperKind {
+		kind = "dari"
+	}
 	if IsBlockedKind(kind) {
 		return nil, fmt.Errorf(
-			"provider %q is blocked: official Patty Code inference uses PAPER protocol only (PRD v2 §0.2). Set PATTY_ALLOW_GENERIC=1 for development.", kind)
+			"provider %q is blocked: official Patty Code inference uses the DARI protocol only (PRD v2 §0.2). Set PATTY_ALLOW_GENERIC=1 for development.", kind)
 	}
 	f, ok := registry[kind]
 	if !ok {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 )
 
 // TestOutboundHookAllowsCleanPayload is the green path: a clean
@@ -113,14 +113,14 @@ func TestOutboundHookEmptyPayload(t *testing.T) {
 }
 
 // TestOutboundHookMessageWrapping covers the transport-layer
-// entry point: the hook accepts a paperproto.Record and redacts
+// entry point: the hook accepts a dariproto.Record and redacts
 // its payload in place.
 func TestOutboundHookMessageWrapping(t *testing.T) {
 	h := NewOutboundHook(NewScanner())
 	h.BlockOnDeny = false
-	rec := &paperproto.Record{
-		Kind:        paperproto.KindMessage,
-		MessageType: uint16(paperproto.MsgAIOpen),
+	rec := &dariproto.Record{
+		Kind:        dariproto.KindMessage,
+		MessageType: uint16(dariproto.MsgAIOpen),
 		Payload:     []byte("My AWS key is AKIAABCDEFGHIJKLMNOP"),
 	}
 	res, err := h.ApplyMessage(rec)
@@ -143,7 +143,7 @@ func TestOutboundHookRejectsNil(t *testing.T) {
 	if _, err := (*OutboundHook)(nil).Apply([]byte("x")); err == nil {
 		t.Fatal("nil hook must fail")
 	}
-	if _, err := (*OutboundHook)(nil).ApplyMessage(&paperproto.Record{}); err == nil {
+	if _, err := (*OutboundHook)(nil).ApplyMessage(&dariproto.Record{}); err == nil {
 		t.Fatal("nil hook must fail")
 	}
 }

@@ -41,7 +41,7 @@ import (
 	// does; importing builtin above registers the built-in tools.
 	_ "patty/internal/provider/anthropic"
 	_ "patty/internal/provider/openai"
-	_ "patty/internal/provider/paper"
+	_ "patty/internal/provider/dari"
 )
 
 func TestAgentKeepPolicyFromConfig(t *testing.T) {

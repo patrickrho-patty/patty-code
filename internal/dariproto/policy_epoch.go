@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"crypto/sha256"
@@ -163,11 +163,11 @@ func (c *PolicyEpochClient) Rebind(epoch *PolicyEpoch) error {
 	if c.bound != nil {
 		if epoch.MonotonicSequence <= c.bound.MonotonicSequence {
 			c.rebindFailureCount++
-			return fmt.Errorf("paper: new epoch sequence %d is not greater than current %d", epoch.MonotonicSequence, c.bound.MonotonicSequence)
+			return fmt.Errorf("dari: new epoch sequence %d is not greater than current %d", epoch.MonotonicSequence, c.bound.MonotonicSequence)
 		}
 		if epoch.IssuedAtUnixMs < c.bound.IssuedAtUnixMs {
 			c.rebindFailureCount++
-			return fmt.Errorf("paper: new epoch issued-at %d is older than current %d", epoch.IssuedAtUnixMs, c.bound.IssuedAtUnixMs)
+			return fmt.Errorf("dari: new epoch issued-at %d is older than current %d", epoch.IssuedAtUnixMs, c.bound.IssuedAtUnixMs)
 		}
 	}
 	c.bound = epoch
@@ -261,10 +261,10 @@ func (c *PolicyEpochClient) validate(epoch *PolicyEpoch, nowMs int64) error {
 		return ErrPolicyEpochInvalid
 	}
 	if epoch.NotBeforeUnixMs > 0 && nowMs < epoch.NotBeforeUnixMs {
-		return fmt.Errorf("paper: policy epoch %q is not yet valid (now=%d, notBefore=%d)", epoch.EpochID, nowMs, epoch.NotBeforeUnixMs)
+		return fmt.Errorf("dari: policy epoch %q is not yet valid (now=%d, notBefore=%d)", epoch.EpochID, nowMs, epoch.NotBeforeUnixMs)
 	}
 	if epoch.NotAfterUnixMs > 0 && nowMs >= epoch.NotAfterUnixMs {
-		return fmt.Errorf("paper: policy epoch %q is expired at now=%d", epoch.EpochID, nowMs)
+		return fmt.Errorf("dari: policy epoch %q is expired at now=%d", epoch.EpochID, nowMs)
 	}
 	return nil
 }
@@ -272,10 +272,10 @@ func (c *PolicyEpochClient) validate(epoch *PolicyEpoch, nowMs int64) error {
 // Sentinel errors for the policy-epoch boundary. The connector surfaces
 // these to the operator UI without translation.
 var (
-	ErrPolicyEpochInvalid     = errors.New("paper: policy epoch is empty or malformed")
-	ErrPolicyEpochUnbound     = errors.New("paper: no policy epoch bound to the connector")
-	ErrPolicyEpochMismatch    = errors.New("paper: presented policy epoch does not match the bound epoch")
-	ErrPolicyEpochExpired     = errors.New("paper: bound policy epoch is past its validity window")
+	ErrPolicyEpochInvalid     = errors.New("dari: policy epoch is empty or malformed")
+	ErrPolicyEpochUnbound     = errors.New("dari: no policy epoch bound to the connector")
+	ErrPolicyEpochMismatch    = errors.New("dari: presented policy epoch does not match the bound epoch")
+	ErrPolicyEpochExpired     = errors.New("dari: bound policy epoch is past its validity window")
 )
 
 // IsPolicyEpochMismatch reports whether err is the epoch-mismatch sentinel.
@@ -292,7 +292,7 @@ func IsPolicyEpochUnbound(err error) bool { return errors.Is(err, ErrPolicyEpoch
 // when the policy is updated.
 func EncodePolicyEpochMessage(epoch *PolicyEpoch) ([]byte, error) {
 	if epoch == nil {
-		return nil, errors.New("paper: nil policy epoch")
+		return nil, errors.New("dari: nil policy epoch")
 	}
 	return MarshalCBOR(epoch)
 }
@@ -300,11 +300,11 @@ func EncodePolicyEpochMessage(epoch *PolicyEpoch) ([]byte, error) {
 // DecodePolicyEpochMessage parses a POLICY message body.
 func DecodePolicyEpochMessage(data []byte) (*PolicyEpoch, error) {
 	if len(data) == 0 {
-		return nil, errors.New("paper: empty policy epoch body")
+		return nil, errors.New("dari: empty policy epoch body")
 	}
 	var epoch PolicyEpoch
 	if err := UnmarshalCBOR(data, &epoch); err != nil {
-		return nil, fmt.Errorf("paper: decode policy epoch: %w", err)
+		return nil, fmt.Errorf("dari: decode policy epoch: %w", err)
 	}
 	return &epoch, nil
 }

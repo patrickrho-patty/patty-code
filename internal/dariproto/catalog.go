@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"crypto/sha256"
@@ -176,19 +176,19 @@ func (c *CatalogClient) ApplySnapshot(snap *CatalogSnapshot, expectedEpoch strin
 	nowMs := c.nowFn().UnixMilli()
 	if expectedEpoch != "" && snap.EpochID != "" && snap.EpochID != expectedEpoch {
 		c.applyFailureCount++
-		return fmt.Errorf("paper: catalog epoch %q does not match bound epoch %q", snap.EpochID, expectedEpoch)
+		return fmt.Errorf("dari: catalog epoch %q does not match bound epoch %q", snap.EpochID, expectedEpoch)
 	}
 	if snap.NotAfterUnixMs > 0 && nowMs >= snap.NotAfterUnixMs {
 		c.applyFailureCount++
-		return fmt.Errorf("paper: catalog snapshot expired at now=%d", nowMs)
+		return fmt.Errorf("dari: catalog snapshot expired at now=%d", nowMs)
 	}
 	if c.current != nil && snap.IssuedSequence <= c.current.IssuedSequence {
 		c.applyFailureCount++
-		return fmt.Errorf("paper: catalog sequence %d is not greater than current %d", snap.IssuedSequence, c.current.IssuedSequence)
+		return fmt.Errorf("dari: catalog sequence %d is not greater than current %d", snap.IssuedSequence, c.current.IssuedSequence)
 	}
 	if got := CatalogDigest(snap); got != snap.Digest {
 		c.applyFailureCount++
-		return errors.New("paper: catalog digest mismatch")
+		return errors.New("dari: catalog digest mismatch")
 	}
 	c.current = snap
 	return nil
@@ -208,19 +208,19 @@ func (c *CatalogClient) ApplyDelta(delta *CatalogDelta, expectedEpoch string) er
 	nowMs := c.nowFn().UnixMilli()
 	if c.current == nil {
 		c.applyFailureCount++
-		return errors.New("paper: no baseline catalog to apply delta to")
+		return errors.New("dari: no baseline catalog to apply delta to")
 	}
 	if expectedEpoch != "" && delta.EpochID != "" && delta.EpochID != expectedEpoch {
 		c.applyFailureCount++
-		return fmt.Errorf("paper: delta epoch %q does not match bound epoch %q", delta.EpochID, expectedEpoch)
+		return fmt.Errorf("dari: delta epoch %q does not match bound epoch %q", delta.EpochID, expectedEpoch)
 	}
 	if delta.IssuedSequence <= c.current.IssuedSequence {
 		c.applyFailureCount++
-		return fmt.Errorf("paper: delta sequence %d is not greater than current %d", delta.IssuedSequence, c.current.IssuedSequence)
+		return fmt.Errorf("dari: delta sequence %d is not greater than current %d", delta.IssuedSequence, c.current.IssuedSequence)
 	}
 	if c.current.NotAfterUnixMs > 0 && nowMs >= c.current.NotAfterUnixMs {
 		c.applyFailureCount++
-		return errors.New("paper: catalog already expired; cannot apply delta")
+		return errors.New("dari: catalog already expired; cannot apply delta")
 	}
 	// Merge: removals first, then updates, then additions. The
 	// merge MUST allocate a fresh backing array; reusing
@@ -356,11 +356,11 @@ type CatalogMetrics struct {
 // Sentinel errors for the catalog boundary. The connector surfaces
 // these to the operator UI without translation.
 var (
-	ErrCatalogInvalid        = errors.New("paper: catalog snapshot is empty or malformed")
-	ErrCatalogUnbound        = errors.New("paper: no catalog applied to the connector")
-	ErrCatalogStale          = errors.New("paper: catalog snapshot is past its validity window")
-	ErrCatalogModelNotFound  = errors.New("paper: requested model is not in the relay's catalog")
-	ErrCatalogEntryExpired    = errors.New("paper: catalog entry is past its deactivation time")
+	ErrCatalogInvalid        = errors.New("dari: catalog snapshot is empty or malformed")
+	ErrCatalogUnbound        = errors.New("dari: no catalog applied to the connector")
+	ErrCatalogStale          = errors.New("dari: catalog snapshot is past its validity window")
+	ErrCatalogModelNotFound  = errors.New("dari: requested model is not in the relay's catalog")
+	ErrCatalogEntryExpired    = errors.New("dari: catalog entry is past its deactivation time")
 )
 
 // IsCatalogStale reports whether err is the catalog-stale sentinel.
@@ -375,7 +375,7 @@ func IsCatalogEntryExpired(err error) bool { return errors.Is(err, ErrCatalogEnt
 // EncodeCatalogSnapshot serializes a snapshot for the wire.
 func EncodeCatalogSnapshot(snap *CatalogSnapshot) ([]byte, error) {
 	if snap == nil {
-		return nil, errors.New("paper: nil catalog snapshot")
+		return nil, errors.New("dari: nil catalog snapshot")
 	}
 	return MarshalCBOR(snap)
 }
@@ -383,11 +383,11 @@ func EncodeCatalogSnapshot(snap *CatalogSnapshot) ([]byte, error) {
 // DecodeCatalogSnapshot parses a CATALOG_SNAPSHOT body.
 func DecodeCatalogSnapshot(data []byte) (*CatalogSnapshot, error) {
 	if len(data) == 0 {
-		return nil, errors.New("paper: empty catalog snapshot body")
+		return nil, errors.New("dari: empty catalog snapshot body")
 	}
 	var snap CatalogSnapshot
 	if err := UnmarshalCBOR(data, &snap); err != nil {
-		return nil, fmt.Errorf("paper: decode catalog snapshot: %w", err)
+		return nil, fmt.Errorf("dari: decode catalog snapshot: %w", err)
 	}
 	return &snap, nil
 }
@@ -395,7 +395,7 @@ func DecodeCatalogSnapshot(data []byte) (*CatalogSnapshot, error) {
 // EncodeCatalogDelta serializes a delta for the wire.
 func EncodeCatalogDelta(delta *CatalogDelta) ([]byte, error) {
 	if delta == nil {
-		return nil, errors.New("paper: nil catalog delta")
+		return nil, errors.New("dari: nil catalog delta")
 	}
 	return MarshalCBOR(delta)
 }
@@ -403,11 +403,11 @@ func EncodeCatalogDelta(delta *CatalogDelta) ([]byte, error) {
 // DecodeCatalogDelta parses a CATALOG_DELTA body.
 func DecodeCatalogDelta(data []byte) (*CatalogDelta, error) {
 	if len(data) == 0 {
-		return nil, errors.New("paper: empty catalog delta body")
+		return nil, errors.New("dari: empty catalog delta body")
 	}
 	var delta CatalogDelta
 	if err := UnmarshalCBOR(data, &delta); err != nil {
-		return nil, fmt.Errorf("paper: decode catalog delta: %w", err)
+		return nil, fmt.Errorf("dari: decode catalog delta: %w", err)
 	}
 	return &delta, nil
 }

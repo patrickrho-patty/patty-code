@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 )
 
 // ReceiptStore persists evidence receipts the relay pushes to the
@@ -189,7 +189,7 @@ type IncomingAckHandler struct {
 // AckSender is the dispatch seam for the connector's reply. The
 // harness wires this to the live PAPER transport.
 type AckSender interface {
-	SendRecord(rec *paperproto.Record) error
+	SendRecord(rec *dariproto.Record) error
 }
 
 // NewIncomingAckHandler constructs the handler.
@@ -230,9 +230,9 @@ func (h *IncomingAckHandler) HandleReceipt(receipt *EvidenceReceiptEnvelope) ([3
 		h.failures++
 		return digest, fmt.Errorf("provenancewire: encode ack: %w", err)
 	}
-	rec := &paperproto.Record{
-		Kind:        paperproto.KindMessage,
-		MessageType: uint16(paperproto.MsgEvidenceReceiptAck),
+	rec := &dariproto.Record{
+		Kind:        dariproto.KindMessage,
+		MessageType: uint16(dariproto.MsgEvidenceReceiptAck),
 		Payload:     data,
 	}
 	if err := h.send.SendRecord(rec); err != nil {

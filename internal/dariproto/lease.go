@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"bytes"
@@ -104,7 +104,7 @@ func (v *LeaseVerifier) Verify(lease *Lease, subjectPeerID, sessionID string, no
 	// lease MUST declare the matching issuer. An empty lease issuer
 	// would otherwise bypass the trust bundle entirely.
 	if v.issuerID != "" && lease.Issuer != v.issuerID {
-		return fmt.Errorf("paper: lease issuer %q is not in trust bundle (expected %q)", lease.Issuer, v.issuerID)
+		return fmt.Errorf("dari: lease issuer %q is not in trust bundle (expected %q)", lease.Issuer, v.issuerID)
 	}
 	if strings.EqualFold(lease.Status, "revoked") {
 		return ErrLeaseRevoked
@@ -116,10 +116,10 @@ func (v *LeaseVerifier) Verify(lease *Lease, subjectPeerID, sessionID string, no
 		return ErrLeaseSubjectMismatch
 	}
 	if sessionID != "" && lease.SessionID != "" && lease.SessionID != sessionID {
-		return fmt.Errorf("paper: lease session %q does not match connection session %q", lease.SessionID, sessionID)
+		return fmt.Errorf("dari: lease session %q does not match connection session %q", lease.SessionID, sessionID)
 	}
 	if lease.NotBeforeUnixMs > 0 && nowMs < lease.NotBeforeUnixMs {
-		return fmt.Errorf("paper: lease not yet valid (now=%d, notBefore=%d)", nowMs, lease.NotBeforeUnixMs)
+		return fmt.Errorf("dari: lease not yet valid (now=%d, notBefore=%d)", nowMs, lease.NotBeforeUnixMs)
 	}
 	if lease.NotAfterUnixMs > 0 && nowMs >= lease.NotAfterUnixMs {
 		return ErrLeaseExpired
@@ -268,11 +268,11 @@ func writeLengthPrefixedU64(dst []byte, value uint64) []byte {
 // translation so operators can "is the lease expired vs. revoked vs.
 // invalid" without parsing prose.
 var (
-	ErrLeaseInvalid         = errors.New("paper: lease is empty or malformed")
-	ErrLeaseExpired         = errors.New("paper: lease expired")
-	ErrLeaseRevoked         = errors.New("paper: lease revoked")
-	ErrLeaseSubjectMismatch = errors.New("paper: lease subject peer does not match authenticated harness")
-	ErrLeaseSignatureInvalid = errors.New("paper: lease signature verification failed")
+	ErrLeaseInvalid         = errors.New("dari: lease is empty or malformed")
+	ErrLeaseExpired         = errors.New("dari: lease expired")
+	ErrLeaseRevoked         = errors.New("dari: lease revoked")
+	ErrLeaseSubjectMismatch = errors.New("dari: lease subject peer does not match authenticated harness")
+	ErrLeaseSignatureInvalid = errors.New("dari: lease signature verification failed")
 )
 
 // IsLeaseExpired reports whether err is the lease-expiry sentinel.

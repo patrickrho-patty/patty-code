@@ -16,7 +16,7 @@ import (
 // only those whose provider API key is set.
 func TestModelRefsFromConfig(t *testing.T) {
 	isolateUserConfig(t) // no patty.toml -> built-in default providers
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 	refs := modelRefs()
@@ -27,7 +27,7 @@ func TestModelRefsFromConfig(t *testing.T) {
 
 func TestBareModelOpensKeyboardPicker(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatal(err)
 	}
 	m := newTestChatTUI()
@@ -51,7 +51,7 @@ func TestBareModelOpensKeyboardPicker(t *testing.T) {
 // picker offers nothing rather than listing models the user can't select.
 func TestModelRefsSkipsUnconfigured(t *testing.T) {
 	isolateUserConfig(t)
-	t.Setenv("PAPER_HARNESS_KEY", "")
+	t.Setenv("DARI_HARNESS_KEY", "")
 	if refs := modelRefs(); len(refs) != 0 {
 		t.Errorf("no keys set → no refs, got %v", refs)
 	}
@@ -61,7 +61,7 @@ func TestModelRefsSkipsUnconfigured(t *testing.T) {
 // through the shared completion path.
 func TestModelArgCompletion(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 	m := newTestChatTUI()
@@ -78,7 +78,7 @@ func TestModelArgCompletion(t *testing.T) {
 // next startup read the global default.
 func TestPersistModelWritesDefaultModel(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 
@@ -102,7 +102,7 @@ func TestPersistModelWritesDefaultModel(t *testing.T) {
 // memory switch still goes through.
 func TestPersistModelRejectsUnknownRef(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 
@@ -119,7 +119,7 @@ func TestPersistModelRejectsUnknownRef(t *testing.T) {
 // boot's merged resolver gates it at the next launch.
 func TestPersistModelAcceptsPluginRef(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("DARI_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 

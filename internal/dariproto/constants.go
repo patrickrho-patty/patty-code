@@ -1,18 +1,15 @@
-package paperproto
+package dariproto
 
-// PAPER protocol constants (PAPER §8-9).
-// Vendored from PCCP for harness-side PAPER client support.
+// DARI protocol constants (DARI §8-9).
+// Vendored from PCCP for harness-side DARI client support.
 
-// PAPERPreface is the 8-byte connection preface for TLS/TCP binding (PAPER §8.2).
-var PAPERPreface = []byte{0x50, 0x41, 0x50, 0x45, 0x52, 0x00, 0x01, 0x0A}
+// The connection preface and the ALPN identifiers (canonical dari/1
+// plus the legacy paper/1 fallback) live in legacy_paper1.go.
 
-// ALPNProtocol is the ALPN identifier for PAPER.
-const ALPNProtocol = "paper/1"
-
-// VersionMajor is the PAPER protocol major version.
+// VersionMajor is the DARI protocol major version.
 const VersionMajor byte = 1
 
-// MessageType identifies PAPER messages.
+// MessageType identifies DARI messages.
 type MessageType uint16
 
 const (
@@ -45,7 +42,7 @@ const (
 	MsgAITokenChunk     MessageType = 0x0402
 	MsgAIComplete       MessageType = 0x0403
 
-	// Model catalog (0x0D00–0x0DFF) — paper.models/1 extension,
+	// Model catalog (0x0D00–0x0DFF) — dari.models/1 extension,
 	// mirrors the relay's internal/paper/models.go registry.
 	MsgCatalogRequest    MessageType = 0x0D00
 	MsgCatalogSnapshot   MessageType = 0x0D01
@@ -159,7 +156,7 @@ func (m MessageType) String() string {
 	}
 }
 
-// RecordKind classifies a PAPER record (PAPER §9).
+// RecordKind classifies a DARI record (DARI §9).
 type RecordKind byte
 
 const (
@@ -173,7 +170,7 @@ const (
 	KindPing    RecordKind = 7
 )
 
-// Flags is the 16-bit PAPER record flags bit field.
+// Flags is the 16-bit DARI record flags bit field.
 type Flags uint16
 
 const (
@@ -183,7 +180,7 @@ const (
 	FlagCompressed Flags = 1 << 3
 )
 
-// PeerProfile identifies the role of a PAPER peer.
+// PeerProfile identifies the role of a DARI peer.
 type PeerProfile string
 
 const (

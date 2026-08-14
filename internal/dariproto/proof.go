@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"crypto/ed25519"
@@ -9,8 +9,8 @@ import (
 	"os"
 )
 
-// ObjectType identifies a registered PAPER object type for domain-separated
-// content addressing (PAPER §32, internal/paper/crypto.go). The connector
+// ObjectType identifies a registered DARI object type for domain-separated
+// content addressing (DARI §32, internal/paper/crypto.go). The connector
 // only recognizes the PeerCredential type today; other types are rejected
 // to keep the digest domain narrow.
 type ObjectType uint16
@@ -20,7 +20,7 @@ const (
 	ObjTypePeerCredential ObjectType = 0x0100
 )
 
-// Digest is a SHA-256 content digest (PAPER §37.1).
+// Digest is a SHA-256 content digest (DARI §37.1).
 type Digest [32]byte
 
 // Bytes returns the raw digest bytes.
@@ -32,10 +32,10 @@ func (d Digest) String() string {
 }
 
 // ComputeObjectDigest computes the content-addressed digest of a registered
-// PAPER object per PAPER §32. The encoding MUST match the relay's
+// DARI object per DARI §32. The encoding MUST match the relay's
 // `internal/paper/crypto.go::ComputeObjectDigest` byte-for-byte:
 //
-//	digest = SHA256("PAPER-OBJ-v1\0" || 0x00 || uint16BE(T) || canonical_cbor(O))
+//	digest = SHA256("DARI-OBJ-v1\0" || 0x00 || uint16BE(T) || canonical_cbor(O))
 //
 // The relay writes an explicit zero byte between the domain prefix and
 // the object-type uint16 (a reserved flags byte); the connector mirrors
@@ -44,7 +44,7 @@ func (d Digest) String() string {
 // verifies the proof.
 func ComputeObjectDigest(objType ObjectType, canonicalCBOR []byte) Digest {
 	h := sha256.New()
-	h.Write([]byte("PAPER-OBJ-v1\x00"))
+	h.Write([]byte("DARI-OBJ-v1\x00"))
 	h.Write([]byte{0})
 	var typeBytes [2]byte
 	binary.BigEndian.PutUint16(typeBytes[:], uint16(objType))
@@ -56,18 +56,18 @@ func ComputeObjectDigest(objType ObjectType, canonicalCBOR []byte) Digest {
 }
 
 // AuthContextDomain is the domain-separation prefix used by the relay's
-// transcript hash (PAPER §18.2). The connector and the relay MUST agree
+// transcript hash (DARI §18.2). The connector and the relay MUST agree
 // on this constant EXACTLY — the relay's `paper.AuthContext` writes
-// "PAPER-AUTH-v1" with NO trailing NUL (verified against the live
+// "DARI-AUTH-v1" with NO trailing NUL (verified against the live
 // verifier; the e2e suite exercises the real bytes).
-const AuthContextDomain = "PAPER-AUTH-v1"
+const AuthContextDomain = "DARI-AUTH-v1"
 
 // AuthProofDomain is the domain-separation prefix used by the relay's
-// proof-of-possession signing (PAPER §18.2). Matches the relay's
+// proof-of-possession signing (DARI §18.2). Matches the relay's
 // `internal/paper/peer.go::PeerProofSigningBytes` domain constant.
 const AuthProofDomain = "DARI-AUTH-PROOF-v1\x00"
 
-// BuildAuthContext computes the PAPER authentication context hash used by both
+// BuildAuthContext computes the DARI authentication context hash used by both
 // peers to bind the proof-of-possession to the negotiated transcript. The
 // inputs are the canonical CBOR encodings of the HELLO and HELLO_ACK already
 // exchanged on the wire, the two nonces, the channel binding identifier
@@ -142,28 +142,28 @@ type AuthProofInput struct {
 // in the credential body.
 func BuildAuthProof(in AuthProofInput) (*AuthProofMessage, error) {
 	if len(in.PrivateKey) != ed25519.PrivateKeySize {
-		return nil, fmt.Errorf("paper: invalid private key size %d", len(in.PrivateKey))
+		return nil, fmt.Errorf("dari: invalid private key size %d", len(in.PrivateKey))
 	}
 	if len(in.Credential) == 0 {
-		return nil, errors.New("paper: empty peer credential")
+		return nil, errors.New("dari: empty peer credential")
 	}
 	if in.Hello == nil || in.HelloAck == nil {
-		return nil, errors.New("paper: missing HELLO/HELLO_ACK for proof context")
+		return nil, errors.New("dari: missing HELLO/HELLO_ACK for proof context")
 	}
 	if len(in.ChallengeID) == 0 {
-		return nil, errors.New("paper: empty challenge ID")
+		return nil, errors.New("dari: empty challenge ID")
 	}
 	if len(in.ChannelBinding) == 0 {
-		return nil, errors.New("paper: empty channel binding")
+		return nil, errors.New("dari: empty channel binding")
 	}
 
 	helloCBOR, err := CanonicalHelloCBOR(in.Hello)
 	if err != nil {
-		return nil, fmt.Errorf("paper: marshal HELLO: %w", err)
+		return nil, fmt.Errorf("dari: marshal HELLO: %w", err)
 	}
 	ackCBOR, err := CanonicalAckCBOR(in.HelloAck)
 	if err != nil {
-		return nil, fmt.Errorf("paper: marshal HELLO_ACK: %w", err)
+		return nil, fmt.Errorf("dari: marshal HELLO_ACK: %w", err)
 	}
 	credDigest := ComputeObjectDigest(ObjTypePeerCredential, in.Credential)
 	transcript := BuildAuthContext(
@@ -185,7 +185,7 @@ func BuildAuthProof(in AuthProofInput) (*AuthProofMessage, error) {
 }
 
 // debugAuthTranscript holds the last proof's transcript bytes for
-// cross-repo debugging (PAPER_DEBUG_AUTH). Never serialized.
+// cross-repo debugging (DARI_DEBUG_AUTH). Never serialized.
 var debugAuthTranscript []byte
 
 // DebugLastAuthTranscript returns the transcript bytes of the most
@@ -193,7 +193,7 @@ var debugAuthTranscript []byte
 func DebugLastAuthTranscript() []byte { return append([]byte(nil), debugAuthTranscript...) }
 
 // Identity is the loaded enrolled-credential pair the connector uses to
-// authenticate against a PAPER relay. The credential bytes are the raw
+// authenticate against a DARI relay. The credential bytes are the raw
 // COSE-Sign1 CBOR returned by the issuer's issuance step; the private key is
 // the Ed25519 subject key referenced inside the credential body.
 type Identity struct {
@@ -216,18 +216,18 @@ type peerCredentialBody struct {
 // relay issues binds this value; LeaseClient.Acquire verifies it.
 func (i *Identity) PeerID() (string, error) {
 	if i == nil || len(i.Credential) == 0 {
-		return "", errors.New("paper: no enrolled credential")
+		return "", errors.New("dari: no enrolled credential")
 	}
 	sign1, err := DecodeCOSESign1(i.Credential)
 	if err != nil {
-		return "", fmt.Errorf("paper: decode credential: %w", err)
+		return "", fmt.Errorf("dari: decode credential: %w", err)
 	}
 	var body peerCredentialBody
 	if err := UnmarshalCBOR(sign1.Payload, &body); err != nil {
-		return "", fmt.Errorf("paper: decode credential body: %w", err)
+		return "", fmt.Errorf("dari: decode credential body: %w", err)
 	}
 	if body.SubjectPeerID == "" {
-		return "", errors.New("paper: credential carries no subject peer id")
+		return "", errors.New("dari: credential carries no subject peer id")
 	}
 	return body.SubjectPeerID, nil
 }
@@ -235,15 +235,15 @@ func (i *Identity) PeerID() (string, error) {
 // Organization decodes the enrolled credential's organization binding.
 func (i *Identity) Organization() (string, error) {
 	if i == nil || len(i.Credential) == 0 {
-		return "", errors.New("paper: no enrolled credential")
+		return "", errors.New("dari: no enrolled credential")
 	}
 	sign1, err := DecodeCOSESign1(i.Credential)
 	if err != nil {
-		return "", fmt.Errorf("paper: decode credential: %w", err)
+		return "", fmt.Errorf("dari: decode credential: %w", err)
 	}
 	var body peerCredentialBody
 	if err := UnmarshalCBOR(sign1.Payload, &body); err != nil {
-		return "", fmt.Errorf("paper: decode credential body: %w", err)
+		return "", fmt.Errorf("dari: decode credential body: %w", err)
 	}
 	return body.Organization, nil
 }
@@ -260,21 +260,21 @@ func (i *Identity) Organization() (string, error) {
 // missing files (no enrollment yet) or recover via a setup flow.
 func LoadIdentityFromDisk(credentialPath, privateKeyPath string) (*Identity, error) {
 	if credentialPath == "" || privateKeyPath == "" {
-		return nil, errors.New("paper: credential and private-key paths are required")
+		return nil, errors.New("dari: credential and private-key paths are required")
 	}
 	cred, err := os.ReadFile(credentialPath)
 	if err != nil {
-		return nil, fmt.Errorf("paper: read credential %s: %w", credentialPath, err)
+		return nil, fmt.Errorf("dari: read credential %s: %w", credentialPath, err)
 	}
 	if len(cred) == 0 {
-		return nil, fmt.Errorf("paper: credential file %s is empty", credentialPath)
+		return nil, fmt.Errorf("dari: credential file %s is empty", credentialPath)
 	}
 	key, err := os.ReadFile(privateKeyPath)
 	if err != nil {
-		return nil, fmt.Errorf("paper: read private key %s: %w", privateKeyPath, err)
+		return nil, fmt.Errorf("dari: read private key %s: %w", privateKeyPath, err)
 	}
 	if len(key) != ed25519.PrivateKeySize {
-		return nil, fmt.Errorf("paper: private key %s has %d bytes, want %d",
+		return nil, fmt.Errorf("dari: private key %s has %d bytes, want %d",
 			privateKeyPath, len(key), ed25519.PrivateKeySize)
 	}
 	return &Identity{

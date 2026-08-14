@@ -1,4 +1,4 @@
-package paper
+package dari
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"patty/internal/paperproto"
+	"patty/internal/dariproto"
 )
 
 // catalogTestClock is a settable time source used by the catalog-pin
@@ -56,7 +56,7 @@ func newProviderWithLease(t *testing.T, model string, leaseModels []string) *Pro
 // caught by the catalog check before any AI_OPEN.
 func TestProviderRejectsModelNotInCatalog(t *testing.T) {
 	provider := newProviderWithLease(t, "patty-code-pro", []string{"patty-code-pro", "patty-code-standard"})
-	catalog := paperproto.NewCatalogClient()
+	catalog := dariproto.NewCatalogClient()
 	if err := catalog.ApplySnapshot(sampleCatalogForTest(t), "epoch-2026-01"); err != nil {
 		t.Fatalf("apply catalog: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestProviderRejectsModelNotInCatalog(t *testing.T) {
 	if err == nil {
 		t.Fatal("stream must fail when the model is not in the relay's catalog")
 	}
-	if !errors.Is(err, paperproto.ErrCatalogModelNotFound) {
+	if !errors.Is(err, dariproto.ErrCatalogModelNotFound) {
 		t.Errorf("expected ErrCatalogModelNotFound, got %v", err)
 	}
 }
@@ -74,7 +74,7 @@ func TestProviderRejectsModelNotInCatalog(t *testing.T) {
 // model is in the lease's allow-list AND the relay's catalog.
 func TestProviderAcceptsModelInCatalog(t *testing.T) {
 	provider := newProviderWithLease(t, "patty-code-standard", []string{"patty-code-standard"})
-	catalog := paperproto.NewCatalogClient()
+	catalog := dariproto.NewCatalogClient()
 	if err := catalog.ApplySnapshot(sampleCatalogForTest(t), "epoch-2026-01"); err != nil {
 		t.Fatalf("apply catalog: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestProviderAcceptsModelInCatalog(t *testing.T) {
 	// The actual stream will fail later (no real relay), but the
 	// authorization checks must pass.
 	_, err := provider.Stream(testRequestContext(t), stubRequest("patty-code-standard"))
-	if err != nil && (errors.Is(err, paperproto.ErrCatalogModelNotFound) || errors.Is(err, paperproto.ErrLeaseExpired) || errors.Is(err, paperproto.ErrLeaseSubjectMismatch)) {
+	if err != nil && (errors.Is(err, dariproto.ErrCatalogModelNotFound) || errors.Is(err, dariproto.ErrLeaseExpired) || errors.Is(err, dariproto.ErrLeaseSubjectMismatch)) {
 		t.Errorf("catalog and lease checks must pass, got %v", err)
 	}
 }
@@ -91,12 +91,12 @@ func TestProviderAcceptsModelInCatalog(t *testing.T) {
 // the A5 entry-active-until boundary.
 func TestProviderRejectsModelRejectedByCatalogAfterEntryExpires(t *testing.T) {
 	provider := newProviderWithLease(t, "patty-code-standard", []string{"patty-code-standard"})
-	catalog := paperproto.NewCatalogClient()
+	catalog := dariproto.NewCatalogClient()
 	clock := newcatalogTestClock(time.Now())
 	catalog.WithNowFunc(clock.Now)
 	snap := sampleCatalogForTest(t)
 	snap.Entries[0].ActiveUntilUnixMs = clock.Now().Add(time.Minute).UnixMilli()
-	snap.Digest = paperproto.CatalogDigest(snap)
+	snap.Digest = dariproto.CatalogDigest(snap)
 	if err := catalog.ApplySnapshot(snap, "epoch-2026-01"); err != nil {
 		t.Fatalf("apply catalog: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestProviderRejectsModelRejectedByCatalogAfterEntryExpires(t *testing.T) {
 	if err == nil {
 		t.Fatal("stream must fail when the catalog entry is past its active-until")
 	}
-	if !errors.Is(err, paperproto.ErrCatalogEntryExpired) {
+	if !errors.Is(err, dariproto.ErrCatalogEntryExpired) {
 		t.Errorf("expected ErrCatalogEntryExpired, got %v", err)
 	}
 }
@@ -117,12 +117,12 @@ func TestProviderRejectsModelRejectedByCatalogAfterEntryExpires(t *testing.T) {
 // NotAfter must refuse to dispatch.
 func TestProviderRejectsModelWithStaleCatalog(t *testing.T) {
 	provider := newProviderWithLease(t, "patty-code-standard", []string{"patty-code-standard"})
-	catalog := paperproto.NewCatalogClient()
+	catalog := dariproto.NewCatalogClient()
 	clock := newcatalogTestClock(time.Now())
 	catalog.WithNowFunc(clock.Now)
 	snap := sampleCatalogForTest(t)
 	snap.NotAfterUnixMs = clock.Now().Add(time.Minute).UnixMilli()
-	snap.Digest = paperproto.CatalogDigest(snap)
+	snap.Digest = dariproto.CatalogDigest(snap)
 	if err := catalog.ApplySnapshot(snap, "epoch-2026-01"); err != nil {
 		t.Fatalf("apply catalog: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestProviderRejectsModelWithStaleCatalog(t *testing.T) {
 	if err == nil {
 		t.Fatal("stream must fail when the catalog is stale")
 	}
-	if !errors.Is(err, paperproto.ErrCatalogStale) {
+	if !errors.Is(err, dariproto.ErrCatalogStale) {
 		t.Errorf("expected ErrCatalogStale, got %v", err)
 	}
 }
@@ -142,15 +142,15 @@ func TestProviderRejectsModelWithStaleCatalog(t *testing.T) {
 // has rebounded to a new epoch whose catalog no longer lists it.
 func TestProviderRejectsModelWhenPolicyEpochReinstalled(t *testing.T) {
 	provider := newProviderWithLease(t, "patty-code-standard", []string{"patty-code-standard"})
-	provider.SetPolicyEpochClient(paperproto.NewPolicyEpochClient())
-	catalog := paperproto.NewCatalogClient()
+	provider.SetPolicyEpochClient(dariproto.NewPolicyEpochClient())
+	catalog := dariproto.NewCatalogClient()
 	if err := catalog.ApplySnapshot(sampleCatalogForTest(t), "epoch-2026-01"); err != nil {
 		t.Fatalf("apply catalog: %v", err)
 	}
 	provider.SetCatalogClient(catalog)
 	// Rebind to a new epoch. The provider's p.policyEpoch now points
 	// at epoch-2026-02.
-	provider.RebindPolicyEpoch(&paperproto.PolicyEpoch{
+	provider.RebindPolicyEpoch(&dariproto.PolicyEpoch{
 		EpochID:           "epoch-2026-02",
 		IssuedAtUnixMs:    time.Now().UnixMilli(),
 		NotAfterUnixMs:    time.Now().Add(time.Hour).UnixMilli(),
@@ -161,7 +161,7 @@ func TestProviderRejectsModelWhenPolicyEpochReinstalled(t *testing.T) {
 	// bound epoch is now epoch-2026-02, so apply fails.
 	stale := sampleCatalogForTest(t)
 	stale.IssuedSequence = 2
-	stale.Digest = paperproto.CatalogDigest(stale)
+	stale.Digest = dariproto.CatalogDigest(stale)
 	err := provider.ApplyCatalogSnapshot(stale)
 	if err == nil {
 		t.Fatal("stale catalog must reject after policy epoch rebind")
@@ -180,7 +180,7 @@ func TestProviderAllowsModelWhenCatalogNotConfigured(t *testing.T) {
 	// The authorization checks must pass; the stream will fail later
 	// at the dial stage.
 	_, err := provider.Stream(testRequestContext(t), stubRequest("patty-code-standard"))
-	if err != nil && (errors.Is(err, paperproto.ErrCatalogModelNotFound) || errors.Is(err, paperproto.ErrCatalogStale) || errors.Is(err, paperproto.ErrCatalogEntryExpired)) {
+	if err != nil && (errors.Is(err, dariproto.ErrCatalogModelNotFound) || errors.Is(err, dariproto.ErrCatalogStale) || errors.Is(err, dariproto.ErrCatalogEntryExpired)) {
 		t.Errorf("catalog check should be skipped when no client is configured, got %v", err)
 	}
 }
@@ -189,8 +189,8 @@ func TestProviderAllowsModelWhenCatalogNotConfigured(t *testing.T) {
 // binding guard.
 func TestProviderBindPolicyEpochRejectsInvalid(t *testing.T) {
 	provider := newProviderWithLease(t, "patty-code-standard", []string{"patty-code-standard"})
-	provider.SetPolicyEpochClient(paperproto.NewPolicyEpochClient())
-	if err := provider.BindPolicyEpoch(&paperproto.PolicyEpoch{}); err == nil {
+	provider.SetPolicyEpochClient(dariproto.NewPolicyEpochClient())
+	if err := provider.BindPolicyEpoch(&dariproto.PolicyEpoch{}); err == nil {
 		t.Fatal("empty epoch must fail")
 	}
 }
@@ -199,8 +199,8 @@ func TestProviderBindPolicyEpochRejectsInvalid(t *testing.T) {
 // the provider combines lease, policy-epoch, and catalog metrics.
 func TestProviderMetricsExposeAllThreeSignals(t *testing.T) {
 	provider := newProviderWithLease(t, "patty-code-standard", []string{"patty-code-standard"})
-	provider.SetPolicyEpochClient(paperproto.NewPolicyEpochClient())
-	catalog := paperproto.NewCatalogClient()
+	provider.SetPolicyEpochClient(dariproto.NewPolicyEpochClient())
+	catalog := dariproto.NewCatalogClient()
 	if err := catalog.ApplySnapshot(sampleCatalogForTest(t), "epoch-2026-01"); err != nil {
 		t.Fatalf("apply catalog: %v", err)
 	}
@@ -222,16 +222,16 @@ func TestProviderMetricsExposeAllThreeSignals(t *testing.T) {
 
 // sampleCatalogForTest returns a fresh CatalogSnapshot at the
 // supplied time with one model entry.
-func sampleCatalogForTest(t *testing.T) *paperproto.CatalogSnapshot {
+func sampleCatalogForTest(t *testing.T) *dariproto.CatalogSnapshot {
 	t.Helper()
 	now := time.Now()
-	snap := &paperproto.CatalogSnapshot{
+	snap := &dariproto.CatalogSnapshot{
 		Version:        1,
 		EpochID:        "epoch-2026-01",
 		IssuedAtUnixMs: now.UnixMilli(),
 		NotAfterUnixMs: now.Add(time.Hour).UnixMilli(),
 		IssuedSequence: 1,
-		Entries: []paperproto.CatalogEntry{
+		Entries: []dariproto.CatalogEntry{
 			{
 				ModelID:           "patty-code-standard",
 				Version:           "1.0.0",
@@ -242,6 +242,6 @@ func sampleCatalogForTest(t *testing.T) *paperproto.CatalogSnapshot {
 			},
 		},
 	}
-	snap.Digest = paperproto.CatalogDigest(snap)
+	snap.Digest = dariproto.CatalogDigest(snap)
 	return snap
 }

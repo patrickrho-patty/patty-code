@@ -1,4 +1,4 @@
-package paper
+package dari
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"patty/internal/provenancewire"
 )
 
-var errNoConn = errors.New("paper: no live connection for provenance flush")
+var errNoConn = errors.New("dari: no live connection for provenance flush")
 
 // provenance_bridge.go wires the harness's provenance emission (B1)
-// into the live PAPER transport. The provider owns one emitter per
+// into the live DARI transport. The provider owns one emitter per
 // session; the harness's tool/evidence layers record envelopes onto
 // it, and every completed governed exchange flushes the pending
 // family to the relay in dependency order (changeset → span → action

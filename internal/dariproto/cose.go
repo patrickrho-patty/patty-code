@@ -1,4 +1,4 @@
-package paperproto
+package dariproto
 
 import (
 	"crypto/ed25519"
@@ -14,7 +14,7 @@ import (
 // Sig_structure (RFC 8152 §4.4).
 func CreateCOSESign1(payload []byte, priv ed25519.PrivateKey, kid []byte) ([]byte, error) {
 	if len(priv) == 0 {
-		return nil, errors.New("paper: empty private key")
+		return nil, errors.New("dari: empty private key")
 	}
 	protected := map[int]interface{}{
 		1: int(-8), // COSEAlgEdDSA
@@ -22,7 +22,7 @@ func CreateCOSESign1(payload []byte, priv ed25519.PrivateKey, kid []byte) ([]byt
 	}
 	protectedBytes, err := MarshalCBOR(protected)
 	if err != nil {
-		return nil, fmt.Errorf("paper: marshal protected header: %w", err)
+		return nil, fmt.Errorf("dari: marshal protected header: %w", err)
 	}
 	sigInput := []interface{}{
 		"Signature1",
@@ -32,7 +32,7 @@ func CreateCOSESign1(payload []byte, priv ed25519.PrivateKey, kid []byte) ([]byt
 	}
 	sigStruct, err := MarshalCBOR(sigInput)
 	if err != nil {
-		return nil, fmt.Errorf("paper: marshal sig structure: %w", err)
+		return nil, fmt.Errorf("dari: marshal sig structure: %w", err)
 	}
 	signature := ed25519.Sign(priv, sigStruct)
 	sign1 := &coseSign1{
@@ -63,7 +63,7 @@ type coseSign1 struct {
 func DecodeCOSESign1(data []byte) (*coseSign1, error) {
 	var sign1 coseSign1
 	if err := UnmarshalCBOR(data, &sign1); err != nil {
-		return nil, fmt.Errorf("paper: decode COSE-Sign1: %w", err)
+		return nil, fmt.Errorf("dari: decode COSE-Sign1: %w", err)
 	}
 	return &sign1, nil
 }
@@ -74,10 +74,10 @@ func DecodeCOSESign1(data []byte) (*coseSign1, error) {
 // bytes of the protected header, an empty external AAD, and the payload).
 func VerifyCOSESign1(sign1 *coseSign1, pub ed25519.PublicKey) error {
 	if sign1 == nil {
-		return errors.New("paper: nil COSE-Sign1")
+		return errors.New("dari: nil COSE-Sign1")
 	}
 	if len(pub) == 0 {
-		return errors.New("paper: empty public key")
+		return errors.New("dari: empty public key")
 	}
 	sigInput := []interface{}{
 		"Signature1",
@@ -87,10 +87,10 @@ func VerifyCOSESign1(sign1 *coseSign1, pub ed25519.PublicKey) error {
 	}
 	sigBytes, err := MarshalCBOR(sigInput)
 	if err != nil {
-		return fmt.Errorf("paper: marshal sig structure for verify: %w", err)
+		return fmt.Errorf("dari: marshal sig structure for verify: %w", err)
 	}
 	if !ed25519.Verify(pub, sigBytes, sign1.Signature) {
-		return errors.New("paper: COSE-Sign1 signature verification failed")
+		return errors.New("dari: COSE-Sign1 signature verification failed")
 	}
 	return nil
 }
