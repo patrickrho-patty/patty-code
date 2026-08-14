@@ -40,6 +40,26 @@ type Provider struct {
 	mu            sync.Mutex
 	conn          *paperproto.TransportConn
 	authenticated bool
+
+	// leaseClient owns the currently-held capability lease. The provider
+	// calls `validateLease` before dispatching an AI_OPEN so a missing,
+	// expired, or subject-mismatched lease fails closed before any
+	// governance-gated exchange reaches the relay. See A3.
+	leaseClient *paperproto.LeaseClient
+	// subjectPeerID is the authenticated harness peer ID. The lease's
+	// SubjectPeerID MUST match this value.
+	subjectPeerID string
+	// sessionID is the open session ID. The lease's SessionID MUST
+	// match this value.
+	sessionID string
+	// policyEpoch is the session's bound policy epoch. Every exchange
+	// pins the lease's PolicyEpochID to this value (A4).
+	policyEpoch string
+	// nowFn is the time source. Tests override it to drive expiry.
+	nowFn func() time.Time
+	// autoRenewBefore is the lead time before NotAfter at which the
+	// provider triggers a lease renewal before the next exchange.
+	autoRenewBefore time.Duration
 }
 
 // New builds a PAPER provider from a resolved config.
@@ -72,13 +92,15 @@ func New(cfg provider.Config) (provider.Provider, error) {
 	}
 
 	return &Provider{
-		name:      cfg.Name,
-		model:     cfg.Model,
-		relayAddr: relayAddr,
-		harnessID: harnessID,
-		identity:  identity,
-		credPath:  credPath,
-		keyPath:   keyPath,
+		name:          cfg.Name,
+		model:         cfg.Model,
+		relayAddr:     relayAddr,
+		harnessID:     harnessID,
+		identity:      identity,
+		credPath:      credPath,
+		keyPath:       keyPath,
+		nowFn:         time.Now,
+		autoRenewBefore: defaultAutoRenewBefore,
 		tlsConfig: &tls.Config{
 			InsecureSkipVerify: true, // dev: PCCP uses self-signed certs
 			MinVersion:         tls.VersionTLS13,
@@ -234,6 +256,15 @@ func (p *Provider) connect(ctx context.Context) error {
 
 // Stream starts a PAPER streaming completion.
 func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
+	// Fail-closed authorization boundary: no lease, no AI_OPEN. The
+	// lease is the per-session capability grant from the relay's
+	// policy issuer; without it, the relay's governance path would
+	// reject the request anyway, but the connector surfaces the error
+	// locally so the operator gets a clear message.
+	if err := p.validateLease(p.model); err != nil {
+		return nil, err
+	}
+
 	// Ensure connected
 	if err := p.connect(ctx); err != nil {
 		return nil, err
@@ -410,3 +441,87 @@ func normalizeFinishReason(reason string) string {
 // Ensure net import used (for DialTCP in paperproto).
 var _ = net.Dial
 var _ time.Duration
+
+// validateLease enforces the A3 / A4 / A5 fail-closed checks before the
+// connector dispatches an AI_OPEN. The order matters: missing lease
+// trumps subject mismatch, which trumps epoch mismatch, which trumps
+// model mismatch. Each failure returns a sentinel error the harness
+// UI surfaces to the operator without translation.
+func (p *Provider) validateLease(model string) error {
+	if p.leaseClient == nil {
+		return errors.New("paper: no lease held; connect to a relay and acquire a capability lease before dispatching inference")
+	}
+	if err := p.leaseClient.Present(p.subjectPeerID, p.sessionID); err != nil {
+		return err
+	}
+	// A4: pin the lease's policy epoch to the session's bound epoch.
+	if err := p.leaseClient.VerifySessionContext(p.subjectPeerID, p.sessionID, p.policyEpoch); err != nil {
+		return err
+	}
+	// A5: the requested model must be enumerated in the lease's
+	// AllowedModels. A connector that boots with a stale model
+	// configuration cannot route a model the relay never authorized.
+	lease := p.leaseClient.Current()
+	if lease != nil && len(lease.AllowedModels) > 0 {
+		allowed := false
+		for _, m := range lease.AllowedModels {
+			if m == model {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return fmt.Errorf("paper: requested model %q is not in lease's allowed models", model)
+		}
+	}
+	return nil
+}
+
+// SetLeaseClient attaches a lease client to the provider. The connector
+// pings the relay for a LEASE_ISSUE after AUTH_PROOF and feeds the
+// result here. A nil client leaves the provider in fail-closed mode
+// (validateLease rejects every AI_OPEN).
+func (p *Provider) SetLeaseClient(client *paperproto.LeaseClient) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.leaseClient = client
+}
+
+// SetSessionContext binds the provider's session to a subject peer ID,
+// session ID, and policy epoch. The provider pins these values into
+// every lease validation. A change to any of these values forces the
+// caller to renew the lease through the relay.
+func (p *Provider) SetSessionContext(subjectPeerID, sessionID, policyEpoch string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.subjectPeerID = subjectPeerID
+	p.sessionID = sessionID
+	p.policyEpoch = policyEpoch
+}
+
+// SetAutoRenewBefore overrides the connector's proactive renewal lead
+// time. The default is 5 minutes; tests set it to a sub-second value to
+// drive automatic renewal behavior.
+func (p *Provider) SetAutoRenewBefore(d time.Duration) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.autoRenewBefore = d
+	if p.leaseClient != nil {
+		p.leaseClient.WithAutoRenewBefore(d)
+	}
+}
+
+// LeaseMetrics exposes the connector's lease health for the harness
+// status bar (E1). The connector surfaces the lease's ID, sequence,
+// and expiry without exposing the underlying private key.
+func (p *Provider) LeaseMetrics() paperproto.LeaseMetrics {
+	if p.leaseClient == nil {
+		return paperproto.LeaseMetrics{}
+	}
+	return p.leaseClient.MetricsFor()
+}
+
+// defaultAutoRenewBefore is the connector's proactive renewal lead time.
+// The provider triggers a LEASE_RENEW handshake when the held lease is
+// inside this window before NotAfter.
+const defaultAutoRenewBefore = 5 * time.Minute
