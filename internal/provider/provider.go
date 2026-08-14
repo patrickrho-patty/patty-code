@@ -225,6 +225,34 @@ type Request struct {
 	ResponseFormat *ResponseFormat `json:"ResponseFormat,omitempty"`
 }
 
+// SerializeForScan returns the prompt text the harness feeds to
+// the model as a single concatenated string. The DLP scanner uses
+// this to detect secrets/PII; the redacted version is fed back
+// via WithRedactedPrompt.
+func (r Request) SerializeForScan() string {
+	var out string
+	for _, m := range r.Messages {
+		out += m.Content + "\n"
+	}
+	return out
+}
+
+// WithRedactedPrompt returns a new Request whose user-visible
+// message content is replaced by the supplied redacted text.
+// The harness's original Request is preserved for the audit log;
+// the redacted text is what reaches the relay.
+func (r Request) WithRedactedPrompt(redacted string) Request {
+	clone := r
+	if len(clone.Messages) == 0 {
+		return clone
+	}
+	// Replace the last message content (the user's prompt) with
+	// the redacted text. The system + earlier messages stay
+	// intact so the model retains its context.
+	clone.Messages[len(clone.Messages)-1].Content = redacted
+	return clone
+}
+
 // ResponseFormat asks a provider to constrain its output shape.
 type ResponseFormat struct {
 	// Type is the structured format: "json_object" is the only shape the

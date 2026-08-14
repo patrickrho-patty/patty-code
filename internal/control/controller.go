@@ -41,6 +41,7 @@ import (
 	"patty/internal/extension/dispatch"
 	"patty/internal/extension/uihub"
 	"patty/internal/goaleval"
+	"patty/internal/governed"
 	"patty/internal/guardian"
 	"patty/internal/hook"
 	"patty/internal/i18n"
@@ -106,6 +107,16 @@ type Controller struct {
 	// reads from (see Options.SubagentGate). Nil when the caller didn't build
 	// one — sub-agents then keep whatever gate they were constructed with.
 	subagentGate *SharedHeadlessGate
+
+	// governance is the optional PAPER governance layer (tool/MCP
+	// approval, workflow gates, sandbox policy) wrapped around every
+	// executor gate. Nil in local development / tests — the wrapper
+	// is a pass-through then. Installed by SetGovernanceState when a
+	// PAPER session pushes the relay's governance clients.
+	governance *governed.State
+	// interactiveGate records that EnableInteractiveApproval ran, so
+	// SetGovernanceState knows which gate flavor to rebuild.
+	interactiveGate bool
 
 	label        string
 	modelRef     string
@@ -2197,11 +2208,14 @@ func (c *Controller) recordDecisionReceipt(pending pendingApproval, outcome stri
 // Interactive frontends (chat, desktop) call this; the headless run keeps the
 // silent gate and a nil asker from setup.
 func (c *Controller) EnableInteractiveApproval() {
+	c.mu.Lock()
+	c.interactiveGate = true
+	c.mu.Unlock()
 	trustGate := planModeReadOnlyTrustApprover{c}
 	escapeApprover := sandboxEscapeApprover{c}
 	configApprover := managedConfigWriteApprover{c}
 	if c.executor != nil {
-		c.executor.SetGate(c.newInteractiveGate())
+		c.executor.SetGate(governed.Wrap(c.newInteractiveGate(), c.governance))
 		c.executor.SetPlanModeReadOnlyTrustGate(trustGate)
 		c.executor.SetSandboxEscapeApprover(escapeApprover)
 		c.executor.SetConfigWriteApprover(configApprover)
@@ -2397,13 +2411,32 @@ func (c *Controller) ApplyHeadlessApprovalMode(mode string) {
 		c.subagentGate.Update(mode)
 	}
 	if c.executor != nil {
-		c.executor.SetGate(c.newHeadlessGate(mode))
+		c.executor.SetGate(governed.Wrap(c.newHeadlessGate(mode), c.governance))
 	}
 }
 
 func (c *Controller) refreshInteractiveGate() {
 	if c.executor != nil {
-		c.executor.SetGate(c.newInteractiveGate())
+		c.executor.SetGate(governed.Wrap(c.newInteractiveGate(), c.governance))
+	}
+}
+
+// SetGovernanceState installs the PAPER governance layer (C3/C4
+// tool+network approval, D1/D3/D5/D6 workflow gates, E4 sandbox
+// baseline) around the executor's permission gate. A nil state
+// removes the layer. The call rebuilds the active gate immediately
+// so an already-running session picks the change up mid-flight.
+func (c *Controller) SetGovernanceState(s *governed.State) {
+	c.mu.Lock()
+	c.governance = s
+	interactive := c.interactiveGate
+	c.mu.Unlock()
+	if c.executor != nil {
+		if interactive {
+			c.refreshInteractiveGate()
+		} else {
+			c.ApplyHeadlessApprovalMode(c.approval.mode())
+		}
 	}
 }
 

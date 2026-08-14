@@ -635,6 +635,11 @@ func (a *Agent) SetGate(g Gate) {
 	a.gate = g
 }
 
+// CurrentGate returns the active gate. Inspection hook for tests
+// and frontends that need to probe the installed authorization
+// chain without going through a tool call.
+func (a *Agent) CurrentGate() Gate { return a.gate }
+
 // SetExtensions installs the extension dispatcher after construction. Boot
 // uses it because sidecars — and therefore the dispatcher — only exist after
 // snapshot assembly, which runs after the agent is built. Safe to call before
@@ -1146,6 +1151,18 @@ type Options struct {
 // provider errors (compaction keeps the context bounded). A nil sink is replaced
 // with event.Discard so the agent can always emit unconditionally.
 func New(prov provider.Provider, tools *tool.Registry, session *Session, opts Options, sink event.Sink) *Agent {
+	// Wrap the provider with DLP outbound + response inspection so
+	// secrets/PII/injection never leave the harness. The wrapper is
+	// the connector-side implementation of feature plans C1 + C5
+	// (harness inline security governance). Production deployments
+	// pass an additional policy-epoch-aware scanner via the
+	// content-pattern hook; the default scanner covers the
+	// documented lexicon.
+	prov = wrapProviderWithDLP(prov)
+	return newAgentConstructor(prov, tools, session, opts, sink)
+}
+
+func newAgentConstructor(prov provider.Provider, tools *tool.Registry, session *Session, opts Options, sink event.Sink) *Agent {
 	if opts.SoftCompactRatio <= 0 {
 		opts.SoftCompactRatio = defaultSoftCompactRatio
 	}
