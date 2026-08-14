@@ -59,6 +59,9 @@ type Provider struct {
 	// acks them over the live connection. Nil until
 	// SetReceiptHandler installs it.
 	receiptHandler *provenancewire.IncomingAckHandler
+	// provEmitter collects the session's provenance envelopes (B1);
+	// flushed to the relay after each governed exchange.
+	provEmitter *provenancewire.ProvenanceEmitter
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
@@ -312,8 +315,18 @@ func (p *Provider) connect(ctx context.Context) error {
 
 // Stream starts a PAPER streaming completion.
 func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
+	// Fail-closed fast path: when a lease is already held, validate it
+	// BEFORE touching the network so an expired/revoked/subject-
+	// mismatched lease surfaces immediately.
+	if p.leaseClient != nil && p.leaseClient.Current() != nil {
+		if err := p.validateLease(p.model); err != nil {
+			return nil, err
+		}
+	}
+
 	// Ensure connected + session-governed (the connect path runs the
-	// SESSION_OPEN → epoch → catalog → lease handshake, A3/A4/A5).
+	// SESSION_OPEN → epoch → catalog → lease handshake and acquires
+	// the session's lease, A3/A4/A5).
 	if err := p.connect(ctx); err != nil {
 		return nil, err
 	}

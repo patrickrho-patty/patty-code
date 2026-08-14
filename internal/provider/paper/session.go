@@ -33,7 +33,7 @@ type authAckInfo struct {
 // connection. It is idempotent per connection (the relay runs setup on
 // every SESSION_OPEN).
 func (p *Provider) openSession(conn *paperproto.TransportConn) error {
-	sessionID := p.ensureSessionID()
+	sessionID := p.ensureSessionIDLocked()
 	userID := p.userID
 	if userID == "" {
 		userID = "user-" + p.subjectPeerID
@@ -126,11 +126,9 @@ func (p *Provider) openSession(conn *paperproto.TransportConn) error {
 // ensureSessionID returns the provider's session ID, generating and
 // persisting one on first call.
 func (p *Provider) ensureSessionID() string {
-	if p.sessionID != "" {
-		return p.sessionID
-	}
-	p.sessionID = fmt.Sprintf("sess-%d", time.Now().UnixMilli())
-	return p.sessionID
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.ensureSessionIDLocked()
 }
 
 // installGovernanceClientsFromAuthAck builds the lease/epoch/catalog
@@ -172,4 +170,20 @@ func (s connAckSender) SendRecord(rec *paperproto.Record) error {
 		return errors.New("paper: no live connection for ack")
 	}
 	return s.conn.SendRecord(rec)
+}
+
+// SessionID returns the open session's identifier (generating one if
+// none exists yet).
+func (p *Provider) SessionID() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.ensureSessionIDLocked()
+}
+
+func (p *Provider) ensureSessionIDLocked() string {
+	if p.sessionID != "" {
+		return p.sessionID
+	}
+	p.sessionID = fmt.Sprintf("sess-%d", time.Now().UnixMilli())
+	return p.sessionID
 }

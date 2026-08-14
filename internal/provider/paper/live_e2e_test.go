@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"patty/internal/evidence"
 	"patty/internal/paperproto"
 	"patty/internal/provider"
 	"patty/internal/provenancewire"
@@ -236,6 +237,25 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 	store := provenancewire.NewReceiptStore()
 	pp.SetReceiptHandler(provenancewire.NewIncomingAckHandler(store, liveConnAckSenderFor(t, pp)))
 
+	// B1: queue a provenance changeset for this session; the stream
+	// reader flushes it to the relay after the governed exchange.
+	orgID, _ := pp.identity.Organization()
+	cs, err := provenancewire.BuildChangeSetEnvelopeFromReceipts(provenancewire.ChangeSetBuildRequest{
+		ChangeSetID:    "cs-e2e-1",
+		OrganizationID: orgID,
+		SessionID:      pp.ensureSessionID(),
+		RepositoryID:   "repo-e2e",
+		Receipts: []evidence.Receipt{
+			{ToolName: "write_file", Mutation: true, Paths: []string{"e2e.go"}, Success: true},
+		},
+	})
+	if err != nil {
+		t.Fatalf("build changeset: %v", err)
+	}
+	if err := pp.ProvenanceEmitter().EmitChangeSet(cs); err != nil {
+		t.Fatalf("emit changeset: %v", err)
+	}
+
 	// Stream one governed exchange.
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -292,6 +312,33 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 			t.Fatal("evidence receipt was not stored/acked within 10s")
 		}
 		time.Sleep(100 * time.Millisecond)
+	}
+
+	// B1 e2e: the flushed changeset must be recorded relay-side.
+	sessID := pp.SessionID()
+	sawChangeSet := false
+	deadline = time.Now().Add(10 * time.Second)
+	for !sawChangeSet && time.Now().Before(deadline) {
+		resp, err := http.Get(fmt.Sprintf("http://%s/v1/provenance/changesets", adminAddr))
+		if err == nil {
+			var out struct {
+				ChangeSets []map[string]any `json:"changesets"`
+			}
+			json.NewDecoder(resp.Body).Decode(&out)
+			resp.Body.Close()
+			for _, row := range out.ChangeSets {
+				if row["session_id"] == sessID {
+					sawChangeSet = true
+					t.Logf("provenance changeset recorded relay-side: %v", row["id"])
+				}
+			}
+		}
+		if !sawChangeSet {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	if !sawChangeSet {
+		t.Fatal("provenance changeset was not recorded relay-side")
 	}
 
 	_ = mockPIA

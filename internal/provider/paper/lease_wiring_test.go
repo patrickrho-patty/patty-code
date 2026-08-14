@@ -22,12 +22,17 @@ func TestProviderRejectsStreamWithoutLease(t *testing.T) {
 		RelayAddr: "relay.example.com:8444",
 		Model:     "patty-code-standard",
 	})
+	// The session-bootstrap flow (connect → SESSION_OPEN → lease
+	// acquire) now runs on the first stream; an unreachable relay
+	// surfaces the dial failure, not a stale lease error.
 	_, err := provider.Stream(testRequestContext(t), stubRequest("patty-code-standard"))
 	if err == nil {
-		t.Fatal("stream must fail when no lease is held")
+		t.Fatal("stream must fail when the relay is unreachable")
 	}
-	if !strings.Contains(err.Error(), "lease") {
-		t.Errorf("expected error to mention lease, got %v", err)
+	// The fail-closed lease boundary itself: validateLease with no
+	// held lease rejects before any AI_OPEN leaves the connector.
+	if lerr := provider.validateLease("patty-code-standard"); lerr == nil || !strings.Contains(lerr.Error(), "lease") {
+		t.Errorf("validateLease without a lease must fail closed mentioning lease, got %v", lerr)
 	}
 }
 
