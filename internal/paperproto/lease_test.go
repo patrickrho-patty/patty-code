@@ -380,3 +380,29 @@ func TestLeaseVerifierRejectsUnknownIssuer(t *testing.T) {
 		t.Errorf("expected issuer-mismatch error, got %v", err)
 	}
 }
+
+// TestLeaseVerifierRejectsEmptyIssuerWhenBundleConfigured is the
+// fail-closed boundary: the verifier MUST refuse a lease whose Issuer
+// field is empty when the connector has pinned an issuer ID. An empty
+// issuer would otherwise bypass the trust bundle entirely.
+func TestLeaseVerifierRejectsEmptyIssuerWhenBundleConfigured(t *testing.T) {
+	issuer := newLeaseIssuerFixture(t)
+	now := time.Now().UnixMilli()
+	lease := issuer.IssueLease(t, LeaseBody{
+		LeaseID:         "lease-empty-issuer",
+		SubjectPeerID:   "hrn:patty:test",
+		UserID:          "alice",
+		SessionID:       "ses",
+		PolicyEpochID:   "epoch",
+		NotBeforeUnixMs: now - 60_000,
+		NotAfterUnixMs:  now + 60*60_000,
+		IssuedAtUnixMs:  now,
+		LeaseSequence:   1,
+	})
+	lease.Issuer = "" // simulate a relay that omits the field
+	verifier := NewLeaseVerifier(issuer.publicKey, issuer.issuerID)
+	err := verifier.Verify(lease, "hrn:patty:test", "ses", now)
+	if err == nil {
+		t.Fatal("lease with empty issuer must be rejected when the verifier has a pinned issuer")
+	}
+}

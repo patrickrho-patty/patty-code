@@ -528,3 +528,74 @@ func TestLeaseServerFixtureHasSubjectKey(t *testing.T) {
 		t.Errorf("unexpected issuer id: %q", issuer.issuerID)
 	}
 }
+
+// TestAuthorizeExchangeChainsAllChecks is the consolidated
+// exchange-time guard. The connector calls AuthorizeExchange once per
+// AI_OPEN; the test pins the order: missing lease → subject/session
+// mismatch → epoch mismatch → model mismatch.
+func TestAuthorizeExchangeChainsAllChecks(t *testing.T) {
+	issuer, client, clock := newIssuerBundle(t)
+	now := clock.Now()
+	lease := issuer.IssueLease(t, LeaseBody{
+		LeaseID:         "lease-1",
+		SubjectPeerID:   "hrn:patty:test",
+		UserID:          "alice",
+		SessionID:       "ses-1",
+		PolicyEpochID:   "epoch-2026-01",
+		AllowedModels:   []string{"patty-code-standard"},
+		NotBeforeUnixMs: now.UnixMilli(),
+		NotAfterUnixMs:  now.Add(time.Hour).UnixMilli(),
+		IssuedAtUnixMs:  now.UnixMilli(),
+		LeaseSequence:   1,
+	})
+	if err := client.Acquire("hrn:patty:test", "ses-1", lease); err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	// Happy path: subject/session/epoch all match, model is in
+	// allow-list.
+	if err := client.AuthorizeExchange("hrn:patty:test", "ses-1", "epoch-2026-01", "patty-code-standard"); err != nil {
+		t.Fatalf("authorize: %v", err)
+	}
+	// Subject mismatch.
+	if err := client.AuthorizeExchange("hrn:patty:other", "ses-1", "epoch-2026-01", "patty-code-standard"); !errors.Is(err, ErrLeaseSubjectMismatch) {
+		t.Errorf("expected subject mismatch, got %v", err)
+	}
+	// Epoch mismatch.
+	if err := client.AuthorizeExchange("hrn:patty:test", "ses-1", "epoch-2026-02", "patty-code-standard"); err == nil {
+		t.Errorf("expected epoch mismatch, got nil")
+	}
+	// Model mismatch.
+	if err := client.AuthorizeExchange("hrn:patty:test", "ses-1", "epoch-2026-01", "patty-code-pro"); err == nil {
+		t.Errorf("expected model mismatch, got nil")
+	}
+}
+
+// TestAuthorizeExchangeRejectsEmptyAllowedList confirms the A5
+// fail-closed boundary: a lease with no AllowedModels list is treated
+// as "no model approved" rather than "all models approved".
+func TestAuthorizeExchangeRejectsEmptyAllowedList(t *testing.T) {
+	issuer, client, clock := newIssuerBundle(t)
+	now := clock.Now()
+	lease := issuer.IssueLease(t, LeaseBody{
+		LeaseID:         "lease-1",
+		SubjectPeerID:   "hrn:patty:test",
+		UserID:          "alice",
+		SessionID:       "ses-1",
+		PolicyEpochID:   "epoch-2026-01",
+		AllowedModels:   nil, // empty
+		NotBeforeUnixMs: now.UnixMilli(),
+		NotAfterUnixMs:  now.Add(time.Hour).UnixMilli(),
+		IssuedAtUnixMs:  now.UnixMilli(),
+		LeaseSequence:   1,
+	})
+	if err := client.Acquire("hrn:patty:test", "ses-1", lease); err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	err := client.AuthorizeExchange("hrn:patty:test", "ses-1", "epoch-2026-01", "patty-code-standard")
+	if err == nil {
+		t.Fatal("expected empty-list failure")
+	}
+	if !strings.Contains(err.Error(), "no allowed-models list") {
+		t.Errorf("expected empty-list error, got %v", err)
+	}
+}

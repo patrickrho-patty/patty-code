@@ -443,38 +443,16 @@ var _ = net.Dial
 var _ time.Duration
 
 // validateLease enforces the A3 / A4 / A5 fail-closed checks before the
-// connector dispatches an AI_OPEN. The order matters: missing lease
-// trumps subject mismatch, which trumps epoch mismatch, which trumps
-// model mismatch. Each failure returns a sentinel error the harness
-// UI surfaces to the operator without translation.
+// connector dispatches an AI_OPEN. The single AuthorizeExchange call
+// chains the subject/session verify (A3), the policy-epoch pin (A4),
+// and the model allow-list check (A5). Each failure returns a
+// sentinel error the harness UI surfaces to the operator without
+// translation.
 func (p *Provider) validateLease(model string) error {
 	if p.leaseClient == nil {
 		return errors.New("paper: no lease held; connect to a relay and acquire a capability lease before dispatching inference")
 	}
-	if err := p.leaseClient.Present(p.subjectPeerID, p.sessionID); err != nil {
-		return err
-	}
-	// A4: pin the lease's policy epoch to the session's bound epoch.
-	if err := p.leaseClient.VerifySessionContext(p.subjectPeerID, p.sessionID, p.policyEpoch); err != nil {
-		return err
-	}
-	// A5: the requested model must be enumerated in the lease's
-	// AllowedModels. A connector that boots with a stale model
-	// configuration cannot route a model the relay never authorized.
-	lease := p.leaseClient.Current()
-	if lease != nil && len(lease.AllowedModels) > 0 {
-		allowed := false
-		for _, m := range lease.AllowedModels {
-			if m == model {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			return fmt.Errorf("paper: requested model %q is not in lease's allowed models", model)
-		}
-	}
-	return nil
+	return p.leaseClient.AuthorizeExchange(p.subjectPeerID, p.sessionID, p.policyEpoch, model)
 }
 
 // SetLeaseClient attaches a lease client to the provider. The connector

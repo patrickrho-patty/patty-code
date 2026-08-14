@@ -1,12 +1,14 @@
 package paperproto
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -98,7 +100,10 @@ func (v *LeaseVerifier) Verify(lease *Lease, subjectPeerID, sessionID string, no
 	if lease == nil {
 		return ErrLeaseInvalid
 	}
-	if lease.Issuer != "" && v.issuerID != "" && lease.Issuer != v.issuerID {
+	// Fail-closed: if the verifier is configured with an issuer ID, the
+	// lease MUST declare the matching issuer. An empty lease issuer
+	// would otherwise bypass the trust bundle entirely.
+	if v.issuerID != "" && lease.Issuer != v.issuerID {
 		return fmt.Errorf("paper: lease issuer %q is not in trust bundle (expected %q)", lease.Issuer, v.issuerID)
 	}
 	if strings.EqualFold(lease.Status, "revoked") {
@@ -226,16 +231,12 @@ func writeLengthPrefixedRepoScope(dst []byte, scopes []map[string]string) []byte
 	return dst
 }
 
-// sortStrings is a small stable-by-length-preserving sort that the
-// connector uses to keep map-key iteration deterministic. The standard
-// library's `sort.Strings` would sufficed but the import is avoided
-// here to keep the lease file's dependency surface narrow.
+// sortStrings is a thin wrapper around sort.Strings that the helper
+// uses to keep map-key iteration deterministic. The standard library
+// implementation is fine; the wrapper exists so the repo scope
+// encoding can be reasoned about in one place.
 func sortStrings(values []string) {
-	for i := 1; i < len(values); i++ {
-		for j := i; j > 0 && values[j-1] > values[j]; j-- {
-			values[j-1], values[j] = values[j], values[j-1]
-		}
-	}
+	sort.Strings(values)
 }
 
 // writeLengthPrefixedString appends a uint32 big-endian length followed
@@ -286,20 +287,9 @@ func IsLeaseSubjectMismatch(err error) bool { return errors.Is(err, ErrLeaseSubj
 // IsLeaseSignatureInvalid reports whether err is the signature-invalid sentinel.
 func IsLeaseSignatureInvalid(err error) bool { return errors.Is(err, ErrLeaseSignatureInvalid) }
 
-// bytesEqual is a small helper for byte-slice equality. The standard
-// library's `bytes.Equal` is fine, but keeping the comparison local
-// avoids an extra import for one call site.
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
+// bytesEqual is a thin wrapper around bytes.Equal kept for symmetry
+// with the helpers above. The standard library call is sufficient.
+func bytesEqual(a, b []byte) bool { return bytes.Equal(a, b) }
 
 // LeaseDigest produces a content-addressed digest of the lease body used
 // to identify it in receipts, evidence chains, and operator audit logs.

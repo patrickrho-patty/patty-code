@@ -206,11 +206,21 @@ var ErrLeaseRenewalDue = errors.New("paper: lease renewal due")
 func (c *LeaseClient) MetricsFor() LeaseMetrics {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// Compute NeedsRenewal while holding the lock so we don't
+	// recursively take it (deadlock). The local helper does the
+	// same work as the public NeedsRenewal method.
+	needsRenewal := false
+	if c.current != nil {
+		now := c.nowFn()
+		notAfter := time.Unix(c.current.NotAfterUnixMs/1000, (c.current.NotAfterUnixMs%1000)*int64(time.Millisecond))
+		needsRenewal = notAfter.Sub(now) <= c.autoRenewBefore
+	}
 	m := LeaseMetrics{
 		IssuerID:           c.issuerID,
 		LastRenewedAtUnixMs: c.lastRenewedAtUnixMs.Load(),
 		LastVerifiedAtUnixMs: c.lastVerifiedAtUnixMs.Load(),
 		RenewFailureCount:   c.renewFailureCount.Load(),
+		NeedsRenewal:        needsRenewal,
 	}
 	if c.current != nil {
 		m.HeldLeaseID = c.current.LeaseID
@@ -232,12 +242,18 @@ type LeaseMetrics struct {
 	LastRenewedAtUnixMs int64
 	LastVerifiedAtUnixMs int64
 	RenewFailureCount   int64
+	// NeedsRenewal mirrors NeedsRenewal so the metric snapshot is
+	// self-contained; callers should not need to call the method
+	// separately.
+	NeedsRenewal bool
 }
 
 // VerifySessionContext is the exchange-time helper that pins the
 // subject/session/policy epoch binding. The connector calls it on every
 // governance-gated exchange so a stale lease cannot be replayed across
-// a re-authenticated identity.
+// a re-authenticated identity. VerifySessionContext updates the same
+// `lastVerifiedAtUnixMs` metric `Present` updates so the operator sees
+// a single, consistent timestamp.
 func (c *LeaseClient) VerifySessionContext(subjectPeerID, sessionID, expectedPolicyEpoch string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -248,7 +264,55 @@ func (c *LeaseClient) VerifySessionContext(subjectPeerID, sessionID, expectedPol
 		return fmt.Errorf("paper: lease policy epoch %q does not match bound session epoch %q", c.current.PolicyEpochID, expectedPolicyEpoch)
 	}
 	nowMs := c.nowFn().UnixMilli()
-	return c.verifier.Verify(c.current, subjectPeerID, sessionID, nowMs)
+	if err := c.verifier.Verify(c.current, subjectPeerID, sessionID, nowMs); err != nil {
+		return err
+	}
+	c.lastVerifiedAtUnixMs.Store(nowMs)
+	return nil
+}
+
+// AuthorizeExchange is the single entry point the connector uses
+// before dispatching an AI_OPEN. It chains the A3 (subject/session),
+// A4 (policy epoch), renewal-window, and A5 (allowed-models) checks
+// in the documented order. The connector calls this once per
+// exchange; the previous separate Present + VerifySessionContext +
+// manual model membership check is folded into one method so the
+// boundary is the lease client's responsibility, not the connector's.
+func (c *LeaseClient) AuthorizeExchange(subjectPeerID, sessionID, expectedPolicyEpoch, model string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.current == nil {
+		return ErrLeaseInvalid
+	}
+	nowMs := c.nowFn().UnixMilli()
+	if err := c.verifier.Verify(c.current, subjectPeerID, sessionID, nowMs); err != nil {
+		return err
+	}
+	if expectedPolicyEpoch != "" && c.current.PolicyEpochID != "" && c.current.PolicyEpochID != expectedPolicyEpoch {
+		return fmt.Errorf("paper: lease policy epoch %q does not match bound session epoch %q", c.current.PolicyEpochID, expectedPolicyEpoch)
+	}
+	// Check the renewal window after the structural checks so a
+	// missing/expired/tampered lease still surfaces its own sentinel
+	// even if the renewal window would also fire.
+	notAfter := time.Unix(c.current.NotAfterUnixMs/1000, (c.current.NotAfterUnixMs%1000)*int64(time.Millisecond))
+	if notAfter.Sub(c.nowFn()) <= c.autoRenewBefore {
+		return ErrLeaseRenewalDue
+	}
+	if len(c.current.AllowedModels) == 0 {
+		return fmt.Errorf("paper: lease carries no allowed-models list; refusing to dispatch to %q", model)
+	}
+	allowed := false
+	for _, m := range c.current.AllowedModels {
+		if m == model {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return fmt.Errorf("paper: requested model %q is not in lease's allowed models", model)
+	}
+	c.lastVerifiedAtUnixMs.Store(nowMs)
+	return nil
 }
 
 // EncodeLeaseRequest builds the canonical CBOR body the connector sends

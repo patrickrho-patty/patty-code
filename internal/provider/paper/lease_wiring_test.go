@@ -150,6 +150,33 @@ func TestProviderRejectsModelNotInLeaseAllowedModels(t *testing.T) {
 	}
 }
 
+// TestProviderRejectsEmptyAllowedModelsList is the A5 fail-closed
+// boundary: a relay that returns a lease with an empty AllowList must
+// not be treated as "all models allowed" by the connector. The
+// harness refuses to dispatch so a misconfigured or adversarial relay
+// cannot silently grant access to undisclosed models.
+func TestProviderRejectsEmptyAllowedModelsList(t *testing.T) {
+	issuer := newTestLeaseIssuer(t)
+	provider := NewForTest(&testConfig{
+		RelayAddr:    "relay.example.com:8444",
+		Model:        "patty-code-standard",
+		LeaseIssuer:  issuer,
+		LeaseSubject: "hrn:patty:test",
+		LeaseSession: "ses-1",
+		LeaseEpoch:   "epoch-2026-01",
+		LeaseAt:      time.Now(),
+		LeaseFor:     time.Hour,
+		LeaseModels:  nil, // empty list
+	})
+	_, err := provider.Stream(testRequestContext(t), stubRequest("patty-code-standard"))
+	if err == nil {
+		t.Fatal("stream must fail when the lease carries no allowed-models list")
+	}
+	if !strings.Contains(err.Error(), "no allowed-models list") {
+		t.Errorf("expected empty-list error, got %v", err)
+	}
+}
+
 // TestProviderRequiresLeaseRenewalBeforeExpiry confirms the connector
 // surfaces a renewal prompt rather than failing closed when the lease
 // is within the auto-renewal lead window. The renewal handshake must
@@ -177,6 +204,7 @@ func TestProviderRequiresLeaseRenewalBeforeExpiry(t *testing.T) {
 		LeaseAt:      now,
 		LeaseFor:     35 * time.Second, // 35s total; 4s left after clock advance
 		AdvanceTime:  clock,
+		LeaseModels:  []string{"patty-code-standard"},
 	})
 	_, err := provider.Stream(testRequestContext(t), stubRequest("patty-code-standard"))
 	if err == nil {
