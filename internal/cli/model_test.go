@@ -16,18 +16,18 @@ import (
 // only those whose provider API key is set.
 func TestModelRefsFromConfig(t *testing.T) {
 	isolateUserConfig(t) // no patty.toml -> built-in default providers
-	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 	refs := modelRefs()
-	if got, want := strings.Join(refs, ","), "patty/medium"; got != want {
+	if got, want := strings.Join(refs, ","), "patty/patty-code-standard"; got != want {
 		t.Fatalf("default model refs = %q, want %q", got, want)
 	}
 }
 
 func TestBareModelOpensKeyboardPicker(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatal(err)
 	}
 	m := newTestChatTUI()
@@ -35,7 +35,7 @@ func TestBareModelOpensKeyboardPicker(t *testing.T) {
 	if m.quickPick == nil || m.quickPick.kind != quickPickerModel {
 		t.Fatalf("bare /model picker = %+v", m.quickPick)
 	}
-	if len(m.quickPick.items) != 1 || m.quickPick.items[0].ID != "patty/medium" || m.quickPick.items[0].Label != "medium" {
+	if len(m.quickPick.items) != 1 || m.quickPick.items[0].ID != "patty/patty-code-standard" || m.quickPick.items[0].Label != "patty-code-standard" {
 		t.Fatalf("picker items = %+v", m.quickPick.items)
 	}
 	if m.renderQuickPicker() == "" || !m.hideComposer() {
@@ -51,7 +51,7 @@ func TestBareModelOpensKeyboardPicker(t *testing.T) {
 // picker offers nothing rather than listing models the user can't select.
 func TestModelRefsSkipsUnconfigured(t *testing.T) {
 	isolateUserConfig(t)
-	t.Setenv("AGENTS_PATTY_API_KEY", "")
+	t.Setenv("PAPER_HARNESS_KEY", "")
 	if refs := modelRefs(); len(refs) != 0 {
 		t.Errorf("no keys set → no refs, got %v", refs)
 	}
@@ -61,7 +61,7 @@ func TestModelRefsSkipsUnconfigured(t *testing.T) {
 // through the shared completion path.
 func TestModelArgCompletion(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 	m := newTestChatTUI()
@@ -78,18 +78,18 @@ func TestModelArgCompletion(t *testing.T) {
 // next startup read the global default.
 func TestPersistModelWritesDefaultModel(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 
 	m := newTestChatTUI()
-	m.persistModel("patty/medium")
+	m.persistModel("patty/patty-code-standard")
 
 	body, err := os.ReadFile(config.UserConfigPath())
 	if err != nil {
 		t.Fatalf("read saved config: %v", err)
 	}
-	if !strings.Contains(string(body), `default_model = "patty/medium"`) {
+	if !strings.Contains(string(body), `default_model = "patty/patty-code-standard"`) {
 		t.Fatalf("saved config missing default_model ref:\n%s", body)
 	}
 }
@@ -102,7 +102,7 @@ func TestPersistModelWritesDefaultModel(t *testing.T) {
 // memory switch still goes through.
 func TestPersistModelRejectsUnknownRef(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 
@@ -119,7 +119,7 @@ func TestPersistModelRejectsUnknownRef(t *testing.T) {
 // boot's merged resolver gates it at the next launch.
 func TestPersistModelAcceptsPluginRef(t *testing.T) {
 	isolateUserConfig(t)
-	if _, err := config.SetCredential("AGENTS_PATTY_API_KEY", "test-key"); err != nil {
+	if _, err := config.SetCredential("PAPER_HARNESS_KEY", "test-key"); err != nil {
 		t.Fatalf("SetCredential: %v", err)
 	}
 

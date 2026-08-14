@@ -20,15 +20,20 @@ type HelloMessage struct {
 	ImplementationVersion string           `cbor:"10,keyasint,omitempty"`
 }
 
-// HelloAckMessage is the HELLO_ACK (PAPER §15.2).
+// HelloAckMessage is the HELLO_ACK (PAPER §15.2). Field 8 (ResourceLimits) MUST
+// be present in the CBOR transcript even when empty so the relay's canonical
+// ack encoding matches the connector's decoded view: the AUTH_PROOF verifies
+// against SHA256("PAPER-AUTH-v1\0" || canonical(HELLO) || canonical(HELLO_ACK)
+// || …), and a missing field 8 silently changes the canonical bytes.
 type HelloAckMessage struct {
-	CoreVersion       uint8            `cbor:"1,keyasint"`
-	ExtensionVersions map[string]uint8 `cbor:"2,keyasint"`
-	CryptoProfile     string           `cbor:"3,keyasint"`
-	ServerNonce       []byte           `cbor:"4,keyasint"`
-	RelayCredential   []byte           `cbor:"5,keyasint"`
-	AuthChallenge     []byte           `cbor:"6,keyasint"`
-	MinHarnessVersion string           `cbor:"7,keyasint,omitempty"`
+	CoreVersion       uint8             `cbor:"1,keyasint"`
+	ExtensionVersions map[string]uint8  `cbor:"2,keyasint"`
+	CryptoProfile     string            `cbor:"3,keyasint"`
+	ServerNonce       []byte            `cbor:"4,keyasint"`
+	RelayCredential   []byte            `cbor:"5,keyasint"`
+	AuthChallenge     []byte            `cbor:"6,keyasint"`
+	MinHarnessVersion string            `cbor:"7,keyasint,omitempty"`
+	ResourceLimits    map[string]uint64 `cbor:"8,keyasint,omitempty"`
 }
 
 // AuthChallengeMessage is the AUTH_CHALLENGE (PAPER §18.1).

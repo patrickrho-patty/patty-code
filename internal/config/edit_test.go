@@ -31,11 +31,11 @@ func TestSetDefaultModel(t *testing.T) {
 	// "provider/model" form is also accepted: the /model picker stores the
 	// full ref so a user can land on a non-default model under the same
 	// provider across restarts.
-	if err := c.SetDefaultModel("patty/medium"); err != nil {
+	if err := c.SetDefaultModel("patty/patty-code-standard"); err != nil {
 		t.Fatalf("set provider/model default: %v", err)
 	}
-	if c.DefaultModel != "patty/medium" {
-		t.Errorf("default = %q, want patty/medium", c.DefaultModel)
+	if c.DefaultModel != "patty/patty-code-standard" {
+		t.Errorf("default = %q, want patty/patty-code-standard", c.DefaultModel)
 	}
 	if err := c.SetDefaultModel("patty/missing"); err == nil {
 		t.Error("expected error for unknown model under known provider")
@@ -1211,7 +1211,7 @@ func TestClearPluginAuthentication(t *testing.T) {
 // re-decodes the file to confirm the changes survived a write/read cycle.
 func TestSaveToRoundTrips(t *testing.T) {
 	c := Default()
-	if err := c.SetDefaultModel("patty/medium"); err != nil {
+	if err := c.SetDefaultModel("patty/patty-code-standard"); err != nil {
 		t.Fatal(err)
 	}
 	if err := c.SetPlannerModel("patty"); err != nil {
@@ -1250,7 +1250,7 @@ func TestSaveToRoundTrips(t *testing.T) {
 	if _, err := toml.DecodeFile(path, &got); err != nil {
 		t.Fatalf("saved file does not parse: %v", err)
 	}
-	if got.DefaultModel != "patty/medium" {
+	if got.DefaultModel != "patty/patty-code-standard" {
 		t.Errorf("default_model = %q", got.DefaultModel)
 	}
 	if got.Agent.PlannerModel != "patty" {

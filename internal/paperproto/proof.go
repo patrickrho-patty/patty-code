@@ -1,0 +1,230 @@
+package paperproto
+
+import (
+	"crypto/ed25519"
+	"crypto/sha256"
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"os"
+)
+
+// ObjectType identifies a registered PAPER object type for domain-separated
+// content addressing (PAPER §32, internal/paper/crypto.go). The connector
+// only recognizes the PeerCredential type today; other types are rejected
+// to keep the digest domain narrow.
+type ObjectType uint16
+
+// Object types used by the connector's AUTH_PROOF path.
+const (
+	ObjTypePeerCredential ObjectType = 0x0100
+)
+
+// Digest is a SHA-256 content digest (PAPER §37.1).
+type Digest [32]byte
+
+// Bytes returns the raw digest bytes.
+func (d Digest) Bytes() []byte { return d[:] }
+
+// String returns the hex encoding of the digest.
+func (d Digest) String() string {
+	return fmt.Sprintf("sha256:%x", d[:])
+}
+
+// ComputeObjectDigest computes the content-addressed digest of a registered
+// PAPER object per PAPER §32. The encoding MUST match the relay's
+// `internal/paper/crypto.go::ComputeObjectDigest` byte-for-byte:
+//
+//	digest = SHA256("PAPER-OBJ-v1\0" || uint16(T) || canonical_cbor(O))
+//
+// The COSE-Sign1 credential bytes (NOT the parsed payload) MUST be the input;
+// the relay hashes the same byte string when it verifies the proof.
+func ComputeObjectDigest(objType ObjectType, canonicalCBOR []byte) Digest {
+	h := sha256.New()
+	h.Write([]byte("PAPER-OBJ-v1\x00"))
+	var typeBytes [2]byte
+	binary.BigEndian.PutUint16(typeBytes[:], uint16(objType))
+	h.Write(typeBytes[:])
+	h.Write(canonicalCBOR)
+	var d Digest
+	copy(d[:], h.Sum(nil))
+	return d
+}
+
+// AuthContextDomain is the domain-separation prefix used by the relay's
+// transcript hash (PAPER §18.2). The connector and the relay MUST agree on
+// this constant down to the trailing NUL byte.
+const AuthContextDomain = "PAPER-AUTH-v1\x00"
+
+// AuthProofDomain is the domain-separation prefix used by the relay's
+// proof-of-possession signing (PAPER §18.2). Matches the relay's
+// `internal/paper/peer.go::PeerProofSigningBytes` domain constant.
+const AuthProofDomain = "DARI-AUTH-PROOF-v1\x00"
+
+// BuildAuthContext computes the PAPER authentication context hash used by both
+// peers to bind the proof-of-possession to the negotiated transcript. The
+// inputs are the canonical CBOR encodings of the HELLO and HELLO_ACK already
+// exchanged on the wire, the two nonces, the channel binding identifier
+// (e.g. "tcp-exporter"), and the credential digest.
+//
+// The encoding MUST match the relay's
+// `internal/paper/crypto.go::AuthContext` byte-for-byte; otherwise the relay
+// silently rejects the proof.
+func BuildAuthContext(helloCBOR, helloAckCBOR, clientNonce, serverNonce, channelBinding, peerCredDigest []byte) Digest {
+	h := sha256.New()
+	h.Write([]byte(AuthContextDomain))
+	h.Write(helloCBOR)
+	h.Write(helloAckCBOR)
+	h.Write(clientNonce)
+	h.Write(serverNonce)
+	h.Write(channelBinding)
+	h.Write(peerCredDigest)
+	var d Digest
+	copy(d[:], h.Sum(nil))
+	return d
+}
+
+// SignAuthProof returns the Ed25519 signature the connector places in
+// `AuthProofMessage.Signature`. The signing bytes are the SHA-256 of the
+// domain-separation prefix plus length-prefixed transcript, challenge ID,
+// and big-endian revocation epoch.
+//
+// The encoding MUST match the relay's
+// `internal/paper/peer.go::PeerProofSigningBytes` byte-for-byte.
+func SignAuthProof(priv ed25519.PrivateKey, transcript, challengeID []byte, revocationEpoch uint64) []byte {
+	return ed25519.Sign(priv, SignAuthProofInputs(transcript, challengeID, revocationEpoch))
+}
+
+// SignAuthProofInputs returns the exact signing bytes produced by
+// SignAuthProof; tests use it to verify against the same byte string the
+// relay recomputes.
+func SignAuthProofInputs(transcript, challengeID []byte, revocationEpoch uint64) []byte {
+	h := sha256.New()
+	h.Write([]byte(AuthProofDomain))
+	writeLengthPrefixed(h, transcript)
+	writeLengthPrefixed(h, challengeID)
+	var epochBuf [8]byte
+	binary.BigEndian.PutUint64(epochBuf[:], revocationEpoch)
+	h.Write(epochBuf[:])
+	return h.Sum(nil)
+}
+
+// EncodeRevocationEpoch encodes the revocation checkpoint carried in the
+// AUTH_PROOF revocation-evidence field as a big-endian uint64.
+func EncodeRevocationEpoch(epoch uint64) []byte {
+	var buf [8]byte
+	binary.BigEndian.PutUint64(buf[:], epoch)
+	return buf[:]
+}
+
+// AuthProofInput groups the inputs needed to build a complete AUTH_PROOF
+// message. The connector collects these once after the HELLO/HELLO_ACK
+// exchange and the AUTH_CHALLENGE reception.
+type AuthProofInput struct {
+	PrivateKey      ed25519.PrivateKey
+	Credential      []byte // raw COSE-Sign1 CBOR of the enrolled peer credential
+	Hello           *HelloMessage
+	HelloAck        *HelloAckMessage
+	ChallengeID     []byte
+	RevocationEpoch uint64
+	ChannelBinding  []byte // e.g. []byte("tcp-exporter")
+}
+
+// BuildAuthProof assembles the connector-side AUTH_PROOF using the supplied
+// transcript context. The relay independently recomputes the same hash and
+// verifies the signature under the issuer-defined subject public key embedded
+// in the credential body.
+func BuildAuthProof(in AuthProofInput) (*AuthProofMessage, error) {
+	if len(in.PrivateKey) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("paper: invalid private key size %d", len(in.PrivateKey))
+	}
+	if len(in.Credential) == 0 {
+		return nil, errors.New("paper: empty peer credential")
+	}
+	if in.Hello == nil || in.HelloAck == nil {
+		return nil, errors.New("paper: missing HELLO/HELLO_ACK for proof context")
+	}
+	if len(in.ChallengeID) == 0 {
+		return nil, errors.New("paper: empty challenge ID")
+	}
+	if len(in.ChannelBinding) == 0 {
+		return nil, errors.New("paper: empty channel binding")
+	}
+
+	helloCBOR, err := MarshalCBOR(in.Hello)
+	if err != nil {
+		return nil, fmt.Errorf("paper: marshal HELLO: %w", err)
+	}
+	ackCBOR, err := MarshalCBOR(in.HelloAck)
+	if err != nil {
+		return nil, fmt.Errorf("paper: marshal HELLO_ACK: %w", err)
+	}
+	credDigest := ComputeObjectDigest(ObjTypePeerCredential, in.Credential)
+	transcript := BuildAuthContext(
+		helloCBOR, ackCBOR,
+		in.Hello.ClientNonce, in.HelloAck.ServerNonce,
+		in.ChannelBinding,
+		credDigest[:],
+	)
+
+	return &AuthProofMessage{
+		Credential:         append([]byte(nil), in.Credential...),
+		Signature:          SignAuthProof(in.PrivateKey, transcript[:], in.ChallengeID, in.RevocationEpoch),
+		KeyAlgorithm:       COSEAlgEdDSA,
+		ChallengeID:        append([]byte(nil), in.ChallengeID...),
+		RevocationEvidence: EncodeRevocationEpoch(in.RevocationEpoch),
+	}, nil
+}
+
+// Identity is the loaded enrolled-credential pair the connector uses to
+// authenticate against a PAPER relay. The credential bytes are the raw
+// COSE-Sign1 CBOR returned by the issuer's issuance step; the private key is
+// the Ed25519 subject key referenced inside the credential body.
+type Identity struct {
+	PrivateKey ed25519.PrivateKey
+	Credential []byte
+}
+
+// LoadIdentityFromDisk reads the connector's enrolled identity from a pair of
+// files. The private key file holds the raw 32-byte Ed25519 seed (not a PEM
+// envelope; the connector is a minimal client and the relay only needs the
+// raw bytes). The credential file holds the raw COSE-Sign1 CBOR returned by
+// the issuer. Both files MUST be readable by the connector's runtime user
+// but not world-readable; the loader creates them with 0600 permissions in
+// the setup helper.
+//
+// Reasonable error returns let the caller decide whether to fail fast on
+// missing files (no enrollment yet) or recover via a setup flow.
+func LoadIdentityFromDisk(credentialPath, privateKeyPath string) (*Identity, error) {
+	if credentialPath == "" || privateKeyPath == "" {
+		return nil, errors.New("paper: credential and private-key paths are required")
+	}
+	cred, err := os.ReadFile(credentialPath)
+	if err != nil {
+		return nil, fmt.Errorf("paper: read credential %s: %w", credentialPath, err)
+	}
+	if len(cred) == 0 {
+		return nil, fmt.Errorf("paper: credential file %s is empty", credentialPath)
+	}
+	key, err := os.ReadFile(privateKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("paper: read private key %s: %w", privateKeyPath, err)
+	}
+	if len(key) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("paper: private key %s has %d bytes, want %d",
+			privateKeyPath, len(key), ed25519.PrivateKeySize)
+	}
+	return &Identity{
+		PrivateKey: ed25519.PrivateKey(append([]byte(nil), key...)),
+		Credential: append([]byte(nil), cred...),
+	}, nil
+}
+
+// writeLengthPrefixed writes a uint32 big-endian length followed by the value
+// to h. Trailing-NULL domain separation is provided by the caller.
+func writeLengthPrefixed(h interface{ Write([]byte) (int, error) }, value []byte) {
+	var length [4]byte
+	binary.BigEndian.PutUint32(length[:], uint32(len(value)))
+	h.Write(length[:])
+	h.Write(value)
+}

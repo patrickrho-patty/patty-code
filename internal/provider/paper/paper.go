@@ -10,9 +10,12 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,12 +29,16 @@ func init() {
 
 // Provider implements provider.Provider via the PAPER protocol.
 type Provider struct {
-	name        string
-	model       string
-	relayAddr   string
-	tlsConfig   *tls.Config
-	mu          sync.Mutex
-	conn        *paperproto.TransportConn
+	name          string
+	model         string
+	relayAddr     string
+	harnessID     string
+	identity      *paperproto.Identity
+	credPath      string
+	keyPath       string
+	tlsConfig     *tls.Config
+	mu            sync.Mutex
+	conn          *paperproto.TransportConn
 	authenticated bool
 }
 
@@ -46,16 +53,45 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		return nil, fmt.Errorf("paper: model (Catalog Model ID) is required for provider %q", cfg.Name)
 	}
 
+	credPath := envOr("PAPER_HARNESS_CREDENTIAL_FILE", "")
+	keyPath := envOr("PAPER_HARNESS_KEY_FILE", "")
+	harnessID := os.Getenv("PCCP_HARNESS_ID")
+
+	// Eager-load the identity so configuration errors surface during
+	// `patcode setup` instead of on the first inference request. The auth
+	// path never falls back to placeholder credentials.
+	var identity *paperproto.Identity
+	if credPath != "" && keyPath != "" {
+		loaded, err := paperproto.LoadIdentityFromDisk(credPath, keyPath)
+		if err != nil {
+			return nil, fmt.Errorf("paper: load harness identity: %w", err)
+		}
+		identity = loaded
+	} else if credPath != "" || keyPath != "" {
+		return nil, errors.New("paper: PAPER_HARNESS_CREDENTIAL_FILE and PAPER_HARNESS_KEY_FILE must both be set")
+	}
+
 	return &Provider{
 		name:      cfg.Name,
 		model:     cfg.Model,
 		relayAddr: relayAddr,
+		harnessID: harnessID,
+		identity:  identity,
+		credPath:  credPath,
+		keyPath:   keyPath,
 		tlsConfig: &tls.Config{
 			InsecureSkipVerify: true, // dev: PCCP uses self-signed certs
 			MinVersion:         tls.VersionTLS13,
 			NextProtos:         []string{paperproto.ALPNProtocol},
 		},
 	}, nil
+}
+
+func envOr(name, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(name)); v != "" {
+		return v
+	}
+	return fallback
 }
 
 // Name returns the provider instance name.
@@ -144,14 +180,26 @@ func (p *Provider) connect(ctx context.Context) error {
 		return fmt.Errorf("paper: decode AUTH_CHALLENGE: %w", err)
 	}
 
-	// Send AUTH_PROOF — simplified for Phase 1
-	// In production, this would be a COSE-Sign1 signed PPC credential.
-	// For now, we send the relay credential hint from config.
-	proof := &paperproto.AuthProofMessage{
-		Credential:   []byte("patty-harness-credential"),
-		Signature:    []byte("patty-harness-signature"),
-		KeyAlgorithm: paperproto.COSEAlgEdDSA,
-		ChallengeID:  challenge.ChallengeID,
+	// Send AUTH_PROOF with the enrolled COSE-Sign1 peer credential and a
+	// transcript-bound Ed25519 signature. The relay independently computes
+	// the same auth context and verifies the proof under the issuer-defined
+	// subject public key embedded in the credential body.
+	if p.identity == nil {
+		conn.Close()
+		return fmt.Errorf("paper: harness identity is not enrolled; set PAPER_HARNESS_CREDENTIAL_FILE and PAPER_HARNESS_KEY_FILE, then run `patcode setup`")
+	}
+	proof, err := paperproto.BuildAuthProof(paperproto.AuthProofInput{
+		PrivateKey:      p.identity.PrivateKey,
+		Credential:      p.identity.Credential,
+		Hello:           hello,
+		HelloAck:        &ack,
+		ChallengeID:     challenge.ChallengeID,
+		RevocationEpoch: challenge.RevocationEpoch,
+		ChannelBinding:  []byte("tcp-exporter"),
+	})
+	if err != nil {
+		conn.Close()
+		return fmt.Errorf("paper: build AUTH_PROOF: %w", err)
 	}
 
 	proofBytes, err := paperproto.MarshalCBOR(proof)

@@ -41,8 +41,17 @@ const (
 	MsgAITokenChunk     MessageType = 0x0402
 	MsgAIComplete       MessageType = 0x0403
 
-	// Model catalog (0x0500–0x05FF)
-	MsgCatalogSnapshot MessageType = 0x0500
+	// Model catalog (0x0500–0x05FF) — paper.models/1 extension
+	MsgCatalogRequest    MessageType = 0x0500
+	MsgCatalogSnapshot   MessageType = 0x0501
+	MsgCatalogDelta      MessageType = 0x0502
+	MsgModelAnnounce     MessageType = 0x0503
+	MsgModelWithdraw     MessageType = 0x0504
+	MsgModelDefault      MessageType = 0x0505
+	MsgModelAvailability MessageType = 0x0506
+	MsgModelCapChanged   MessageType = 0x0507
+	MsgModelUpgradeReq   MessageType = 0x0508
+	MsgCatalogAck        MessageType = 0x0509
 )
 
 func (m MessageType) String() string {
@@ -77,8 +86,26 @@ func (m MessageType) String() string {
 		return "AI_TOKEN_CHUNK"
 	case MsgAIComplete:
 		return "AI_COMPLETE"
+	case MsgCatalogRequest:
+		return "MODEL_CATALOG_REQUEST"
 	case MsgCatalogSnapshot:
 		return "MODEL_CATALOG_SNAPSHOT"
+	case MsgCatalogDelta:
+		return "MODEL_CATALOG_DELTA"
+	case MsgModelAnnounce:
+		return "MODEL_ANNOUNCE"
+	case MsgModelWithdraw:
+		return "MODEL_WITHDRAW"
+	case MsgModelDefault:
+		return "MODEL_DEFAULT_CHANGED"
+	case MsgModelAvailability:
+		return "MODEL_AVAILABILITY"
+	case MsgModelCapChanged:
+		return "MODEL_CAPABILITY_CHANGED"
+	case MsgModelUpgradeReq:
+		return "MODEL_UPGRADE_REQUIRED"
+	case MsgCatalogAck:
+		return "CATALOG_ACK"
 	default:
 		return "UNKNOWN"
 	}

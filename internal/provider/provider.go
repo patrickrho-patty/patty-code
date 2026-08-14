@@ -19,6 +19,8 @@ import (
 	"syscall"
 	"unicode"
 
+	"os"
+
 	"patty/internal/nilutil"
 )
 
@@ -1118,6 +1120,25 @@ type Factory func(cfg Config) (Provider, error)
 var registry = map[string]Factory{}
 
 // Register adds a factory under a kind (e.g. "openai"). Intended for init().
+// genericBlockedKinds are the generic HTTP LLM protocol providers blocked
+// by the PAPER-only policy (PRD v2 §0.2, §826). The official Harness must
+// not use OpenAI/Anthropic/REST for Patty service inference.
+// PATTY_ALLOW_GENERIC=1 re-enables for development.
+var genericBlockedKinds = map[string]bool{
+	"openai":              true,
+	"anthropic":           true,
+	"responses":           true,
+	"dashscope-responses": true,
+}
+
+// IsBlockedKind reports whether kind is blocked by the PAPER-only policy.
+func IsBlockedKind(kind string) bool {
+	if os.Getenv("PATTY_ALLOW_GENERIC") == "1" {
+		return false
+	}
+	return genericBlockedKinds[kind]
+}
+
 // It panics on a duplicate kind, since that is a compile-time wiring mistake.
 func Register(kind string, f Factory) {
 	if _, dup := registry[kind]; dup {
@@ -1126,8 +1147,13 @@ func Register(kind string, f Factory) {
 	registry[kind] = f
 }
 
-// New instantiates the provider of the given kind.
+// New instantiates the provider of the given kind. Generic HTTP protocol
+// providers are blocked unless PATTY_ALLOW_GENERIC=1 (PRD v2 §0.2).
 func New(kind string, cfg Config) (Provider, error) {
+	if IsBlockedKind(kind) {
+		return nil, fmt.Errorf(
+			"provider %q is blocked: official Patty Code inference uses PAPER protocol only (PRD v2 §0.2). Set PATTY_ALLOW_GENERIC=1 for development.", kind)
+	}
 	f, ok := registry[kind]
 	if !ok {
 		return nil, fmt.Errorf("provider: unknown kind %q (registered: %v)", kind, Kinds())

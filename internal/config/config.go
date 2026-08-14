@@ -1378,7 +1378,7 @@ const LanguagePolicy = `Reply in the same language the user is using in their mo
 func Default() *Config {
 	return &Config{
 		ConfigVersion:    5,
-		DefaultModel:     "patty/medium",
+		DefaultModel:     "patty/patty-code-standard",
 		CredentialsStore: CredentialsStoreAuto,
 		UI:               UIConfig{Theme: "auto", ShowTurnUsage: true},
 		Desktop:          DesktopConfig{DefaultToolApprovalMode: "auto", ConversationWidth: "standard"},
@@ -1417,13 +1417,17 @@ func Default() *Config {
 			Pairing:            BotPairingConfig{Enabled: true, RequestTTLMinutes: 60, MaxPendingPerPlatform: 3},
 			Allowlist:          BotAllowlist{Enabled: true},
 		},
+		// PRD v2 §0.2: The official Harness uses PAPER protocol only.
+		// The default provider connects to a PCCP PAPER Relay, not an
+		// OpenAI-compatible HTTP endpoint. Set PAPER_RELAY_ADDR to point
+		// at your Relay's PAPER listener (default localhost:8444).
 		Providers: []ProviderEntry{{
 			Name:          "patty",
-			Kind:          "openai",
-			BaseURL:       "https://omni.agents.patty.io/v1",
-			Model:         "medium",
-			APIKeyEnv:     "AGENTS_PATTY_API_KEY",
-			ContextWindow: 248124,
+			Kind:          "paper",
+			BaseURL:       "localhost:8444",
+			Model:         "patty-code-standard",
+			APIKeyEnv:     "PAPER_HARNESS_KEY",
+			ContextWindow: 262144,
 		}},
 	}
 }
