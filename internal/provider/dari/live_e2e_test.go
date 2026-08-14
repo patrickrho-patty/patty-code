@@ -439,14 +439,14 @@ type httptestServerShim struct {
 	url string
 }
 
-func TestPaperLiveE2EOffline(t *testing.T) {
+func TestDARILiveE2EOffline(t *testing.T) {
 	if os.Getenv("DARI_LIVE_E2E") != "1" {
 		t.Skip("set DARI_LIVE_E2E=1 to run the live relay e2e loop")
 	}
 	runLiveE2E(t, "", "", "")
 }
 
-func TestPaperLiveE2ERealModel(t *testing.T) {
+func TestDARILiveE2ERealModel(t *testing.T) {
 	if os.Getenv("DARI_LIVE_E2E_LIVE") != "1" {
 		t.Skip("set DARI_LIVE_E2E_LIVE=1 to run the live-model e2e (yolo-auto)")
 	}
