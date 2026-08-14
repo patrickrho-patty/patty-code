@@ -265,13 +265,13 @@ func TestEmitterConcurrentEmitAndPending(t *testing.T) {
 // envelope-family consistency check.
 func TestValidateEnvelopeFamilyAcceptsCoherentSet(t *testing.T) {
 	actions := []*ActionEnvelope{
-		{ActionID: "act-1", ActionType: "tool_use", OccurredAtUnixMs: 1, EnvelopeDigest: [32]byte{1}},
+		{ActionID: "act-1", OrganizationID: "org-test", ActionType: "tool_use", OccurredAtUnixMs: 1, EnvelopeDigest: [32]byte{1}},
 	}
 	changeSets := []*ChangeSetEnvelope{
-		{ChangeSetID: "cs-1", RepositoryID: "pccp", FilesChanged: []string{"foo.go"}, ChangeSetDigest: [32]byte{2}},
+		{ChangeSetID: "cs-1", SessionID: "ses-1", OrganizationID: "org-test", RepositoryID: "pccp", FilesChanged: []string{"foo.go"}, ChangeSetDigest: [32]byte{2}},
 	}
 	spans := []*ProvenanceSpanEnvelope{
-		{SpanID: "sp-1", RepositoryID: "pccp", FilePath: "foo.go", ChangeSetID: "cs-1", ASTFingerprint: [32]byte{3}, SpanDigest: [32]byte{4}},
+		{SpanID: "sp-1", RepositoryID: "pccp", FilePath: "foo.go", ChangeSetID: "cs-1", SessionID: "ses-1", ASTFingerprint: [32]byte{3}, SpanDigest: [32]byte{4}},
 	}
 	if err := ValidateEnvelopeFamily(actions, changeSets, spans); err != nil {
 		t.Errorf("coherent family must pass, got %v", err)

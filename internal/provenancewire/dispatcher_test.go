@@ -64,7 +64,11 @@ func TestDispatcherEmitsCoherentFamily(t *testing.T) {
 		{ToolName: "edit_file", Mutation: true, Paths: []string{"foo.go"}, Success: true},
 	}
 	cs, err := BuildChangeSetEnvelopeFromReceipts(ChangeSetBuildRequest{
-		ChangeSetID: "cs-1", RepositoryID: "pccp", Receipts: receipts,
+		ChangeSetID:    "cs-1",
+		OrganizationID: "org-test",
+		SessionID:      "ses-1",
+		RepositoryID:   "pccp",
+		Receipts:       receipts,
 	})
 	if err != nil {
 		t.Fatalf("build cs: %v", err)
@@ -73,7 +77,7 @@ func TestDispatcherEmitsCoherentFamily(t *testing.T) {
 		t.Fatalf("emit cs: %v", err)
 	}
 	span, err := BuildSpanEnvelopeFromReceipt(SpanBuildRequest{
-		SpanID: "sp-1", RepositoryID: "pccp", SymbolLang: "go", SymbolName: "compute",
+		SpanID: "sp-1", RepositoryID: "pccp", SessionID: "ses-1", SymbolLang: "go", SymbolName: "compute",
 		StartLine: 1, EndLine: 10, Receipt: receipts[0],
 	})
 	if err != nil {
@@ -83,7 +87,11 @@ func TestDispatcherEmitsCoherentFamily(t *testing.T) {
 		t.Fatalf("emit span: %v", err)
 	}
 	act, err := BuildActionEnvelopeFromReceipt(ActionBuildRequest{
-		ActionID: "act-1", ActionType: "tool_use", OccurredAtUnixMs: 1_700_000_000_000,
+		ActionID:        "act-1",
+		OrganizationID:  "org-test",
+		SessionID:       "ses-1",
+		ActionType:      "tool_use",
+		OccurredAtUnixMs: 1_700_000_000_000,
 	})
 	if err != nil {
 		t.Fatalf("build act: %v", err)
@@ -225,7 +233,10 @@ func TestDispatcherPendingCountSurfacesOperatorSignal(t *testing.T) {
 	})
 	_ = emitter.EmitAction(act)
 	cs, _ := BuildChangeSetEnvelopeFromReceipts(ChangeSetBuildRequest{
-		ChangeSetID: "cs-1", RepositoryID: "pccp",
+		ChangeSetID:    "cs-1",
+		OrganizationID: "org-test",
+		SessionID:      "ses-1",
+		RepositoryID:   "pccp",
 		Receipts: []evidence.Receipt{
 			{ToolName: "edit_file", Mutation: true, Paths: []string{"foo.go"}, Success: true},
 		},
