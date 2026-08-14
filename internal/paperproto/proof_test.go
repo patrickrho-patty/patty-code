@@ -116,13 +116,13 @@ func TestBuildAuthContextMatchesRelayVector(t *testing.T) {
 		ServerNonce:       bytes.Repeat([]byte{0x22}, 32),
 		ResourceLimits:    map[string]uint64{"max_payload_len": 1 << 20},
 	}
-	helloCBOR, err := MarshalCBOR(hello)
+	helloCBOR, err := CanonicalHelloCBOR(hello)
 	if err != nil {
-		t.Fatalf("marshal hello: %v", err)
+		t.Fatalf("canonical hello: %v", err)
 	}
-	ackCBOR, err := MarshalCBOR(ack)
+	ackCBOR, err := CanonicalAckCBOR(ack)
 	if err != nil {
-		t.Fatalf("marshal ack: %v", err)
+		t.Fatalf("canonical ack: %v", err)
 	}
 	_, _, _, _, credential := testIdentity(t)
 	credDigest := ComputeObjectDigest(ObjTypePeerCredential, credential)
@@ -134,10 +134,13 @@ func TestBuildAuthContextMatchesRelayVector(t *testing.T) {
 		credDigest[:],
 	)
 
-	// Independent recomputation: SHA-256("PAPER-AUTH-v1\0" || helloCBOR || ackCBOR ||
-	// clientNonce || serverNonce || channelBinding || credentialDigest).
+	// Independent recomputation: SHA-256("PAPER-AUTH-v1" || canonical(HELLO) ||
+	// canonical(HELLO_ACK) || clientNonce || serverNonce || channelBinding ||
+	// credentialDigest). The domain has NO trailing NUL and the HELLO/ACK
+	// bytes are the map-order-free canonical encodings — pinned against
+	// the live relay by the PAPER_LIVE_E2E suite.
 	h := sha256.New()
-	h.Write([]byte("PAPER-AUTH-v1\x00"))
+	h.Write([]byte("PAPER-AUTH-v1"))
 	h.Write(helloCBOR)
 	h.Write(ackCBOR)
 	h.Write(hello.ClientNonce)
@@ -342,8 +345,8 @@ func TestBuildAuthProofEmitsRelayShape(t *testing.T) {
 	}
 	// Signature MUST verify under the subject key, the relay's transcript,
 	// the challenge ID, and the same epoch.
-	helloCBOR, _ := MarshalCBOR(hello)
-	ackCBOR, _ := MarshalCBOR(ack)
+	helloCBOR, _ := CanonicalHelloCBOR(hello)
+	ackCBOR, _ := CanonicalAckCBOR(ack)
 	credDigest := ComputeObjectDigest(ObjTypePeerCredential, credential)
 	transcript := BuildAuthContext(
 		helloCBOR, ackCBOR,
