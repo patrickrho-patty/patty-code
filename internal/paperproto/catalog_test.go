@@ -485,5 +485,60 @@ func TestCatalogDecodingEmptyFails(t *testing.T) {
 	}
 }
 
+// TestCatalogDeltaWithMixedRemovalsAndUpdates guards the
+// merge-on-allocate fix: when a delta mixes removed + updated entries,
+// the surviving entries must not be overwritten by the loop's
+// `append(filtered, e)` writes (the previous implementation reused
+// the source slice's backing array and clobbered itself).
+func TestCatalogDeltaWithMixedRemovalsAndUpdates(t *testing.T) {
+	clock := newCatalogClock(time.Unix(1_700_000_000, 0))
+	client := NewCatalogClient().WithNowFunc(clock.Now)
+	// Build a snapshot with 4 entries: A, B, C, D.
+	base := sampleCatalog(clock.Now(), 1, "epoch-2026-01", 1)
+	base.Entries = []CatalogEntry{
+		{ModelID: "A", Version: "1.0.0", PolicyEpochID: "epoch-2026-01", ActiveUntilUnixMs: clock.Now().Add(time.Hour).UnixMilli()},
+		{ModelID: "B", Version: "1.0.0", PolicyEpochID: "epoch-2026-01", ActiveUntilUnixMs: clock.Now().Add(time.Hour).UnixMilli()},
+		{ModelID: "C", Version: "1.0.0", PolicyEpochID: "epoch-2026-01", ActiveUntilUnixMs: clock.Now().Add(time.Hour).UnixMilli()},
+		{ModelID: "D", Version: "1.0.0", PolicyEpochID: "epoch-2026-01", ActiveUntilUnixMs: clock.Now().Add(time.Hour).UnixMilli()},
+	}
+	base.Digest = CatalogDigest(base)
+	if err := client.ApplySnapshot(base, "epoch-2026-01"); err != nil {
+		t.Fatalf("apply base: %v", err)
+	}
+	// Apply a delta that removes A, updates B, and adds E.
+	delta := &CatalogDelta{
+		Version:        1,
+		EpochID:        "epoch-2026-01",
+		IssuedAtUnixMs: clock.Now().UnixMilli(),
+		IssuedSequence: 2,
+		Removed:        []string{"A"},
+		Updated: []CatalogEntry{
+			{ModelID: "B", Version: "1.0.1", PolicyEpochID: "epoch-2026-01", ActiveUntilUnixMs: clock.Now().Add(time.Hour).UnixMilli()},
+		},
+		Added: []CatalogEntry{
+			{ModelID: "E", Version: "1.0.0", PolicyEpochID: "epoch-2026-01", ActiveUntilUnixMs: clock.Now().Add(time.Hour).UnixMilli()},
+		},
+	}
+	if err := client.ApplyDelta(delta, "epoch-2026-01"); err != nil {
+		t.Fatalf("apply delta: %v", err)
+	}
+	// All entries must be present and intact.
+	if _, err := client.FindModel("A"); !IsCatalogModelNotFound(err) {
+		t.Errorf("A must be removed, got %v", err)
+	}
+	if entry, err := client.FindModel("B"); err != nil || entry.Version != "1.0.1" {
+		t.Errorf("B must be updated, got %v / %v", entry, err)
+	}
+	if _, err := client.FindModel("C"); err != nil {
+		t.Errorf("C must survive, got %v", err)
+	}
+	if _, err := client.FindModel("D"); err != nil {
+		t.Errorf("D must survive, got %v", err)
+	}
+	if _, err := client.FindModel("E"); err != nil {
+		t.Errorf("E must be added, got %v", err)
+	}
+}
+
 // _ guards the hashed import.
 var _ = sha256.Sum256

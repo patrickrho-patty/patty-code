@@ -98,8 +98,10 @@ type CatalogDelta struct {
 const CatalogDomain = "DARI-CATALOG-v1\x00"
 
 // CatalogDigest produces the content-addressed digest of the catalog
-// entries body. The connector signs everything except the high-water
-// mark so a buggy relay cannot silently roll back the catalog.
+// entries body. The digest binds every field that the connector
+// uses to authorize an exchange (version, epoch, sequence, issuer
+// thumbprint, validity window, per-entry fields) so a buggy relay
+// cannot silently mutate any of them without re-signing.
 func CatalogDigest(snap *CatalogSnapshot) [32]byte {
 	if snap == nil {
 		return [32]byte{}
@@ -114,6 +116,9 @@ func CatalogDigest(snap *CatalogSnapshot) [32]byte {
 	binary.BigEndian.PutUint64(seqBuf[:], snap.IssuedSequence)
 	h.Write(seqBuf[:])
 	h.Write(snap.IssuerKeyThumbprint[:])
+	var notAfterBuf [8]byte
+	binary.BigEndian.PutUint64(notAfterBuf[:], uint64(snap.NotAfterUnixMs))
+	h.Write(notAfterBuf[:])
 	for i := range snap.Entries {
 		h.Write([]byte(snap.Entries[i].ModelID))
 		h.Write([]byte(snap.Entries[i].Version))
@@ -217,12 +222,17 @@ func (c *CatalogClient) ApplyDelta(delta *CatalogDelta, expectedEpoch string) er
 		c.applyFailureCount++
 		return errors.New("paper: catalog already expired; cannot apply delta")
 	}
-	// Merge: removals first, then updates, then additions.
+	// Merge: removals first, then updates, then additions. The
+	// merge MUST allocate a fresh backing array; reusing
+	// `c.current.Entries[:0]` would alias the source slice and
+	// cause the iteration to overwrite entries it is still reading
+	// (a memory-corruption bug that surfaces only when the
+	// removed/updated set is non-empty).
 	removeSet := map[string]bool{}
 	for _, m := range delta.Removed {
 		removeSet[m] = true
 	}
-	filtered := c.current.Entries[:0]
+	filtered := make([]CatalogEntry, 0, len(c.current.Entries)+len(delta.Added))
 	for _, e := range c.current.Entries {
 		if removeSet[e.ModelID] {
 			continue
@@ -303,9 +313,18 @@ func (c *CatalogClient) IsStale() bool {
 func (c *CatalogClient) MetricsFor() CatalogMetrics {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// Compute IsStale while holding the lock to avoid the
+	// double-lock deadlock that would otherwise occur here.
+	isStale := false
+	if c.current == nil {
+		isStale = true
+	} else if c.current.NotAfterUnixMs > 0 {
+		isStale = c.nowFn().UnixMilli() >= c.current.NotAfterUnixMs
+	}
 	m := CatalogMetrics{
 		StalenessCount:    c.stalenessCount,
 		ApplyFailureCount: c.applyFailureCount,
+		IsStale:           isStale,
 	}
 	if c.current != nil {
 		m.Version = c.current.Version
@@ -329,6 +348,9 @@ type CatalogMetrics struct {
 	Digest           [32]byte
 	StalenessCount   int64
 	ApplyFailureCount int64
+	// IsStale mirrors IsStale so the metric snapshot is self-contained;
+	// callers should not need to call the method separately.
+	IsStale bool
 }
 
 // Sentinel errors for the catalog boundary. The connector surfaces

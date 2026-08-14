@@ -186,7 +186,7 @@ func (c *PolicyEpochClient) Verify(epochID string) error {
 		return ErrPolicyEpochUnbound
 	}
 	nowMs := c.nowFn().UnixMilli()
-	if c.bound.IssuedAtUnixMs > 0 && c.bound.NotAfterUnixMs > 0 && nowMs >= c.bound.NotAfterUnixMs {
+	if c.bound.NotAfterUnixMs > 0 && nowMs >= c.bound.NotAfterUnixMs {
 		return ErrPolicyEpochExpired
 	}
 	if c.bound.EpochID != epochID {
@@ -217,10 +217,17 @@ func (c *PolicyEpochClient) IsStale() bool {
 func (c *PolicyEpochClient) MetricsFor() PolicyEpochMetrics {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// Compute IsStale while holding the lock to avoid the
+	// double-lock deadlock that would otherwise occur here.
+	isStale := true
+	if c.bound != nil && c.bound.NotAfterUnixMs > 0 {
+		isStale = c.nowFn().UnixMilli() >= c.bound.NotAfterUnixMs
+	}
 	m := PolicyEpochMetrics{
 		LastVerifiedUnixMs: c.lastVerifiedUnixMs,
 		BindFailureCount:   c.bindFailureCount,
 		RebindFailureCount: c.rebindFailureCount,
+		IsStale:            isStale,
 	}
 	if c.bound != nil {
 		m.BoundEpochID = c.bound.EpochID
@@ -241,6 +248,9 @@ type PolicyEpochMetrics struct {
 	LastVerifiedUnixMs  int64
 	BindFailureCount    int64
 	RebindFailureCount  int64
+	// IsStale mirrors IsStale so the metric snapshot is self-contained;
+	// callers should not need to call the method separately.
+	IsStale bool
 }
 
 // validate enforces the structural invariants of a PolicyEpoch. The
