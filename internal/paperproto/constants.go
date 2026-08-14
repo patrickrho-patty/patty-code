@@ -60,6 +60,10 @@ const (
 	MsgEvidenceReceipt       MessageType = 0x0703
 	MsgEvidenceReceiptAck    MessageType = 0x0704
 	MsgActionEnvelope        MessageType = 0x0705
+
+	// Admin (0x0B00–0x0BFF) — admin fleet actions
+	MsgAdminCommand         MessageType = 0x0B00
+	MsgAdminCommandResult   MessageType = 0x0B01
 )
 
 func (m MessageType) String() string {
@@ -126,6 +130,10 @@ func (m MessageType) String() string {
 		return "EVIDENCE_RECEIPT_ACK"
 	case MsgActionEnvelope:
 		return "ACTION_ENVELOPE"
+	case MsgAdminCommand:
+		return "ADMIN_COMMAND"
+	case MsgAdminCommandResult:
+		return "ADMIN_COMMAND_RESULT"
 	default:
 		return "UNKNOWN"
 	}
