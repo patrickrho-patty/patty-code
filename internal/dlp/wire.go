@@ -101,8 +101,15 @@ func (h *OutboundHook) ApplyMessage(rec *paperproto.Record) (HookResult, error) 
 	}
 	if res.Allow {
 		// Replace the payload in place so the harness's SendRecord
-		// call sends the redacted text, not the raw input.
-		rec.Payload = res.RedactedPayload
+		// call sends the redacted text, not the raw input. We
+		// allocate a fresh byte slice so the caller's original
+		// record buffer is not aliased.
+		if len(res.RedactedPayload) == len(rec.Payload) {
+			// In-place copy if length matches (no allocation).
+			copy(rec.Payload, res.RedactedPayload)
+		} else {
+			rec.Payload = res.RedactedPayload
+		}
 	}
 	return res, nil
 }

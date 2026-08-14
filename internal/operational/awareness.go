@@ -123,12 +123,14 @@ func NewAwarenessClient(organizationID, userID string) *AwarenessClient {
 	}
 }
 
-// SetWorkSlot installs the harness's cached work-slot state.
+// SetWorkSlot installs the harness's cached work-slot state. The
+// caller MUST call Refresh() to stamp lastRefreshAtMs; the Set*
+// methods don't update it so the relay-pushed refresh and the
+// connector's poll cycle are decoupled.
 func (a *AwarenessClient) SetWorkSlot(slot *WorkSlot) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.slot = slot
-	a.lastRefreshAtMs = time.Now().UnixMilli()
 }
 
 // SetCapacityLease installs the cached capacity lease.
@@ -136,7 +138,6 @@ func (a *AwarenessClient) SetCapacityLease(lease *CapacityLease) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.capacity = lease
-	a.lastRefreshAtMs = time.Now().UnixMilli()
 }
 
 // SetVisibility installs the cached work-intel visibility rules.
@@ -144,11 +145,12 @@ func (a *AwarenessClient) SetVisibility(v *WorkIntelVisibility) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.visibility = v
-	a.lastRefreshAtMs = time.Now().UnixMilli()
 }
 
 // Refresh records a successful state refresh. The harness invokes
-// this when it pulls fresh operational state from the relay.
+// this when it pulls fresh operational state from the relay. The
+// timestamp drives the freshness signal surfaced in the E1
+// status bar (stale-state detection).
 func (a *AwarenessClient) Refresh(nowMs int64) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
