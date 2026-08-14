@@ -52,6 +52,14 @@ const (
 	MsgModelCapChanged   MessageType = 0x0507
 	MsgModelUpgradeReq   MessageType = 0x0508
 	MsgCatalogAck        MessageType = 0x0509
+
+	// Provenance (0x0700–0x07FF) — paper.provenance/1 extension
+	MsgProvenanceChangeSet   MessageType = 0x0700
+	MsgProvenanceSpan        MessageType = 0x0701
+	MsgProvenanceCommitBind  MessageType = 0x0702
+	MsgEvidenceReceipt       MessageType = 0x0703
+	MsgEvidenceReceiptAck    MessageType = 0x0704
+	MsgActionEnvelope        MessageType = 0x0705
 )
 
 func (m MessageType) String() string {
@@ -106,6 +114,18 @@ func (m MessageType) String() string {
 		return "MODEL_UPGRADE_REQUIRED"
 	case MsgCatalogAck:
 		return "CATALOG_ACK"
+	case MsgProvenanceChangeSet:
+		return "PROVENANCE_CHANGESET"
+	case MsgProvenanceSpan:
+		return "PROVENANCE_SPAN"
+	case MsgProvenanceCommitBind:
+		return "PROVENANCE_COMMIT_BIND"
+	case MsgEvidenceReceipt:
+		return "EVIDENCE_RECEIPT"
+	case MsgEvidenceReceiptAck:
+		return "EVIDENCE_RECEIPT_ACK"
+	case MsgActionEnvelope:
+		return "ACTION_ENVELOPE"
 	default:
 		return "UNKNOWN"
 	}
