@@ -17,9 +17,8 @@ package provenancewire
 
 import (
 	"crypto/sha256"
-	"encoding/binary"
 	"errors"
-	"math"
+	"fmt"
 	"sync"
 )
 
@@ -170,25 +169,14 @@ type CommitBindingEnvelope struct {
 
 // SignBytes returns the canonical signing bytes for the change set.
 // The relay and the connector agree on this exact layout so the
-// cross-repo digest stays stable.
+// cross-repo digest stays stable. The format matches the relay's
+// `internal/provenance/service.go::computeChangeSetDigest` body:
+// `sessionID|repositoryID|branch|filesChanged|diffSummary|modelPackageID|endpointID`.
 func (c *ChangeSetEnvelope) SignBytes() []byte {
-	h := sha256.New()
-	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("changeset"))
-	writeLengthPrefixedString(h, c.ChangeSetID)
-	writeLengthPrefixedString(h, c.OrganizationID)
-	writeLengthPrefixedString(h, c.SessionID)
-	writeLengthPrefixedString(h, c.RepositoryID)
-	writeLengthPrefixedString(h, c.Branch)
-	writeLengthPrefixedStringSlice(h, c.FilesChanged)
-	h.Write(c.DiffDigest[:])
-	writeU64BE(h, uint64(c.LinesAdded))
-	writeU64BE(h, uint64(c.LinesRemoved))
-	writeLengthPrefixedString(h, string(c.AttributionState))
-	writeF64BE(h, c.Confidence)
-	var d [32]byte
-	copy(d[:], h.Sum(nil))
-	return d[:]
+	data := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s",
+		c.SessionID, c.RepositoryID, c.Branch, joinStrings(c.FilesChanged, ","),
+		c.DiffSummary, c.ModelPackageID, c.EndpointID)
+	return []byte(data)
 }
 
 // Digest computes the ChangeSet's content-addressed digest and
@@ -196,8 +184,8 @@ func (c *ChangeSetEnvelope) SignBytes() []byte {
 // connector pushes into the envelope's ChangeSetDigest field.
 func (c *ChangeSetEnvelope) Digest() [32]byte {
 	h := sha256.New()
-	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("changeset-digest"))
+	h.Write([]byte("DARI-PROVENANCE-CHANGESET-v1\x00"))
+	h.Write([]byte("digest"))
 	h.Write(c.SignBytes())
 	var d [32]byte
 	copy(d[:], h.Sum(nil))
@@ -208,33 +196,21 @@ func (c *ChangeSetEnvelope) Digest() [32]byte {
 // SignBytes returns the canonical signing bytes for the span. The
 // ASTFingerprint binds the span to a specific code region; the
 // SemanticFingerprint binds it to a logical symbol so the span
-// survives file rename/move (PRD §19.4).
+// survives file rename/move (PRD §19.4). The format matches the
+// relay's `computeSpanDigest` body:
+// `repositoryID|filePath|commitSHA|startLine-endLine|attributionState|sessionID`.
 func (s *ProvenanceSpanEnvelope) SignBytes() []byte {
-	h := sha256.New()
-	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("span"))
-	writeLengthPrefixedString(h, s.SpanID)
-	writeLengthPrefixedString(h, s.OrganizationID)
-	writeLengthPrefixedString(h, s.RepositoryID)
-	writeLengthPrefixedString(h, s.FilePath)
-	writeLengthPrefixedString(h, s.SymbolLang)
-	writeLengthPrefixedString(h, s.SymbolName)
-	writeU64BE(h, uint64(s.StartLine))
-	writeU64BE(h, uint64(s.EndLine))
-	h.Write(s.ASTFingerprint[:])
-	h.Write(s.SemanticFingerprint[:])
-	writeLengthPrefixedString(h, string(s.AttributionState))
-	writeF64BE(h, s.Confidence)
-	var d [32]byte
-	copy(d[:], h.Sum(nil))
-	return d[:]
+	data := fmt.Sprintf("%s|%s|%s|%d-%d|%s|%s",
+		s.RepositoryID, s.FilePath, s.CommitSHA,
+		s.StartLine, s.EndLine, string(s.AttributionState), s.SessionID)
+	return []byte(data)
 }
 
 // Digest computes and stores the span's content-addressed digest.
 func (s *ProvenanceSpanEnvelope) Digest() [32]byte {
 	h := sha256.New()
-	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("span-digest"))
+	h.Write([]byte("DARI-PROVENANCE-SPAN-v1\x00"))
+	h.Write([]byte("digest"))
 	h.Write(s.SignBytes())
 	var d [32]byte
 	copy(d[:], h.Sum(nil))
@@ -243,31 +219,22 @@ func (s *ProvenanceSpanEnvelope) Digest() [32]byte {
 }
 
 // SignBytes returns the canonical signing bytes for the action.
+// The format matches the relay's `computeEnvelopeDigest` body:
+// `actionID|organizationID|sessionID|exchangeID|userID|harnessID|
+// modelPackageID|endpointID|actionType|actionPayload|occurredAtUnixMs`.
 func (a *ActionEnvelope) SignBytes() []byte {
-	h := sha256.New()
-	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("action"))
-	writeLengthPrefixedString(h, a.ActionID)
-	writeLengthPrefixedString(h, a.OrganizationID)
-	writeLengthPrefixedString(h, a.SessionID)
-	writeLengthPrefixedString(h, a.ExchangeID)
-	writeLengthPrefixedString(h, a.UserID)
-	writeLengthPrefixedString(h, a.HarnessID)
-	writeLengthPrefixedString(h, a.ActionType)
-	writeLengthPrefixedString(h, a.ActionPayload)
-	writeLengthPrefixedString(h, a.VerdictResult)
-	writeLengthPrefixedString(h, a.Classification)
-	writeU64BE(h, uint64(a.OccurredAtUnixMs))
-	var d [32]byte
-	copy(d[:], h.Sum(nil))
-	return d[:]
+	data := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%d",
+		a.ActionID, a.OrganizationID, a.SessionID, a.ExchangeID,
+		a.UserID, a.HarnessID, a.ModelPackageID, a.EndpointID,
+		a.ActionType, a.ActionPayload, a.OccurredAtUnixMs)
+	return []byte(data)
 }
 
 // Digest computes and stores the action's content-addressed digest.
 func (a *ActionEnvelope) Digest() [32]byte {
 	h := sha256.New()
-	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("action-digest"))
+	h.Write([]byte("DARI-PROVENANCE-ACTION-v1\x00"))
+	h.Write([]byte("digest"))
 	h.Write(a.SignBytes())
 	var d [32]byte
 	copy(d[:], h.Sum(nil))
@@ -278,24 +245,16 @@ func (a *ActionEnvelope) Digest() [32]byte {
 // SignBytes returns the canonical signing bytes for the commit
 // binding. The binding digest is what the relay stores.
 func (c *CommitBindingEnvelope) SignBytes() []byte {
-	h := sha256.New()
-	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("commit-binding"))
-	writeLengthPrefixedString(h, c.RepositoryID)
-	writeLengthPrefixedString(h, c.CommitSHA)
-	writeLengthPrefixedString(h, c.ChangeSetID)
-	writeLengthPrefixedString(h, c.Branch)
-	writeU64BE(h, uint64(c.BoundAtUnixMs))
-	var d [32]byte
-	copy(d[:], h.Sum(nil))
-	return d[:]
+	data := fmt.Sprintf("%s|%s|%s|%s|%d",
+		c.RepositoryID, c.CommitSHA, c.ChangeSetID, c.Branch, c.BoundAtUnixMs)
+	return []byte(data)
 }
 
 // Digest computes and stores the binding's content-addressed digest.
 func (c *CommitBindingEnvelope) Digest() [32]byte {
 	h := sha256.New()
-	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("commit-binding-digest"))
+	h.Write([]byte("DARI-PROVENANCE-COMMIT-BINDING-v1\x00"))
+	h.Write([]byte("digest"))
 	h.Write(c.SignBytes())
 	var d [32]byte
 	copy(d[:], h.Sum(nil))
@@ -303,41 +262,21 @@ func (c *CommitBindingEnvelope) Digest() [32]byte {
 	return d
 }
 
-// writeLengthPrefixedString appends a uint32 big-endian length
-// followed by the value bytes.
-func writeLengthPrefixedString(h interface{ Write([]byte) (int, error) }, value string) {
-	var lenBuf [4]byte
-	binary.BigEndian.PutUint32(lenBuf[:], uint32(len(value)))
-	h.Write(lenBuf[:])
-	h.Write([]byte(value))
-}
-
-// writeLengthPrefixedStringSlice appends a uint32 length followed
-// by each string's own uint32 length and bytes.
-func writeLengthPrefixedStringSlice(h interface{ Write([]byte) (int, error) }, values []string) {
-	var lenBuf [4]byte
-	binary.BigEndian.PutUint32(lenBuf[:], uint32(len(values)))
-	h.Write(lenBuf[:])
-	for _, v := range values {
-		writeLengthPrefixedString(h, v)
+// joinStrings joins a slice of strings with the supplied separator.
+// The connector's `filesChanged` field is rendered as a
+// comma-separated string to match the relay's `FilesChanged`
+// column (a JSON array stored as a string in the GORM model).
+func joinStrings(values []string, sep string) string {
+	out := ""
+	for i, v := range values {
+		if i > 0 {
+			out += sep
+		}
+		out += v
 	}
+	return out
 }
 
-// writeU64BE appends a big-endian uint64.
-func writeU64BE(h interface{ Write([]byte) (int, error) }, value uint64) {
-	var buf [8]byte
-	binary.BigEndian.PutUint64(buf[:], value)
-	h.Write(buf[:])
-}
-
-// writeF64BE appends a big-endian IEEE-754 float64 via the standard
-// library's math.Float64bits helper. Stable across hosts because
-// IEEE-754 is a fixed bit layout.
-func writeF64BE(h interface{ Write([]byte) (int, error) }, value float64) {
-	var buf [8]byte
-	binary.BigEndian.PutUint64(buf[:], math.Float64bits(value))
-	h.Write(buf[:])
-}
 
 // ProvenanceEmitter converts the harness's local Ledger receipts
 // into PAPER-compatible provenance envelopes. The emitter is the
@@ -475,5 +414,3 @@ func (e *ProvenanceEmitter) Clear() {
 	e.pendingBindings = nil
 	e.mu.Unlock()
 }
-
-var _ = math.Float64bits

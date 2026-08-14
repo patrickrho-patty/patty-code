@@ -302,13 +302,10 @@ func computeSpanConfidence(r evidence.Receipt) float64 {
 // file moves, the relay re-resolves the fingerprint against the
 // new path.
 func astFingerprint(filePath string, startLine, endLine int, content []byte) [32]byte {
+	data := fmt.Sprintf("ast|%s|%d|%d|%s", filePath, startLine, endLine, string(content))
 	h := sha256.New()
 	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("ast"))
-	writeLengthPrefixedString(h, filePath)
-	writeU64BE(h, uint64(startLine))
-	writeU64BE(h, uint64(endLine))
-	h.Write(content)
+	h.Write([]byte(data))
 	var d [32]byte
 	copy(d[:], h.Sum(nil))
 	return d
@@ -320,11 +317,10 @@ func astFingerprint(filePath string, startLine, endLine int, content []byte) [32
 // path — so a span on the same symbol moves with the symbol even
 // after rename/move.
 func semanticFingerprint(filePath, lang, symbol string) [32]byte {
+	data := fmt.Sprintf("semantic|%s|%s", lang, symbol)
 	h := sha256.New()
 	h.Write([]byte(ProvenanceDomain))
-	h.Write([]byte("semantic"))
-	writeLengthPrefixedString(h, lang)
-	writeLengthPrefixedString(h, symbol)
+	h.Write([]byte(data))
 	var d [32]byte
 	copy(d[:], h.Sum(nil))
 	return d
@@ -332,14 +328,13 @@ func semanticFingerprint(filePath, lang, symbol string) [32]byte {
 
 // diffDigestOf computes the canonical digest of the file list.
 // The relay uses this to cross-reference the change set against
-// its diff tree.
+// its diff tree. The encoding matches the relay's FilesChanged
+// column layout (comma-separated paths).
 func diffDigestOf(files []string) [32]byte {
 	h := sha256.New()
 	h.Write([]byte(ProvenanceDomain))
 	h.Write([]byte("diff"))
-	for _, f := range files {
-		writeLengthPrefixedString(h, f)
-	}
+	h.Write([]byte(joinStrings(files, ",")))
 	var d [32]byte
 	copy(d[:], h.Sum(nil))
 	return d
