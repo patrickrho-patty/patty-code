@@ -37,3 +37,15 @@ func ALPNProtocols() []string { return []string{DARIProtocol, LegacyPaper1ALPN} 
 // constant exists so callers can gate behavior, and flipping it to
 // false removes `paper/1` from the offer list in a follow-up.
 const CompatEnabled = true
+
+// Frozen `paper/1` cryptographic domain strings. The connector's
+// active crypto uses the DARI-* domains (Appendix F); these document
+// the legacy values for paper/1 peers (see the migration record in
+// the root repository).
+const (
+	LegacyPaper1AuthDomain    = "PAPER-AUTH-v1"    // no trailing NUL
+	LegacyPaper1ObjDomain     = "PAPER-OBJ-v1\x00" // incl. reserved zero byte
+	LegacyPaper1ChunkDomain   = "PAPER-CHUNK-v1\x00"
+	LegacyPaper1EvidenceStart = "PAPER-EVIDENCE-START-v1\x00"
+	LegacyPaper1EvidenceEvent = "PAPER-EVIDENCE-EVENT-v1\x00"
+)

@@ -13,11 +13,17 @@ const VersionMajor byte = 1
 type MessageType uint16
 
 const (
-	MsgHello         MessageType = 0x0001
-	MsgHelloAck      MessageType = 0x0002
-	MsgPing          MessageType = 0x0003
-	MsgPong          MessageType = 0x0004
-	MsgClose         MessageType = 0x0005
+	MsgHello  MessageType = 0x0001
+	MsgHelloAck MessageType = 0x0002
+	MsgPing   MessageType = 0x0003
+	MsgPong   MessageType = 0x0004
+	// Core allocation frozen by the deployed root registry (compat
+	// map §6 rule 3 / §12): DRAIN is 0x0005 and CLOSE is 0x0006. The
+	// connector previously carried CLOSE at 0x0005 — a renumbered
+	// variant the root registry explicitly rejects — which made
+	// relay-initiated CLOSE frames (0x0006) invisible to the reader.
+	MsgDrain MessageType = 0x0005
+	MsgClose MessageType = 0x0006
 
 	// Sessions / capability leases (0x0200–0x02FF)
 	MsgSessionOpen  MessageType = 0x0200
@@ -42,7 +48,7 @@ const (
 	MsgAITokenChunk     MessageType = 0x0402
 	MsgAIComplete       MessageType = 0x0403
 
-	// Model catalog (0x0D00–0x0DFF) — dari.models/1 extension,
+	// Model catalog (0x0D00–0x0DFF) — dari.model-supply/1 extension,
 	// mirrors the relay's internal/paper/models.go registry.
 	MsgCatalogRequest    MessageType = 0x0D00
 	MsgCatalogSnapshot   MessageType = 0x0D01
@@ -97,6 +103,8 @@ func (m MessageType) String() string {
 		return "PING"
 	case MsgPong:
 		return "PONG"
+	case MsgDrain:
+		return "DRAIN"
 	case MsgClose:
 		return "CLOSE"
 	case MsgAIOpen:

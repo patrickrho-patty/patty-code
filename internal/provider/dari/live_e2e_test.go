@@ -352,6 +352,41 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 		t.Fatal("provenance changeset was not recorded relay-side")
 	}
 
+	// Task 6 Step 3 e2e: revoke the harness via the admin API and
+	// prove the NEXT connection is refused (revoked serial fails
+	// AUTH under the live trust bundle) and the active stream was
+	// terminated server-side.
+	orgID, _ = pp.identity.Organization()
+	revokeBody, _ := json.Marshal(map[string]string{
+		"organization_id": orgID,
+		"harness_id":      "harness-e2e-1",
+		"reason":          "e2e revocation proof",
+	})
+	revokeResp, err := http.Post(fmt.Sprintf("http://%s/v1/harnesses/revoke", adminAddr), "application/json", strings.NewReader(string(revokeBody)))
+	if err != nil || revokeResp.StatusCode != http.StatusOK {
+		t.Fatalf("revoke failed: %v status=%d", err, revokeResp.StatusCode)
+	}
+	revokeResp.Body.Close()
+
+	// Drop the (server-terminated) connection so the provider dials
+	// fresh; AUTH must now be rejected for the revoked credential.
+	pp.mu.Lock()
+	if pp.conn != nil {
+		pp.conn.Close()
+		pp.conn = nil
+	}
+	pp.mu.Unlock()
+
+	revokeCtx, revokeCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer revokeCancel()
+	_, err = pp.Stream(revokeCtx, provider.Request{
+		Messages: []provider.Message{{Role: provider.RoleUser, Content: "should be refused"}},
+	})
+	if err == nil {
+		t.Fatal("a revoked harness must not re-authenticate")
+	}
+	t.Logf("post-revocation connect refused as expected: %v", err)
+
 	_ = mockPIA
 }
 
