@@ -336,11 +336,11 @@ func (s *ReceiptStore) persistLocked(sr *StoredReceipt) error {
 	return os.Rename(tmp, name)
 }
 
-// VerifyEvidenceReceiptSignature checks the relay's COSE-Sign1
-// signature over the receipt's canonical signing data under the
-// AUTH_ACK-carried receipt signer key. Mirrors the relay's
-// buildReceiptSigningData layout; any field drift breaks verification
-// (pinned cross-repo by the conformance suite).
+// VerifyEvidenceReceiptSignature checks the relay's receipt signature:
+// the Signature field is a hex-encoded COSE-Sign1 envelope whose
+// payload MUST equal the canonical signing data (so the envelope is
+// bound to these receipt fields), verified under the AUTH_ACK-carried
+// receipt signer key.
 func VerifyEvidenceReceiptSignature(env *EvidenceReceiptEnvelope, pub ed25519.PublicKey) error {
 	if env == nil {
 		return errors.New("provenancewire: nil receipt")
@@ -348,18 +348,26 @@ func VerifyEvidenceReceiptSignature(env *EvidenceReceiptEnvelope, pub ed25519.Pu
 	if len(pub) == 0 {
 		return errors.New("provenancewire: no receipt signer key")
 	}
-	sig, err := hex.DecodeString(env.Signature)
-	if err != nil || len(sig) == 0 {
+	raw, err := hex.DecodeString(env.Signature)
+	if err != nil || len(raw) == 0 {
 		return errors.New("provenancewire: receipt carries no signature")
 	}
-	// Canonical signing data mirrors the relay: exchangeID|finalState|
-	// chainRoot(hex)|relayIdentity|policyEpochID|modelPackageID|issuedAtRFC.
-	issuedAt := time.UnixMilli(env.IssuedAtUnixMs).UTC().Format(time.RFC3339)
-	data := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s",
+	sign1, err := dariproto.DecodeCOSESign1(raw)
+	if err != nil {
+		return fmt.Errorf("provenancewire: decode receipt COSE: %w", err)
+	}
+	// Canonical signing data mirrors the relay byte-for-byte:
+	// exchangeID|finalState|chainRootHex|relayIdentity|policyEpochID|
+	// modelPackageID|issuedAtUnixMs (the INTEGER — RFC3339 strings are
+	// zone-dependent and do not round-trip).
+	data := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%d",
 		env.ExchangeID, env.FinalState, hex.EncodeToString(env.ChainRoot[:]),
-		env.RelayIdentity, env.PolicyEpochID, env.ModelPackageID, issuedAt)
-	if !ed25519.Verify(pub, []byte(data), sig) {
-		return errors.New("provenancewire: receipt signature verification failed")
+		env.RelayIdentity, env.PolicyEpochID, env.ModelPackageID, env.IssuedAtUnixMs)
+	if string(sign1.Payload) != data {
+		return errors.New("provenancewire: receipt COSE payload does not match the receipt fields")
+	}
+	if err := dariproto.VerifyCOSESign1(sign1, pub); err != nil {
+		return fmt.Errorf("provenancewire: receipt signature verification failed: %w", err)
 	}
 	return nil
 }

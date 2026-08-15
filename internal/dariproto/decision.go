@@ -1,31 +1,64 @@
 package dariproto
 
 import (
-	"crypto/ed25519"
 	"errors"
 	"fmt"
+	"sort"
+
+	"crypto/ed25519"
 )
 
 // decision.go is the connector-side decode + verification of the
 // relay's signed F.6 Authorization Decision (RELAY_VERDICT, 0x0304).
-// The body labels mirror the relay's internal/dari AuthorizationDecisionBody
-// field-for-field; the cross-repo byte contract is pinned by the root
-// conformance suite.
+// The struct mirrors the relay's kernel AuthorizationDecisionBody
+// BYTE-FOR-BYTE: same labels, same omitempty set (labels 10/11 carry
+// NO omitempty — nil encodes as CBOR null), same enum values, and the
+// same canonical sort (ReasonCodes + Obligations ordered by ID).
+// The cross-repo conformance suite pins these bytes.
 
 // DecisionAAD mirrors the kernel's F.6 external AAD.
 const DecisionAAD = "DARI-AUTHORIZATION-DECISION-v1\x00"
 
-// DecisionOutcome mirrors the kernel enum (uint CBOR).
+// DecisionOutcome mirrors the kernel enum EXACTLY.
 type DecisionOutcome uint8
 
 const (
-	DecisionAllowDecision             DecisionOutcome = 1
-	DecisionAllowWithObligations      DecisionOutcome = 2
-	DecisionDenyDecision              DecisionOutcome = 3
-	DecisionDenyWithEscalationOutcome DecisionOutcome = 4
+	DecisionAllow                DecisionOutcome = 1
+	DecisionDeny                 DecisionOutcome = 2
+	DecisionAllowWithObligations DecisionOutcome = 3
 )
 
-// AuthorizationDecisionBody mirrors the F.6 body (labels 1-14).
+// ObligationPhase mirrors the kernel (PRE_ACTION / POST_ACTION).
+type ObligationPhase uint8
+
+const (
+	PhasePreAction  ObligationPhase = 1
+	PhasePostAction ObligationPhase = 2
+)
+
+// ObligationState mirrors the kernel (PENDING / SATISFIED / FAILED).
+type ObligationState uint8
+
+const (
+	ObligationPending   ObligationState = 1
+	ObligationSatisfied ObligationState = 2
+	ObligationFailed    ObligationState = 3
+)
+
+// Obligation mirrors the kernel F.6 obligation object (labels 1-8).
+type Obligation struct {
+	ObligationID    string          `cbor:"1,keyasint"`
+	Kind            string          `cbor:"2,keyasint"`
+	ParameterDigest Digest          `cbor:"3,keyasint"`
+	Phase           ObligationPhase `cbor:"4,keyasint"`
+	State           ObligationState `cbor:"5,keyasint"`
+	ResponsiblePeer string          `cbor:"6,keyasint"`
+	DeadlineMs      int64           `cbor:"7,keyasint,omitempty"`
+	EvidenceDigest  Digest          `cbor:"8,keyasint,omitempty"`
+}
+
+// AuthorizationDecisionBody mirrors the F.6 body (labels 1-14) with
+// the kernel's exact omitempty set.
 type AuthorizationDecisionBody struct {
 	Version                uint16          `cbor:"1,keyasint"`
 	DecisionID             string          `cbor:"2,keyasint"`
@@ -36,14 +69,28 @@ type AuthorizationDecisionBody struct {
 	PolicyCheckpointDigest Digest          `cbor:"7,keyasint"`
 	EvaluatorPeerID        string          `cbor:"8,keyasint"`
 	Outcome                DecisionOutcome `cbor:"9,keyasint"`
-	Obligations            []interface{}   `cbor:"10,keyasint,omitempty"`
-	ReasonCodes            []string        `cbor:"11,keyasint,omitempty"`
+	Obligations            []Obligation    `cbor:"10,keyasint"`
+	ReasonCodes            []string        `cbor:"11,keyasint"`
 	IssuedAtMs             int64           `cbor:"12,keyasint"`
 	ExpiresAtMs            int64           `cbor:"13,keyasint"`
 	SupportingEvidence     []Digest        `cbor:"14,keyasint,omitempty"`
 }
 
-// DecisionEnvelope is the verified decision + its signed digest.
+// encodeCanonical mirrors the kernel's EncodeDecisionBody: sort
+// ReasonCodes and Obligations (by ObligationID), then marshal.
+func encodeCanonical(b *AuthorizationDecisionBody) ([]byte, error) {
+	codes := sortedStringsCopy(b.ReasonCodes)
+	obs := append([]Obligation(nil), b.Obligations...)
+	sort.SliceStable(obs, func(i, j int) bool {
+		return obs[i].ObligationID < obs[j].ObligationID
+	})
+	sorted := *b
+	sorted.ReasonCodes = codes
+	sorted.Obligations = obs
+	return MarshalCBOR(&sorted)
+}
+
+// DecisionEnvelope is the verified decision + its raw bytes.
 type DecisionEnvelope struct {
 	Body      *AuthorizationDecisionBody
 	COSEBytes []byte
@@ -64,7 +111,7 @@ func DecodeAuthorizationDecision(coseBytes []byte, signer ed25519.PublicKey) (*D
 	if err := UnmarshalCBOR(sign1.Payload, &body); err != nil {
 		return nil, fmt.Errorf("dari: decode decision body: %w", err)
 	}
-	reencoded, err := MarshalCBOR(&body)
+	reencoded, err := encodeCanonical(&body)
 	if err != nil {
 		return nil, err
 	}
@@ -77,21 +124,9 @@ func DecodeAuthorizationDecision(coseBytes []byte, signer ed25519.PublicKey) (*D
 	return &DecisionEnvelope{Body: &body, COSEBytes: coseBytes}, nil
 }
 
-// Allows reports whether the decision authorizes consumption right
-// now: an allow-family outcome inside its validity window.
-func (e *DecisionEnvelope) Allows(nowMs int64) bool {
-	if e == nil || e.Body == nil {
-		return false
-	}
-	switch e.Body.Outcome {
-	case DecisionAllowDecision, DecisionAllowWithObligations:
-	default:
-		return false
-	}
-	return nowMs >= e.Body.IssuedAtMs && nowMs < e.Body.ExpiresAtMs
-}
-
-// VerifyAtTime is the full connector-side acceptance check.
+// VerifyAtTime is the full connector-side acceptance check: the
+// decision must be bound to this exchange, inside its validity window,
+// with an allow-family outcome.
 func (e *DecisionEnvelope) VerifyAtTime(exchangeID string, nowMs int64) error {
 	if e == nil || e.Body == nil {
 		return errors.New("dari: nil decision")
@@ -106,11 +141,24 @@ func (e *DecisionEnvelope) VerifyAtTime(exchangeID string, nowMs int64) error {
 		return errors.New("dari: decision expired")
 	}
 	switch e.Body.Outcome {
-	case DecisionAllowDecision, DecisionAllowWithObligations:
+	case DecisionAllow, DecisionAllowWithObligations:
 		return nil
-	case DecisionDenyDecision, DecisionDenyWithEscalationOutcome:
+	case DecisionDeny:
 		return fmt.Errorf("dari: decision DENY (%v)", e.Body.ReasonCodes)
 	default:
 		return fmt.Errorf("dari: unknown decision outcome %d", e.Body.Outcome)
 	}
+}
+
+// Allows reports whether the decision authorizes consumption right now.
+func (e *DecisionEnvelope) Allows(nowMs int64) bool {
+	return e.VerifyAtTime("", nowMs) == nil
+}
+
+// sortedStringsCopy returns a sorted copy (decision-local helper; the
+// package's other sortedCopy is declared in authorization.go).
+func sortedStringsCopy(in []string) []string {
+	out := append([]string(nil), in...)
+	sort.Strings(out)
+	return out
 }

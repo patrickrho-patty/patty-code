@@ -35,6 +35,9 @@ type authAckInfo struct {
 // openSession runs the governance setup on a freshly authenticated
 // connection. It is idempotent per connection (the relay runs setup on
 // every SESSION_OPEN).
+//
+// LOCK CONTRACT: the caller (connect) holds p.mu; nothing in here may
+// acquire it (the live e2e pins this).
 func (p *Provider) openSession(conn *dariproto.TransportConn) error {
 	sessionID := p.ensureSessionIDLocked()
 	userID := p.userID
@@ -43,10 +46,8 @@ func (p *Provider) openSession(conn *dariproto.TransportConn) error {
 	}
 	// The workspace git identity (B1 provenance context) also scopes
 	// the relay's governance snapshot (D3 freeze matching) and the
-	// session's repository binding.
-	p.mu.Lock()
+	// session's repository binding. Caller (connect) holds p.mu.
 	repoID, branch := p.provRepoID, p.provBranch
-	p.mu.Unlock()
 	body, err := json.Marshal(map[string]string{
 		"session_id":    sessionID,
 		"user_id":       userID,
@@ -117,17 +118,22 @@ func (p *Provider) openSession(conn *dariproto.TransportConn) error {
 		case dariproto.MsgDLPRulePack:
 			// C1.3: the relay pushes the org's DLP rule pack during
 			// setup — route it to the live scanner sink (the mid-stream
-			// reader handles re-pushes mid-session).
-			if pack, derr := dariproto.DecodeDLPRulePack(rec.Payload); derr == nil {
-				p.applyDLPRulePack(pack)
+			// reader handles re-pushes mid-session). Caller holds p.mu.
+			if pack, derr := dariproto.DecodeDLPRulePack(rec.Payload); derr == nil && pack != nil {
+				if sink := p.dlpRuleSink; sink != nil {
+					sink(pack)
+				}
 			}
 
 		case dariproto.MsgGovernanceState:
 			// C3/C4/D1/D3-D6/E4: the governance snapshot installs the
 			// connector's governed gates. Consumed here at setup (the
 			// critical path — the relay pushes before SESSION_GRANT).
-			if snap, gerr := dariproto.DecodeGovernanceState(rec.Payload); gerr == nil {
-				p.applyGovernanceState(snap)
+			// Caller holds p.mu.
+			if snap, gerr := dariproto.DecodeGovernanceState(rec.Payload); gerr == nil && snap != nil {
+				if sink := p.governanceSink; sink != nil {
+					sink(snap)
+				}
 			}
 
 		case dariproto.MsgSessionGrant:
@@ -181,6 +187,10 @@ func (p *Provider) ensureSessionID() string {
 // clients from the AUTH_ACK payload's policy-issuer public key. The
 // provider keeps externally-installed clients (tests, offline
 // installs) untouched.
+//
+// LOCK CONTRACT: the caller MUST hold p.mu — connect() runs the whole
+// handshake under the lock. This function must never acquire it
+// (doing so self-deadlocks every connect; pinned by the live e2e).
 func (p *Provider) installGovernanceClientsFromAuthAck(payload []byte) error {
 	if len(payload) == 0 {
 		return nil // dev relay without governance payload; dispatch stays fail-closed
@@ -194,9 +204,7 @@ func (p *Provider) installGovernanceClientsFromAuthAck(payload []byte) error {
 	// AUTH_ACK-carried key.
 	if info.ReceiptSignerPK != "" {
 		if rk, rerr := hex.DecodeString(info.ReceiptSignerPK); rerr == nil && len(rk) == ed25519.PublicKeySize {
-			p.mu.Lock()
 			p.receiptSignerKey = ed25519.PublicKey(rk)
-			p.mu.Unlock()
 		}
 	}
 	if info.PolicyIssuerPK == "" {

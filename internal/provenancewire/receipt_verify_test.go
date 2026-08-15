@@ -3,8 +3,9 @@ package provenancewire
 import (
 	"crypto/ed25519"
 	"encoding/hex"
+	"fmt"
+	"patty/internal/dariproto"
 	"testing"
-	"time"
 )
 
 func TestVerifyEvidenceReceiptSignature(t *testing.T) {
@@ -19,10 +20,15 @@ func TestVerifyEvidenceReceiptSignature(t *testing.T) {
 	copy(chain[:], "chainroot")
 	env.ChainRoot = chain
 
-	issuedAt := time.UnixMilli(env.IssuedAtUnixMs).UTC().Format(time.RFC3339)
 	data := env.ExchangeID + "|" + env.FinalState + "|" + hex.EncodeToString(env.ChainRoot[:]) + "|" +
-		env.RelayIdentity + "|" + env.PolicyEpochID + "|" + env.ModelPackageID + "|" + issuedAt
-	env.Signature = hex.EncodeToString(ed25519.Sign(priv, []byte(data)))
+		env.RelayIdentity + "|" + env.PolicyEpochID + "|" + env.ModelPackageID + "|" +
+		fmt.Sprintf("%d", env.IssuedAtUnixMs)
+	// The relay stores a COSE-Sign1 envelope (payload = canonical data).
+	enc, err := dariproto.CreateCOSESign1([]byte(data), priv, []byte("relay-1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	env.Signature = hex.EncodeToString(enc)
 
 	if err := VerifyEvidenceReceiptSignature(env, priv.Public().(ed25519.PublicKey)); err != nil {
 		t.Fatalf("valid receipt must verify: %v", err)
