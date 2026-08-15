@@ -78,6 +78,11 @@ type Provider struct {
 	governanceSink func(*dariproto.GovernanceStateWire)
 	// lastDecision is the most recently verified relay F.6 decision.
 	lastDecision *dariproto.DecisionEnvelope
+	// receiptSignerKey verifies relay-pushed evidence receipts (B3).
+	receiptSignerKey ed25519.PublicKey
+	// receiptStore is the boot-installable durable store (B3); nil
+	// falls back to the in-memory store.
+	receiptStore *provenancewire.ReceiptStore
 	// provRepoID/provBranch carry the workspace git identity for B1
 	// provenance envelopes; provTurnPaths accumulates the turn's
 	// edited paths until the next flush seals them into a change set.
@@ -343,11 +348,15 @@ func (p *Provider) connect(ctx context.Context) error {
 	}
 
 	// Default evidence-receipt handler (B3): store + ack over this
-	// connection. SendRecord is mutex-guarded so the reader goroutine
-	// can ack concurrently with outbound sends.
+	// connection. The STORE is boot-installable (disk-backed); the
+	// sender is always THIS connection. SendRecord is mutex-guarded so
+	// the reader goroutine can ack concurrently with outbound sends.
 	if p.receiptHandler == nil {
-		p.receiptHandler = provenancewire.NewIncomingAckHandler(
-			provenancewire.NewReceiptStore(), connAckSender{conn: conn})
+		store := p.receiptStore
+		if store == nil {
+			store = provenancewire.NewReceiptStore()
+		}
+		p.receiptHandler = provenancewire.NewIncomingAckHandler(store, connAckSender{conn: conn})
 	}
 
 	p.conn = conn
@@ -550,10 +559,27 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 				p.storeAdvisory("sovereign", rec.Payload)
 
 			case dariproto.MsgEvidenceReceipt:
-				// B3 e2e: the relay pushes a signed evidence receipt
-				// after each governed exchange. Store it as local
-				// tamper-evidence and ack via the receipt handler.
-				if env, err := provenancewire.DecodeEvidenceReceiptEnvelope(rec.Payload); err == nil && p.receiptHandler != nil {
+				// B3 e2e: the relay pushes a SIGNED evidence receipt
+				// after each governed exchange. Verify the COSE-Sign1
+				// signature under the AUTH_ACK receipt signer key, then
+				// store as local tamper-evidence + ack. An unverifiable
+				// receipt is rejected — never stored, never acked.
+				env, err := provenancewire.DecodeEvidenceReceiptEnvelope(rec.Payload)
+				if err != nil {
+					continue
+				}
+				p.mu.Lock()
+				rk := p.receiptSignerKey
+				p.mu.Unlock()
+				if rk == nil {
+					slog.Warn("dari: evidence receipt arrived before the AUTH_ACK signer key — rejected")
+					continue
+				}
+				if verr := provenancewire.VerifyEvidenceReceiptSignature(env, rk); verr != nil {
+					slog.Warn("dari: evidence receipt signature REJECTED", "receipt", env.ReceiptID, "err", verr)
+					continue
+				}
+				if p.receiptHandler != nil {
 					_, _ = p.receiptHandler.HandleReceipt(env)
 				}
 
@@ -700,6 +726,16 @@ func (p *Provider) SetUserContext(userID string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.userID = userID
+}
+
+// SetReceiptStore installs a durable receipt store (B3). The handler
+// is still constructed per connection (the ack must ride the live
+// transport); only the persistence is replaced.
+func (p *Provider) SetReceiptStore(store *provenancewire.ReceiptStore) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.receiptStore = store
+	p.receiptHandler = nil // rebuild on next connect with this store
 }
 
 // SetReceiptHandler installs the evidence-receipt store + ack handler

@@ -1,9 +1,15 @@
 package provenancewire
 
 import (
+	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,6 +29,8 @@ type ReceiptStore struct {
 	mu       sync.Mutex
 	receipts map[string]*StoredReceipt
 	acks     map[string]*ReceiptAck // by ReceiptID
+	// dir is the disk persistence root; empty = memory-only (tests).
+	dir string
 }
 
 // StoredReceipt wraps an EvidenceReceiptEnvelope with the
@@ -70,10 +78,17 @@ func (s *ReceiptStore) Store(receipt *EvidenceReceiptEnvelope, nowMs int64) ([32
 		return existing.Digest, fmt.Errorf("provenancewire: receipt %s already stored with different bytes", receipt.ReceiptID)
 	}
 	digest := computeReceiptDigest(receipt)
-	s.receipts[receipt.ReceiptID] = &StoredReceipt{
+	sr := &StoredReceipt{
 		Envelope: receipt,
 		StoredAt: nowMs,
 		Digest:   digest,
+	}
+	s.receipts[receipt.ReceiptID] = sr
+	if err := s.persistLocked(sr); err != nil {
+		// Persistence failure is surfaced: a receipt the harness cannot
+		// retain is not tamper-evidence. The in-memory copy remains so
+		// the ack can still flow; the error records the gap honestly.
+		return digest, fmt.Errorf("provenancewire: receipt %s not persisted: %w", receipt.ReceiptID, err)
 	}
 	return digest, nil
 }
@@ -100,6 +115,9 @@ func (s *ReceiptStore) Acknowledge(ack *ReceiptAck, nowMs int64) error {
 	s.acks[ack.ReceiptID] = ack
 	receipt.Acknowledged = true
 	receipt.AckDigest = ack.AckDigest
+	if err := s.persistLocked(receipt); err != nil {
+		return fmt.Errorf("provenancewire: ack for %s not persisted: %w", ack.ReceiptID, err)
+	}
 	return nil
 }
 
@@ -264,4 +282,84 @@ func (h *IncomingAckHandler) FailureCount() int64 {
 
 func defaultNowMs() int64 {
 	return time.Now().UnixMilli()
+}
+
+// NewDiskReceiptStore builds a disk-backed store: each receipt is one
+// JSON file under dir (created lazily), retained forever (policy
+// retention). The in-memory map remains the hot cache; loads on
+// Start() replay the directory. This is the production store the
+// harness installs — receipts survive harness restarts (B3).
+func NewDiskReceiptStore(dir string) (*ReceiptStore, error) {
+	if dir == "" {
+		return nil, errors.New("provenancewire: receipt store dir required")
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, fmt.Errorf("provenancewire: receipt dir: %w", err)
+	}
+	s := NewReceiptStore()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("provenancewire: read receipt dir: %w", err)
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		raw, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			continue
+		}
+		var sr StoredReceipt
+		if json.Unmarshal(raw, &sr) != nil || sr.Envelope == nil {
+			continue
+		}
+		s.receipts[sr.Envelope.ReceiptID] = &sr
+	}
+	s.dir = dir
+	return s, nil
+}
+
+// persistLocked writes one receipt file (caller holds the lock).
+func (s *ReceiptStore) persistLocked(sr *StoredReceipt) error {
+	if s.dir == "" {
+		return nil
+	}
+	raw, err := json.Marshal(sr)
+	if err != nil {
+		return err
+	}
+	name := filepath.Join(s.dir, fmt.Sprintf("%s.json", sr.Envelope.ReceiptID))
+	tmp := name + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, name)
+}
+
+// VerifyEvidenceReceiptSignature checks the relay's COSE-Sign1
+// signature over the receipt's canonical signing data under the
+// AUTH_ACK-carried receipt signer key. Mirrors the relay's
+// buildReceiptSigningData layout; any field drift breaks verification
+// (pinned cross-repo by the conformance suite).
+func VerifyEvidenceReceiptSignature(env *EvidenceReceiptEnvelope, pub ed25519.PublicKey) error {
+	if env == nil {
+		return errors.New("provenancewire: nil receipt")
+	}
+	if len(pub) == 0 {
+		return errors.New("provenancewire: no receipt signer key")
+	}
+	sig, err := hex.DecodeString(env.Signature)
+	if err != nil || len(sig) == 0 {
+		return errors.New("provenancewire: receipt carries no signature")
+	}
+	// Canonical signing data mirrors the relay: exchangeID|finalState|
+	// chainRoot(hex)|relayIdentity|policyEpochID|modelPackageID|issuedAtRFC.
+	issuedAt := time.UnixMilli(env.IssuedAtUnixMs).UTC().Format(time.RFC3339)
+	data := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s",
+		env.ExchangeID, env.FinalState, hex.EncodeToString(env.ChainRoot[:]),
+		env.RelayIdentity, env.PolicyEpochID, env.ModelPackageID, issuedAt)
+	if !ed25519.Verify(pub, []byte(data), sig) {
+		return errors.New("provenancewire: receipt signature verification failed")
+	}
+	return nil
 }

@@ -24,10 +24,11 @@ import (
 
 // authAckInfo is the AUTH_ACK payload body the relay sends.
 type authAckInfo struct {
-	Status         string `json:"status"`
-	RelayID        string `json:"relay_id"`
-	PolicyIssuer   string `json:"policy_issuer"`
-	PolicyIssuerPK string `json:"policy_issuer_pk"`
+	Status          string `json:"status"`
+	RelayID         string `json:"relay_id"`
+	PolicyIssuer    string `json:"policy_issuer"`
+	PolicyIssuerPK  string `json:"policy_issuer_pk"`
+	ReceiptSignerPK string `json:"receipt_signer_pk"`
 }
 
 // openSession runs the governance setup on a freshly authenticated
@@ -179,6 +180,15 @@ func (p *Provider) installGovernanceClientsFromAuthAck(payload []byte) error {
 	if err := json.Unmarshal(payload, &info); err != nil {
 		// Plain "authenticated" body from an older relay — not an error.
 		return nil
+	}
+	// Receipt signer (B3): verify pushed evidence receipts under the
+	// AUTH_ACK-carried key.
+	if info.ReceiptSignerPK != "" {
+		if rk, rerr := hex.DecodeString(info.ReceiptSignerPK); rerr == nil && len(rk) == ed25519.PublicKeySize {
+			p.mu.Lock()
+			p.receiptSignerKey = ed25519.PublicKey(rk)
+			p.mu.Unlock()
+		}
 	}
 	if info.PolicyIssuerPK == "" {
 		return nil

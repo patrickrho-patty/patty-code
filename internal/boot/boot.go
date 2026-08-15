@@ -58,6 +58,7 @@ import (
 	"patty/internal/permission"
 	"patty/internal/plugin"
 	"patty/internal/productdocs"
+	"patty/internal/provenancewire"
 	"patty/internal/provider"
 	"patty/internal/provider/dari"
 	"patty/internal/recovery"
@@ -2037,6 +2038,17 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		// D5: HELLO advertises the honest build version; the relay's
 		// floor refuses sub-minimum connectors at handshake time.
 		dp.SetHarnessVersion(harnessBuildVersion())
+		// B3: durable evidence-receipt store (receipts survive harness
+		// restarts). Best-effort: without a usable config home the
+		// in-memory store remains and a warning is logged.
+		if home, herr := os.UserConfigDir(); herr == nil {
+			rcptDir := filepath.Join(home, "patty", "receipts")
+			if store, serr := provenancewire.NewDiskReceiptStore(rcptDir); serr == nil {
+				dp.SetReceiptStore(store)
+			} else {
+				slog.Warn("dari: disk receipt store unavailable — receipts are memory-only", "err", serr)
+			}
+		}
 		dp.SetGovernanceSink(func(snap *dariproto.GovernanceStateWire) {
 			st := governed.NewState()
 			id := dariproto.HarnessIdentity{Version: harnessBuildVersion(), Ring: "stable"}
