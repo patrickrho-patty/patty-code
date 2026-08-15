@@ -83,6 +83,12 @@ type Provider struct {
 	lastDecision *dariproto.DecisionEnvelope
 	// receiptSignerKey verifies relay-pushed evidence receipts (B3).
 	receiptSignerKey ed25519.PublicKey
+	// collabHandler receives relay-routed dari.collab/1 envelopes.
+	collabHandler func(fromHarness, conversationID string, envelope []byte)
+	// activeStream is the current AI-lane subscription (nil between
+	// turns); pumpRunning guards the persistent inbound reader.
+	activeStream *streamState
+	pumpRunning  bool
 	// receiptStore is the boot-installable durable store (B3); nil
 	// falls back to the in-memory store.
 	receiptStore *provenancewire.ReceiptStore
@@ -382,6 +388,12 @@ func (p *Provider) connect(ctx context.Context) error {
 	p.authenticated = true
 	slog.Info("dari: authenticated with relay", "addr", p.relayAddr, "session", p.sessionID)
 
+	// Persistent inbound reader: mid-session pushes (epochs, DLP
+	// packs, governance snapshots, collab envelopes, broadcasts,
+	// receipts) are consumed BETWEEN turns, not only inside a live
+	// Stream. Caller holds p.mu (LOCK CONTRACT).
+	p.startPumpLocked()
+
 	return nil
 }
 
@@ -467,214 +479,313 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 	// Create output channel
 	out := make(chan provider.Chunk, 32)
 
-	// Receive streaming response
-	go func() {
-		defer close(out)
+	// The persistent inbound pump owns ALL socket reads; this stream
+	// subscribes to the AI lane (see pump()). Fail-closed on ctx.
+	p.registerStream(out, ctx)
+	p.ensurePump()
 
-		for {
-			select {
-			case <-ctx.Done():
-				out <- provider.Chunk{Type: provider.ChunkError, Err: ctx.Err()}
-				return
-			default:
+	return out, nil
+}
+
+// streamState is one active stream subscription.
+type streamState struct {
+	out chan provider.Chunk
+	ctx context.Context
+}
+
+// registerStream installs the active stream (pump-held lock).
+func (p *Provider) registerStream(out chan provider.Chunk, ctx context.Context) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.activeStream = &streamState{out: out, ctx: ctx}
+}
+
+// endStream closes + clears the active stream (idempotent).
+func (p *Provider) endStream() {
+	p.mu.Lock()
+	st := p.activeStream
+	p.activeStream = nil
+	p.mu.Unlock()
+	if st != nil {
+		close(st.out)
+	}
+}
+
+// emit sends a chunk to the active stream (no-op when idle). Returns
+// false when the stream's context is done.
+func (p *Provider) emit(ch provider.Chunk) bool {
+	p.mu.Lock()
+	st := p.activeStream
+	p.mu.Unlock()
+	if st == nil {
+		return true // idle pump: control-plane records only
+	}
+	select {
+	case st.out <- ch:
+		return true
+	case <-st.ctx.Done():
+		return false
+	}
+}
+
+// ensurePump starts the persistent inbound reader exactly once per
+// connection. The pump owns RecvRecord: mid-session pushes (policy
+// epochs, DLP packs, governance snapshots, collab envelopes,
+// broadcasts, receipts) are consumed BETWEEN turns — not only inside
+// a live Stream.
+func (p *Provider) ensurePump() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.startPumpLocked()
+}
+
+// startPumpLocked starts the pump assuming the caller holds p.mu
+// (connect's LOCK CONTRACT — acquiring here self-deadlocks).
+func (p *Provider) startPumpLocked() {
+	if p.pumpRunning || p.conn == nil {
+		return
+	}
+	p.pumpRunning = true
+	go p.pump()
+}
+
+// pump is the single inbound reader for the live connection.
+func (p *Provider) pump() {
+	defer func() {
+		p.mu.Lock()
+		p.pumpRunning = false
+		p.mu.Unlock()
+	}()
+	for {
+		p.mu.Lock()
+		conn := p.conn
+		p.mu.Unlock()
+		if conn == nil {
+			return
+		}
+		rec, err := conn.RecvRecord()
+		if err != nil {
+			// Connection lost: surface to any active stream, then drop.
+			p.emit(provider.Chunk{
+				Type: provider.ChunkError,
+				Err:  provider.StreamInterrupt(fmt.Errorf("dari: connection lost: %w", err), provider.StreamInterruptConnectionReset),
+			})
+			p.endStream()
+			p.mu.Lock()
+			if p.conn != nil {
+				p.conn.Close()
+				p.conn = nil
 			}
+			p.mu.Unlock()
+			return
+		}
+		p.dispatchRecord(rec)
+	}
+}
 
-			rec, err := p.conn.RecvRecord()
-			if err != nil {
-				// Connection broken — report as stream interrupt
-				out <- provider.Chunk{
-					Type: provider.ChunkError,
-					Err:  provider.StreamInterrupt(fmt.Errorf("dari: connection lost: %w", err), provider.StreamInterruptConnectionReset),
-				}
-				p.mu.Lock()
-				if p.conn != nil {
-					p.conn.Close()
-					p.conn = nil
-				}
-				p.mu.Unlock()
-				return
-			}
-
-			msgType := dariproto.MessageType(rec.MessageType)
-
-			switch msgType {
-			case dariproto.MsgAITokenChunk:
-				var chunk dariproto.AITokenChunkPayload
-				if err := json.Unmarshal(rec.Payload, &chunk); err != nil {
-					continue
-				}
-				if chunk.Text != "" {
-					select {
-					case out <- provider.Chunk{Type: provider.ChunkText, Text: chunk.Text}:
-					case <-ctx.Done():
-						return
-					}
-				}
-
-			case dariproto.MsgRelayVerdict:
-				// F.6 decision-before-consumption: verify the signed
-				// decision under the AUTH_ACK policy issuer key and
-				// refuse the stream unless it authorizes this exchange
-				// right now. A DENY/expired/invalid decision is fatal —
-				// tokens that already streamed are not new authority.
-				if perr := p.verifyRelayVerdict(rec.Payload); perr != nil {
-					out <- provider.Chunk{Type: provider.ChunkError, Err: fmt.Errorf("dari: relay verdict rejected: %w", perr)}
-					return
-				}
-
-			case dariproto.MsgAIComplete:
-				var result dariproto.AICompletePayload
-				if err := json.Unmarshal(rec.Payload, &result); err != nil {
-					out <- provider.Chunk{Type: provider.ChunkError, Err: fmt.Errorf("dari: decode AI_COMPLETE: %w", err)}
-					return
-				}
-
-				// If content was sent directly (non-streaming), emit as text
-				if result.Content != "" {
-					select {
-					case out <- provider.Chunk{Type: provider.ChunkText, Text: result.Content}:
-					case <-ctx.Done():
-						return
-					}
-				}
-
-				// Send usage chunk
-				out <- provider.Chunk{
-					Type: provider.ChunkUsage,
-					Usage: &provider.Usage{
-						PromptTokens:     result.InputTokens,
-						CompletionTokens: result.OutputTokens,
-						TotalTokens:      result.TotalTokens,
-						CacheHitTokens:   result.CacheReadTokens,
-						CacheWriteTokens: result.CacheWriteTokens,
-						FinishReason:     normalizeFinishReason(result.FinishReason),
-					},
-				}
-
-				out <- provider.Chunk{Type: provider.ChunkDone}
-				// B1: seal + flush the turn's provenance envelopes
-				// (change set → spans → actions) while the
-				// authenticated connection is still live.
-				go p.flushProvenance()
-				return
-
-			case dariproto.MsgPing:
-				p.conn.SendControl(dariproto.MsgPong, nil, []byte("pong"))
-
-			case dariproto.MsgBroadcast:
-				// E2: governed broadcast. Stored for the air-gap
-				// surfaces AND delivered to the live comms inbox;
-				// never surfaced into the model stream.
-				p.storeAdvisory("broadcast", rec.Payload)
-				p.handleBroadcastPayload(rec.Payload)
-
-			case dariproto.MsgAdminCommand:
-				// E5: signed admin command — stored and routed to the
-				// admin dispatcher (signature verification, expiry,
-				// and execution recording happen there).
-				p.storeAdvisory("admin-directive", rec.Payload)
-				p.handleAdminDirectivePayload(rec.Payload)
-
-			case dariproto.MsgSovereignAdvisory:
-				// E3: signed offline advisory (air-gap mode). Stored
-				// for the sovereign surfaces.
-				p.storeAdvisory("sovereign", rec.Payload)
-
-			case dariproto.MsgEvidenceReceipt:
-				// B3 e2e: the relay pushes a SIGNED evidence receipt
-				// after each governed exchange. Verify the COSE-Sign1
-				// signature under the AUTH_ACK receipt signer key, then
-				// store as local tamper-evidence + ack. An unverifiable
-				// receipt is rejected — never stored, never acked.
-				env, err := provenancewire.DecodeEvidenceReceiptEnvelope(rec.Payload)
-				if err != nil {
-					continue
-				}
-				p.mu.Lock()
-				rk := p.receiptSignerKey
-				p.mu.Unlock()
-				if rk == nil {
-					slog.Warn("dari: evidence receipt arrived before the AUTH_ACK signer key — rejected")
-					continue
-				}
-				if verr := provenancewire.VerifyEvidenceReceiptSignature(env, rk); verr != nil {
-					slog.Warn("dari: evidence receipt signature REJECTED", "receipt", env.ReceiptID, "err", verr)
-					continue
-				}
-				if p.receiptHandler != nil {
-					_, _ = p.receiptHandler.HandleReceipt(env)
-				}
-
-			case dariproto.MsgLeaseRevoke:
-				// A3 e2e: the relay revoked the session's lease
-				// mid-flight. Drop the lease (fail-closed for any
-				// subsequent exchange) and surface the termination.
-				if p.leaseClient != nil {
-					p.leaseClient.Drop()
-				}
-				out <- provider.Chunk{
-					Type: provider.ChunkError,
-					Err:  errors.New("dari: capability lease revoked by relay"),
-				}
-				return
-
-			case dariproto.MsgPolicyEpochPush:
-				// A4 e2e: policy changed mid-session. Rebind; the next
-				// exchange's lease pin enforces the new epoch.
-				if epoch, err := dariproto.DecodePolicyEpochMessage(rec.Payload); err == nil {
-					if p.policyEpochClient == nil {
-						p.policyEpochClient = dariproto.NewPolicyEpochClient()
-					}
-					if err := p.policyEpochClient.Rebind(epoch); err == nil {
-						p.policyEpoch = epoch.EpochID
-					}
-				}
-
-			case dariproto.MsgDLPRulePack:
-				// C1.3: the relay pushes the org's DLP rule pack. Apply
-				// the org's class enables/disables to the DLP scanner so
-				// the connector enforces the server's lexicon policy.
-				if pack, derr := dariproto.DecodeDLPRulePack(rec.Payload); derr == nil {
-					p.applyDLPRulePack(pack)
-				}
-
-			case dariproto.MsgGovernanceState:
-				// C3/C4/D1/D3-D6/E4: the relay pushes the org's
-				// governance-state snapshot. Route it to the installed
-				// sink so boot can install the governed gates on the
-				// controller (they then fire on real tool calls).
-				if snap, gerr := dariproto.DecodeGovernanceState(rec.Payload); gerr == nil {
-					p.applyGovernanceState(snap)
-				}
-
-			case dariproto.MsgCatalogDelta:
-				// A5 e2e: apply an incremental catalog update.
-				if delta, err := dariproto.DecodeCatalogDelta(rec.Payload); err == nil {
-					if p.catalogClient == nil {
-						p.catalogClient = dariproto.NewCatalogClient()
-					}
-					_ = p.catalogClient.ApplyDelta(delta, p.policyEpoch)
-				}
-
-			case dariproto.MsgClose:
-				var errMsg map[string]string
-				json.Unmarshal(rec.Payload, &errMsg)
-				out <- provider.Chunk{
-					Type: provider.ChunkError,
-					Err:  fmt.Errorf("dari: relay closed: %s", errMsg["error"]),
-				}
-				p.mu.Lock()
-				if p.conn != nil {
-					p.conn.Close()
-					p.conn = nil
-				}
-				p.mu.Unlock()
+// dispatchRecord handles one inbound record: AI-lane records route to
+// the active stream; governance/control records are handled globally
+// (they arrive between turns too).
+func (p *Provider) dispatchRecord(rec *dariproto.Record) {
+	switch dariproto.MessageType(rec.MessageType) {
+	case dariproto.MsgAITokenChunk:
+		var chunk dariproto.AITokenChunkPayload
+		if err := json.Unmarshal(rec.Payload, &chunk); err != nil {
+			return
+		}
+		if chunk.Text != "" {
+			if !p.emit(provider.Chunk{Type: provider.ChunkText, Text: chunk.Text}) {
 				return
 			}
 		}
-	}()
 
-	return out, nil
+	case dariproto.MsgRelayVerdict:
+		// F.6 decision-before-consumption: verify the signed
+		// decision under the AUTH_ACK policy issuer key and
+		// refuse the stream unless it authorizes this exchange
+		// right now. A DENY/expired/invalid decision is fatal —
+		// tokens that already streamed are not new authority.
+		if perr := p.verifyRelayVerdict(rec.Payload); perr != nil {
+			p.emit(provider.Chunk{Type: provider.ChunkError, Err: fmt.Errorf("dari: relay verdict rejected: %w", perr)})
+			p.endStream()
+			return
+		}
+
+	case dariproto.MsgAIComplete:
+		var result dariproto.AICompletePayload
+		if err := json.Unmarshal(rec.Payload, &result); err != nil {
+			p.emit(provider.Chunk{Type: provider.ChunkError, Err: fmt.Errorf("dari: decode AI_COMPLETE: %w", err)})
+			p.endStream()
+			return
+		}
+
+		// If content was sent directly (non-streaming), emit as text
+		if result.Content != "" {
+			if !p.emit(provider.Chunk{Type: provider.ChunkText, Text: result.Content}) {
+				return
+			}
+		}
+
+		// Send usage chunk
+		p.emit(provider.Chunk{
+			Type: provider.ChunkUsage,
+			Usage: &provider.Usage{
+				PromptTokens:     result.InputTokens,
+				CompletionTokens: result.OutputTokens,
+				TotalTokens:      result.TotalTokens,
+				CacheHitTokens:   result.CacheReadTokens,
+				CacheWriteTokens: result.CacheWriteTokens,
+				FinishReason:     normalizeFinishReason(result.FinishReason),
+			},
+		})
+
+		p.emit(provider.Chunk{Type: provider.ChunkDone})
+		// B1: seal + flush the turn's provenance envelopes
+		// (change set → spans → actions) while the
+		// authenticated connection is still live.
+		go p.flushProvenance()
+		p.endStream()
+		return
+
+	case dariproto.MsgPing:
+		p.conn.SendControl(dariproto.MsgPong, nil, []byte("pong"))
+
+	case dariproto.MsgBroadcast:
+		// E2: governed broadcast. Stored for the air-gap
+		// surfaces AND delivered to the live comms inbox;
+		// never surfaced into the model stream.
+		p.storeAdvisory("broadcast", rec.Payload)
+		p.handleBroadcastPayload(rec.Payload)
+
+	case dariproto.MsgAdminCommand:
+		// E5: signed admin command — stored and routed to the
+		// admin dispatcher (signature verification, expiry,
+		// and execution recording happen there).
+		p.storeAdvisory("admin-directive", rec.Payload)
+		p.handleAdminDirectivePayload(rec.Payload)
+
+	case dariproto.MsgCollabEnvelope:
+		// dari.collab/1: relay-routed envelope from an org peer —
+		// handed to the installed handler for verification/open.
+		p.mu.Lock()
+		h := p.collabHandler
+		p.mu.Unlock()
+		if h != nil {
+			var routed struct {
+				ToHarness      string          `json:"to_harness"`
+				FromHarness    string          `json:"from_harness"`
+				ConversationID string          `json:"conversation_id"`
+				Envelope       json.RawMessage `json:"envelope"`
+			}
+			if err := json.Unmarshal(rec.Payload, &routed); err != nil {
+				slog.Warn("dari: collab routed decode failed", "err", err)
+				return
+			}
+			var raw []byte
+			if err := json.Unmarshal(routed.Envelope, &raw); err != nil {
+				slog.Warn("dari: collab envelope bytes decode failed", "err", err)
+				return
+			}
+			h(routed.FromHarness, routed.ConversationID, raw)
+		}
+
+	case dariproto.MsgSovereignAdvisory:
+		// E3: signed offline advisory (air-gap mode). Stored
+		// for the sovereign surfaces.
+		p.storeAdvisory("sovereign", rec.Payload)
+
+	case dariproto.MsgEvidenceReceipt:
+		// B3 e2e: the relay pushes a SIGNED evidence receipt
+		// after each governed exchange. Verify the COSE-Sign1
+		// signature under the AUTH_ACK receipt signer key, then
+		// store as local tamper-evidence + ack. An unverifiable
+		// receipt is rejected — never stored, never acked.
+		env, err := provenancewire.DecodeEvidenceReceiptEnvelope(rec.Payload)
+		if err != nil {
+			return
+		}
+		p.mu.Lock()
+		rk := p.receiptSignerKey
+		p.mu.Unlock()
+		if rk == nil {
+			slog.Warn("dari: evidence receipt arrived before the AUTH_ACK signer key — rejected")
+			return
+		}
+		if verr := provenancewire.VerifyEvidenceReceiptSignature(env, rk); verr != nil {
+			slog.Warn("dari: evidence receipt signature REJECTED", "receipt", env.ReceiptID, "err", verr)
+			return
+		}
+		if p.receiptHandler != nil {
+			_, _ = p.receiptHandler.HandleReceipt(env)
+		}
+
+	case dariproto.MsgLeaseRevoke:
+		// A3 e2e: the relay revoked the session's lease
+		// mid-flight. Drop the lease (fail-closed for any
+		// subsequent exchange) and surface the termination.
+		if p.leaseClient != nil {
+			p.leaseClient.Drop()
+		}
+		p.emit(provider.Chunk{
+			Type: provider.ChunkError,
+			Err:  errors.New("dari: capability lease revoked by relay"),
+		})
+		p.endStream()
+		return
+
+	case dariproto.MsgPolicyEpochPush:
+		// A4 e2e: policy changed mid-session. Rebind; the next
+		// exchange's lease pin enforces the new epoch.
+		if epoch, err := dariproto.DecodePolicyEpochMessage(rec.Payload); err == nil {
+			if p.policyEpochClient == nil {
+				p.policyEpochClient = dariproto.NewPolicyEpochClient()
+			}
+			if err := p.policyEpochClient.Rebind(epoch); err == nil {
+				p.policyEpoch = epoch.EpochID
+			}
+		}
+
+	case dariproto.MsgDLPRulePack:
+		// C1.3: the relay pushes the org's DLP rule pack. Apply
+		// the org's class enables/disables to the DLP scanner so
+		// the connector enforces the server's lexicon policy.
+		if pack, derr := dariproto.DecodeDLPRulePack(rec.Payload); derr == nil {
+			p.applyDLPRulePack(pack)
+		}
+
+	case dariproto.MsgGovernanceState:
+		// C3/C4/D1/D3-D6/E4: the relay pushes the org's
+		// governance-state snapshot. Route it to the installed
+		// sink so boot can install the governed gates on the
+		// controller (they then fire on real tool calls).
+		if snap, gerr := dariproto.DecodeGovernanceState(rec.Payload); gerr == nil {
+			p.applyGovernanceState(snap)
+		}
+
+	case dariproto.MsgCatalogDelta:
+		// A5 e2e: apply an incremental catalog update.
+		if delta, err := dariproto.DecodeCatalogDelta(rec.Payload); err == nil {
+			if p.catalogClient == nil {
+				p.catalogClient = dariproto.NewCatalogClient()
+			}
+			_ = p.catalogClient.ApplyDelta(delta, p.policyEpoch)
+		}
+
+	case dariproto.MsgClose:
+		var errMsg map[string]string
+		json.Unmarshal(rec.Payload, &errMsg)
+		p.emit(provider.Chunk{
+			Type: provider.ChunkError,
+			Err:  fmt.Errorf("dari: relay closed: %s", errMsg["error"]),
+		})
+		p.endStream()
+		p.mu.Lock()
+		if p.conn != nil {
+			p.conn.Close()
+			p.conn = nil
+		}
+		p.mu.Unlock()
+	}
 }
 
 // normalizeFinishReason maps PAPER finish reasons to provider.Chunk conventions.

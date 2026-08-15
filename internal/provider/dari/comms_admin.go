@@ -2,13 +2,16 @@ package dari
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"os"
+	"patty/internal/dariproto"
 	"strings"
 	"time"
 
 	"patty/internal/admin"
 	"patty/internal/comms"
+	"patty/internal/daricollab"
 	"patty/internal/operational"
 	"patty/internal/provenancewire"
 	"patty/internal/sovereign"
@@ -195,4 +198,55 @@ func (p *Provider) SetSovereignConfig(enabled bool, allowlist []string) {
 	defer p.mu.Unlock()
 	p.sovereignCfgEnabled = enabled
 	p.sovereignCfgAllowlist = allowlist
+}
+
+// SendCollabEnvelope routes a dari.collab/1 envelope to an org peer
+// through the relay (0x0B10). The payload is the member-encrypted
+// EnvelopeBody — the relay (and any network observer) cannot read it.
+func (p *Provider) SendCollabEnvelope(toHarness, conversationID string, envelope []byte) error {
+	p.mu.Lock()
+	conn := p.conn
+	from := p.subjectPeerID
+	p.mu.Unlock()
+	if conn == nil {
+		return errors.New("dari: no live connection for collab send")
+	}
+	body, err := json.Marshal(map[string]any{
+		"to_harness":      toHarness,
+		"from_harness":    from,
+		"conversation_id": conversationID,
+		"envelope":        envelope,
+	})
+	if err != nil {
+		return err
+	}
+	rec := &dariproto.Record{
+		Kind:        dariproto.KindMessage,
+		MessageType: uint16(dariproto.MsgCollabEnvelope),
+		Payload:     body,
+	}
+	return conn.SendRecord(rec)
+}
+
+// SetCollabHandler installs the inbound routed-envelope consumer
+// (dari.collab/1): the handler verifies + opens the member-encrypted
+// envelope with the local Conversation.
+func (p *Provider) SetCollabHandler(h func(fromHarness, conversationID string, envelope []byte)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.collabHandler = h
+}
+
+// EncodeCollabEnvelope CBOR-encodes a collab EnvelopeBody for routing.
+func EncodeCollabEnvelope(env *daricollab.EnvelopeBody) ([]byte, error) {
+	return dariproto.MarshalCBOR(env)
+}
+
+// DecodeCollabEnvelope decodes a routed collab EnvelopeBody.
+func DecodeCollabEnvelope(raw []byte) (*daricollab.EnvelopeBody, error) {
+	var env daricollab.EnvelopeBody
+	if err := dariproto.UnmarshalCBOR(raw, &env); err != nil {
+		return nil, err
+	}
+	return &env, nil
 }

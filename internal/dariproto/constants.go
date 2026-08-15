@@ -93,6 +93,9 @@ const (
 	// (E3 air-gap mode). Rides its own type so broadcasts and
 	// advisories stay distinguishable on the connector.
 	MsgSovereignAdvisory MessageType = 0x0B03
+	// Collab envelope (0x0B10) — relay-routed dari.collab/1 delivery
+	// between org peers (member-encrypted; the relay cannot read it).
+	MsgCollabEnvelope MessageType = 0x0B10
 )
 
 func (m MessageType) String() string {
@@ -171,6 +174,8 @@ func (m MessageType) String() string {
 		return "ADMIN_COMMAND_RESULT"
 	case MsgSovereignAdvisory:
 		return "SOVEREIGN_ADVISORY"
+	case MsgCollabEnvelope:
+		return "COLLAB_ENVELOPE"
 	case MsgChangeSetNack:
 		return "CHANGESET_NACK"
 	case MsgLeaseIssue:
