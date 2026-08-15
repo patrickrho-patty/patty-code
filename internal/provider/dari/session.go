@@ -289,3 +289,24 @@ func (p *Provider) applyDLPRulePack(pack *dariproto.DLPRulePackWire) {
 	}
 	sink(pack)
 }
+
+// SetGovernanceSink installs the consumer of relay-pushed
+// governance-state snapshots (C3/C4/D1/D3-D6/E4). Boot installs a
+// sink that builds a governed.State and installs it on the
+// controller so the pushed gates fire on real tool calls.
+func (p *Provider) SetGovernanceSink(sink func(*dariproto.GovernanceStateWire)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.governanceSink = sink
+}
+
+// applyGovernanceState routes a decoded snapshot to the installed sink.
+func (p *Provider) applyGovernanceState(snap *dariproto.GovernanceStateWire) {
+	p.mu.Lock()
+	sink := p.governanceSink
+	p.mu.Unlock()
+	if sink == nil || snap == nil {
+		return
+	}
+	sink(snap)
+}

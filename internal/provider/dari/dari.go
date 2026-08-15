@@ -70,6 +70,9 @@ type Provider struct {
 	advisories []StoredAdvisory
 	// dlpRuleSink receives relay-pushed DLP rule packs (C1.3).
 	dlpRuleSink func(*dariproto.DLPRulePackWire)
+	// governanceSink receives relay-pushed governance-state snapshots
+	// (C3/C4/D1/D3-D6/E4).
+	governanceSink func(*dariproto.GovernanceStateWire)
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
@@ -533,6 +536,15 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 				// the connector enforces the server's lexicon policy.
 				if pack, derr := dariproto.DecodeDLPRulePack(rec.Payload); derr == nil {
 					p.applyDLPRulePack(pack)
+				}
+
+			case dariproto.MsgGovernanceState:
+				// C3/C4/D1/D3-D6/E4: the relay pushes the org's
+				// governance-state snapshot. Route it to the installed
+				// sink so boot can install the governed gates on the
+				// controller (they then fire on real tool calls).
+				if snap, gerr := dariproto.DecodeGovernanceState(rec.Payload); gerr == nil {
+					p.applyGovernanceState(snap)
 				}
 
 			case dariproto.MsgCatalogDelta:

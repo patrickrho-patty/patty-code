@@ -66,6 +66,9 @@ const (
 	// DLP rule pack (0x0D11) — relay pushes the org's active DLP rules
 	// so the connector's scanner enforces the same lexicon (C1.3).
 	MsgDLPRulePack MessageType = 0x0D11
+	// Governance state (0x0D12) — relay pushes the org's workflow
+	// gates + tool registry + sandbox policies (C3/C4/D/E4).
+	MsgGovernanceState MessageType = 0x0D12
 
 	// Governance / evidence (0x0300–0x03FF) — mirrors the relay registry.
 	MsgEvidenceReceipt    MessageType = 0x0307
@@ -167,6 +170,8 @@ func (m MessageType) String() string {
 		return "POLICY_EPOCH"
 	case MsgDLPRulePack:
 		return "DLP_RULE_PACK"
+	case MsgGovernanceState:
+		return "GOVERNANCE_STATE"
 	default:
 		return "UNKNOWN"
 	}

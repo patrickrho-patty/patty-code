@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"slices"
 	"strconv"
 	"strings"
@@ -29,6 +30,7 @@ import (
 	"patty/internal/command"
 	"patty/internal/config"
 	"patty/internal/control"
+	"patty/internal/dariproto"
 	"patty/internal/environment"
 	"patty/internal/event"
 	"patty/internal/extension"
@@ -38,6 +40,7 @@ import (
 	"patty/internal/extension/sidecar"
 	"patty/internal/extension/uihub"
 	"patty/internal/goaleval"
+	"patty/internal/governed"
 	"patty/internal/guardian"
 	"patty/internal/history"
 	"patty/internal/hook"
@@ -54,6 +57,7 @@ import (
 	"patty/internal/plugin"
 	"patty/internal/productdocs"
 	"patty/internal/provider"
+	"patty/internal/provider/dari"
 	"patty/internal/recovery"
 	"patty/internal/sandbox"
 	"patty/internal/secrets"
@@ -2015,6 +2019,23 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		}
 	}
 	ctrl := control.New(ctrlOpts)
+	// Production governance wiring (C3/C4/D1/D3-D6/E4): when the
+	// executor provider is a DARI connector, relay-pushed governance
+	// snapshots install a governed.State on the controller so the
+	// enterprise gates (freeze/recall/version/acks/tools/sandbox)
+	// fire on real tool calls. Without a DARI session no state is
+	// installed and the wrapper stays a pass-through.
+	if dp, ok := execProv.(*dari.Provider); ok {
+		dp.SetGovernanceSink(func(snap *dariproto.GovernanceStateWire) {
+			st := governed.NewState()
+			id := dariproto.HarnessIdentity{Version: harnessBuildVersion(), Ring: "stable"}
+			st.SetGates(snap.BuildGatesClient(id))
+			st.SetRegistry(snap.BuildApprovalsRegistry())
+			st.SetSandboxPolicy(snap.BuildSandboxStore())
+			st.SetContext(snap.RepoID, snap.ModelID)
+			ctrl.SetGovernanceState(st)
+		})
+	}
 	// Publish the controller to the extension UI hub's indirection: from here
 	// on, host/ui/* publishes ride ctrl.EmitExtensionEvent and blocking prompts
 	// ride ctrl.Ask, exactly as if the hub had been built after control.New.
@@ -3001,4 +3022,15 @@ func providerNames(cfg *config.Config) string {
 		names[i] = p.Name
 	}
 	return strings.Join(names, "/")
+}
+
+// harnessBuildVersion reports the running binary's version for the
+// governance gates' D5 version checks (governed identity). Release
+// builds inject it via -ldflags; source builds report (devel).
+func harnessBuildVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok || info.Main.Version == "" || info.Main.Version == "(devel)" {
+		return "dev"
+	}
+	return info.Main.Version
 }
