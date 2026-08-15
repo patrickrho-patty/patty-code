@@ -76,6 +76,8 @@ type Provider struct {
 	// governanceSink receives relay-pushed governance-state snapshots
 	// (C3/C4/D1/D3-D6/E4).
 	governanceSink func(*dariproto.GovernanceStateWire)
+	// lastDecision is the most recently verified relay F.6 decision.
+	lastDecision *dariproto.DecisionEnvelope
 	// provRepoID/provBranch carry the workspace git identity for B1
 	// provenance envelopes; provTurnPaths accumulates the turn's
 	// edited paths until the next flush seals them into a change set.
@@ -476,6 +478,17 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 					case <-ctx.Done():
 						return
 					}
+				}
+
+			case dariproto.MsgRelayVerdict:
+				// F.6 decision-before-consumption: verify the signed
+				// decision under the AUTH_ACK policy issuer key and
+				// refuse the stream unless it authorizes this exchange
+				// right now. A DENY/expired/invalid decision is fatal —
+				// tokens that already streamed are not new authority.
+				if perr := p.verifyRelayVerdict(rec.Payload); perr != nil {
+					out <- provider.Chunk{Type: provider.ChunkError, Err: fmt.Errorf("dari: relay verdict rejected: %w", perr)}
+					return
 				}
 
 			case dariproto.MsgAIComplete:

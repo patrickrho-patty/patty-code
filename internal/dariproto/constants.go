@@ -71,6 +71,7 @@ const (
 	MsgGovernanceState MessageType = 0x0D12
 
 	// Governance / evidence (0x0300–0x03FF) — mirrors the relay registry.
+	MsgRelayVerdict       MessageType = 0x0304
 	MsgEvidenceReceipt    MessageType = 0x0307
 	MsgEvidenceReceiptAck MessageType = 0x0308
 
@@ -156,6 +157,8 @@ func (m MessageType) String() string {
 		return "PROVENANCE_COMMIT_BIND"
 	case MsgEvidenceReceipt:
 		return "EVIDENCE_RECEIPT"
+	case MsgRelayVerdict:
+		return "RELAY_VERDICT"
 	case MsgEvidenceReceiptAck:
 		return "EVIDENCE_RECEIPT_ACK"
 	case MsgActionEnvelope:

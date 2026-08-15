@@ -54,8 +54,8 @@ func DecodeDLPRulePack(data []byte) (*DLPRulePackWire, error) {
 // classPrefixes maps the relay's rule classes onto the connector's
 // built-in lexicon rule-ID prefixes.
 var classPrefixes = map[string][]string{
-	"korean_pii":       {"korean-"},
-	"secret":           {"aws-", "private-key", "bearer-"},
+	"korean_pii":       {"kr-"},
+	"secret":           {"aws-", "private-key", "generic-bearer-"},
 	"prompt_injection": {"injection-"},
 	"sensitive_path":   {},
 }

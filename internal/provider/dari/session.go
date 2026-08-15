@@ -104,6 +104,22 @@ func (p *Provider) openSession(conn *dariproto.TransportConn) error {
 				return fmt.Errorf("dari: acquire lease: %w", err)
 			}
 
+		case dariproto.MsgDLPRulePack:
+			// C1.3: the relay pushes the org's DLP rule pack during
+			// setup — route it to the live scanner sink (the mid-stream
+			// reader handles re-pushes mid-session).
+			if pack, derr := dariproto.DecodeDLPRulePack(rec.Payload); derr == nil {
+				p.applyDLPRulePack(pack)
+			}
+
+		case dariproto.MsgGovernanceState:
+			// C3/C4/D1/D3-D6/E4: the governance snapshot installs the
+			// connector's governed gates. Consumed here at setup (the
+			// critical path — the relay pushes before SESSION_GRANT).
+			if snap, gerr := dariproto.DecodeGovernanceState(rec.Payload); gerr == nil {
+				p.applyGovernanceState(snap)
+			}
+
 		case dariproto.MsgSessionGrant:
 			var grant struct {
 				SessionID string `json:"session_id"`
@@ -326,4 +342,35 @@ func (p *Provider) SetHarnessVersion(v string) {
 	if v != "" {
 		p.harnessVersion = v
 	}
+}
+
+// verifyRelayVerdict decodes + verifies a RELAY_VERDICT payload under
+// the AUTH_ACK policy issuer key and requires an allow-family outcome
+// valid now (F.6). Unknown issuer key fails closed.
+func (p *Provider) verifyRelayVerdict(coseBytes []byte) error {
+	p.mu.Lock()
+	pub := p.policyIssuerKey
+	p.mu.Unlock()
+	if pub == nil {
+		return errors.New("no policy issuer key from AUTH_ACK")
+	}
+	env, err := dariproto.DecodeAuthorizationDecision(coseBytes, pub)
+	if err != nil {
+		return err
+	}
+	if err := env.VerifyAtTime("", time.Now().UnixMilli()); err != nil {
+		return err
+	}
+	p.mu.Lock()
+	p.lastDecision = env
+	p.mu.Unlock()
+	return nil
+}
+
+// LastDecision returns the most recently verified relay decision (the
+// governance/audit surfaces read it; nil before the first verdict).
+func (p *Provider) LastDecision() *dariproto.DecisionEnvelope {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.lastDecision
 }
