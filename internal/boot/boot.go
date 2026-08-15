@@ -2071,6 +2071,11 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 			// D2: new pending submissions surface to the control plane
 			// as governed action envelopes (the reviewer queue).
 			st.SetSubmissionSink(dp.EmitChangeboardSubmission)
+			// E3: air-gap dial policy is authoritative on the network
+			// check path (sovereign deployments).
+			if ag := dp.AirGap(); ag != nil {
+				st.SetDialPolicy(ag.AllowsDial)
+			}
 			ctrl.SetGovernanceState(st)
 		})
 	}

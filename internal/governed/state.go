@@ -47,6 +47,7 @@ type State struct {
 	sandbox        *sandbox.PolicyStore
 	board          *changeboard.Board
 	submissionSink func(*changeboard.Submission)
+	dialPolicy     func(host string) bool
 	repoID         string
 	modelID        string
 }
@@ -94,6 +95,17 @@ func (s *State) SetChangeBoard(b *changeboard.Board) {
 	}
 	s.mu.Lock()
 	s.board = b
+	s.mu.Unlock()
+}
+
+// SetDialPolicy installs the authoritative dial check (E3 air-gap:
+// the provider's AirGap().AllowsDial). Applied before network grants.
+func (s *State) SetDialPolicy(policy func(host string) bool) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.dialPolicy = policy
 	s.mu.Unlock()
 }
 
@@ -172,6 +184,7 @@ func (s *State) CheckToolCall(toolName string, args json.RawMessage, readOnly bo
 	gates := s.gates
 	sandboxStore := s.sandbox
 	sink := s.submissionSink
+	dialPolicy := s.dialPolicy
 	repoID := s.repoID
 	modelID := s.modelID
 	s.mu.RUnlock()
@@ -245,10 +258,17 @@ func (s *State) CheckToolCall(toolName string, args json.RawMessage, readOnly bo
 
 	// C4: network-broker grants for outbound dials embedded in
 	// shell commands (curl/wget/http URLs).
-	if registry != nil && shellActionTools[toolName] {
+	if shellActionTools[toolName] {
 		for _, host := range hostsInCommand(commandOf(args)) {
-			if dec := registry.CheckNetwork(host); !dec.Allow {
-				return true, governanceReason(dec.Reason, dec.ReasonKo)
+			// E3 sovereign air-gap: unconditionally authoritative —
+			// not even an approved network grant dials past it.
+			if dialPolicy != nil && !dialPolicy(host) {
+				return true, "에어갭(air-gap) 모드 — 허용되지 않은 외부 접속입니다: " + host
+			}
+			if registry != nil {
+				if dec := registry.CheckNetwork(host); !dec.Allow {
+					return true, governanceReason(dec.Reason, dec.ReasonKo)
+				}
 			}
 		}
 	}

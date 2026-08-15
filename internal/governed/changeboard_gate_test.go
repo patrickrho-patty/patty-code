@@ -95,3 +95,21 @@ func containsHangul(s string) bool {
 	}
 	return false
 }
+
+// TestAirGapDialPolicyIsAuthoritative pins E3: in air-gap mode an
+// allowlisted host passes and everything else is refused even when no
+// network grant exists.
+func TestAirGapDialPolicyIsAuthoritative(t *testing.T) {
+	st := NewState()
+	allowed := map[string]bool{"mirror.internal": true}
+	st.SetDialPolicy(func(host string) bool { return allowed[host] })
+
+	if blocked, _ := st.CheckToolCall("bash", []byte(`{"command":"curl https://mirror.internal/pkg"}`), false); blocked {
+		t.Fatal("allowlisted host must pass")
+	}
+	if blocked, reason := st.CheckToolCall("bash", []byte(`{"command":"curl https://evil.example.com/x"}`), false); !blocked {
+		t.Fatal("non-allowlisted host must be refused in air-gap mode")
+	} else if !containsHangul(reason) {
+		t.Fatalf("reason must surface Korean, got %q", reason)
+	}
+}

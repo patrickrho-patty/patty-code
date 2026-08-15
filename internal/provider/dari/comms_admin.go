@@ -3,11 +3,15 @@ package dari
 import (
 	"encoding/json"
 	"log/slog"
+	"os"
+	"strings"
 	"time"
 
 	"patty/internal/admin"
 	"patty/internal/comms"
+	"patty/internal/operational"
 	"patty/internal/provenancewire"
+	"patty/internal/sovereign"
 )
 
 // comms_admin.go drains relay-pushed advisories into the live
@@ -130,3 +134,48 @@ func (p *Provider) emitActionDraft(d *provenanceActionDraft) {
 func (p *Provider) orgIDForSession() string { return p.credOrgID }
 
 // credOrgID is set at AUTH_PROOF from the verified credential.
+
+// sovereignOps owns the E3 air-gap state and the E1 awareness client.
+// Both become live: air-gap mode is config-driven
+// (PATTY_AIRGAP=1 + PATTY_AIRGAP_ALLOWLIST=host1,host2), sovereign
+// advisories apply through the verified update path, and awareness
+// tracks the real operational signals (suspension, board queue,
+// refresh cadence).
+
+func (p *Provider) initSovereignOps() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.airgap != nil {
+		return
+	}
+	ag := sovereign.NewAirGapMode()
+	if os.Getenv("PATTY_AIRGAP") == "1" {
+		ag.Enable()
+		var allow []string
+		for _, h := range strings.Split(os.Getenv("PATTY_AIRGAP_ALLOWLIST"), ",") {
+			if h = strings.TrimSpace(h); h != "" {
+				allow = append(allow, h)
+			}
+		}
+		ag.SetOnlineAllowList(allow)
+		slog.Warn("dari: sovereign air-gap mode ENABLED — dials restricted to the allowlist")
+	}
+	p.airgap = ag
+	p.awareness = operational.NewAwarenessClient(p.credOrgID, p.userID)
+}
+
+// AirGap exposes the air-gap mode (dial checks + advisory application).
+func (p *Provider) AirGap() *sovereign.AirGapMode {
+	p.initSovereignOps()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.airgap
+}
+
+// Awareness exposes the E1 operational awareness client (status bar).
+func (p *Provider) Awareness() *operational.AwarenessClient {
+	p.initSovereignOps()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.awareness
+}

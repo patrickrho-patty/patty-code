@@ -24,8 +24,10 @@ import (
 	"patty/internal/changeboard"
 	"patty/internal/comms"
 	"patty/internal/dariproto"
+	"patty/internal/operational"
 	"patty/internal/provenancewire"
 	"patty/internal/provider"
+	"patty/internal/sovereign"
 )
 
 func init() {
@@ -91,6 +93,10 @@ type Provider struct {
 	// credOrgID is the verified credential's organization (envelopes
 	// the connector emits carry it).
 	credOrgID string
+	// airgap (E3) + awareness (E1) are the sovereign/operational
+	// surfaces; lazily initialized by initSovereignOps.
+	airgap    *sovereign.AirGapMode
+	awareness *operational.AwarenessClient
 	// provRepoID/provBranch carry the workspace git identity for B1
 	// provenance envelopes; provTurnPaths accumulates the turn's
 	// edited paths until the next flush seals them into a change set.
