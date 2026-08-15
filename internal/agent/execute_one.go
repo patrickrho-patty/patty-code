@@ -912,4 +912,30 @@ func (a *Agent) observeAfterMutation(plan *toolCallPlan) {
 		toolName = plan.call.Name
 	}
 	a.mutationObserver.AfterMutation(plan.mutationPath, toolName)
+	// B1: surface the real edit to the DARI provider so the session's
+	// provenance emitter records an attribution span (the relay's
+	// CodeExplorer consumes them). Unwrap past the DLP pass-through.
+	if rec := aiEditRecorderOf(a.prov); rec != nil {
+		rec.RecordAIEdit(plan.mutationPath, toolName)
+	}
+}
+
+// aiEditRecorder is the provenance hook a DARI-backed provider
+// implements; RecordAIEdit is fire-and-forget and never blocks the
+// tool path.
+type aiEditRecorder interface {
+	RecordAIEdit(path, tool string)
+}
+
+func aiEditRecorderOf(prov provider.Provider) aiEditRecorder {
+	if prov == nil {
+		return nil
+	}
+	if r, ok := prov.(aiEditRecorder); ok {
+		return r
+	}
+	if u, ok := prov.(interface{ Unwrap() provider.Provider }); ok {
+		return aiEditRecorderOf(u.Unwrap())
+	}
+	return nil
 }

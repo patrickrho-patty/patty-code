@@ -39,6 +39,7 @@ import (
 	"patty/internal/extension/providerext"
 	"patty/internal/extension/sidecar"
 	"patty/internal/extension/uihub"
+	"patty/internal/gitcmd"
 	"patty/internal/goaleval"
 	"patty/internal/governed"
 	"patty/internal/guardian"
@@ -2026,6 +2027,11 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	// fire on real tool calls. Without a DARI session no state is
 	// installed and the wrapper stays a pass-through.
 	if dp, ok := execProv.(*dari.Provider); ok {
+		// B1: give the provenance emitter the workspace git identity
+		// so real AI edits surface as attributed change sets/spans.
+		if repoID, branch := workspaceGitIdentity(); repoID != "" {
+			dp.SetProvenanceContext(repoID, branch)
+		}
 		dp.SetGovernanceSink(func(snap *dariproto.GovernanceStateWire) {
 			st := governed.NewState()
 			id := dariproto.HarnessIdentity{Version: harnessBuildVersion(), Ring: "stable"}
@@ -3033,4 +3039,37 @@ func harnessBuildVersion() string {
 		return "dev"
 	}
 	return info.Main.Version
+}
+
+// workspaceGitIdentity derives the repository identity B1 provenance
+// envelopes carry: the origin remote's basename (falling back to the
+// working-directory name) and the current branch. Best-effort — a
+// non-git workspace returns empty and provenance emission stays off
+// rather than fabricating identifiers.
+func workspaceGitIdentity() (repoID, branch string) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", ""
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if out, err := gitcmd.Command(ctx, dir, "config", "--get", "remote.origin.url").Output(); err == nil {
+		u := strings.TrimSpace(string(out))
+		u = strings.TrimSuffix(u, ".git")
+		if i := strings.LastIndexAny(u, "/:"); i >= 0 && i+1 < len(u) {
+			repoID = u[i+1:]
+		} else if u != "" {
+			repoID = u
+		}
+	}
+	if out, err := gitcmd.Command(ctx, dir, "rev-parse", "--abbrev-ref", "HEAD").Output(); err == nil {
+		branch = strings.TrimSpace(string(out))
+	}
+	if repoID == "" && branch == "" {
+		return "", ""
+	}
+	if repoID == "" {
+		repoID = filepath.Base(dir)
+	}
+	return repoID, branch
 }

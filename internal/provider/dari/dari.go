@@ -73,6 +73,12 @@ type Provider struct {
 	// governanceSink receives relay-pushed governance-state snapshots
 	// (C3/C4/D1/D3-D6/E4).
 	governanceSink func(*dariproto.GovernanceStateWire)
+	// provRepoID/provBranch carry the workspace git identity for B1
+	// provenance envelopes; provTurnPaths accumulates the turn's
+	// edited paths until the next flush seals them into a change set.
+	provRepoID    string
+	provBranch    string
+	provTurnPaths map[string]bool
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
@@ -481,6 +487,10 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 				}
 
 				out <- provider.Chunk{Type: provider.ChunkDone}
+				// B1: seal + flush the turn's provenance envelopes
+				// (change set → spans → actions) while the
+				// authenticated connection is still live.
+				go p.flushProvenance()
 				return
 
 			case dariproto.MsgPing:

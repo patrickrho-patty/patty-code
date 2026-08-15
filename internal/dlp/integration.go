@@ -35,6 +35,11 @@ func NewProvider(inner provider.Provider, hook *OutboundHook, inspector *Respons
 }
 
 // Name returns the inner provider's name.
+// Unwrap exposes the wrapped provider so host layers can reach
+// capability interfaces (e.g. the DARI provenance recorder) the
+// DLP pass-through does not forward.
+func (p *Provider) Unwrap() provider.Provider { return p.inner }
+
 func (p *Provider) Name() string { return p.inner.Name() }
 
 // Stream applies the DLP + workflow gates around the inner
