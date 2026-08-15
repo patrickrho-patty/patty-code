@@ -80,6 +80,8 @@ const (
 	MsgProvenanceChangeSet  MessageType = 0x0701
 	MsgProvenanceCommitBind MessageType = 0x0702
 	MsgActionEnvelope       MessageType = 0x0703
+	// ChangeSet NACK (0x0704) — relay refusal (e.g. active change freeze).
+	MsgChangeSetNack MessageType = 0x0704
 
 	// Admin / broadcast (0x0B00–0x0BFF) — mirrors the relay registry:
 	// 0x0B00 broadcast, 0x0B01 admin directive, 0x0B02 result.
@@ -166,6 +168,8 @@ func (m MessageType) String() string {
 		return "ADMIN_COMMAND_RESULT"
 	case MsgSovereignAdvisory:
 		return "SOVEREIGN_ADVISORY"
+	case MsgChangeSetNack:
+		return "CHANGESET_NACK"
 	case MsgLeaseIssue:
 		return "LEASE_ISSUE"
 	case MsgLeaseRevoke:
