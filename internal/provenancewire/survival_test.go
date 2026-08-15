@@ -23,14 +23,14 @@ func TestSpanSurvivesFileRename(t *testing.T) {
 		Paths:    []string{"/repo/foo.go"},
 	}
 	spanA, err := BuildSpanEnvelopeFromReceipt(SpanBuildRequest{
-		SpanID:     "sp-rename",
+		SpanID:       "sp-rename",
 		RepositoryID: "pccp",
-		FilePath:    "/repo/foo.go",
-		SymbolLang: "go",
-		SymbolName: "compute",
-		StartLine:  42,
-		EndLine:    56,
-		Receipt:    receipt,
+		FilePath:     "/repo/foo.go",
+		SymbolLang:   "go",
+		SymbolName:   "compute",
+		StartLine:    42,
+		EndLine:      56,
+		Receipt:      receipt,
 	})
 	if err != nil {
 		t.Fatalf("build spanA: %v", err)
@@ -39,14 +39,14 @@ func TestSpanSurvivesFileRename(t *testing.T) {
 	// the file. The harness re-emits a span at the new path with
 	// the same logical symbol.
 	spanB, err := BuildSpanEnvelopeFromReceipt(SpanBuildRequest{
-		SpanID:     "sp-rename",
+		SpanID:       "sp-rename",
 		RepositoryID: "pccp",
-		FilePath:    "/repo/subdir/foo.go", // renamed/moved
-		SymbolLang: "go",
-		SymbolName: "compute", // same symbol
-		StartLine:  42,
-		EndLine:    56,
-		Receipt:    receipt,
+		FilePath:     "/repo/subdir/foo.go", // renamed/moved
+		SymbolLang:   "go",
+		SymbolName:   "compute", // same symbol
+		StartLine:    42,
+		EndLine:      56,
+		Receipt:      receipt,
 	})
 	if err != nil {
 		t.Fatalf("build spanB: %v", err)
@@ -76,27 +76,27 @@ func TestSemanticFingerprintIgnoresFilePath(t *testing.T) {
 		ToolName: "edit_file", Mutation: true, Paths: []string{"a"}, Success: true,
 	}
 	a, err := BuildSpanEnvelopeFromReceipt(SpanBuildRequest{
-		SpanID:     "sp-a",
+		SpanID:       "sp-a",
 		RepositoryID: "pccp",
-		FilePath:    "/repo/a.go",
-		SymbolLang: "go",
-		SymbolName: "compute",
-		StartLine:  1,
-		EndLine:    10,
-		Receipt:    receipt,
+		FilePath:     "/repo/a.go",
+		SymbolLang:   "go",
+		SymbolName:   "compute",
+		StartLine:    1,
+		EndLine:      10,
+		Receipt:      receipt,
 	})
 	if err != nil {
 		t.Fatalf("build a: %v", err)
 	}
 	b, err := BuildSpanEnvelopeFromReceipt(SpanBuildRequest{
-		SpanID:     "sp-b",
+		SpanID:       "sp-b",
 		RepositoryID: "pccp",
-		FilePath:    "/elsewhere/b.go",
-		SymbolLang: "go",
-		SymbolName: "compute",
-		StartLine:  1,
-		EndLine:    10,
-		Receipt:    receipt,
+		FilePath:     "/elsewhere/b.go",
+		SymbolLang:   "go",
+		SymbolName:   "compute",
+		StartLine:    1,
+		EndLine:      10,
+		Receipt:      receipt,
 	})
 	if err != nil {
 		t.Fatalf("build b: %v", err)

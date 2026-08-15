@@ -86,7 +86,7 @@ func TestReadFileDirectory(t *testing.T) {
 	if err == nil {
 		t.Fatal("read_file on a directory should error, not return contents")
 	}
-// "read X: read X:" the raw scanner error produced.
+	// "read X: read X:" the raw scanner error produced.
 	if !strings.Contains(err.Error(), "directory") || !strings.Contains(err.Error(), "ls") {
 		t.Errorf("error should tell the model to use ls, got: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestReadFileOffsetLimit(t *testing.T) {
 			t.Errorf("leaked %q (outside the slice)\n%s", leak, out)
 		}
 	}
-// Trailer announces whats left so the model can paginate.
+	// Trailer announces whats left so the model can paginate.
 	if !strings.Contains(out, "more line") || !strings.Contains(out, "offset=15") {
 		t.Errorf("pagination hint missing:\n%s", out)
 	}
@@ -204,7 +204,7 @@ func TestMultiEdit(t *testing.T) {
 	body := "package old\n\nfunc old() {\n\told()\n}\n"
 	os.WriteFile(f, []byte(body), 0o644)
 
-// Two edits: rename the package (unique) then sweep every old  new.
+	// Two edits: rename the package (unique) then sweep every old  new.
 	out := runTool(t, multiEdit{}, map[string]any{
 		"path": f,
 		"edits": []map[string]any{
@@ -381,11 +381,11 @@ func TestLsAndGlob(t *testing.T) {
 
 func TestGlobRecursive(t *testing.T) {
 	dir := t.TempDir()
-// dira.go
-// dir/sub/b.go
-// dir/sub/deep/c.go
-// dir/sub/deep/c.txt
-// dirother.txt
+	// dira.go
+	// dir/sub/b.go
+	// dir/sub/deep/c.go
+	// dir/sub/deep/c.txt
+	// dirother.txt
 	os.WriteFile(filepath.Join(dir, "a.go"), []byte("package a"), 0o644)
 	os.MkdirAll(filepath.Join(dir, "sub", "deep"), 0o755)
 	os.WriteFile(filepath.Join(dir, "sub", "b.go"), []byte("package b"), 0o644)
@@ -393,7 +393,7 @@ func TestGlobRecursive(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "sub", "deep", "c.txt"), []byte("text"), 0o644)
 	os.WriteFile(filepath.Join(dir, "other.txt"), []byte("other"), 0o644)
 
-// **  *.go should find all .go files recursively.
+	// **  *.go should find all .go files recursively.
 	out := runTool(t, globTool{}, map[string]any{"pattern": filepath.Join(dir, "**", "*.go")})
 	if !strings.Contains(out, "a.go") {
 		t.Errorf("missing a.go in:\n%s", out)
@@ -408,7 +408,7 @@ func TestGlobRecursive(t *testing.T) {
 		t.Errorf("should not include .txt files:\n%s", out)
 	}
 
-// **  *.txt should find all .txt files recursively.
+	// **  *.txt should find all .txt files recursively.
 	out2 := runTool(t, globTool{}, map[string]any{"pattern": filepath.Join(dir, "**", "*.txt")})
 	if !strings.Contains(out2, "other.txt") {
 		t.Errorf("missing other.txt in:\n%s", out2)
@@ -417,7 +417,7 @@ func TestGlobRecursive(t *testing.T) {
 		t.Errorf("missing c.txt in:\n%s", out2)
 	}
 
-// with no suffix should find all files.
+	// with no suffix should find all files.
 	out3 := runTool(t, globTool{}, map[string]any{"pattern": filepath.Join(dir, "**")})
 	if !strings.Contains(out3, "a.go") || !strings.Contains(out3, "c.txt") {
 		t.Errorf("bare ** should find all files:\n%s", out3)

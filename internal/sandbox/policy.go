@@ -31,8 +31,8 @@ const (
 type SandboxMode string
 
 const (
-	ModeRemoteOnly SandboxMode = "REMOTE_ONLY"
-	ModeLocalAllowed SandboxMode = "LOCAL_ALLOWED"
+	ModeRemoteOnly    SandboxMode = "REMOTE_ONLY"
+	ModeLocalAllowed  SandboxMode = "LOCAL_ALLOWED"
 	ModeLocalRequired SandboxMode = "LOCAL_REQUIRED" // offline / air-gap
 )
 
@@ -88,15 +88,15 @@ type PolicyStore struct {
 // LocalBudget is the harness-side counter for local-execution
 // usage on a single repository within the current day.
 type LocalBudget struct {
-	RepoID   string
-	DayUnix  int64 // days since epoch
-	Used     int
+	RepoID  string
+	DayUnix int64 // days since epoch
+	Used    int
 }
 
 // NewPolicyStore constructs an empty store.
 func NewPolicyStore() *PolicyStore {
 	return &PolicyStore{
-		policies:              make(map[string]*Policy),
+		policies:             make(map[string]*Policy),
 		LocalExecutionBudget: make(map[string]*LocalBudget),
 	}
 }

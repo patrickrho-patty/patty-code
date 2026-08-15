@@ -34,7 +34,6 @@ func TestPluginGitCommandDisablesLineEndingConversion(t *testing.T) {
 	}
 }
 
-
 func execInstall(t *testing.T, tl tool.Tool, args map[string]any) response {
 	t.Helper()
 	raw, err := json.Marshal(args)
@@ -95,7 +94,6 @@ func (s *stubConnector) connector() MCPConnector {
 		}, nil
 	}
 }
-
 
 func TestApplyLocalSkillRootRegistersPath(t *testing.T) {
 	project := t.TempDir()
@@ -272,10 +270,10 @@ func TestPlanClaudeCompatibilityReportsAgentsHooksAndMCP(t *testing.T) {
 		t.Fatalf("actions = %+v", planned.Actions)
 	}
 	a := planned.Actions[0]
-// A Stop hook is imported best-effort, but Patty Codes Stop hook is
-// observation-only and can't block the turn the way Claude's contract
-// does, so this must report "partial" rather than silently claiming full
-// compatibility for semantics it doesnt honor.
+	// A Stop hook is imported best-effort, but Patty Codes Stop hook is
+	// observation-only and can't block the turn the way Claude's contract
+	// does, so this must report "partial" rather than silently claiming full
+	// compatibility for semantics it doesnt honor.
 	if a.AgentCount != 1 || a.HookCount != 1 || a.ToolCount != 1 || a.Compatibility != "partial" {
 		t.Fatalf("compatibility action = %+v", a)
 	}
@@ -495,7 +493,7 @@ func TestApplyLinkSkillRejectsEscape(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
 
-// Synthesize a candidate that points at /etc/passwd by calling the
+	// Synthesize a candidate that points at /etc/passwd by calling the
 	if isLinkTargetSafe("/etc/passwd", home, project) {
 		t.Fatal("/etc/passwd should be considered unsafe")
 	}
@@ -1136,8 +1134,8 @@ func TestPlanUnsupportedKindReturnsTypedError(t *testing.T) {
 }
 
 func TestPlanGitHubRepoProbesMainAndMaster(t *testing.T) {
-// We cant easily stand up a fake github.com, so we exercise the URL
-// `strings.EqualFold(u.Hostname(), "github.com")` — anything else is
+	// We cant easily stand up a fake github.com, so we exercise the URL
+	// `strings.EqualFold(u.Hostname(), "github.com")` — anything else is
 	if got := rawGitHubBlobURL("https://github.com/foo/bar/blob/main/path/SKILL.md"); got != "https://raw.githubusercontent.com/foo/bar/main/path/SKILL.md" {
 		t.Errorf("blob rewrite = %q", got)
 	}
@@ -1287,7 +1285,7 @@ func TestPlanGitHubRepoDiscoversMultipleSkills(t *testing.T) {
 }
 
 func TestFetchTextAppliesTimeoutAndUA(t *testing.T) {
-// cant easily test the UA from inside a HandlerFunc, so we just check
+	// cant easily test the UA from inside a HandlerFunc, so we just check
 	project := t.TempDir()
 	home := t.TempDir()
 	tl := NewTool(Options{ProjectRoot: project, HomeDir: home}).(*installSourceTool)
@@ -1335,8 +1333,8 @@ func TestFetchTextAuthMapsToErrAuthRequired(t *testing.T) {
 }
 
 func TestFetchTextRefusesInternalAddress(t *testing.T) {
-// SSRF guard: an install source pointed at cloud-metadata  internal IPs must
-// network or DNS is involved  the guard blocks before connecting.
+	// SSRF guard: an install source pointed at cloud-metadata  internal IPs must
+	// network or DNS is involved  the guard blocks before connecting.
 	tl := NewTool(Options{ProjectRoot: t.TempDir(), HomeDir: t.TempDir()}).(*installSourceTool)
 	for _, target := range []string{
 		"http://169.254.169.254/latest/meta-data/", // cloud metadata
@@ -1368,7 +1366,6 @@ func TestPlanMarkdownSkillURL(t *testing.T) {
 		t.Fatalf("actions = %+v", resp.Actions)
 	}
 }
-
 
 func TestUninstallRemovesSkillByName(t *testing.T) {
 	project := t.TempDir()
@@ -1556,7 +1553,6 @@ func TestUninstallRequiresName(t *testing.T) {
 	}
 }
 
-
 func TestApprovalHookDeniesApply(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
@@ -1713,7 +1709,6 @@ func TestPlanIDUsesResolvedActionScope(t *testing.T) {
 	}
 }
 
-
 func TestPlanLocalExecutableDetected(t *testing.T) {
 	project := t.TempDir()
 	home := t.TempDir()
@@ -1795,7 +1790,6 @@ func writeLocalExecutable(t *testing.T, dir, name string) string {
 	return path
 }
 
-
 func TestLinkRiskIsMedium(t *testing.T) {
 	if level, _ := skillActionRisk("link", skillCandidate{SourcePath: "x"}); level != RiskMedium {
 		t.Errorf("link mode should be RiskMedium, got %q", level)
@@ -1811,7 +1805,6 @@ func TestEagerTierEscalatesRisk(t *testing.T) {
 		t.Errorf("eager tier should escalate to RiskHigh, got %q", level)
 	}
 }
-
 
 func ExampleNewTool() {
 	tl := NewTool(Options{

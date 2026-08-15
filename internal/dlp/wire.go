@@ -41,9 +41,9 @@ func NewOutboundHook(scanner *Scanner) *OutboundHook {
 // HookResult is the result of applying the hook. The harness's
 // AI_OPEN path consults this before pushing to the relay.
 type HookResult struct {
-	Allow         bool
+	Allow           bool
 	RedactedPayload []byte
-	ScanResult     ScanResult
+	ScanResult      ScanResult
 }
 
 // Apply scans the supplied payload and returns the disposition.
@@ -70,18 +70,18 @@ func (h *OutboundHook) Apply(payload []byte) (HookResult, error) {
 		h.denyCount++
 		h.mu.Unlock()
 		return HookResult{
-			Allow:         false,
+			Allow:           false,
 			RedactedPayload: []byte(res.RedactedText),
-			ScanResult:     res,
+			ScanResult:      res,
 		}, nil
 	}
 	h.mu.Lock()
 	h.ackCount++
 	h.mu.Unlock()
 	return HookResult{
-		Allow:         true,
+		Allow:           true,
 		RedactedPayload: []byte(res.RedactedText),
-		ScanResult:     res,
+		ScanResult:      res,
 	}, nil
 }
 

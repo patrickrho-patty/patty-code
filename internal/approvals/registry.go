@@ -32,16 +32,16 @@ const (
 // ToolRegistration is the connector's cached view of one
 // registered tool.
 type ToolRegistration struct {
-	ToolID       string
-	DisplayName  string
-	Version      string
-	Category     string
-	Status       ApprovalStatus
-	Description  string
-	DescriptionKo string
-	OrganizationID string
+	ToolID           string
+	DisplayName      string
+	Version          string
+	Category         string
+	Status           ApprovalStatus
+	Description      string
+	DescriptionKo    string
+	OrganizationID   string
 	ApprovedAtUnixMs int64
-	NotAfterUnixMs int64
+	NotAfterUnixMs   int64
 }
 
 // IsActive reports whether the registration is in force at the
@@ -117,7 +117,7 @@ type SecretGrant struct {
 	IssuedAt       time.Time
 	NotAfter       time.Time
 	MaxReads       int64
-	ReadsIssued   int64
+	ReadsIssued    int64
 }
 
 // IsExhausted reports whether the grant has spent its read quota.
@@ -131,11 +131,11 @@ func (s *SecretGrant) IsExhausted() bool {
 // Registry is the connector-side cached view of the relay's
 // approval state.
 type Registry struct {
-	mu              sync.RWMutex
-	tools           map[string]*ToolRegistration
-	networks        []*NetworkGrant
-	secrets         map[string]*SecretGrant
-	lastRefreshMs   int64
+	mu                sync.RWMutex
+	tools             map[string]*ToolRegistration
+	networks          []*NetworkGrant
+	secrets           map[string]*SecretGrant
+	lastRefreshMs     int64
 	toolAllowCount    int64
 	toolDenyCount     int64
 	networkAllowCount int64

@@ -104,7 +104,7 @@ type deepseekThinkingProvider struct{ *scriptedProvider }
 func (deepseekThinkingProvider) RequiresToolCallReasoning() bool { return true }
 
 func TestRunAcceptsReasoningOnlyFinalWhenModelStopped(t *testing.T) {
-// finishes with finish_reason="stop" but an empty content block. The
+	// finishes with finish_reason="stop" but an empty content block. The
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
 		{
 			{Type: provider.ChunkReasoning, Text: "The user asked a simple question; I have reasoned through it and the answer is ready."},
@@ -129,7 +129,7 @@ func TestRunAcceptsReasoningOnlyFinalWhenModelStopped(t *testing.T) {
 }
 
 func TestRunRetriesReasoningOnlyStopWithoutDeepSeekPolicy(t *testing.T) {
-// attempt, and a gateway that mislabels truncation as "stop" must not
+	// attempt, and a gateway that mislabels truncation as "stop" must not
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
 		{
 			{Type: provider.ChunkReasoning, Text: "thinking only, nothing visible"},

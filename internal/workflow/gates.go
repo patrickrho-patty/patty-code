@@ -34,13 +34,13 @@ const (
 // freeze on the target repository (PRD §33.13, PAPER §38.4).
 type ChangeFreeze struct {
 	OrganizationID string
-	Reason        string
-	ReasonKo      string
-	AffectedRepos []string
+	Reason         string
+	ReasonKo       string
+	AffectedRepos  []string
 	AllowedActions []string
-	InitiatedBy   string
-	StartedAt     time.Time
-	NotAfter      time.Time
+	InitiatedBy    string
+	StartedAt      time.Time
+	NotAfter       time.Time
 }
 
 // AllowsAction reports whether the freeze permits the supplied
@@ -177,7 +177,7 @@ type GatesClient struct {
 	harnessVersion string
 	harnessRing    string
 	// metrics: surfaced in the E1 status bar.
-	AckedAt           map[string]int64 // ruleID -> unix-ms
+	AckedAt              map[string]int64 // ruleID -> unix-ms
 	BlockedDispatchCount int64
 }
 

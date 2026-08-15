@@ -219,7 +219,7 @@ func TestSubagentProgressWrapConvertsAndForwards(t *testing.T) {
 	trk.running()
 	wrap := trk.wrap()
 
-// Child reasoning/text/notice/retrying become reserved progress channels.
+	// Child reasoning/text/notice/retrying become reserved progress channels.
 	wrap.Emit(event.Event{Kind: event.Reasoning, Text: "think a"})
 	wrap.Emit(event.Event{Kind: event.Reasoning, Text: " think b"})
 	wrap.Emit(event.Event{Kind: event.Text, Text: "answer"})
@@ -260,7 +260,7 @@ func TestSubagentProgressWrapConvertsAndForwards(t *testing.T) {
 		t.Fatalf("notice preview = %q, want both notice texts", notice)
 	}
 
-// Tool events: forwarded namespaced; no reasoning/text/message leakage.
+	// Tool events: forwarded namespaced; no reasoning/text/message leakage.
 	var forwardNames, forwardIDs []string
 	for _, e := range parent.kinds(event.ToolDispatch) {
 		forwardNames = append(forwardNames, e.Tool.Name)
@@ -295,7 +295,7 @@ func TestSubagentProgressTwoChildrenDoNotInterleave(t *testing.T) {
 
 	clock.Advance(subagentProgressMergeWindow)
 	got := collectFor(t, ch, 100*time.Millisecond)
-// Each childs preview carries only its own content, keyed by its own ID.
+	// Each childs preview carries only its own content, keyed by its own ID.
 	var aGot, bGot []string
 	for _, e := range got {
 		switch {
@@ -370,7 +370,7 @@ func TestSubagentProgressFlushPrecedesTerminal(t *testing.T) {
 		order = append(order, progressName(e))
 		outputs = append(outputs, progressOutput(e))
 	}
-// (direct), the merged responding phase (reasoningresponding overwrote
+	// (direct), the merged responding phase (reasoningresponding overwrote
 	wantNames := []string{
 		event.SubagentProgressStatusName,
 		event.SubagentProgressStatusName,
@@ -454,12 +454,12 @@ func TestSubagentProgressGroupBudgetBoundsBurstAndServesAll(t *testing.T) {
 	const n = 64
 	for i := range n {
 		child := "child-" + string(rune('0'+i/10)) + string(rune('0'+i%10))
-// status changes alone must not exceed the 32 eventss contract.
+		// status changes alone must not exceed the 32 eventss contract.
 		merger.statusEvent(child, subagentPhaseRunning)
 		merger.deltaEvent(child, subagentProgressChanReasoning, strings.Repeat("x", 256))
 	}
 
-// The first wave is capped by the group budget (32 eventss) across
+	// The first wave is capped by the group budget (32 eventss) across
 	clock.Advance(subagentProgressMergeWindow)
 	first := collectFor(t, ch, 100*time.Millisecond)
 	firstNonTerminal := 0
@@ -472,7 +472,7 @@ func TestSubagentProgressGroupBudgetBoundsBurstAndServesAll(t *testing.T) {
 		t.Fatalf("first-wave non-terminal events = %d, want capped by the 32/sec group budget", firstNonTerminal)
 	}
 
-// Once the budget refills, every child is served exactly once  no child
+	// Once the budget refills, every child is served exactly once  no child
 	var rest []event.Event
 	for range 16 {
 		clock.Advance(time.Second)
@@ -596,7 +596,7 @@ func TestRunProfileSpecEmitsSubagentProgress(t *testing.T) {
 	}
 	want := []string{
 		event.SubagentProgressStatusName + ":running",
-// The child's reasoning→responding transition merges into the status
+		// The child's reasoning→responding transition merges into the status
 		event.SubagentProgressStatusName + ":responding",
 		event.SubagentProgressReasoningName + ":thinking hard",
 		event.SubagentProgressTextName + ":final answer",

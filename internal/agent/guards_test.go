@@ -95,7 +95,6 @@ func TestEmptyFinalNotice(t *testing.T) {
 	}
 }
 
-
 type fakeTool struct {
 	name     string
 	readOnly bool
@@ -326,8 +325,8 @@ func TestExecuteBatchSegmentsAroundWrites(t *testing.T) {
 			t.Fatalf("results out of order or wrong: got %v want %v", results, want)
 		}
 	}
-// Desired shape is roughly 3delay: (ro1|ro2), then rw, then (ro3|ro4).
-// Old all-serial behaviour is roughly 5delay and should fail this bound.
+	// Desired shape is roughly 3delay: (ro1|ro2), then rw, then (ro3|ro4).
+	// Old all-serial behaviour is roughly 5delay and should fail this bound.
 	if elapsed >= 4*delay {
 		t.Errorf("mixed batch took %v (>= %v) — read-only segments did not parallelise", elapsed, 4*delay)
 	}

@@ -171,9 +171,9 @@ func TestRegistry_ModuleWithDependencies(t *testing.T) {
 	reg := profile.NewRegistry()
 	dep := &profile.Module{ID: "dep.mod", Version: "1.0.0", Enabled: true}
 	mainMod := &profile.Module{
-		ID:      "main.mod",
-		Version: "1.0.0",
-		Enabled: true,
+		ID:        "main.mod",
+		Version:   "1.0.0",
+		Enabled:   true,
 		DependsOn: []string{"dep.mod"},
 	}
 

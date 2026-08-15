@@ -8,7 +8,6 @@ import (
 	"patty/internal/provider"
 )
 
-//
 var TransientUserBlockTags = []string{
 	"response-language",
 	"reasoning-language",
@@ -44,7 +43,6 @@ func ContainsMemoryCompilerExecution(content string) bool {
 	return strings.Contains(content, memoryCompilerExecutionOpen)
 }
 
-//
 func StripTransientUserBlocks(content string) string {
 	s := unwrapMemoryCompilerExecution(content)
 	for {

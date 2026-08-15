@@ -112,7 +112,7 @@ func saveOneInboundMediaItem(ctx context.Context, workspaceRoot string, item Inb
 		if ref, err := control.SaveImageBytesInRoot(workspaceRoot, contentType, item.Data); err == nil {
 			return ref, nil
 		}
-// [10MB ，。]
+		// [10MB ，。]
 	}
 	name := strings.TrimSpace(item.Name)
 	if name == "" {

@@ -676,8 +676,8 @@ func TestScriptsFilteredByExt(t *testing.T) {
 }
 
 func TestBuiltinInitIsInlineSkill(t *testing.T) {
-// init must resolve to a built-in inline skill (the model-driven AGENTS.md
-// bootstrap), present even with no projectuser skills on disk.
+	// init must resolve to a built-in inline skill (the model-driven AGENTS.md
+	// bootstrap), present even with no projectuser skills on disk.
 	st := New(Options{HomeDir: t.TempDir()})
 	sk, ok := st.Read("init")
 	if !ok {

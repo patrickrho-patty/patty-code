@@ -23,27 +23,27 @@ import (
 type CommandType string
 
 const (
-	CmdLockHarness       CommandType = "LOCK_HARNESS"
-	CmdFreezeBranch       CommandType = "FREEZE_BRANCH"
-	CmdForceUpdate        CommandType = "FORCE_UPDATE"
-	CmdModelRecall        CommandType = "MODEL_RECALL"
-	CmdReleaseHarness     CommandType = "RELEASE_HARNESS"
-	CmdUnfreezeBranch     CommandType = "UNFREEZE_BRANCH"
-	CmdApproveTool         CommandType = "APPROVE_TOOL"
-	CmdBlockTool           CommandType = "BLOCK_TOOL"
+	CmdLockHarness    CommandType = "LOCK_HARNESS"
+	CmdFreezeBranch   CommandType = "FREEZE_BRANCH"
+	CmdForceUpdate    CommandType = "FORCE_UPDATE"
+	CmdModelRecall    CommandType = "MODEL_RECALL"
+	CmdReleaseHarness CommandType = "RELEASE_HARNESS"
+	CmdUnfreezeBranch CommandType = "UNFREEZE_BRANCH"
+	CmdApproveTool    CommandType = "APPROVE_TOOL"
+	CmdBlockTool      CommandType = "BLOCK_TOOL"
 )
 
 // Command is a single relay-pushed admin command. The harness
 // executes it locally and emits evidence for the audit log.
 type Command struct {
-	CommandID    string
-	CommandType  CommandType
+	CommandID      string
+	CommandType    CommandType
 	OrganizationID string
-	Target       string // harness ID, repo:branch, model ID, etc.
-	Reason       string
-	IssuedBy     string // admin user/role
-	IssuedAt     int64  // unix-ms
-	NotAfter     int64  // unix-ms; 0 = no expiry
+	Target         string // harness ID, repo:branch, model ID, etc.
+	Reason         string
+	IssuedBy       string // admin user/role
+	IssuedAt       int64  // unix-ms
+	NotAfter       int64  // unix-ms; 0 = no expiry
 	// Payload carries command-specific data (e.g. forced version).
 	Payload []byte
 	// Signature is the ed25519 signature over the canonical command
@@ -95,20 +95,20 @@ type ExecutionStatus string
 
 const (
 	StatusPending   ExecutionStatus = "PENDING"
-	StatusExecuting  ExecutionStatus = "EXECUTING"
-	StatusSucceeded  ExecutionStatus = "SUCCEEDED"
-	StatusFailed     ExecutionStatus = "FAILED"
-	StatusRejected   ExecutionStatus = "REJECTED"
+	StatusExecuting ExecutionStatus = "EXECUTING"
+	StatusSucceeded ExecutionStatus = "SUCCEEDED"
+	StatusFailed    ExecutionStatus = "FAILED"
+	StatusRejected  ExecutionStatus = "REJECTED"
 )
 
 // Execution is the harness's record of a single command execution.
 // The relay stores the audit trail.
 type Execution struct {
-	CommandID    string
-	Status       ExecutionStatus
-	StartedAt    int64
-	CompletedAt  int64
-	ErrorMessage string
+	CommandID      string
+	Status         ExecutionStatus
+	StartedAt      int64
+	CompletedAt    int64
+	ErrorMessage   string
 	EvidenceDigest [32]byte
 }
 
@@ -126,7 +126,7 @@ type Dispatcher struct {
 	mu          sync.RWMutex
 	executor    Executor
 	issuerPub   ed25519.PublicKey
-	executions   map[string]*Execution
+	executions  map[string]*Execution
 	commandSink func(*Execution) // optional: relay upload
 	rejected    int64
 	executed    int64
@@ -136,7 +136,7 @@ type Dispatcher struct {
 // SetIssuerPubKey when the trust bundle is updated.
 func NewDispatcher(executor Executor) *Dispatcher {
 	return &Dispatcher{
-		executor:  executor,
+		executor:   executor,
 		executions: make(map[string]*Execution),
 	}
 }

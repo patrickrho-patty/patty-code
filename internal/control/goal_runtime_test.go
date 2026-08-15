@@ -171,7 +171,7 @@ func TestEvaluatorCompleteStillGatedByReadiness(t *testing.T) {
 	})
 	c.Submit("/goal fix everything")
 	<-done
-// The evaluators complete claim is rejected (incomplete todos) and the
+	// The evaluators complete claim is rejected (incomplete todos) and the
 	if got := c.GoalStatus(); got != GoalStatusBlocked {
 		t.Fatalf("GoalStatus() = %q, want blocked (no-progress after rejected complete)", got)
 	}
@@ -402,7 +402,7 @@ func TestGoalUsageTeeAttributesScopedBillableCallsAndExcludesTitle(t *testing.T)
 		t.Fatalf("live goal tokens = %d, want 3600", g.tokensUsed)
 	}
 
-// No active goal turn  nothing folds.
+	// No active goal turn  nothing folds.
 	tee.setActiveRecorder(nil)
 	tee.Emit(event.Event{Kind: event.Usage, Usage: usage(50), UsageSource: event.UsageSourceExecutor})
 	if rec.usageTokens() != 3600 {
@@ -411,7 +411,7 @@ func TestGoalUsageTeeAttributesScopedBillableCallsAndExcludesTitle(t *testing.T)
 }
 
 func TestBudgetClassForBareFaultIsWrite(t *testing.T) {
-// User-reported Korean bare fault  write turn quota (20), no token ceiling.
+	// User-reported Korean bare fault  write turn quota (20), no token ceiling.
 	class := budgetClassFor("데이터 모델 관리자에 또 이전 버그가 생겼어…", GoalResearchAuto)
 	if class != budgetClassWrite {
 		t.Fatalf("budget class = %q, want write", class)
@@ -419,7 +419,7 @@ func TestBudgetClassForBareFaultIsWrite(t *testing.T) {
 	if turns := budgetQuota(class); turns != 20 {
 		t.Fatalf("write turn quota = %d, want 20", turns)
 	}
-// Consultative  diagnostic fault statements stay simple.
+	// Consultative  diagnostic fault statements stay simple.
 	for _, goal := range []string{
 		"왜 이 버그가 생기는 거야?",
 		"원인만 분석하고, 코드는 건드리지 마세요.",
@@ -536,7 +536,7 @@ func TestGoalSidecarCompatRestoresOldAndNewFields(t *testing.T) {
 	t.Run("old sidecar restores with defaults", func(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "session.jsonl")
-// Old sidecar: only goal/status/turns — no budget fields.
+		// Old sidecar: only goal/status/turns — no budget fields.
 		data := []byte(`{"goal":"legacy goal","status":"running","turns":3}`)
 		if err := os.WriteFile(store.SessionGoalState(path), data, 0o600); err != nil {
 			t.Fatal(err)
@@ -653,7 +653,7 @@ func TestFooterTextDoesNotDriveGoalState(t *testing.T) {
 	c, _, events := goalRuntimeController(t, prov, &fakeGoalEvaluator{outcome: goaleval.OutcomeContinue, reason: "work is ongoing"})
 	c.Submit("/goal migrate the storage")
 	waitGoalTurnDone(t, events)
-// The footer alone must never complete the goal: the evaluators continue
+	// The footer alone must never complete the goal: the evaluators continue
 	if got := c.GoalStatus(); got == GoalStatusComplete {
 		t.Fatal("a [goal:complete] footer must not complete the goal")
 	}

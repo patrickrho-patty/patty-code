@@ -101,15 +101,15 @@ func PlannerPromptWithContext(context string) string {
 }
 
 type Coordinator struct {
-	planner         provider.Provider
-	plannerSess     *Session
-	plannerSystem   string
-	plannerPricing  *provider.Pricing
-	plannerModelRef string
-	plannerAgent    *Agent
-	executor        *Agent
-	temperature     float64
-	sink            event.Sink
+	planner                  provider.Provider
+	plannerSess              *Session
+	plannerSystem            string
+	plannerPricing           *provider.Pricing
+	plannerModelRef          string
+	plannerAgent             *Agent
+	executor                 *Agent
+	temperature              float64
+	sink                     event.Sink
 	plannerPolicy            PlannerPolicy
 	plannerPlanApprover      PlannerPlanApprover
 	plannerUserDecisionAsker PlannerUserDecisionAsker

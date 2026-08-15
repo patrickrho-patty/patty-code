@@ -22,10 +22,10 @@ func sampleSource() (*TrustSource, ed25519.PrivateKey) {
 func sampleAdvisory(priv ed25519.PrivateKey) *UpdateAdvisory {
 	a := &UpdateAdvisory{
 		AdvisoryID: "adv-1",
-		Version:   "1.2.0",
-		Payload:   []byte("payload-bytes"),
-		IssuedAt:  1_700_000_000_000,
-		NotAfter:  2_000_000_000_000,
+		Version:    "1.2.0",
+		Payload:    []byte("payload-bytes"),
+		IssuedAt:   1_700_000_000_000,
+		NotAfter:   2_000_000_000_000,
 	}
 	a.Signature = ed25519.Sign(priv, a.SigningBytes())
 	return a

@@ -29,11 +29,11 @@ type ReceiptStore struct {
 // persistence-time metadata (when it was stored, its computed
 // digest for cross-repo integrity, the ack state).
 type StoredReceipt struct {
-	Envelope  *EvidenceReceiptEnvelope
-	StoredAt  int64
-	Digest    [32]byte
+	Envelope     *EvidenceReceiptEnvelope
+	StoredAt     int64
+	Digest       [32]byte
 	Acknowledged bool
-	AckDigest [32]byte
+	AckDigest    [32]byte
 }
 
 // NewReceiptStore constructs an empty store.
@@ -71,9 +71,9 @@ func (s *ReceiptStore) Store(receipt *EvidenceReceiptEnvelope, nowMs int64) ([32
 	}
 	digest := computeReceiptDigest(receipt)
 	s.receipts[receipt.ReceiptID] = &StoredReceipt{
-		Envelope:  receipt,
-		StoredAt:  nowMs,
-		Digest:    digest,
+		Envelope: receipt,
+		StoredAt: nowMs,
+		Digest:   digest,
 	}
 	return digest, nil
 }
@@ -166,9 +166,9 @@ func computeReceiptDigest(receipt *EvidenceReceiptEnvelope) [32]byte {
 // generates an ack in response to a relay-pushed receipt.
 func ReceiptAckForDigest(receiptID, exchangeID string, digest [32]byte, nowMs int64) *ReceiptAck {
 	return &ReceiptAck{
-		ReceiptID:    receiptID,
-		ExchangeID:   exchangeID,
-		AckDigest:    digest,
+		ReceiptID:     receiptID,
+		ExchangeID:    exchangeID,
+		AckDigest:     digest,
 		AckedAtUnixMs: nowMs,
 	}
 }
@@ -179,10 +179,10 @@ func ReceiptAckForDigest(receiptID, exchangeID string, digest [32]byte, nowMs in
 // an ack, and dispatches the ack back over the same PAPER
 // connection via the supplied sender.
 type IncomingAckHandler struct {
-	store  *ReceiptStore
-	send   AckSender
-	nowFn  func() int64
-	acks   int64
+	store    *ReceiptStore
+	send     AckSender
+	nowFn    func() int64
+	acks     int64
 	failures int64
 }
 

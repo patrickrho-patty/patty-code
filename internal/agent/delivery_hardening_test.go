@@ -44,7 +44,7 @@ File tools resolve relative paths against this workspace. For project inspection
 </workspace-context>`
 
 func TestDeliveryClassificationUsesTrustedTaskText(t *testing.T) {
-// legacy workspace wording ("resolve") plus an extra mutation verb in the
+	// legacy workspace wording ("resolve") plus an extra mutation verb in the
 	reg := tool.NewRegistry()
 	reg.Add(fakeReadFileTool{})
 	reg.Add(fakeWriterTool{})
@@ -93,7 +93,7 @@ func TestReadOnlyRegistryDisarmsMutationExpectation(t *testing.T) {
 		t.Fatal("writer registry not detected")
 	}
 
-// must not deadlock on "the request requires a state change". The scripted
+	// must not deadlock on "the request requires a state change". The scripted
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
 		{toolCallChunk("1", "read_file", `{"path":"a.go"}`), {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "reviewed; two issues found"}, {Type: provider.ChunkDone}},
@@ -284,7 +284,7 @@ func TestRunSubAgentReviewReportNudgeRecovers(t *testing.T) {
 	reg.Add(fakeReadFileTool{})
 	AttachReviewReportTool(reg)
 	prov := &scriptedProvider{name: "p", turns: [][]provider.Chunk{
-// Run 1: reads the file, then finishes with prose only  no report.
+		// Run 1: reads the file, then finishes with prose only  no report.
 		{toolCallChunk("1", "read_file", `{"path":"a.go"}`), {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "verdict: pass, no issues"}, {Type: provider.ChunkDone}},
 		{toolCallChunk("2", "review_report", `{"kind":"review","verdict":"pass","reviewed_paths":["a.go"]}`), {Type: provider.ChunkDone}},
@@ -302,7 +302,7 @@ func TestRunSubAgentReviewReportNudgeRecovers(t *testing.T) {
 	if !sessionHasUserMessageContaining(sess, "Call review_report now") {
 		t.Fatal("expected the host completion nudge in the subagent session")
 	}
-// The report cited a path read in run 1  only possible because the nudge
+	// The report cited a path read in run 1  only possible because the nudge
 	if got := lastToolResult(sess, "review_report"); !strings.Contains(got, "review_report accepted") {
 		t.Fatalf("review_report result = %q", got)
 	}
@@ -360,7 +360,7 @@ func TestRunSubAgentSalvagesReadinessExhaustedWork(t *testing.T) {
 }
 
 func TestRunSubAgentReadinessFailureWithoutMutationStillFails(t *testing.T) {
-// An unbacked "done" claim keeps failing: with a mutation expected and no
+	// An unbacked "done" claim keeps failing: with a mutation expected and no
 	reg := tool.NewRegistry()
 	reg.Add(fakeReadFileTool{})
 	reg.Add(fakeWriterTool{})
@@ -509,8 +509,8 @@ func TestPreviewStripsDeliveryMarkerAndSyntheticTurns(t *testing.T) {
 }
 
 func TestDeliveryTaskNeedsEvidenceSkipsDiagnosticConversations(t *testing.T) {
-// Diagnostic/troubleshooting conversations ask "what's wrong" or "why"
-// work  the agent can only give advice, not mutate files.
+	// Diagnostic/troubleshooting conversations ask "what's wrong" or "why"
+	// work  the agent can only give advice, not mutate files.
 	diagnostic := []string{
 		"what's wrong with my wifi",
 		"I don't want to install dependencies",
@@ -702,8 +702,8 @@ func TestDeliveryReadOnlyTechnicalTaskRequiresEvidence(t *testing.T) {
 }
 
 func TestDeliveryDiagnosticConversationCompletes(t *testing.T) {
-// keywords must complete without a FinalReadinessError  the agent can
-// give advice but can't write files on the user's machine.
+	// keywords must complete without a FinalReadinessError  the agent can
+	// give advice but can't write files on the user's machine.
 	inputs := []string{
 		"왜 wps가 zetero 참고문헌을 가져올 때 오류가 나는지, 진단해 주세요",
 		"WPS가 왜 실행되지 않는지 분석해 주세요",
@@ -715,7 +715,7 @@ func TestDeliveryDiagnosticConversationCompletes(t *testing.T) {
 			reg := tool.NewRegistry()
 			reg.Add(fakeReadFileTool{})
 			reg.Add(fakeWriterTool{})
-// The model gives advice text (no tool calls)  a diagnostic response.
+			// The model gives advice text (no tool calls)  a diagnostic response.
 			advice := []provider.Chunk{
 				{Type: provider.ChunkText, Text: "다음 단계를 시도해 보세요: 1. 포트 수신 상태 확인 2. 플러그인 다시 등록"},
 				{Type: provider.ChunkDone},

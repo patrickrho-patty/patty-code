@@ -105,8 +105,8 @@ var writeActionTools = map[string]bool{
 
 // shellActionTools are the tool names that execute local shell.
 var shellActionTools = map[string]bool{
-	"bash": true,
-	"sh":   true,
+	"bash":  true,
+	"sh":    true,
 	"shell": true,
 }
 

@@ -17,9 +17,9 @@ func fakeAWSKey() string { return "AKIA" + "ABCDEFGHIJKLMNOP" }
 // test. It returns canned chunks so the test can verify the
 // DLP wrapper scans both the request and the response.
 type fakeProvider struct {
-	name          string
+	name         string
 	requestChunk provider.Chunk
-	err           error
+	err          error
 }
 
 func (f *fakeProvider) Name() string { return f.name }
@@ -66,7 +66,7 @@ func TestProviderWrapperBlocksSecretInRequest(t *testing.T) {
 func TestProviderWrapperRedactsRequestBeforeSending(t *testing.T) {
 	gotReq := provider.Request{}
 	inner := &fakeProvider{
-		name: "test",
+		name:         "test",
 		requestChunk: provider.Chunk{Type: provider.ChunkText, Text: "ok"},
 	}
 	// custom Provider that records the request it received.

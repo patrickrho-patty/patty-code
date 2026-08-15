@@ -121,7 +121,7 @@ func TestGatesAllowOnUnrecalledModel(t *testing.T) {
 func TestGatesBlockOnChangeFreeze(t *testing.T) {
 	g := NewGatesClient("org-test", "2.0.0", "stable")
 	g.SetFreeze(&ChangeFreeze{
-		OrganizationID:  "org-test",
+		OrganizationID: "org-test",
 		Reason:         "Q4 release freeze",
 		ReasonKo:       "4분기 릴리스 동결",
 		AffectedRepos:  []string{"pccp"},
@@ -154,7 +154,7 @@ func TestGatesAllowOnUnfrozenRepo(t *testing.T) {
 	g := NewGatesClient("org-test", "2.0.0", "stable")
 	g.SetFreeze(&ChangeFreeze{
 		OrganizationID: "org-test",
-		AffectedRepos: []string{"pccp"},
+		AffectedRepos:  []string{"pccp"},
 	})
 	dec := g.CheckDispatch("file_write", "other-repo", "patty-code-standard")
 	if !dec.Allow {
@@ -301,7 +301,7 @@ func TestCheckCodingStandard(t *testing.T) {
 		{
 			RuleID:        "no-fmt-println",
 			Severity:      SeverityBlock,
-			Description:  "Use a structured logger instead of fmt.Println",
+			Description:   "Use a structured logger instead of fmt.Println",
 			DescriptionKo: "fmt.Println 대신 구조화된 로거를 사용하세요",
 			BlockPattern:  "fmt.Println",
 		},

@@ -20,11 +20,11 @@ func newIssuerPair(t *testing.T) (ed25519.PublicKey, ed25519.PrivateKey) {
 func sampleChat(id, sender string) *Message {
 	return &Message{
 		MessageID:      id,
-		Type:          MsgChat,
-		SenderID:      sender,
+		Type:           MsgChat,
+		SenderID:       sender,
 		ConversationID: "conv-1",
-		Body:          "hello",
-		IssuedAt:      1_700_000_000_000,
+		Body:           "hello",
+		IssuedAt:       1_700_000_000_000,
 	}
 }
 

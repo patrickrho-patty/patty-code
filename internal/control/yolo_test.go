@@ -934,7 +934,7 @@ func TestBypassDoesNotAutoAnswerAsk(t *testing.T) {
 	done := askController(t, c, sampleAskQuestions())
 	ask := waitAskRequest(t, askCh)
 
-// Even with bypass/YOLO on, Ask must wait for the user's non-default choice.
+	// Even with bypass/YOLO on, Ask must wait for the user's non-default choice.
 	c.AnswerQuestion(ask.ID, userAnswers)
 	result := waitAskResult(t, done)
 	assertAskAnswers(t, result.answers, userAnswers)
@@ -971,7 +971,7 @@ func TestAskPromptsAcrossInteractiveModes(t *testing.T) {
 			done := askController(t, c, sampleAskQuestions())
 			ask := waitAskRequest(t, askCh)
 
-// Answer with non-recommended options to prove this is the users
+			// Answer with non-recommended options to prove this is the users
 			c.AnswerQuestion(ask.ID, userAnswers)
 			result := waitAskResult(t, done)
 			assertAskAnswers(t, result.answers, userAnswers)
@@ -1097,7 +1097,7 @@ func TestAskSerializesBehindPromptLockEvenWithAutoApproveTools(t *testing.T) {
 	default:
 	}
 
-// Release the lock  Ask proceeds but must still emit an AskRequest.
+	// Release the lock  Ask proceeds but must still emit an AskRequest.
 	c.approval.promptMu.Unlock()
 
 	var ask event.Ask
@@ -1165,7 +1165,7 @@ func TestAskSerializesBehindPromptLockEvenWithBypass(t *testing.T) {
 	}
 
 	c.SetBypass(true)
-// Release the lock  Ask proceeds but must still emit an AskRequest.
+	// Release the lock  Ask proceeds but must still emit an AskRequest.
 	c.approval.promptMu.Unlock()
 
 	var ask event.Ask
@@ -1177,7 +1177,7 @@ func TestAskSerializesBehindPromptLockEvenWithBypass(t *testing.T) {
 		t.Fatal("Ask did not emit AskRequest after acquiring promptMu with bypass on; bypass should not suppress ask")
 	}
 
-// Answer and verify we get the users choice.
+	// Answer and verify we get the users choice.
 	c.AnswerQuestion(ask.ID, []event.AskAnswer{
 		{QuestionID: "q1", Selected: []string{"Alternative"}},
 	})

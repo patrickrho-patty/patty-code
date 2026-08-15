@@ -182,14 +182,14 @@ func collectInstructions(root, home string, disp func(string) string) (Instructi
 func collectSkills(root, home, pattyHome string, cfg *config.Config, disp func(string) string) (AssetReport, []Issue) {
 	var issues []Issue
 	store := skill.New(skill.Options{
-		HomeDir:         home,
-		PattyHomeDir: pattyHome,
-		ProjectRoot:     root,
-		CustomPaths:     cfg.SkillCustomPaths(),
-		ExcludedPaths:   cfg.SkillExcludedPaths(),
-		DisabledNames:   cfg.DisabledSkillNames(),
-		MaxDepth:        cfg.SkillMaxDepth(),
-		Stderr:          ioDiscard(),
+		HomeDir:       home,
+		PattyHomeDir:  pattyHome,
+		ProjectRoot:   root,
+		CustomPaths:   cfg.SkillCustomPaths(),
+		ExcludedPaths: cfg.SkillExcludedPaths(),
+		DisabledNames: cfg.DisabledSkillNames(),
+		MaxDepth:      cfg.SkillMaxDepth(),
+		Stderr:        ioDiscard(),
 	})
 	insp := store.Inspect()
 	rep := AssetReport{Roots: []RootInfo{}, Entries: []AssetEntry{}}
@@ -288,8 +288,8 @@ func collectCommands(root string, disp func(string) string) (AssetReport, []Issu
 func collectHooks(root, home, pattyHome string, cfg *config.Config, disp func(string) string) (HookReport, []Issue) {
 	var issues []Issue
 	insp := hook.Inspect(hook.LoadOptions{
-		ProjectRoot:     root,
-		HomeDir:         home,
+		ProjectRoot:  root,
+		HomeDir:      home,
 		PattyHomeDir: pattyHome,
 	})
 	runtimeOptions := hook.RuntimeOptions{}

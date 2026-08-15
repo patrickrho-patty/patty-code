@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-
 func TestNewRunnerNil(t *testing.T) {
 	var r *Runner
 	if r.Enabled() {
@@ -63,7 +62,6 @@ func TestToolMutationHooksEnabled(t *testing.T) {
 	}
 }
 
-
 func TestRunnerPreToolUseNoHooks(t *testing.T) {
 	r := NewRunner(nil, "/tmp", nil, nil)
 	block, msg := r.PreToolUse(context.Background(), "bash", nil)
@@ -108,7 +106,6 @@ func TestRunnerPreToolUseBlock(t *testing.T) {
 	}
 }
 
-
 func TestRunnerPostToolUseNoHooks(t *testing.T) {
 	r := NewRunner(nil, "/tmp", nil, nil)
 	r.PostToolUse(context.Background(), "bash", nil, "ok")
@@ -145,7 +142,6 @@ func TestRunnerPostToolUseFailurePreservesNativeObserver(t *testing.T) {
 		t.Fatalf("failure observers = %q", got)
 	}
 }
-
 
 func TestRunnerPermissionRequestPayload(t *testing.T) {
 	hooks := []ResolvedHook{
@@ -221,7 +217,6 @@ func TestRunnerPermissionRequestClaudeDecisions(t *testing.T) {
 	}
 }
 
-
 func TestRunnerPromptSubmitBlock(t *testing.T) {
 	hooks := []ResolvedHook{
 		{HookConfig: HookConfig{Command: "gate"}, Event: UserPromptSubmit},
@@ -235,7 +230,6 @@ func TestRunnerPromptSubmitBlock(t *testing.T) {
 		t.Error("exit 2 on UserPromptSubmit should block")
 	}
 }
-
 
 func TestRunnerStopNoHooks(t *testing.T) {
 	r := NewRunner(nil, "/tmp", nil, nil)
@@ -372,7 +366,6 @@ func TestRunnerClaudeLifecyclePayloadsShareSessionID(t *testing.T) {
 	}
 }
 
-
 func TestRunnerHasPostLLMCall(t *testing.T) {
 	with := NewRunner([]ResolvedHook{{HookConfig: HookConfig{Command: "x"}, Event: PostLLMCall}}, "/tmp", nil, nil)
 	if !with.HasPostLLMCall() {
@@ -418,7 +411,6 @@ func TestRunnerPostLLMCallKeepsOriginal(t *testing.T) {
 	}
 }
 
-
 func TestFormatOutcomePass(t *testing.T) {
 	o := Outcome{
 		Hook:     ResolvedHook{HookConfig: HookConfig{Command: "echo hi"}, Event: PreToolUse, Scope: ScopeProject},
@@ -446,7 +438,6 @@ func TestFormatOutcomeWithDetail(t *testing.T) {
 	}
 }
 
-
 func TestClipRunes(t *testing.T) {
 	if got := clipRunes("short", 10); got != "short" {
 		t.Errorf("clipRunes short = %q", got)
@@ -461,7 +452,6 @@ func TestClipRunes(t *testing.T) {
 		t.Errorf("clipRunes max=0 = %q", got)
 	}
 }
-
 
 func TestPayloadJSON(t *testing.T) {
 	args := json.RawMessage(`{"command":"echo hi"}`)
@@ -491,7 +481,6 @@ func TestPayloadJSON(t *testing.T) {
 	}
 }
 
-
 func TestCappedBuffer(t *testing.T) {
 	var cb cappedBuffer
 	n, err := cb.Write([]byte("hello"))
@@ -518,7 +507,6 @@ func TestCappedBuffer(t *testing.T) {
 	}
 }
 
-
 func TestIsBlocking(t *testing.T) {
 	if !IsBlocking(PreToolUse) {
 		t.Error("PreToolUse should be blocking")
@@ -533,7 +521,6 @@ func TestIsBlocking(t *testing.T) {
 		t.Error("Stop should not be blocking")
 	}
 }
-
 
 func TestDefaultTimeout(t *testing.T) {
 	if defaultTimeout(PreToolUse) != 5*time.Second {

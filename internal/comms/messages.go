@@ -25,23 +25,23 @@ import (
 type MessageType string
 
 const (
-	MsgChat     MessageType = "CHAT"
-	MsgPresence MessageType = "PRESENCE"
+	MsgChat      MessageType = "CHAT"
+	MsgPresence  MessageType = "PRESENCE"
 	MsgBroadcast MessageType = "BROADCAST"
 	MsgMention   MessageType = "MENTION"
-	MsgAdminNote  MessageType = "ADMIN_NOTE"
+	MsgAdminNote MessageType = "ADMIN_NOTE"
 )
 
 // Message is a single comms envelope. The relay signs each
 // envelope under its policy issuer; the harness verifies the
 // signature under the trust bundle pushed at AUTH_PROOF time.
 type Message struct {
-	MessageID    string
-	Type         MessageType
-	SenderID     string
+	MessageID      string
+	Type           MessageType
+	SenderID       string
 	ConversationID string // for chat; empty for broadcast
-	Body         string
-	IssuedAt     int64 // unix-ms
+	Body           string
+	IssuedAt       int64 // unix-ms
 	// EncryptionKeyID is the relay-side reference the harness
 	// uses to look up the session key. Empty means clear-text
 	// (admin broadcasts).

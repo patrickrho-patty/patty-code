@@ -25,23 +25,23 @@ func BuildActionEnvelopeFromReceipt(req ActionBuildRequest) (*ActionEnvelope, er
 		return nil, errors.New("provenancewire: action build requires OccurredAtUnixMs")
 	}
 	env := &ActionEnvelope{
-		ActionID:        req.ActionID,
-		OrganizationID:  req.OrganizationID,
-		SessionID:       req.SessionID,
-		ExchangeID:      req.ExchangeID,
-		UserID:          req.UserID,
-		HarnessID:       req.HarnessID,
-		ModelPackageID:  req.ModelPackageID,
-		EndpointID:      req.EndpointID,
-		ProjectID:       req.ProjectID,
-		RepositoryID:    req.RepositoryID,
-		Branch:          req.Branch,
-		PolicyEpochID:   req.PolicyEpochID,
-		LeaseID:         req.LeaseID,
-		ActionType:      req.ActionType,
-		ActionPayload:   req.ActionPayload,
-		VerdictResult:   req.VerdictResult,
-		Classification:  req.Classification,
+		ActionID:         req.ActionID,
+		OrganizationID:   req.OrganizationID,
+		SessionID:        req.SessionID,
+		ExchangeID:       req.ExchangeID,
+		UserID:           req.UserID,
+		HarnessID:        req.HarnessID,
+		ModelPackageID:   req.ModelPackageID,
+		EndpointID:       req.EndpointID,
+		ProjectID:        req.ProjectID,
+		RepositoryID:     req.RepositoryID,
+		Branch:           req.Branch,
+		PolicyEpochID:    req.PolicyEpochID,
+		LeaseID:          req.LeaseID,
+		ActionType:       req.ActionType,
+		ActionPayload:    req.ActionPayload,
+		VerdictResult:    req.VerdictResult,
+		Classification:   req.Classification,
 		OccurredAtUnixMs: req.OccurredAtUnixMs,
 	}
 	env.Digest()
@@ -51,23 +51,23 @@ func BuildActionEnvelopeFromReceipt(req ActionBuildRequest) (*ActionEnvelope, er
 // ActionBuildRequest groups the inputs BuildActionEnvelopeFromReceipt
 // needs to construct an ActionEnvelope.
 type ActionBuildRequest struct {
-	ActionID        string
-	OrganizationID  string
-	SessionID       string
-	ExchangeID      string
-	UserID          string
-	HarnessID       string
-	ModelPackageID  string
-	EndpointID      string
-	ProjectID       string
-	RepositoryID    string
-	Branch          string
-	PolicyEpochID   string
-	LeaseID         string
-	ActionType      string
-	ActionPayload   string
-	VerdictResult   string
-	Classification  string
+	ActionID         string
+	OrganizationID   string
+	SessionID        string
+	ExchangeID       string
+	UserID           string
+	HarnessID        string
+	ModelPackageID   string
+	EndpointID       string
+	ProjectID        string
+	RepositoryID     string
+	Branch           string
+	PolicyEpochID    string
+	LeaseID          string
+	ActionType       string
+	ActionPayload    string
+	VerdictResult    string
+	Classification   string
 	OccurredAtUnixMs int64
 }
 
@@ -118,7 +118,7 @@ func BuildChangeSetEnvelopeFromReceipts(req ChangeSetBuildRequest) (*ChangeSetEn
 		LinesAdded:       linesAdded,
 		LinesRemoved:     linesRemoved,
 		AttributionState: attributed,
-		Confidence:      computeConfidence(req.Receipts),
+		Confidence:       computeConfidence(req.Receipts),
 		Status:           "pending",
 	}
 	env.DiffDigest = diffDigestOf(fileList)
@@ -158,27 +158,27 @@ func BuildSpanEnvelopeFromReceipt(req SpanBuildRequest) (*ProvenanceSpanEnvelope
 		req.FilePath = req.Receipt.Paths[0]
 	}
 	env := &ProvenanceSpanEnvelope{
-		SpanID:           req.SpanID,
-		OrganizationID:   req.OrganizationID,
-		RepositoryID:     req.RepositoryID,
-		ChangeSetID:      req.ChangeSetID,
-		FilePath:         req.FilePath,
-		CommitSHA:        req.CommitSHA,
-		SymbolLang:       req.SymbolLang,
-		SymbolName:       req.SymbolName,
-		StartLine:        req.StartLine,
-		EndLine:          req.EndLine,
-		ASTFingerprint:   astFingerprint(req.FilePath, req.StartLine, req.EndLine, []byte(req.SymbolName+":"+req.Receipt.Command)),
+		SpanID:              req.SpanID,
+		OrganizationID:      req.OrganizationID,
+		RepositoryID:        req.RepositoryID,
+		ChangeSetID:         req.ChangeSetID,
+		FilePath:            req.FilePath,
+		CommitSHA:           req.CommitSHA,
+		SymbolLang:          req.SymbolLang,
+		SymbolName:          req.SymbolName,
+		StartLine:           req.StartLine,
+		EndLine:             req.EndLine,
+		ASTFingerprint:      astFingerprint(req.FilePath, req.StartLine, req.EndLine, []byte(req.SymbolName+":"+req.Receipt.Command)),
 		SemanticFingerprint: semanticFingerprint(req.FilePath, req.SymbolLang, req.SymbolName),
-		AttributionState: computeSpanAttribution(req.Receipt),
-		Confidence:       computeSpanConfidence(req.Receipt),
-		SessionID:        req.SessionID,
-		UserID:           req.UserID,
-		HarnessID:        req.HarnessID,
-		ModelPackageID:   req.ModelPackageID,
-		EndpointID:       req.EndpointID,
-		ContextRefs:      req.ContextRefs,
-		ParentSpanRefs:   req.ParentSpanRefs,
+		AttributionState:    computeSpanAttribution(req.Receipt),
+		Confidence:          computeSpanConfidence(req.Receipt),
+		SessionID:           req.SessionID,
+		UserID:              req.UserID,
+		HarnessID:           req.HarnessID,
+		ModelPackageID:      req.ModelPackageID,
+		EndpointID:          req.EndpointID,
+		ContextRefs:         req.ContextRefs,
+		ParentSpanRefs:      req.ParentSpanRefs,
 	}
 	env.Digest()
 	return env, nil
@@ -406,7 +406,6 @@ func IsValidAttributionState(value AttributionState) bool {
 	}
 	return false
 }
-
 
 // sync import surface check: keep math visible even if the test
 // files use it through indirection.

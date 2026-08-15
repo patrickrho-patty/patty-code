@@ -27,17 +27,17 @@ type ResponseInspector struct {
 // NewResponseInspector wires the inspector to the shared scanner.
 func NewResponseInspector(scanner *Scanner) *ResponseInspector {
 	return &ResponseInspector{
-		scanner:       scanner,
-		BlockOnExfil:   true,
+		scanner:      scanner,
+		BlockOnExfil: true,
 	}
 }
 
 // InspectionResult is the verdict for one model response.
 type InspectionResult struct {
-	Allow         bool
-	RedactedText   string
-	Verdict       Verdict
-	Findings      []Finding
+	Allow        bool
+	RedactedText string
+	Verdict      Verdict
+	Findings     []Finding
 }
 
 // Inspect scans the response and returns the disposition. The
@@ -60,10 +60,10 @@ func (i *ResponseInspector) Inspect(response string) (InspectionResult, error) {
 		i.redactCount++
 		i.mu.Unlock()
 		return InspectionResult{
-			Allow:       false,
+			Allow:        false,
 			RedactedText: res.RedactedText,
-			Verdict:     res.Verdict,
-			Findings:    res.Findings,
+			Verdict:      res.Verdict,
+			Findings:     res.Findings,
 		}, nil
 	}
 	if len(res.Findings) > 0 {
@@ -72,10 +72,10 @@ func (i *ResponseInspector) Inspect(response string) (InspectionResult, error) {
 		i.mu.Unlock()
 	}
 	return InspectionResult{
-		Allow:       true,
+		Allow:        true,
 		RedactedText: res.RedactedText,
-		Verdict:     res.Verdict,
-		Findings:    res.Findings,
+		Verdict:      res.Verdict,
+		Findings:     res.Findings,
 	}, nil
 }
 

@@ -435,13 +435,13 @@ func TestMatchTodoStepToleratesCitationDrift(t *testing.T) {
 	})
 
 	matches := map[string]int{
-		"Phase 5: 스크립트 편집 및 코드 실행": 2,
-		"phase 5：스크립트 편집 및 코드 실행":  2,
+		"Phase 5: 스크립트 편집 및 코드 실행":  2,
+		"phase 5：스크립트 편집 및 코드 실행":   2,
 		"  Phase　5：스크립트 편집 및 코드 실행": 2,
-		"스크립트 편집 및 코드 실행":       2,
-		"Phase 4：환경":            1,
-		"REVIEW NOTES":          3,
-		"２":                     2,
+		"스크립트 편집 및 코드 실행":           2,
+		"Phase 4：환경":                1,
+		"REVIEW NOTES":              3,
+		"２":                         2,
 	}
 	for step, want := range matches {
 		match, ok := ledger.MatchLatestTodoStep(step)

@@ -40,8 +40,8 @@ import (
 	// Blank import registers the provider kind the same way cmd/patcode's main
 	// does; importing builtin above registers the built-in tools.
 	_ "patty/internal/provider/anthropic"
-	_ "patty/internal/provider/openai"
 	_ "patty/internal/provider/dari"
+	_ "patty/internal/provider/openai"
 )
 
 func TestAgentKeepPolicyFromConfig(t *testing.T) {

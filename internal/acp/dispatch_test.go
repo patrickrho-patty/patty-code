@@ -200,7 +200,7 @@ type approveCall struct {
 }
 
 func invalidACPv1PermissionOptionKind(options []PermissionOption) (PermissionOption, bool) {
-// not appear in sessionrequest_permission options.
+	// not appear in sessionrequest_permission options.
 	valid := map[PermissionOptionKind]bool{
 		OptAllowOnce:    true,
 		OptAllowAlways:  true,
@@ -459,7 +459,7 @@ func TestUpdateSinkSandboxEscapeApprovalOffersSessionGrant(t *testing.T) {
 }
 
 func TestUpdateSinkApprovalDenied(t *testing.T) {
-// Both a "cancelled" outcome and a transport error must deny the call.
+	// Both a "cancelled" outcome and a transport error must deny the call.
 	for _, tc := range []struct {
 		name string
 		resp func() (json.RawMessage, error)

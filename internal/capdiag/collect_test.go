@@ -50,10 +50,10 @@ auto_start = false
 	write(t, filepath.Join(root, "AGENTS.md"), "# Agents\nUse go test.\n@../secret.md\n")
 
 	r := capdiag.Collect(capdiag.Options{
-		Root:            root,
-		HomeDir:         home,
+		Root:         root,
+		HomeDir:      home,
 		PattyHomeDir: filepath.Join(home, ".patty"),
-		Live:            false,
+		Live:         false,
 	})
 
 	if r.SchemaVersion != 1 {
@@ -133,8 +133,8 @@ func TestCollectUsesExactPattyCodeHomeForGlobalHooks(t *testing.T) {
 }`)
 
 	report := capdiag.Collect(capdiag.Options{
-		Root:            root,
-		HomeDir:         home,
+		Root:         root,
+		HomeDir:      home,
 		PattyHomeDir: pattyHome,
 	})
 	if report.Summary.Hooks != 1 || len(report.Hooks.Entries) != 1 {

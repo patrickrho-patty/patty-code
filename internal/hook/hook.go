@@ -42,11 +42,11 @@ const (
 	UserPromptSubmit   Event = "UserPromptSubmit"
 	Stop               Event = "Stop"
 	StopFailure        Event = "StopFailure"
-// [replaces the reasoning stored and displayed to the user. It can't block — a]
+	// [replaces the reasoning stored and displayed to the user. It can't block — a]
 	PostLLMCall Event = "PostLLMCall"
-// [after new). SessionEnd fires when it is closed or rotated. SubagentStop]
-// [fires when a `task` sub-agent finishes. Notification fires when the agent]
-// [needs the users attention (e.g. a pending approval). PreCompact fires just]
+	// [after new). SessionEnd fires when it is closed or rotated. SubagentStop]
+	// [fires when a `task` sub-agent finishes. Notification fires when the agent]
+	// [needs the users attention (e.g. a pending approval). PreCompact fires just]
 	SessionStart Event = "SessionStart"
 	SessionEnd   Event = "SessionEnd"
 	SubagentStop Event = "SubagentStop"
@@ -101,23 +101,23 @@ const (
 )
 
 type HookConfig struct {
-// [Match is an anchored regex selecting tools (PrePostToolUse and]
-// [PermissionRequest only); "" or "*" = every tool. Anchored: "file" won't]
-// [match "read_file" — use ".*file".]
-	Match string `json:"match,omitempty"`
-	Command string `json:"command"`
-	Argv []string `json:"-"`
+	// [Match is an anchored regex selecting tools (PrePostToolUse and]
+	// [PermissionRequest only); "" or "*" = every tool. Anchored: "file" won't]
+	// [match "read_file" — use ".*file".]
+	Match         string        `json:"match,omitempty"`
+	Command       string        `json:"command"`
+	Argv          []string      `json:"-"`
 	ExecutionMode ExecutionMode `json:"-"`
 	Shell         string        `json:"-"`
-	ContextFile string `json:"contextFile,omitempty"`
-// [Description is an optional human label surfaced in `/hooks`.]
+	ContextFile   string        `json:"contextFile,omitempty"`
+	// [Description is an optional human label surfaced in `/hooks`.]
 	Description string `json:"description,omitempty"`
-	Timeout int `json:"timeout,omitempty"`
-// [Cwd overrides the working directory (defaults to the payloads cwd).]
-	Cwd string `json:"cwd,omitempty"`
-	Env map[string]string `json:"env,omitempty"`
-	Async         bool   `json:"-"`
-	PayloadFormat string `json:"-"`
+	Timeout     int    `json:"timeout,omitempty"`
+	// [Cwd overrides the working directory (defaults to the payloads cwd).]
+	Cwd           string            `json:"cwd,omitempty"`
+	Env           map[string]string `json:"env,omitempty"`
+	Async         bool              `json:"-"`
+	PayloadFormat string            `json:"-"`
 }
 
 type Settings struct {
@@ -172,12 +172,12 @@ func ContextFileUsable(path string) bool {
 
 type LoadOptions struct {
 	ProjectRoot string
-// [derived global path is <HomeDir>.patty unless PattyHomeDir is set.]
+	// [derived global path is <HomeDir>.patty unless PattyHomeDir is set.]
 	HomeDir string
-// [settings and plugin hooks so Windows %APPDATA%/patty and PATTY_HOME]
-// [isolation stay consistent across hook/doctor/capdiag (#7411, #7331).]
+	// [settings and plugin hooks so Windows %APPDATA%/patty and PATTY_HOME]
+	// [isolation stay consistent across hook/doctor/capdiag (#7411, #7331).]
 	PattyHomeDir string
-	Trusted bool
+	Trusted      bool
 }
 
 // [— a typo shouldn't take down the CLI).]
@@ -542,8 +542,8 @@ var claudeToolInputKeyRenames = map[string]map[string]string{
 	"read_only_skill": {"name": "skill", "arguments": "args"},
 	"bash_output":     {"job_id": "task_id"},
 	"kill_shell":      {"job_id": "task_id"},
-// [The dedicated subagent wrappers take their task text as "task";]
-// [Claude's Agent tool calls the same thing "prompt".]
+	// [The dedicated subagent wrappers take their task text as "task";]
+	// [Claude's Agent tool calls the same thing "prompt".]
 	"explore":         {"task": "prompt"},
 	"research":        {"task": "prompt"},
 	"review":          {"task": "prompt"},
@@ -608,9 +608,9 @@ func claudeFacingToolInput(toolName string, args json.RawMessage, cwd string) js
 				obj["task_id"] = body
 			}
 		}
-// [An unbounded Patty Code wait omits TaskOutputs optional timeout]
-// [entirely: in Claudes schema timeout is the maximum wait in ms, so]
-// [claiming 0 would read as "don't wait" — the opposite of the call.]
+		// [An unbounded Patty Code wait omits TaskOutputs optional timeout]
+		// [entirely: in Claudes schema timeout is the maximum wait in ms, so]
+		// [claiming 0 would read as "don't wait" — the opposite of the call.]
 		var timeoutSeconds int64
 		if err := json.Unmarshal(obj["timeout_seconds"], &timeoutSeconds); err == nil && timeoutSeconds > 0 && timeoutSeconds <= (1<<63-1)/1000 {
 			if body, err := json.Marshal(timeoutSeconds * 1000); err == nil {
@@ -625,10 +625,10 @@ func claudeFacingToolInput(toolName string, args json.RawMessage, cwd string) js
 	if toolName == "todo_write" && fillClaudeTodoDefaults(obj) {
 		changed = true
 	}
-// [parallel_tasks maps to Claudes Agent tool but carries an array of]
-// [sub-tasks where Agent has a single prompt  a structural difference no]
-// [key rename bridges. Synthesize "prompt" from every sub-task's prompt]
-// [(the original "tasks" array stays alongside) so an Agent-scoped guard]
+	// [parallel_tasks maps to Claudes Agent tool but carries an array of]
+	// [sub-tasks where Agent has a single prompt  a structural difference no]
+	// [key rename bridges. Synthesize "prompt" from every sub-task's prompt]
+	// [(the original "tasks" array stays alongside) so an Agent-scoped guard]
 	if toolName == "parallel_tasks" {
 		if prompt := joinedParallelTaskPrompts(obj["tasks"]); prompt != "" {
 			if v, err := json.Marshal(prompt); err == nil {
@@ -821,25 +821,25 @@ type Report struct {
 	Event    Event
 	Outcomes []Outcome
 	Blocked  bool // at least one outcome blocked (only meaningful on gating events)
-// [explicit JSON "allow" decision on exit 0 (see claudeJSONAllow) — the]
+	// [explicit JSON "allow" decision on exit 0 (see claudeJSONAllow) — the]
 	Allowed bool
 }
 
 type HookOutput struct {
 	AdditionalContext string
-// [top-level decision:"block" for UserPromptSubmit. Claude hooks commonly]
-// [https://code.claude.com/docs/en/hooks.]
+	// [top-level decision:"block" for UserPromptSubmit. Claude hooks commonly]
+	// [https://code.claude.com/docs/en/hooks.]
 	Deny       bool
 	DenyReason string
-// [Allow carries a Claude PermissionRequest "allow" decision]
-// [(hookSpecificOutput.decision.behavior == "allow"): the hook answers the]
-// [permission dialog on the users behalf instead of only observing it.]
+	// [Allow carries a Claude PermissionRequest "allow" decision]
+	// [(hookSpecificOutput.decision.behavior == "allow"): the hook answers the]
+	// [permission dialog on the users behalf instead of only observing it.]
 	Allow bool
 }
 
 type hookJSONOutput struct {
-// [Decision and Reason are UserPromptSubmit's (and Stop/SubagentStop's)]
-// [top-level deny shape: {"decision":"block","reason":"..."}.]
+	// [Decision and Reason are UserPromptSubmit's (and Stop/SubagentStop's)]
+	// [top-level deny shape: {"decision":"block","reason":"..."}.]
 	Decision           string `json:"decision"`
 	Reason             string `json:"reason"`
 	HookSpecificOutput struct {
@@ -1176,7 +1176,7 @@ func defaultSpawner(ctx context.Context, in SpawnInput, options RuntimeOptions) 
 	var outBuf, errBuf cappedBuffer
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
-// [shell is killed on timeoutcancel.]
+	// [shell is killed on timeoutcancel.]
 	cmd.WaitDelay = 500 * time.Millisecond
 
 	err := cmd.Run()
@@ -1280,8 +1280,8 @@ func spawnShellCommand(ctx context.Context, command, preferred string, options R
 	switch preferred {
 	case "", "auto":
 		if runtime.GOOS == "windows" {
-// [Retain the established 6668 compatibility path for the common]
-// [quoted .cmd.bat hook shape. More complex scripts continue to]
+			// [Retain the established 6668 compatibility path for the common]
+			// [quoted .cmd.bat hook shape. More complex scripts continue to]
 			if cmd, matched := windowsBatchCommand(ctx, command); matched {
 				return cmd, nil
 			}
@@ -1349,9 +1349,9 @@ func rawShellCommand(ctx context.Context, sh sandbox.Shell, command string) (*ex
 }
 
 func powerShellCommand(ctx context.Context, path, command string) *exec.Cmd {
-// [PowerShells native command-line parser does not follow]
-// [second layer of quotebackslash interpretation. Force captured output to]
-// [code page into patty's stdout/stderr text contract.]
+	// [PowerShells native command-line parser does not follow]
+	// [second layer of quotebackslash interpretation. Force captured output to]
+	// [code page into patty's stdout/stderr text contract.]
 	command = sandbox.PowerShellUTF8Script(command)
 	codeUnits := utf16.Encode([]rune(command))
 	raw := make([]byte, len(codeUnits)*2)

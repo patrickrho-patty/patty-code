@@ -8,22 +8,22 @@ import (
 
 // Module represents an installable, configurable unit of harness functionality.
 type Module struct {
-	ID         string
-	Version    string
-	Signed     bool
+	ID          string
+	Version     string
+	Signed      bool
 	Description LocalizedString
-	Enabled    bool
-	DependsOn  []string
-	Provides   []string // capability IDs this module implements
-	DataPath   string   // persistent data storage path
+	Enabled     bool
+	DependsOn   []string
+	Provides    []string // capability IDs this module implements
+	DataPath    string   // persistent data storage path
 }
 
 // Registry manages the installation, enabling, and removal of modules.
 type Registry struct {
-	mu        sync.RWMutex
-	modules   map[string]*Module // id → module
-	enforced  map[string]bool    // ids that cannot be disabled
-	policies  map[string]Policy  // profile policies for each module
+	mu       sync.RWMutex
+	modules  map[string]*Module // id → module
+	enforced map[string]bool    // ids that cannot be disabled
+	policies map[string]Policy  // profile policies for each module
 }
 
 // Policy defines what a product profile mandates for a module.
@@ -31,8 +31,8 @@ type Policy int
 
 const (
 	PolicyOptional   Policy = iota // user can enable/disable/remove
-	PolicyRequired                  // must stay enabled, cannot disable
-	PolicyProhibited                // must never load
+	PolicyRequired                 // must stay enabled, cannot disable
+	PolicyProhibited               // must never load
 )
 
 // NewRegistry creates an empty module registry.

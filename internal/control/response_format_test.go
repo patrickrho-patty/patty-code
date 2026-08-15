@@ -143,12 +143,12 @@ func TestWithTurnFormatInjectsFormatIntoContext(t *testing.T) {
 func TestRefTurnFormatBound(t *testing.T) {
 	c := New(Options{})
 	ctx := context.Background()
-// runRefTurnWithFormat 주입 후 agent 요청 경로가 json_object를 읽음
+	// runRefTurnWithFormat 주입 후 agent 요청 경로가 json_object를 읽음
 	if got := agent.ResponseFormatFromRequest(c.withTurnFormat(ctx, "json_object")); got == nil || got.Type != "json_object" {
 		t.Fatalf("ref-turn format must bind to ctx, got %+v", got)
 	}
-// isRefTurnInput이 @참조 turn을 인식(format이 wrapper를 통해 바인딩되어 더 이상 버려지지 않음)
-// ref-turn 입력 인식(SlashCodeCommentLine은 파일 시스템에 의존하지 않음)
+	// isRefTurnInput이 @참조 turn을 인식(format이 wrapper를 통해 바인딩되어 더 이상 버려지지 않음)
+	// ref-turn 입력 인식(SlashCodeCommentLine은 파일 시스템에 의존하지 않음)
 	for _, input := range []string{"// comment line", "//src/main.go:12"} {
 		if !SlashCodeCommentLine(input) {
 			t.Errorf("SlashCodeCommentLine(%q) = false, want true", input)

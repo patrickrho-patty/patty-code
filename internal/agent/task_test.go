@@ -42,8 +42,8 @@ func TestTaskToolReturnsSubAgentFinalAnswer(t *testing.T) {
 		t.Errorf("got %q, want continuation guidance", out)
 	}
 
-// the configured system prompt at the top  proving the session was
-// fresh, not the parents.
+	// the configured system prompt at the top  proving the session was
+	// fresh, not the parents.
 	if sys := sub.lastReq.Messages[0]; sys.Role != provider.RoleSystem || sys.Content != "test-sys-prompt" {
 		t.Errorf("first message = %+v, want system 'test-sys-prompt'", sys)
 	}
@@ -170,8 +170,8 @@ func TestTaskToolFiltersTools(t *testing.T) {
 	if _, err := task.Execute(testTaskContext(), args); err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
-// The sub-agents tool schemas should reflect the whitelist minus always
-// unavailable backgroundinstall tools. Recursive tools stay visible at depth 1.
+	// The sub-agents tool schemas should reflect the whitelist minus always
+	// unavailable backgroundinstall tools. Recursive tools stay visible at depth 1.
 	got := map[string]bool{}
 	for _, s := range sub.lastReq.Tools {
 		got[s.Name] = true
@@ -892,7 +892,7 @@ func TestTaskToolBackgroundSalvagePublishesEvidenceForCollection(t *testing.T) {
 	if len(paths) != 1 || filepath.ToSlash(paths[0]) != "qa/bank.md" {
 		t.Fatalf("background mutation paths = %v, want qa/bank.md", paths)
 	}
-// turn commits, so a cancellederrored turn can re-collect it.
+	// turn commits, so a cancellederrored turn can re-collect it.
 	if again := jm.LeaseEvidenceForSession("parent-session", jobID); !again.HasMutation() {
 		t.Fatalf("lease consumed background evidence without a commit: %+v", again)
 	}
@@ -926,7 +926,7 @@ func waitBuiltin(t *testing.T, reg *tool.Registry) {
 }
 
 func TestBackgroundEvidenceNotCommittedWhenTurnFails(t *testing.T) {
-// The delivery turn collects a background writers mutation via wait, then
+	// The delivery turn collects a background writers mutation via wait, then
 	jm := jobs.NewManager(event.Discard)
 	defer jm.Close()
 	jobID := startTerminalBackgroundMutation(t, jm, "parent-session", "qa/bank.md")
@@ -954,8 +954,8 @@ func TestBackgroundEvidenceNotCommittedWhenTurnFails(t *testing.T) {
 }
 
 func TestBackgroundEvidenceCommittedWhenTurnDelivers(t *testing.T) {
-// A successful turn that collected a background writers mutation commits the
-// lease, permanently draining the jobs evidence so a later re-poll does not
+	// A successful turn that collected a background writers mutation commits the
+	// lease, permanently draining the jobs evidence so a later re-poll does not
 	jm := jobs.NewManager(event.Discard)
 	defer jm.Close()
 	jobID := startTerminalBackgroundMutation(t, jm, "parent-session", "notes.txt")
@@ -993,7 +993,7 @@ func TestFailedTurnBackgroundMutationForcesReadinessOnNextRunWithoutWait(t *test
 		{{Type: provider.ChunkText, Text: "all set"}, {Type: provider.ChunkDone}}, // no sign-off
 		{{Type: provider.ChunkText, Text: "all set"}, {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "all set"}, {Type: provider.ChunkDone}},
-// Second Run: the model never calls waitbash_output again.
+		// Second Run: the model never calls waitbash_output again.
 		{{Type: provider.ChunkText, Text: "sure, here you go"}, {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "sure, here you go"}, {Type: provider.ChunkDone}},
 		{{Type: provider.ChunkText, Text: "sure, here you go"}, {Type: provider.ChunkDone}},

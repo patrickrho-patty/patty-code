@@ -23,15 +23,15 @@ import (
 type RiskClass string
 
 const (
-	RiskLow            RiskClass = "LOW"
-	RiskMedium         RiskClass = "MEDIUM"
-	RiskHigh           RiskClass = "HIGH"
-	RiskCrypto         RiskClass = "CRYPTO"
-	RiskPayment        RiskClass = "PAYMENT"
-	RiskPIIAdjacent    RiskClass = "PII_ADJACENT"
-	RiskNewDependency  RiskClass = "NEW_DEPENDENCY"
-	RiskNewNetwork      RiskClass = "NEW_NETWORK"
-	RiskNewMCPServer    RiskClass = "NEW_MCP_SERVER"
+	RiskLow           RiskClass = "LOW"
+	RiskMedium        RiskClass = "MEDIUM"
+	RiskHigh          RiskClass = "HIGH"
+	RiskCrypto        RiskClass = "CRYPTO"
+	RiskPayment       RiskClass = "PAYMENT"
+	RiskPIIAdjacent   RiskClass = "PII_ADJACENT"
+	RiskNewDependency RiskClass = "NEW_DEPENDENCY"
+	RiskNewNetwork    RiskClass = "NEW_NETWORK"
+	RiskNewMCPServer  RiskClass = "NEW_MCP_SERVER"
 )
 
 // SubmissionStatus is the lifecycle state of a change-board
@@ -39,10 +39,10 @@ const (
 type SubmissionStatus string
 
 const (
-	StatusPending     SubmissionStatus = "PENDING"
-	StatusApproved     SubmissionStatus = "APPROVED"
-	StatusRejected     SubmissionStatus = "REJECTED"
-	StatusSuperseded   SubmissionStatus = "SUPERSEDED"
+	StatusPending    SubmissionStatus = "PENDING"
+	StatusApproved   SubmissionStatus = "APPROVED"
+	StatusRejected   SubmissionStatus = "REJECTED"
+	StatusSuperseded SubmissionStatus = "SUPERSEDED"
 )
 
 // Submission is a single high-risk change submitted to the
@@ -55,14 +55,14 @@ type Submission struct {
 	Branch          string
 	CommitSHA       string
 	RiskClass       RiskClass
-	Description    string
-	DescriptionKo  string
+	Description     string
+	DescriptionKo   string
 	Submitter       string
 	SubmittedAt     int64 // unix-ms
 	NotAfter        int64 // unix-ms; 0 = no expiry
-	Status         SubmissionStatus
-	ReviewerID     string
-	ReviewedAt     int64
+	Status          SubmissionStatus
+	ReviewerID      string
+	ReviewedAt      int64
 	ReviewerComment string
 }
 
@@ -100,10 +100,10 @@ func (s *Submission) Fingerprint() [32]byte {
 // harness uses it to record every high-risk change submission
 // and consult it before allowing merges.
 type Board struct {
-	mu           sync.RWMutex
-	submissions  map[string]*Submission // keyed by SubmissionID
+	mu            sync.RWMutex
+	submissions   map[string]*Submission // keyed by SubmissionID
 	byFingerprint map[[32]byte]*Submission
-	nowFn        func() int64
+	nowFn         func() int64
 }
 
 // NewBoard constructs an empty board.

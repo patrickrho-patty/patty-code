@@ -43,19 +43,19 @@ type InboundMedia struct {
 
 // InboundMessage is a normalized incoming bot message.
 type InboundMessage struct {
-	Platform     Platform `json:"platform"`
-	ConnectionID string   `json:"connection_id,omitempty"`
-	Domain       string   `json:"domain,omitempty"`
-	ChatType     ChatType `json:"chat_type"`
-	ChatID       string   `json:"chat_id"`
-	UserID       string   `json:"user_id"`
-	UserName     string   `json:"user_name"`
-	OperatorID string         `json:"operator_id,omitempty"`
-	Text       string         `json:"text"`
-	MessageID  string         `json:"message_id"`
-	ThreadID   string         `json:"thread_id,omitempty"`
-	MediaURLs  []string       `json:"media_urls,omitempty"`
-	Media      []InboundMedia `json:"-"`
+	Platform        Platform                     `json:"platform"`
+	ConnectionID    string                       `json:"connection_id,omitempty"`
+	Domain          string                       `json:"domain,omitempty"`
+	ChatType        ChatType                     `json:"chat_type"`
+	ChatID          string                       `json:"chat_id"`
+	UserID          string                       `json:"user_id"`
+	UserName        string                       `json:"user_name"`
+	OperatorID      string                       `json:"operator_id,omitempty"`
+	Text            string                       `json:"text"`
+	MessageID       string                       `json:"message_id"`
+	ThreadID        string                       `json:"thread_id,omitempty"`
+	MediaURLs       []string                     `json:"media_urls,omitempty"`
+	Media           []InboundMedia               `json:"-"`
 	ResolveUserName func(context.Context) string `json:"-"`
 	Raw             any                          `json:"-"`
 }
@@ -154,25 +154,25 @@ func (r *SendResult) Merge(delivered SendResult) {
 
 // [Adapter]
 type Adapter interface {
-// [Platform]
+	// [Platform]
 	Platform() Platform
 
-// [Start 어댑터， gateway。]
+	// [Start 어댑터， gateway。]
 	Start(ctx context.Context) error
 
-// [Stop]
+	// [Stop]
 	Stop() error
 
-// [Send]
+	// [Send]
 	Send(ctx context.Context, msg OutboundMessage) (SendResult, error)
 
-// [SendTyping]
+	// [SendTyping]
 	SendTyping(ctx context.Context, chatID string) error
 
-// [Messages]
+	// [Messages]
 	Messages() <-chan InboundMessage
 
-// [Name]
+	// [Name]
 	Name() string
 }
 

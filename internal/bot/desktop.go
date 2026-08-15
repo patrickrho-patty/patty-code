@@ -16,8 +16,8 @@ type DesktopSessionInfo struct {
 	Ready         bool
 	Running       bool
 	PendingPrompt bool
-	Detached bool
-	Pending []DesktopPendingInfo
+	Detached      bool
+	Pending       []DesktopPendingInfo
 }
 
 type DesktopPendingInfo struct {
@@ -38,7 +38,6 @@ func (r DesktopWatchRoute) Key() string {
 	return fmt.Sprintf("%s|%s|%s|%s", r.Platform, r.ConnectionID, r.Domain, r.ChatID)
 }
 
-//
 type DesktopBridge interface {
 	Sessions() []DesktopSessionInfo
 	SetWatch(route DesktopWatchRoute, enable bool) error

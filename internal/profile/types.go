@@ -46,18 +46,18 @@ func (l LocalizedString) MustExist(key string) string {
 
 // PaletteRef holds theme-token references for a product's visual identity.
 type PaletteRef struct {
-	Name        string // palette identifier
-	Foreground  string // hex color or ANSI fallback
-	Background  string
-	AccentBlue  string // 청 accent
-	AccentRed   string // 홍 accent
-	Monochrome  []int  // monochrome terminal ANSI codes
+	Name       string // palette identifier
+	Foreground string // hex color or ANSI fallback
+	Background string
+	AccentBlue string // 청 accent
+	AccentRed  string // 홍 accent
+	Monochrome []int  // monochrome terminal ANSI codes
 }
 
 // AssetCoordinate identifies artwork supplied by the compiled profile.
 type AssetCoordinate struct {
-	Path    string // filesystem path within the binary embed
-	Digest  string // SHA-256 hex digest of the asset content
+	Path   string // filesystem path within the binary embed
+	Digest string // SHA-256 hex digest of the asset content
 }
 
 // ModuleRef declares a required or optional module dependency.
@@ -78,17 +78,17 @@ type TrustRootRef struct {
 type DegradedBehavior int
 
 const (
-	DegradedBlockAll     DegradedBehavior = iota // no protected operations
-	DegradedAllowExplanation                     // read-only explanations only
-	DegradedAllowReadonly                        // read with visible warning
+	DegradedBlockAll         DegradedBehavior = iota // no protected operations
+	DegradedAllowExplanation                         // read-only explanations only
+	DegradedAllowReadonly                            // read with visible warning
 )
 
 // ProtectedOp describes an operation that fails closed when its prerequisites
 // are missing or unhealthy.
 type ProtectedOp struct {
-	Name        string           // stable internal name
-	Description LocalizedString  // user-facing explanation
-	FailClosed  bool             // default: block when unavailable
+	Name        string          // stable internal name
+	Description LocalizedString // user-facing explanation
+	FailClosed  bool            // default: block when unavailable
 }
 
 // BaselineConfig holds security and degradation settings set by the profile.
@@ -102,50 +102,50 @@ type BaselineConfig struct {
 // overrides; the resolved result is immutable at runtime.
 type Profile struct {
 	// Identity
-	HarnessID       string           // e.g. "patty", "gongcode"
-	EditionID       string           // semver or git-hash
-	DisplayName     LocalizedString  // {"ko": "Patty Code", "en": "Patty Code"}
-	ArtifactName    string           // distributable artifact slug
-	ExecutableName  string           // CLI binary name
+	HarnessID      string          // e.g. "patty", "gongcode"
+	EditionID      string          // semver or git-hash
+	DisplayName    LocalizedString // {"ko": "Patty Code", "en": "Patty Code"}
+	ArtifactName   string          // distributable artifact slug
+	ExecutableName string          // CLI binary name
 
 	// Paths & Namespaces
-	UserRoot        string           // dot-directory name, e.g. ".patty"
-	ConfigFilename  string           // config file stem, e.g. "patty.toml"
-	EnvPrefix       string           // environment variable prefix, e.g. "PATTY_"
-	DataRoot        string           // platform-appropriate application support root
+	UserRoot       string // dot-directory name, e.g. ".patty"
+	ConfigFilename string // config file stem, e.g. "patty.toml"
+	EnvPrefix      string // environment variable prefix, e.g. "PATTY_"
+	DataRoot       string // platform-appropriate application support root
 
 	// Network
-	WebsiteURL      string
-	DocsURL         string
-	SupportURL      string
-	UpdateURL       string
-	RegistryURL     string
-	TelemetryURL    string
-	APIBaseURL      string
+	WebsiteURL   string
+	DocsURL      string
+	SupportURL   string
+	UpdateURL    string
+	RegistryURL  string
+	TelemetryURL string
+	APIBaseURL   string
 
 	// OS Integration
-	DesktopAppID     string            // reverse-DNS bundle ID (macOS/Windows/Linux)
-	ProtocolHandler  string            // URL scheme, e.g. "patty://"
-	KeychainService  string            // OS keyring service account
-	DesktopEntryName string            // Linux .desktop file stem
+	DesktopAppID     string // reverse-DNS bundle ID (macOS/Windows/Linux)
+	ProtocolHandler  string // URL scheme, e.g. "patty://"
+	KeychainService  string // OS keyring service account
+	DesktopEntryName string // Linux .desktop file stem
 
 	// Theme & Branding
-	BannerArtwork  AssetCoordinate // ASCII/emoji banner text asset
-	ColorPalette   PaletteRef      // theme tokens
-	LaunchArtwork  AssetCoordinate // launch splash/image asset
+	BannerArtwork AssetCoordinate // ASCII/emoji banner text asset
+	ColorPalette  PaletteRef      // theme tokens
+	LaunchArtwork AssetCoordinate // launch splash/image asset
 
 	// Localization
-	DefaultLocale   Locale
+	DefaultLocale    Locale
 	SupportedLocales []string // ordered preference list
 
 	// Modules
-	RequiredModules    []ModuleRef
-	OptionalModules    []ModuleRef
-	ProhibitedModules  []string // module IDs never loaded
+	RequiredModules   []ModuleRef
+	OptionalModules   []ModuleRef
+	ProhibitedModules []string // module IDs never loaded
 
 	// Trust
-	TrustRoots          []TrustRootRef
-	AcceptedPublishers  []string
+	TrustRoots         []TrustRootRef
+	AcceptedPublishers []string
 
 	// Security
 	SecurityBaseline BaselineConfig

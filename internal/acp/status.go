@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	pattyStatusSchemaVersion = 1
-	sessionStatusMethod         = "_patty.io/session/status"
-	sessionStatusUpdateMethod   = "_patty.io/session/status_update"
+	pattyStatusSchemaVersion  = 1
+	sessionStatusMethod       = "_patty.io/session/status"
+	sessionStatusUpdateMethod = "_patty.io/session/status_update"
 )
 
 // PattyCodeSchemaCapability advertises one versioned vendor extension in
@@ -120,28 +120,28 @@ type PattyCodeStatusUsage struct {
 // PattyCodeSessionStatus is the stable schemaVersion=1 recovery snapshot.
 // Reasoning text and unbounded terminal output are intentionally absent.
 type PattyCodeSessionStatus struct {
-	SchemaVersion  int                    `json:"schemaVersion"`
-	Sequence       uint64                 `json:"sequence"`
-	SessionID      string                 `json:"sessionId"`
-	State          string                 `json:"state"`
-	Model          string                 `json:"model"`
-	Effort         string                 `json:"effort"`
-	Mode           string                 `json:"mode"`
-	WorkMode       string                 `json:"workMode"`
-	PlannerMode    string                 `json:"plannerMode"`
+	SchemaVersion  int                     `json:"schemaVersion"`
+	Sequence       uint64                  `json:"sequence"`
+	SessionID      string                  `json:"sessionId"`
+	State          string                  `json:"state"`
+	Model          string                  `json:"model"`
+	Effort         string                  `json:"effort"`
+	Mode           string                  `json:"mode"`
+	WorkMode       string                  `json:"workMode"`
+	PlannerMode    string                  `json:"plannerMode"`
 	Goal           PattyCodeStatusGoal     `json:"goal"`
-	Phase          string                 `json:"phase"`
+	Phase          string                  `json:"phase"`
 	TurnOutcome    PattyCodeTurnOutcome    `json:"turnOutcome"`
 	FinalReadiness PattyCodeFinalReadiness `json:"finalReadiness"`
-	Sandbox        SessionSandboxState    `json:"sandbox"`
+	Sandbox        SessionSandboxState     `json:"sandbox"`
 	Usage          PattyCodeStatusUsage    `json:"usage"`
 }
 
 type PattyCodeStatusUpdate struct {
-	SchemaVersion int                   `json:"schemaVersion"`
-	Sequence      uint64                `json:"sequence"`
-	SessionID     string                `json:"sessionId"`
-	Event         string                `json:"event"`
+	SchemaVersion int                    `json:"schemaVersion"`
+	Sequence      uint64                 `json:"sequence"`
+	SessionID     string                 `json:"sessionId"`
+	Event         string                 `json:"event"`
 	Status        PattyCodeSessionStatus `json:"status"`
 }
 
@@ -374,8 +374,8 @@ type persistedStatusTelemetry struct {
 	Sequence       uint64                    `json:"sequence"`
 	State          string                    `json:"state"`
 	Phase          string                    `json:"phase"`
-	TurnOutcome    PattyCodeTurnOutcome       `json:"turnOutcome"`
-	FinalReadiness PattyCodeFinalReadiness    `json:"finalReadiness"`
+	TurnOutcome    PattyCodeTurnOutcome      `json:"turnOutcome"`
+	FinalReadiness PattyCodeFinalReadiness   `json:"finalReadiness"`
 	TurnUsage      persistedUsageAccumulator `json:"turnUsage"`
 	Cumulative     persistedUsageAccumulator `json:"cumulative"`
 	GoalOverride   string                    `json:"goalOverride,omitempty"`

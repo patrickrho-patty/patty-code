@@ -68,8 +68,8 @@ type RouteCandidate struct {
 }
 
 type RouteDecision struct {
-	Candidates []RouteCandidate
-	Delivery bool
+	Candidates      []RouteCandidate
+	Delivery        bool
 	CapabilityProxy bool
 }
 

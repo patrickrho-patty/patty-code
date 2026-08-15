@@ -49,8 +49,8 @@ func newFromConfig(cfg provider.Config) (provider.Provider, error) {
 		Name: cfg.Name, APIKey: cfg.APIKey, BaseURL: cfg.BaseURL, Model: cfg.Model,
 		Effort: effort, Mode: mode, Stateful: stateful, WebSearch: webSearch, Proxy: proxy,
 		KeyEnv: keyEnv, KeySource: keySource, MaxOutputTokens: maxOutputTokens,
-// [Extra ：vision 호출（boot/CLI）]
-// [cfg.Extra，factory  New() （ #7234  3 ）。]
+		// [Extra ：vision 호출（boot/CLI）]
+		// [cfg.Extra，factory  New() （ #7234  3 ）。]
 		Extra: cfg.Extra,
 	}), nil
 }
@@ -67,11 +67,11 @@ type Config struct {
 	Proxy     netclient.ProxySpec
 	KeyEnv    string
 	KeySource string
-// [MaxOutputTokens is the total provider output budget. Zero enables Patty Codes]
+	// [MaxOutputTokens is the total provider output budget. Zero enables Patty Codes]
 	MaxOutputTokens int
-// [SessionCache controls DashScopes opt-in header. The header is never sent]
+	// [SessionCache controls DashScopes opt-in header. The header is never sent]
 	SessionCache *bool
-// [Extra carries kind-specific options; "vision" (bool) enables embedding]
+	// [Extra carries kind-specific options; "vision" (bool) enables embedding]
 	Extra map[string]any
 }
 
@@ -117,11 +117,11 @@ func New(cfg Config) provider.Provider {
 	vendor := DetectVendor(cfg.BaseURL)
 	cap := capabilitiesFor(vendor)
 	maxOutputTokens := cfg.MaxOutputTokens
-// [vendor （deepseek 128K / mimo 128K）——]
+	// [vendor （deepseek 128K / mimo 128K）——]
 
-// [（review：responses.go  caps.defaultMaxOutputTokens]
-// [）。：thinking-disabled  deepseek]
-// [（ openai.go ——；）。]
+	// [（review：responses.go  caps.defaultMaxOutputTokens]
+	// [）。：thinking-disabled  deepseek]
+	// [（ openai.go ——；）。]
 	if maxOutputTokens == 0 && cap.defaultMaxOutputTokens > 0 &&
 		!(vendor == "deepseek" && responsesReasoningDisabled(cfg.Effort)) {
 		maxOutputTokens = cap.defaultMaxOutputTokens
@@ -264,8 +264,8 @@ func (c *client) buildRequestBody(req provider.Request) (map[string]any, bool, [
 		maxOutputTokens = c.maxOutputTokens
 	}
 	if maxOutputTokens == 0 && c.caps.defaultMaxOutputTokens > 0 {
-// [New() ：thinking-disabled  deepseek]
-// [[]]
+		// [New() ：thinking-disabled  deepseek]
+		// [[]]
 		if !(c.vendor == "deepseek" && responsesReasoningDisabled(c.effort)) {
 			maxOutputTokens = c.caps.defaultMaxOutputTokens
 		}
@@ -274,8 +274,8 @@ func (c *client) buildRequestBody(req provider.Request) (map[string]any, bool, [
 		body["max_output_tokens"] = maxOutputTokens
 	}
 	if req.ResponseFormat != nil && req.ResponseFormat.Type != "" {
-// [Structured output: Responses text.format. MiMo/DashScope/OpenAI]
-// [all accept {"text":{"format":{"type":"json_object"}}}. The model]
+		// [Structured output: Responses text.format. MiMo/DashScope/OpenAI]
+		// [all accept {"text":{"format":{"type":"json_object"}}}. The model]
 		body["text"] = map[string]any{
 			"format": map[string]any{"type": req.ResponseFormat.Type},
 		}
@@ -332,7 +332,7 @@ func messagesToInput(messages []provider.Message, vision, replayDeepSeekItems, s
 	for _, message := range messages {
 		switch message.Role {
 		case provider.RoleSystem, provider.RoleUser:
-// [MiMoDashScope multimodal example. The system message is always]
+			// [MiMoDashScope multimodal example. The system message is always]
 			if vision && message.Role == provider.RoleUser && len(message.Images) > 0 {
 				parts := make([]map[string]string, 0, len(message.Images)+1)
 				if message.Content != "" {
@@ -347,10 +347,10 @@ func messagesToInput(messages []provider.Message, vision, replayDeepSeekItems, s
 			}
 		case provider.RoleAssistant:
 			if message.ReasoningContent != "" {
-// [`content`. DashScope additionally requires a `summary`]
-// [list ("Invalid 'summary': summary is required and must be]
-// [a list for reasoning.). Other vendors (MiMo) do not]
-// [each turn  so only send it where the wire demands it.]
+				// [`content`. DashScope additionally requires a `summary`]
+				// [list ("Invalid 'summary': summary is required and must be]
+				// [a list for reasoning.). Other vendors (MiMo) do not]
+				// [each turn  so only send it where the wire demands it.]
 				item := map[string]any{
 					"type":    "reasoning",
 					"content": []map[string]string{{"type": "reasoning_text", "text": message.ReasoningContent}},
@@ -409,8 +409,8 @@ func decodeReplayableWebSearchItem(raw json.RawMessage) (map[string]any, bool) {
 
 func (c *client) conversationDigest(messages []provider.Message) string {
 	instructions, rest := splitInstructions(messages)
-// [this against the previous requests input, so a mismatch would skip]
-// [same visionsummary knobs as buildRequestBody.]
+	// [this against the previous requests input, so a mismatch would skip]
+	// [same visionsummary knobs as buildRequestBody.]
 	payload, _ := json.Marshal(struct {
 		Instructions string           `json:"instructions,omitempty"`
 		Input        []map[string]any `json:"input"`
@@ -544,10 +544,10 @@ func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<-
 						return
 					}
 				case "reasoning":
-// [next turns input reasoning item can carry it (the]
+					// [next turns input reasoning item can carry it (the]
 					if event.Item.ID != "" {
-// [（DeepSeek ） id ：round-trip]
-// [reasoning item  id（）。]
+						// [（DeepSeek ） id ：round-trip]
+						// [reasoning item  id（）。]
 						reasoningID = event.Item.ID
 					}
 				}
@@ -607,7 +607,7 @@ func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<-
 						}
 					}
 				case "reasoning":
-// [("completed" after the thinking stream finishes);]
+					// [("completed" after the thinking stream finishes);]
 					if event.Item.Status != "" {
 						reasoningStatus = event.Item.Status
 					}
@@ -633,13 +633,13 @@ func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<-
 				} else if event.Type == "response.completed" && usage.FinishReason == "" {
 					usage.FinishReason = "stop"
 				}
-// [zero record. ：+stop 전송——]
-// [（Pricing.Cost）반환 0 ，；]
-// [agent  reasoningOnlyFinishHonoured  usage]
-// [（FinishReason=stop） reasoning-only （#7168]
-// [""—— stop]
-// [reason]
-// [（length/content_filter/...）。]
+				// [zero record. ：+stop 전송——]
+				// [（Pricing.Cost）반환 0 ，；]
+				// [agent  reasoningOnlyFinishHonoured  usage]
+				// [（FinishReason=stop） reasoning-only （#7168]
+				// [""—— stop]
+				// [reason]
+				// [（length/content_filter/...）。]
 				if usage.TotalTokens > 0 || usage.FinishReason != "" {
 
 					if !sendChunk(ctx, out, provider.Chunk{Type: provider.ChunkUsage, Usage: usage}) {
@@ -681,7 +681,7 @@ func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<-
 		_ = sendChunk(ctx, out, provider.Chunk{Type: provider.ChunkError, Err: provider.StreamInterrupt(err, reason)})
 		return
 	}
-// [before a terminal event leaves the attempt uncommitted  including any]
+	// [before a terminal event leaves the attempt uncommitted  including any]
 	if !terminal {
 		_ = sendChunk(ctx, out, provider.Chunk{Type: provider.ChunkError, Err: provider.StreamInterrupt(io.ErrUnexpectedEOF, provider.StreamInterruptPrematureEOF)})
 		return
@@ -703,9 +703,9 @@ func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<-
 		c.ResetContext()
 	}
 	if !failed {
-// [reasoning item  id/status  chunk  Agent]
-// [（ Text， ChunkReasoning ）——Agent 저장 session，]
-// [input reasoning item  id/status（ #7234  1 ）。]
+		// [reasoning item  id/status  chunk  Agent]
+		// [（ Text， ChunkReasoning ）——Agent 저장 session，]
+		// [input reasoning item  id/status（ #7234  1 ）。]
 		if reasoningID != "" || reasoningStatus != "" {
 			if !sendChunk(ctx, out, provider.Chunk{Type: provider.ChunkReasoning, ReasoningID: reasoningID, ReasoningStatus: reasoningStatus}) {
 				return

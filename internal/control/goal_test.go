@@ -1278,7 +1278,7 @@ func TestSessionRotationClearsActiveGoal(t *testing.T) {
 	if composed := c.Compose("hello"); strings.Contains(composed, "<active-goal>") {
 		t.Fatalf("old goal leaked into the fresh session's turn: %q", composed)
 	}
-// The old session keeps its running goal on disk for resume.
+	// The old session keeps its running goal on disk for resume.
 	oldState, err := os.ReadFile(store.SessionGoalState(oldPath))
 	if err != nil {
 		t.Fatalf("read old goal state: %v", err)
@@ -1286,8 +1286,8 @@ func TestSessionRotationClearsActiveGoal(t *testing.T) {
 	if !strings.Contains(string(oldState), "ship the release checklist") || !strings.Contains(string(oldState), GoalStatusRunning) {
 		t.Fatalf("old session's goal state was disturbed by /new: %s", oldState)
 	}
-// The new sessions sidecar records the cleared (stopped) state, so
-// profile restores read it as "no running goal".
+	// The new sessions sidecar records the cleared (stopped) state, so
+	// profile restores read it as "no running goal".
 	newState, err := os.ReadFile(store.SessionGoalState(c.SessionPath()))
 	if err != nil {
 		t.Fatalf("read new goal state: %v", err)
@@ -1296,7 +1296,7 @@ func TestSessionRotationClearsActiveGoal(t *testing.T) {
 		t.Fatalf("new session's goal state carries the old goal: %s", newState)
 	}
 
-// Same contract for clear.
+	// Same contract for clear.
 	c.SetGoal("another goal")
 	if err := c.ClearSession(); err != nil {
 		t.Fatalf("ClearSession: %v", err)

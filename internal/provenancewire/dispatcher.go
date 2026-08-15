@@ -16,10 +16,10 @@ import (
 // `provenance.CreateChangeSet` / `provenance.CreateProvenanceSpan` /
 // `provenance.RecordAction` paths consume them.
 type Dispatcher struct {
-	mu        sync.Mutex
-	conn      DispatchConn
-	emitter   *ProvenanceEmitter
-	flushErr  error
+	mu         sync.Mutex
+	conn       DispatchConn
+	emitter    *ProvenanceEmitter
+	flushErr   error
 	flushCount int
 }
 

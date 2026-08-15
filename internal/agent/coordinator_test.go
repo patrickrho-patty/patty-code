@@ -917,7 +917,7 @@ func TestCoordinatorNudgesExecutorThatAnswersWithoutActing(t *testing.T) {
 		{Type: provider.ChunkText, Text: "Write the requested skill file."},
 		{Type: provider.ChunkDone},
 	}}
-// planner-vocabulary  the nudge must fire on the missing action, not on words.
+	// planner-vocabulary  the nudge must fire on the missing action, not on words.
 	exec := &mockProvider{name: "executor", streams: [][]provider.Chunk{
 		{
 			{Type: provider.ChunkText, Text: "이 계획은 문제없어 보이고, 충분히 구현 가능합니다."},
@@ -1226,7 +1226,7 @@ func TestCoordinatorDoesNotNudgeExecutorThatActs(t *testing.T) {
 		{Type: provider.ChunkText, Text: "Write the requested skill file."},
 		{Type: provider.ChunkDone},
 	}}
-// Executor calls a tool on its first turn, then answers  no nudge expected.
+	// Executor calls a tool on its first turn, then answers  no nudge expected.
 	exec := &mockProvider{name: "executor", streams: [][]provider.Chunk{
 		{
 			{Type: provider.ChunkToolCall, ToolCall: &provider.ToolCall{ID: "call-1", Name: "write_file", Arguments: `{"path":"kan-tu.md"}`}},

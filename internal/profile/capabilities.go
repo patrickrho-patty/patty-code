@@ -10,14 +10,14 @@ import (
 type CapabilityType int
 
 const (
-	CapabilityProvider   CapabilityType = iota // provider request/response interception
-	CapabilityTool                             // tool before/after hooks
-	CapabilitySystemPrompt                     // system prompt / context composition
-	CapabilityPayloadValidation                // payload blocking
-	CapabilityReplacementSlot                  // last-mile replacement for core path
-	CapabilityAttestation                      // security attestation
-	CapabilityEgress                           // egress gating
-	CapabilityAudit                            // audit correlation
+	CapabilityProvider          CapabilityType = iota // provider request/response interception
+	CapabilityTool                                    // tool before/after hooks
+	CapabilitySystemPrompt                            // system prompt / context composition
+	CapabilityPayloadValidation                       // payload blocking
+	CapabilityReplacementSlot                         // last-mile replacement for core path
+	CapabilityAttestation                             // security attestation
+	CapabilityEgress                                  // egress gating
+	CapabilityAudit                                   // audit correlation
 )
 
 func (t CapabilityType) String() string {
@@ -45,12 +45,12 @@ func (t CapabilityType) String() string {
 
 // Capability declares a replaceable or extensible point in the harness.
 type Capability struct {
-	ID             string           // unique identifier
-	Type           CapabilityType   // category
-	Description    LocalizedString  // user-facing description
-	Mandatory      bool             // missing this = fail closed
-	Priority       int              // deterministic priority (higher wins)
-	SupportedLocales []string      // locales that register this capability
+	ID               string          // unique identifier
+	Type             CapabilityType  // category
+	Description      LocalizedString // user-facing description
+	Mandatory        bool            // missing this = fail closed
+	Priority         int             // deterministic priority (higher wins)
+	SupportedLocales []string        // locales that register this capability
 }
 
 // CapReg manages all registered capabilities across product profiles.
@@ -185,47 +185,47 @@ func defaultCapabilitiesForModule(moduleID string) map[string]*Capability {
 		m["tui.render"] = &Capability{
 			ID: "tui.render", Type: CapabilityReplacementSlot, Priority: 100,
 			Description: LocalizedString{"ko": "TUI 렌더링", "en": "TUI rendering"},
-			Mandatory: true, SupportedLocales: []string{"ko", "en"},
+			Mandatory:   true, SupportedLocales: []string{"ko", "en"},
 		}
 		m["tui.keymap"] = &Capability{
 			ID: "tui.keymap", Type: CapabilityReplacementSlot, Priority: 90,
 			Description: LocalizedString{"ko": "TUI 키맵", "en": "TUI keymap"},
-			Mandatory: true, SupportedLocales: []string{"ko", "en"},
+			Mandatory:   true, SupportedLocales: []string{"ko", "en"},
 		}
 	case moduleID == "core.i18n":
 		m["i18n.locale"] = &Capability{
 			ID: "i18n.locale", Type: CapabilityReplacementSlot, Priority: 200,
 			Description: LocalizedString{"ko": "로케일 감지 및 번역", "en": "Locale detection and translation"},
-			Mandatory: true, SupportedLocales: []string{"ko", "en"},
+			Mandatory:   true, SupportedLocales: []string{"ko", "en"},
 		}
 	case moduleID == "core.agent":
 		m["agent.compose"] = &Capability{
 			ID: "agent.compose", Type: CapabilitySystemPrompt, Priority: 150,
 			Description: LocalizedString{"ko": "시스템 프롬프트 구성", "en": "System prompt composition"},
-			Mandatory: true, SupportedLocales: []string{"ko", "en"},
+			Mandatory:   true, SupportedLocales: []string{"ko", "en"},
 		}
 	case moduleID == "core.config":
 		m["config.resolve"] = &Capability{
 			ID: "config.resolve", Type: CapabilityReplacementSlot, Priority: 300,
 			Description: LocalizedString{"ko": "설정 로드 및 검증", "en": "Config loading and validation"},
-			Mandatory: true, SupportedLocales: []string{"ko", "en"},
+			Mandatory:   true, SupportedLocales: []string{"ko", "en"},
 		}
 	case moduleID == "core.extension":
 		m["ext.intercept_provider"] = &Capability{
 			ID: "ext.intercept_provider", Type: CapabilityProvider, Priority: 50,
 			Description: LocalizedString{"ko": "provider 요청 인터셉트", "en": "Provider request interception"},
-			Mandatory: true, SupportedLocales: []string{"ko", "en"},
+			Mandatory:   true, SupportedLocales: []string{"ko", "en"},
 		}
 		m["ext.intercept_tool"] = &Capability{
 			ID: "ext.intercept_tool", Type: CapabilityTool, Priority: 50,
 			Description: LocalizedString{"ko": "도구 훅", "en": "Tool hooks"},
-			Mandatory: true, SupportedLocales: []string{"ko", "en"},
+			Mandatory:   true, SupportedLocales: []string{"ko", "en"},
 		}
 	case moduleID == "feature.autoresearch":
 		m["autoresearch.sweep"] = &Capability{
 			ID: "autoresearch.sweep", Type: CapabilityTool, Priority: 40,
 			Description: LocalizedString{"ko": "자동 연구 스위프", "en": "Auto-research sweep"},
-			Mandatory: false, SupportedLocales: []string{"ko", "en"},
+			Mandatory:   false, SupportedLocales: []string{"ko", "en"},
 		}
 	}
 

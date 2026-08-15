@@ -28,9 +28,9 @@ const (
 type Verdict string
 
 const (
-	VerdictAllow          Verdict = "ALLOW"
-	VerdictDeny           Verdict = "DENY"
-	VerdictRequireReview  Verdict = "REQUIRE_REVIEW"
+	VerdictAllow         Verdict = "ALLOW"
+	VerdictDeny          Verdict = "DENY"
+	VerdictRequireReview Verdict = "REQUIRE_REVIEW"
 )
 
 // Finding is a single DLP detection. The connector surfaces the
@@ -40,11 +40,11 @@ type Finding struct {
 	Severity Severity
 	// Offset is the byte index in the scanned text where the
 	// finding starts. The connector uses it to highlight the
-// finding in the harness UI.
+	// finding in the harness UI.
 	Offset int
 	// Length is the byte length of the matched content. The
 	// connector uses it to highlight the finding and to redact
-// the matched content from outbound messages.
+	// the matched content from outbound messages.
 	Length int
 	// Description is a short human-readable label. The relay and
 	// the connector MUST agree on this string for stable UX.
@@ -71,9 +71,9 @@ type ScanResult struct {
 // ships a built-in lexicon (Korean PII + secrets + injection)
 // and accepts per-org rule overrides via the policy epoch.
 type DetectionRule struct {
-	RuleID     string
-	Severity   Severity
-	Regex      *regexp.Regexp
+	RuleID      string
+	Severity    Severity
+	Regex       *regexp.Regexp
 	Description string
 	// RedactTemplate replaces matched content. The default
 	// `[$1_REDACTED]` keeps the rule name visible to the model

@@ -6,16 +6,16 @@ import (
 	"sync"
 	"testing"
 
-	"patty/internal/evidence"
 	"patty/internal/dariproto"
+	"patty/internal/evidence"
 )
 
 // fakeConn is a thread-safe in-memory transport used by the
 // dispatcher's tests. It records every SendRecord call so the
 // test can assert what was sent.
 type fakeConn struct {
-	mu     sync.Mutex
-	recs   []*dariproto.Record
+	mu      sync.Mutex
+	recs    []*dariproto.Record
 	sendErr error
 }
 
@@ -87,10 +87,10 @@ func TestDispatcherEmitsCoherentFamily(t *testing.T) {
 		t.Fatalf("emit span: %v", err)
 	}
 	act, err := BuildActionEnvelopeFromReceipt(ActionBuildRequest{
-		ActionID:        "act-1",
-		OrganizationID:  "org-test",
-		SessionID:       "ses-1",
-		ActionType:      "tool_use",
+		ActionID:         "act-1",
+		OrganizationID:   "org-test",
+		SessionID:        "ses-1",
+		ActionType:       "tool_use",
 		OccurredAtUnixMs: 1_700_000_000_000,
 	})
 	if err != nil {
@@ -184,11 +184,11 @@ func TestDispatcherEmitsCommitBindings(t *testing.T) {
 	disp := NewDispatcher(emitter, conn)
 
 	binding := &CommitBindingEnvelope{
-		BindingID:    "b-1",
-		RepositoryID: "pccp",
-		CommitSHA:    "abc",
-		ChangeSetID:  "cs-1",
-		Branch:       "main",
+		BindingID:     "b-1",
+		RepositoryID:  "pccp",
+		CommitSHA:     "abc",
+		ChangeSetID:   "cs-1",
+		Branch:        "main",
 		BoundAtUnixMs: 1_700_000_000_000,
 	}
 	binding.Digest()

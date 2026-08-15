@@ -65,9 +65,9 @@ func TestPolicyStoreRequiresRemoteWithoutOptIn(t *testing.T) {
 func TestPolicyStoreAllowsSensitiveWithOptIn(t *testing.T) {
 	s := NewPolicyStore()
 	s.Set(&Policy{
-		RepositoryID: "sensitive",
-		RiskClass:    RiskSensitive,
-		Mode:         ModeRemoteOnly,
+		RepositoryID:             "sensitive",
+		RiskClass:                RiskSensitive,
+		Mode:                     ModeRemoteOnly,
 		MaxLocalExecutionsPerDay: 10,
 	})
 	dec := s.CheckExecution("sensitive", true)
@@ -95,10 +95,10 @@ func TestPolicyStoreRejectsUnknownRepo(t *testing.T) {
 func TestPolicyStoreEnforcesDailyBudget(t *testing.T) {
 	s := NewPolicyStore()
 	s.Set(&Policy{
-		RepositoryID:               "sensitive",
-		RiskClass:                  RiskSensitive,
-		Mode:                       ModeRemoteOnly,
-		MaxLocalExecutionsPerDay:   2,
+		RepositoryID:             "sensitive",
+		RiskClass:                RiskSensitive,
+		Mode:                     ModeRemoteOnly,
+		MaxLocalExecutionsPerDay: 2,
 	})
 	nowMs := int64(1_700_000_000_000)
 	for i := 0; i < 2; i++ {
@@ -123,10 +123,10 @@ func TestPolicyStoreEnforcesDailyBudget(t *testing.T) {
 func TestPolicyStoreBudgetResetsOnNewDay(t *testing.T) {
 	s := NewPolicyStore()
 	s.Set(&Policy{
-		RepositoryID:               "sensitive",
-		RiskClass:                  RiskSensitive,
-		Mode:                       ModeRemoteOnly,
-		MaxLocalExecutionsPerDay:   1,
+		RepositoryID:             "sensitive",
+		RiskClass:                RiskSensitive,
+		Mode:                     ModeRemoteOnly,
+		MaxLocalExecutionsPerDay: 1,
 	})
 	yesterdayMs := int64(1_700_000_000_000)
 	todayMs := yesterdayMs + 86_400_000 + 1

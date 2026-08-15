@@ -47,10 +47,10 @@ type TrustSource struct {
 // install bundles.
 type UpdateAdvisory struct {
 	AdvisoryID string
-	Version   string
-	Payload   []byte // opaque bundle bytes
-	IssuedAt  int64
-	NotAfter  int64
+	Version    string
+	Payload    []byte // opaque bundle bytes
+	IssuedAt   int64
+	NotAfter   int64
 	// Signature is the ed25519 signature over SigningBytes() using
 	// the issuing source's public key.
 	Signature []byte
@@ -93,12 +93,12 @@ type AirGapMode struct {
 	mu         sync.RWMutex
 	enabled    bool
 	sources    map[string]*TrustSource
-	advisories  map[string]*UpdateAdvisory
+	advisories map[string]*UpdateAdvisory
 	// Online exception list: hosts the harness may dial even in
 	// air-gap mode (e.g. internal mirror for catalog download).
 	onlineAllowList map[string]bool
 	// metrics
-	appliedAdvisories int64
+	appliedAdvisories  int64
 	rejectedAdvisories int64
 }
 
@@ -106,9 +106,9 @@ type AirGapMode struct {
 // enables it when the relay pushes a sovereign-deployment flag.
 func NewAirGapMode() *AirGapMode {
 	return &AirGapMode{
-		sources:          make(map[string]*TrustSource),
-		advisories:        make(map[string]*UpdateAdvisory),
-		onlineAllowList:   make(map[string]bool),
+		sources:         make(map[string]*TrustSource),
+		advisories:      make(map[string]*UpdateAdvisory),
+		onlineAllowList: make(map[string]bool),
 	}
 }
 

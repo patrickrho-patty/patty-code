@@ -101,15 +101,15 @@ type WorkIntelVisibility struct {
 // state. The harness refreshes the client on every flush of the
 // turn loop. The client surfaces an E1 status-bar snapshot.
 type AwarenessClient struct {
-	mu              sync.RWMutex
+	mu             sync.RWMutex
 	organizationID string
 	userID         string
 	slot           *WorkSlot
 	capacity       *CapacityLease
 	visibility     *WorkIntelVisibility
 	// metrics: surfaced in the E1 status bar.
-	lastRefreshAtMs   int64
-	refreshFailures   int64
+	lastRefreshAtMs    int64
+	refreshFailures    int64
 	throttleEventCount int64
 }
 
@@ -174,20 +174,20 @@ func (a *AwarenessClient) RecordThrottleEvent() {
 
 // Snapshot is the E1 status-bar view of the operational state.
 type Snapshot struct {
-	OrganizationID      string
+	OrganizationID     string
 	UserID             string
-	SlotClass           string
-	TokenBudget         int64
-	TokensConsumed      int64
-	QuotaUtilization    float64
-	QueuePosition       int
-	QueueDepth          int
-	IsThrottled         bool
-	LeaseNotAfter       time.Time
-	CanSeeRawActivity   bool
-	LastRefreshAtMs     int64
-	RefreshFailures     int64
-	ThrottleEventCount  int64
+	SlotClass          string
+	TokenBudget        int64
+	TokensConsumed     int64
+	QuotaUtilization   float64
+	QueuePosition      int
+	QueueDepth         int
+	IsThrottled        bool
+	LeaseNotAfter      time.Time
+	CanSeeRawActivity  bool
+	LastRefreshAtMs    int64
+	RefreshFailures    int64
+	ThrottleEventCount int64
 }
 
 // Snapshot returns a thread-safe copy of the current state.
@@ -196,7 +196,7 @@ func (a *AwarenessClient) Snapshot() Snapshot {
 	defer a.mu.RUnlock()
 	snap := Snapshot{
 		OrganizationID:     a.organizationID,
-		UserID:            a.userID,
+		UserID:             a.userID,
 		LastRefreshAtMs:    a.lastRefreshAtMs,
 		RefreshFailures:    a.refreshFailures,
 		ThrottleEventCount: a.throttleEventCount,

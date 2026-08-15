@@ -400,7 +400,7 @@ func TestRecoveryPauseKeepsGoalRunningAndDeliveryScope(t *testing.T) {
 	if !errors.As(err, &pause) {
 		t.Fatalf("run err = %v, want RecoveryPauseError", err)
 	}
-// ordinary "continue" keeps the same Goal prompt and delivery scope.
+	// ordinary "continue" keeps the same Goal prompt and delivery scope.
 	if got := c.GoalStatus(); got != GoalStatusRunning {
 		t.Fatalf("GoalStatus = %q, want running after recovery pause", got)
 	}
@@ -821,7 +821,7 @@ func TestTurnOrchestratorCancelPreservesVisibleUserPrompt(t *testing.T) {
 	c.canceling = true
 	c.mu.Unlock()
 
-// had already updated it  this is the state the runner leaves behind before
+	// had already updated it  this is the state the runner leaves behind before
 	ex.ReplaceTodoState([]evidence.TodoItem{{Content: "add abc", Status: "in_progress"}})
 
 	o := newTurnOrchestrator(c)

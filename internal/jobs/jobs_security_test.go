@@ -32,7 +32,7 @@ func TestValidatePathSegment(t *testing.T) {
 		{"back slash", "kind", "task\\evil", true},
 		{"only slash", "parentSession", "/", true},
 		{"only backslash", "parentSession", "\\", true},
-// Traversal: must reject both `.` and `..` even without separators,
+		// Traversal: must reject both `.` and `..` even without separators,
 		{"single dot", "kind", ".", true},
 		{"double dot", "kind", "..", true},
 		{"traversal prefix", "parentSession", "..", true},
@@ -67,8 +67,8 @@ func TestStartForSession_RejectsPathTraversalParentSession(t *testing.T) {
 		t.Fatalf("read temp root before: %v", err)
 	}
 
-// "../../etc" with a leading traversal walks two parents up from
-// m.tempRoot and then descends into "etc". The exact resolution does not
+	// "../../etc" with a leading traversal walks two parents up from
+	// m.tempRoot and then descends into "etc". The exact resolution does not
 	ran := false
 	j := m.StartForSession("../../etc", "task", "escape attempt", func(_ context.Context, _ io.Writer) (string, error) {
 		ran = true

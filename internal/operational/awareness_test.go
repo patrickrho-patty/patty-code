@@ -51,7 +51,7 @@ func TestAwarenessSnapshotThrottled(t *testing.T) {
 	})
 	a.SetCapacityLease(&CapacityLease{TokenQuota: 100000, TokensConsumed: 12500})
 	a.SetVisibility(&WorkIntelVisibility{
-		CanSeeRawActivity: false,
+		CanSeeRawActivity:       false,
 		CanSeeAggregatedMetrics: true,
 		AggregationFloorSeconds: 60,
 	})

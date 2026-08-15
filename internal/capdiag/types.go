@@ -25,7 +25,7 @@ type Options struct {
 	// RuntimeHost is set unless Live is also true (desktop passes Live=false).
 	RuntimeHost *plugin.Host
 	// HomeDir and PattyHomeDir override discovery roots (tests).
-	HomeDir         string
+	HomeDir      string
 	PattyHomeDir string
 }
 

@@ -173,10 +173,10 @@ func validateDisplay(p *Profile) ValidateErrors {
 
 // MergeResult holds the output of resolving a derived profile against a base.
 type MergeResult struct {
-	Resolved   *Profile
-	Warnings   []string
-	Errors     ValidateErrors
-	Overrides  map[string]string // path → override value for audit
+	Resolved  *Profile
+	Warnings  []string
+	Errors    ValidateErrors
+	Overrides map[string]string // path → override value for audit
 }
 
 // ResolveDerived merges a derived profile into its base and validates the result.
@@ -335,10 +335,10 @@ func ResolveDerived(base, derived *Profile) (*MergeResult, error) {
 	allErrs := merged.Validate()
 	if len(allErrs) > 0 {
 		return &MergeResult{
-			Resolved:   merged,
-			Warnings:   nil,
-			Errors:     allErrs,
-			Overrides:  applied,
+			Resolved:  merged,
+			Warnings:  nil,
+			Errors:    allErrs,
+			Overrides: applied,
 		}, fmt.Errorf("merged profile validation failed: %w", allErrs)
 	}
 

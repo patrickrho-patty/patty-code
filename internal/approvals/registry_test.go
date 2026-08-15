@@ -96,8 +96,8 @@ func TestCheckToolExpiredRegistration(t *testing.T) {
 	r := NewRegistry()
 	r.SetTools([]*ToolRegistration{
 		{
-			ToolID:        "tool-expired",
-			Status:       StatusApproved,
+			ToolID:         "tool-expired",
+			Status:         StatusApproved,
 			NotAfterUnixMs: 1000,
 		},
 	}, 1)

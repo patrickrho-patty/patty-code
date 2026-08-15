@@ -135,7 +135,7 @@ func IsValidName(name string) bool { return config.IsValidSkillName(name) }
 // config.PattyHomeDir(), or HomeDir/.patty when HomeDir is explicitly set.
 type Options struct {
 	HomeDir          string
-	PattyHomeDir  string
+	PattyHomeDir     string
 	ProjectRoot      string
 	CustomPaths      []string
 	PluginPaths      map[string][]string // canonical custom root -> installed plugin package names
@@ -214,7 +214,7 @@ func New(opts Options) *Store {
 	}
 	return &Store{
 		homeDir:          home,
-		pattyHomeDir: pattyHome,
+		pattyHomeDir:     pattyHome,
 		projectRoot:      root,
 		customPaths:      custom,
 		pluginPaths:      pluginPaths,

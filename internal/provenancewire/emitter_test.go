@@ -18,11 +18,11 @@ import (
 func TestEmitterAcceptsValidActionEnvelope(t *testing.T) {
 	emitter := NewProvenanceEmitter()
 	env, err := BuildActionEnvelopeFromReceipt(ActionBuildRequest{
-		ActionID:        "act-1",
-		OrganizationID:  "org-test",
-		SessionID:       "ses-1",
-		ActionType:      "tool_use",
-		ActionPayload:   `{"tool":"bash","args":["ls"]}`,
+		ActionID:         "act-1",
+		OrganizationID:   "org-test",
+		SessionID:        "ses-1",
+		ActionType:       "tool_use",
+		ActionPayload:    `{"tool":"bash","args":["ls"]}`,
 		OccurredAtUnixMs: 1_700_000_000_000,
 	})
 	if err != nil {
@@ -146,13 +146,13 @@ func TestEmitterSpanBuildFromReceipt(t *testing.T) {
 		Paths:    []string{"/repo/foo.go"},
 	}
 	span, err := BuildSpanEnvelopeFromReceipt(SpanBuildRequest{
-		SpanID:        "span-1",
-		RepositoryID:  "pccp",
-		SymbolLang:    "go",
-		SymbolName:    "main.compute",
-		StartLine:     42,
-		EndLine:       56,
-		Receipt:       receipt,
+		SpanID:       "span-1",
+		RepositoryID: "pccp",
+		SymbolLang:   "go",
+		SymbolName:   "main.compute",
+		StartLine:    42,
+		EndLine:      56,
+		Receipt:      receipt,
 	})
 	if err != nil {
 		t.Fatalf("build: %v", err)
@@ -225,8 +225,8 @@ func TestEmitterSpanFingerprintSurvivesRename(t *testing.T) {
 func TestEmitterClearEmptiesPending(t *testing.T) {
 	emitter := NewProvenanceEmitter()
 	env, _ := BuildActionEnvelopeFromReceipt(ActionBuildRequest{
-		ActionID:        "act-1",
-		ActionType:      "tool_use",
+		ActionID:         "act-1",
+		ActionType:       "tool_use",
 		OccurredAtUnixMs: 1,
 	})
 	_ = emitter.EmitAction(env)
@@ -242,8 +242,8 @@ func TestEmitterClearEmptiesPending(t *testing.T) {
 func TestEmitterConcurrentEmitAndPending(t *testing.T) {
 	emitter := NewProvenanceEmitter()
 	env, _ := BuildActionEnvelopeFromReceipt(ActionBuildRequest{
-		ActionID:        "act",
-		ActionType:      "tool_use",
+		ActionID:         "act",
+		ActionType:       "tool_use",
 		OccurredAtUnixMs: 1,
 	})
 	var wg sync.WaitGroup
@@ -363,12 +363,12 @@ func TestWireRoundTripChangeSet(t *testing.T) {
 // TestWireRoundTripSpan covers the span encode/decode pair.
 func TestWireRoundTripSpan(t *testing.T) {
 	span, err := BuildSpanEnvelopeFromReceipt(SpanBuildRequest{
-		SpanID:     "sp-1",
+		SpanID:       "sp-1",
 		RepositoryID: "pccp",
-		SymbolLang: "go",
-		SymbolName: "compute",
-		StartLine:  10,
-		EndLine:    20,
+		SymbolLang:   "go",
+		SymbolName:   "compute",
+		StartLine:    10,
+		EndLine:      20,
 		Receipt: evidence.Receipt{
 			ToolName: "edit_file", Mutation: true, Paths: []string{"foo.go"}, Success: true,
 		},
@@ -395,9 +395,9 @@ func TestWireRoundTripSpan(t *testing.T) {
 // TestWireRoundTripAction covers the action encode/decode pair.
 func TestWireRoundTripAction(t *testing.T) {
 	env, err := BuildActionEnvelopeFromReceipt(ActionBuildRequest{
-		ActionID:        "act-1",
-		ActionType:      "tool_use",
-		ActionPayload:   `{"tool":"bash"}`,
+		ActionID:         "act-1",
+		ActionType:       "tool_use",
+		ActionPayload:    `{"tool":"bash"}`,
 		OccurredAtUnixMs: 1_700_000_000_000,
 	})
 	if err != nil {
@@ -419,11 +419,11 @@ func TestWireRoundTripAction(t *testing.T) {
 // TestWireRoundTripCommitBinding covers the commit-binding encode/decode.
 func TestWireRoundTripCommitBinding(t *testing.T) {
 	cb := &CommitBindingEnvelope{
-		BindingID:    "b-1",
-		RepositoryID: "pccp",
-		CommitSHA:    "abc123",
-		ChangeSetID:  "cs-1",
-		Branch:       "main",
+		BindingID:     "b-1",
+		RepositoryID:  "pccp",
+		CommitSHA:     "abc123",
+		ChangeSetID:   "cs-1",
+		Branch:        "main",
 		BoundAtUnixMs: 1_700_000_000_000,
 	}
 	cb.Digest()
@@ -471,9 +471,9 @@ func TestWireRoundTripEvidenceReceipt(t *testing.T) {
 // relay-pushed receipt.
 func TestWireRoundTripReceiptAck(t *testing.T) {
 	ack := &ReceiptAck{
-		ReceiptID:    "r-1",
-		ExchangeID:   "ex-1",
-		AckDigest:    [32]byte{9},
+		ReceiptID:     "r-1",
+		ExchangeID:    "ex-1",
+		AckDigest:     [32]byte{9},
 		AckedAtUnixMs: 1_700_000_000_000,
 	}
 	data, err := EncodeReceiptAck(ack)
@@ -521,7 +521,7 @@ func TestReplayFromChainBuildsReplayPlan(t *testing.T) {
 		SessionID:      "ses-1",
 		ModelPackageID: "pkg-1",
 		Files:          []string{"foo.go"},
-		Prompts:       []string{"first prompt", "second prompt"},
+		Prompts:        []string{"first prompt", "second prompt"},
 	}
 	plan := replayFromChain(chain)
 	if plan == nil {

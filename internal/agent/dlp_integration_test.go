@@ -43,9 +43,9 @@ func fakeAWSKey() string { return "AKIA" + "ABCDEFGHIJKLMNOP" }
 // DLP wrapper can scan it. The agent's Stream call wraps the
 // inner provider.
 type fakeStreamProvider struct {
-	name  string
-	text  string
-	err   error
+	name string
+	text string
+	err  error
 }
 
 func (f *fakeStreamProvider) Name() string { return f.name }

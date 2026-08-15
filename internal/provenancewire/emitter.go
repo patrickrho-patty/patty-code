@@ -26,7 +26,7 @@ import (
 type AttributionState string
 
 const (
-	AttributionAIGenerated        AttributionState = "AI_GENERATED"
+	AttributionAIGenerated         AttributionState = "AI_GENERATED"
 	AttributionAIThenHumanEdited   AttributionState = "AI_THEN_HUMAN_EDITED"
 	AttributionHumanThenAIAssisted AttributionState = "HUMAN_THEN_AI_ASSISTED"
 	AttributionHumanWritten        AttributionState = "HUMAN_WRITTEN"
@@ -41,79 +41,79 @@ const ProvenanceDomain = "DARI-PROVENANCE-v1\x00"
 // layout mirrors `models.ChangeSet` so the relay's GORM layer can
 // round-trip without modification.
 type ChangeSetEnvelope struct {
-	ChangeSetID    string            `cbor:"1,keyasint"`
-	OrganizationID string            `cbor:"2,keyasint"`
-	SessionID      string            `cbor:"3,keyasint"`
-	ExchangeID     string            `cbor:"4,keyasint,omitempty"`
-	RepositoryID   string            `cbor:"5,keyasint"`
-	Branch         string            `cbor:"6,keyasint"`
-	BaselineID     string            `cbor:"7,keyasint,omitempty"`
-	UserID         string            `cbor:"8,keyasint,omitempty"`
-	HarnessID      string            `cbor:"9,keyasint,omitempty"`
-	ModelPackageID string            `cbor:"10,keyasint,omitempty"`
-	EndpointID     string            `cbor:"11,keyasint,omitempty"`
-	FilesChanged   []string          `cbor:"12,keyasint,omitempty"`
-	DiffSummary    string            `cbor:"13,keyasint,omitempty"`
-	DiffDigest     [32]byte          `cbor:"14,keyasint"`
-	LinesAdded     int               `cbor:"15,keyasint"`
-	LinesRemoved   int               `cbor:"16,keyasint"`
+	ChangeSetID      string           `cbor:"1,keyasint"`
+	OrganizationID   string           `cbor:"2,keyasint"`
+	SessionID        string           `cbor:"3,keyasint"`
+	ExchangeID       string           `cbor:"4,keyasint,omitempty"`
+	RepositoryID     string           `cbor:"5,keyasint"`
+	Branch           string           `cbor:"6,keyasint"`
+	BaselineID       string           `cbor:"7,keyasint,omitempty"`
+	UserID           string           `cbor:"8,keyasint,omitempty"`
+	HarnessID        string           `cbor:"9,keyasint,omitempty"`
+	ModelPackageID   string           `cbor:"10,keyasint,omitempty"`
+	EndpointID       string           `cbor:"11,keyasint,omitempty"`
+	FilesChanged     []string         `cbor:"12,keyasint,omitempty"`
+	DiffSummary      string           `cbor:"13,keyasint,omitempty"`
+	DiffDigest       [32]byte         `cbor:"14,keyasint"`
+	LinesAdded       int              `cbor:"15,keyasint"`
+	LinesRemoved     int              `cbor:"16,keyasint"`
 	AttributionState AttributionState `cbor:"17,keyasint"`
-	Confidence     float64           `cbor:"18,keyasint"`
-	ChangeSetDigest [32]byte         `cbor:"19,keyasint"`
-	Status         string            `cbor:"20,keyasint,omitempty"`
+	Confidence       float64          `cbor:"18,keyasint"`
+	ChangeSetDigest  [32]byte         `cbor:"19,keyasint"`
+	Status           string           `cbor:"20,keyasint,omitempty"`
 }
 
 // ProvenanceSpanEnvelope is the wire shape for line-level attribution
 // (PRD §19, Appendix B.1). The relay ingests through
 // `provenance.CreateProvenanceSpan`.
 type ProvenanceSpanEnvelope struct {
-	SpanID              string            `cbor:"1,keyasint"`
-	OrganizationID      string            `cbor:"2,keyasint"`
-	RepositoryID        string            `cbor:"3,keyasint"`
-	ChangeSetID         string            `cbor:"4,keyasint,omitempty"`
-	FilePath            string            `cbor:"5,keyasint"`
-	CommitSHA           string            `cbor:"6,keyasint,omitempty"`
-	SymbolLang          string            `cbor:"7,keyasint,omitempty"`
-	SymbolName          string            `cbor:"8,keyasint,omitempty"`
-	StartLine           int               `cbor:"9,keyasint"`
-	EndLine             int               `cbor:"10,keyasint"`
-	ASTFingerprint      [32]byte          `cbor:"11,keyasint"`
-	SemanticFingerprint [32]byte          `cbor:"12,keyasint,omitempty"`
+	SpanID              string           `cbor:"1,keyasint"`
+	OrganizationID      string           `cbor:"2,keyasint"`
+	RepositoryID        string           `cbor:"3,keyasint"`
+	ChangeSetID         string           `cbor:"4,keyasint,omitempty"`
+	FilePath            string           `cbor:"5,keyasint"`
+	CommitSHA           string           `cbor:"6,keyasint,omitempty"`
+	SymbolLang          string           `cbor:"7,keyasint,omitempty"`
+	SymbolName          string           `cbor:"8,keyasint,omitempty"`
+	StartLine           int              `cbor:"9,keyasint"`
+	EndLine             int              `cbor:"10,keyasint"`
+	ASTFingerprint      [32]byte         `cbor:"11,keyasint"`
+	SemanticFingerprint [32]byte         `cbor:"12,keyasint,omitempty"`
 	AttributionState    AttributionState `cbor:"13,keyasint"`
-	Confidence          float64           `cbor:"14,keyasint"`
-	SessionID           string            `cbor:"15,keyasint,omitempty"`
-	UserID              string            `cbor:"16,keyasint,omitempty"`
-	HarnessID           string            `cbor:"17,keyasint,omitempty"`
-	ModelPackageID      string            `cbor:"18,keyasint,omitempty"`
-	EndpointID          string            `cbor:"19,keyasint,omitempty"`
-	ContextRefs         []string          `cbor:"20,keyasint,omitempty"`
-	ParentSpanRefs      []string          `cbor:"21,keyasint,omitempty"`
-	SpanDigest          [32]byte          `cbor:"22,keyasint"`
+	Confidence          float64          `cbor:"14,keyasint"`
+	SessionID           string           `cbor:"15,keyasint,omitempty"`
+	UserID              string           `cbor:"16,keyasint,omitempty"`
+	HarnessID           string           `cbor:"17,keyasint,omitempty"`
+	ModelPackageID      string           `cbor:"18,keyasint,omitempty"`
+	EndpointID          string           `cbor:"19,keyasint,omitempty"`
+	ContextRefs         []string         `cbor:"20,keyasint,omitempty"`
+	ParentSpanRefs      []string         `cbor:"21,keyasint,omitempty"`
+	SpanDigest          [32]byte         `cbor:"22,keyasint"`
 }
 
 // ActionEnvelope is the wire shape for signed governed actions
 // (PRD §37.2). Every harness command path emits one of these.
 type ActionEnvelope struct {
-	ActionID        string  `cbor:"1,keyasint"`
-	OrganizationID  string  `cbor:"2,keyasint"`
-	SessionID       string  `cbor:"3,keyasint,omitempty"`
-	ExchangeID      string  `cbor:"4,keyasint,omitempty"`
-	UserID          string  `cbor:"5,keyasint,omitempty"`
-	HarnessID       string  `cbor:"6,keyasint,omitempty"`
-	ModelPackageID  string  `cbor:"7,keyasint,omitempty"`
-	EndpointID      string  `cbor:"8,keyasint,omitempty"`
-	ProjectID       string  `cbor:"9,keyasint,omitempty"`
-	RepositoryID    string  `cbor:"10,keyasint,omitempty"`
-	Branch          string  `cbor:"11,keyasint,omitempty"`
-	PolicyEpochID   string  `cbor:"12,keyasint,omitempty"`
-	LeaseID         string  `cbor:"13,keyasint,omitempty"`
-	ActionType      string  `cbor:"14,keyasint"`
-	ActionPayload   string  `cbor:"15,keyasint,omitempty"`
-	VerdictResult   string  `cbor:"16,keyasint,omitempty"`
-	Classification  string  `cbor:"17,keyasint,omitempty"`
-	EnvelopeDigest  [32]byte `cbor:"18,keyasint"`
-	CPSignature     string  `cbor:"19,keyasint,omitempty"`
-	OccurredAtUnixMs int64 `cbor:"20,keyasint"`
+	ActionID         string   `cbor:"1,keyasint"`
+	OrganizationID   string   `cbor:"2,keyasint"`
+	SessionID        string   `cbor:"3,keyasint,omitempty"`
+	ExchangeID       string   `cbor:"4,keyasint,omitempty"`
+	UserID           string   `cbor:"5,keyasint,omitempty"`
+	HarnessID        string   `cbor:"6,keyasint,omitempty"`
+	ModelPackageID   string   `cbor:"7,keyasint,omitempty"`
+	EndpointID       string   `cbor:"8,keyasint,omitempty"`
+	ProjectID        string   `cbor:"9,keyasint,omitempty"`
+	RepositoryID     string   `cbor:"10,keyasint,omitempty"`
+	Branch           string   `cbor:"11,keyasint,omitempty"`
+	PolicyEpochID    string   `cbor:"12,keyasint,omitempty"`
+	LeaseID          string   `cbor:"13,keyasint,omitempty"`
+	ActionType       string   `cbor:"14,keyasint"`
+	ActionPayload    string   `cbor:"15,keyasint,omitempty"`
+	VerdictResult    string   `cbor:"16,keyasint,omitempty"`
+	Classification   string   `cbor:"17,keyasint,omitempty"`
+	EnvelopeDigest   [32]byte `cbor:"18,keyasint"`
+	CPSignature      string   `cbor:"19,keyasint,omitempty"`
+	OccurredAtUnixMs int64    `cbor:"20,keyasint"`
 }
 
 // EvidenceReceiptEnvelope is the relay's signed tamper-evident
@@ -121,25 +121,25 @@ type ActionEnvelope struct {
 // this back to the connector over MsgEvidenceReceipt, and the
 // connector persists it as tamper-evidence (B3).
 type EvidenceReceiptEnvelope struct {
-	ReceiptID       string  `cbor:"1,keyasint"`
-	ExchangeID      string  `cbor:"2,keyasint"`
-	SessionID       string  `cbor:"3,keyasint,omitempty"`
-	OrganizationID  string  `cbor:"4,keyasint,omitempty"`
-	FinalState      string  `cbor:"5,keyasint,omitempty"`
-	FirstEventSeq    uint64 `cbor:"6,keyasint"`
-	LastEventSeq     uint64 `cbor:"7,keyasint"`
-	ChainRoot       [32]byte `cbor:"8,keyasint"`
-	ProvenanceRoot  [32]byte `cbor:"9,keyasint,omitempty"`
-	PolicyEpochID   string  `cbor:"10,keyasint,omitempty"`
-	LeaseDigest     [32]byte `cbor:"11,keyasint,omitempty"`
-	RelayIdentity   string  `cbor:"12,keyasint,omitempty"`
-	ModelPackageID  string  `cbor:"13,keyasint,omitempty"`
-	EndpointID      string  `cbor:"14,keyasint,omitempty"`
-	KeyAlgorithm    string  `cbor:"15,keyasint"`
-	Signature       string  `cbor:"16,keyasint"`
-	RedactionManifest string `cbor:"17,keyasint,omitempty"`
-	IssuedAtUnixMs  int64   `cbor:"18,keyasint"`
-	Acknowledged    bool    `cbor:"19,keyasint,omitempty"`
+	ReceiptID         string   `cbor:"1,keyasint"`
+	ExchangeID        string   `cbor:"2,keyasint"`
+	SessionID         string   `cbor:"3,keyasint,omitempty"`
+	OrganizationID    string   `cbor:"4,keyasint,omitempty"`
+	FinalState        string   `cbor:"5,keyasint,omitempty"`
+	FirstEventSeq     uint64   `cbor:"6,keyasint"`
+	LastEventSeq      uint64   `cbor:"7,keyasint"`
+	ChainRoot         [32]byte `cbor:"8,keyasint"`
+	ProvenanceRoot    [32]byte `cbor:"9,keyasint,omitempty"`
+	PolicyEpochID     string   `cbor:"10,keyasint,omitempty"`
+	LeaseDigest       [32]byte `cbor:"11,keyasint,omitempty"`
+	RelayIdentity     string   `cbor:"12,keyasint,omitempty"`
+	ModelPackageID    string   `cbor:"13,keyasint,omitempty"`
+	EndpointID        string   `cbor:"14,keyasint,omitempty"`
+	KeyAlgorithm      string   `cbor:"15,keyasint"`
+	Signature         string   `cbor:"16,keyasint"`
+	RedactionManifest string   `cbor:"17,keyasint,omitempty"`
+	IssuedAtUnixMs    int64    `cbor:"18,keyasint"`
+	Acknowledged      bool     `cbor:"19,keyasint,omitempty"`
 }
 
 // ReceiptAck is the connector's reply to a relay-pushed
@@ -147,23 +147,23 @@ type EvidenceReceiptEnvelope struct {
 // signals back so the relay can drop the receipt from its retry
 // queue.
 type ReceiptAck struct {
-	ReceiptID    string  `cbor:"1,keyasint"`
-	ExchangeID   string  `cbor:"2,keyasint"`
-	AckDigest    [32]byte `cbor:"3,keyasint"`
-	AckedAtUnixMs int64   `cbor:"4,keyasint"`
+	ReceiptID     string   `cbor:"1,keyasint"`
+	ExchangeID    string   `cbor:"2,keyasint"`
+	AckDigest     [32]byte `cbor:"3,keyasint"`
+	AckedAtUnixMs int64    `cbor:"4,keyasint"`
 }
 
 // CommitBindingEnvelope is the wire shape for linking a git
 // commit to a ChangeSet (PRD §18.6).
 type CommitBindingEnvelope struct {
-	BindingID      string  `cbor:"1,keyasint"`
-	OrganizationID string  `cbor:"2,keyasint,omitempty"`
-	RepositoryID   string  `cbor:"3,keyasint"`
-	CommitSHA      string  `cbor:"4,keyasint"`
-	ChangeSetID    string  `cbor:"5,keyasint"`
-	SessionID      string  `cbor:"6,keyasint,omitempty"`
-	Branch         string  `cbor:"7,keyasint,omitempty"`
-	BoundAtUnixMs  int64   `cbor:"8,keyasint"`
+	BindingID      string   `cbor:"1,keyasint"`
+	OrganizationID string   `cbor:"2,keyasint,omitempty"`
+	RepositoryID   string   `cbor:"3,keyasint"`
+	CommitSHA      string   `cbor:"4,keyasint"`
+	ChangeSetID    string   `cbor:"5,keyasint"`
+	SessionID      string   `cbor:"6,keyasint,omitempty"`
+	Branch         string   `cbor:"7,keyasint,omitempty"`
+	BoundAtUnixMs  int64    `cbor:"8,keyasint"`
 	BindingDigest  [32]byte `cbor:"9,keyasint"`
 }
 
@@ -277,7 +277,6 @@ func joinStrings(values []string, sep string) string {
 	return out
 }
 
-
 // ProvenanceEmitter converts the harness's local Ledger receipts
 // into PAPER-compatible provenance envelopes. The emitter is the
 // single point the harness uses to surface attribution to PCCP; it
@@ -289,9 +288,9 @@ type ProvenanceEmitter struct {
 	// them at the end of each turn so the relay sees a coherent
 	// snapshot.
 	pendingChangeSets []*ChangeSetEnvelope
-	pendingSpans     []*ProvenanceSpanEnvelope
-	pendingActions   []*ActionEnvelope
-	pendingBindings  []*CommitBindingEnvelope
+	pendingSpans      []*ProvenanceSpanEnvelope
+	pendingActions    []*ActionEnvelope
+	pendingBindings   []*CommitBindingEnvelope
 }
 
 // NewProvenanceEmitter constructs an empty emitter. The harness
