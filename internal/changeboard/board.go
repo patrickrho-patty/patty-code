@@ -104,6 +104,7 @@ type Board struct {
 	submissions   map[string]*Submission // keyed by SubmissionID
 	byFingerprint map[[32]byte]*Submission
 	nowFn         func() int64
+	dir           string // persistence root; empty = memory-only
 }
 
 // NewBoard constructs an empty board.
@@ -145,6 +146,7 @@ func (b *Board) Submit(s *Submission) (*Submission, error) {
 	s.SubmittedAt = b.nowFn()
 	b.submissions[s.SubmissionID] = s
 	b.byFingerprint[fp] = s
+	b.persistLocked(s)
 	return s, nil
 }
 
@@ -179,6 +181,7 @@ func (b *Board) Approve(submissionID, reviewerID, comment string, nowMs int64) e
 	s.ReviewerID = reviewerID
 	s.ReviewedAt = nowMs
 	s.ReviewerComment = comment
+	b.persistLocked(s)
 	return nil
 }
 
@@ -194,6 +197,7 @@ func (b *Board) Reject(submissionID, reviewerID, comment string, nowMs int64) er
 	s.ReviewerID = reviewerID
 	s.ReviewedAt = nowMs
 	s.ReviewerComment = comment
+	b.persistLocked(s)
 	return nil
 }
 

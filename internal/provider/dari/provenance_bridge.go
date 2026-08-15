@@ -94,6 +94,10 @@ func (p *Provider) RecordAIEdit(path, tool string) {
 			lines++
 		}
 	}
+	// Honest confidence: the span covers the whole file (1..lines) —
+	// full-coverage spans carry 1.0; partial spans compute their real
+	// coverage instead of a flat 0.9.
+	confidence := 1.0
 	ast := sha256.Sum256(append([]byte(path+"\x00"), content...))
 
 	span := &provenancewire.ProvenanceSpanEnvelope{
@@ -104,7 +108,7 @@ func (p *Provider) RecordAIEdit(path, tool string) {
 		EndLine:          lines,
 		ASTFingerprint:   ast,
 		AttributionState: provenancewire.AttributionAIGenerated,
-		Confidence:       0.9,
+		Confidence:       confidence,
 		SessionID:        sess,
 		ModelPackageID:   model,
 	}
@@ -145,8 +149,11 @@ func (p *Provider) sealTurnChangeSet(emitter *provenancewire.ProvenanceEmitter) 
 		DiffSummary:      fmt.Sprintf("AI session edit: %d file(s)", len(paths)),
 		DiffDigest:       digest,
 		AttributionState: provenancewire.AttributionAIGenerated,
-		Confidence:       0.9,
-		ModelPackageID:   model,
+		// The change set is session-produced by construction: the
+		// attribution confidence here means "this changeset came from
+		// the governed AI session" — which is 1.0, not an estimate.
+		Confidence:     1.0,
+		ModelPackageID: model,
 	}
 	_ = emitter.EmitChangeSet(cs)
 }

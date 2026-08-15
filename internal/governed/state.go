@@ -41,13 +41,14 @@ type Checker interface {
 // context those gates evaluate against. Every field is optional;
 // a nil client skips its check.
 type State struct {
-	mu       sync.RWMutex
-	registry *approvals.Registry
-	gates    *workflow.GatesClient
-	sandbox  *sandbox.PolicyStore
-	board    *changeboard.Board
-	repoID   string
-	modelID  string
+	mu             sync.RWMutex
+	registry       *approvals.Registry
+	gates          *workflow.GatesClient
+	sandbox        *sandbox.PolicyStore
+	board          *changeboard.Board
+	submissionSink func(*changeboard.Submission)
+	repoID         string
+	modelID        string
 }
 
 // NewState returns an empty governance state. All checks are
@@ -93,6 +94,18 @@ func (s *State) SetChangeBoard(b *changeboard.Board) {
 	}
 	s.mu.Lock()
 	s.board = b
+	s.mu.Unlock()
+}
+
+// SetSubmissionSink installs the wire notifier for NEW pending
+// changeboard submissions (D2): the provider turns each into an
+// ActionEnvelope the control plane surfaces for review.
+func (s *State) SetSubmissionSink(sink func(*changeboard.Submission)) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.submissionSink = sink
 	s.mu.Unlock()
 }
 
@@ -158,6 +171,7 @@ func (s *State) CheckToolCall(toolName string, args json.RawMessage, readOnly bo
 	registry := s.registry
 	gates := s.gates
 	sandboxStore := s.sandbox
+	sink := s.submissionSink
 	repoID := s.repoID
 	modelID := s.modelID
 	s.mu.RUnlock()
@@ -172,8 +186,10 @@ func (s *State) CheckToolCall(toolName string, args json.RawMessage, readOnly bo
 	}
 
 	// D2: change-control board for high-risk AI writes. Approved
-	// submissions pass; anything else auto-submits and blocks with the
-	// Korean surface (§33.4) until a reviewer approves.
+	// submissions pass; anything else auto-submits, notifies the
+	// control plane (submission wire sink), and blocks with the Korean
+	// surface (§33.4) until a reviewer approves over the directive
+	// channel.
 	if s.board != nil && writeActionTools[toolName] && !readOnly {
 		if path, content := fileWritePayload(args); path != "" {
 			if risk := riskClassOf(path, content); risk != "" {
@@ -186,6 +202,9 @@ func (s *State) CheckToolCall(toolName string, args json.RawMessage, readOnly bo
 					Submitter:     "patty-governed",
 				}
 				rec, _ := s.board.Submit(sub)
+				if rec != nil && rec.IsPending() && sink != nil {
+					sink(rec)
+				}
 				if rec == nil || !rec.IsApproved() {
 					if rec != nil && rec.Status == changeboard.StatusRejected {
 						return true, "변경 통제 위원회가 이 변경을 거절했습니다 (change-control board rejected)"

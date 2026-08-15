@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"patty/internal/admin"
+	"patty/internal/changeboard"
 	"patty/internal/comms"
 	"patty/internal/dariproto"
 	"patty/internal/provenancewire"
@@ -83,6 +84,13 @@ type Provider struct {
 	// receiptStore is the boot-installable durable store (B3); nil
 	// falls back to the in-memory store.
 	receiptStore *provenancewire.ReceiptStore
+	// board is the session change-control board (D2); suspended marks
+	// admin-directed pause (E5).
+	board     *changeboard.Board
+	suspended bool
+	// credOrgID is the verified credential's organization (envelopes
+	// the connector emits carry it).
+	credOrgID string
 	// provRepoID/provBranch carry the workspace git identity for B1
 	// provenance envelopes; provTurnPaths accumulates the turn's
 	// edited paths until the next flush seals them into a change set.
@@ -149,12 +157,14 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		return nil, errors.New("dari: DARI_HARNESS_CREDENTIAL_FILE and DARI_HARNESS_KEY_FILE must both be set")
 	}
 
+	orgID, _ := identity.Organization()
 	return &Provider{
 		name:            cfg.Name,
 		model:           cfg.Model,
 		relayAddr:       relayAddr,
 		harnessID:       harnessID,
 		harnessVersion:  "dev",
+		credOrgID:       orgID,
 		identity:        identity,
 		credPath:        credPath,
 		keyPath:         keyPath,
@@ -368,6 +378,9 @@ func (p *Provider) connect(ctx context.Context) error {
 
 // Stream starts a DARI streaming completion.
 func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
+	if p.Suspended() {
+		return nil, fmt.Errorf("dari: session paused by administrator directive — inference refused")
+	}
 	// Fail-closed fast path: when a lease is already held, validate it
 	// BEFORE touching the network so an expired/revoked/subject-
 	// mismatched lease surfaces immediately.

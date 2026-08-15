@@ -2029,6 +2029,11 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	// fire on real tool calls. Without a DARI session no state is
 	// installed and the wrapper stays a pass-through.
 	sessionChangeBoard := changeboard.NewBoard()
+	if home, herr := os.UserConfigDir(); herr == nil {
+		if berr := sessionChangeBoard.EnablePersistence(filepath.Join(home, "patty", "changeboard")); berr != nil {
+			slog.Warn("dari: changeboard persistence unavailable — submissions are memory-only", "err", berr)
+		}
+	}
 	if dp, ok := execProv.(*dari.Provider); ok {
 		// B1: give the provenance emitter the workspace git identity
 		// so real AI edits surface as attributed change sets/spans.
@@ -2053,10 +2058,19 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 			st := governed.NewState()
 			id := dariproto.HarnessIdentity{Version: harnessBuildVersion(), Ring: "stable"}
 			st.SetGates(snap.BuildGatesClient(id))
-			st.SetRegistry(snap.BuildApprovalsRegistry())
+			if len(snap.Tools) > 0 {
+				// C3: tool approval applies when the org has configured a
+				// registry. An org with NO tool policy is not
+				// deny-everything — that posture is an explicit config,
+				// not an accident of an empty table.
+				st.SetRegistry(snap.BuildApprovalsRegistry())
+			}
 			st.SetSandboxPolicy(snap.BuildSandboxStore())
 			st.SetContext(snap.RepoID, snap.ModelID)
 			st.SetChangeBoard(sessionChangeBoard)
+			// D2: new pending submissions surface to the control plane
+			// as governed action envelopes (the reviewer queue).
+			st.SetSubmissionSink(dp.EmitChangeboardSubmission)
 			ctrl.SetGovernanceState(st)
 		})
 	}

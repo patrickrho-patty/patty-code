@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"patty/internal/changeboard"
 	"patty/internal/dariproto"
 )
 
@@ -40,10 +41,18 @@ func (p *Provider) openSession(conn *dariproto.TransportConn) error {
 	if userID == "" {
 		userID = "user-" + p.subjectPeerID
 	}
+	// The workspace git identity (B1 provenance context) also scopes
+	// the relay's governance snapshot (D3 freeze matching) and the
+	// session's repository binding.
+	p.mu.Lock()
+	repoID, branch := p.provRepoID, p.provBranch
+	p.mu.Unlock()
 	body, err := json.Marshal(map[string]string{
-		"session_id": sessionID,
-		"user_id":    userID,
-		"model":      p.model,
+		"session_id":    sessionID,
+		"user_id":       userID,
+		"model":         p.model,
+		"repository_id": repoID,
+		"branch":        branch,
 	})
 	if err != nil {
 		return fmt.Errorf("dari: marshal SESSION_OPEN: %w", err)
@@ -383,4 +392,51 @@ func (p *Provider) LastDecision() *dariproto.DecisionEnvelope {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.lastDecision
+}
+
+// ChangeBoard returns the session's change-control board (creating it
+// on first use). Boot installs the durable, shared board before the
+// first governed state.
+func (p *Provider) ChangeBoard() *changeboard.Board {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.board == nil {
+		p.board = changeboard.NewBoard()
+	}
+	return p.board
+}
+
+// SetChangeBoard installs the session board (boot wires the durable
+// one + the submission sink).
+func (p *Provider) SetChangeBoard(b *changeboard.Board) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.board = b
+}
+
+// SetSuspended pauses/resumes governed dispatch (E5 directives). A
+// suspended provider refuses new exchanges with a clear error; live
+// streams finish.
+func (p *Provider) SetSuspended(v bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.suspended = v
+}
+
+// Suspended reports the pause state.
+func (p *Provider) Suspended() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.suspended
+}
+
+// nowMs is the provider's clock in unix-ms.
+func (p *Provider) nowMs() int64 {
+	p.mu.Lock()
+	fn := p.nowFn
+	p.mu.Unlock()
+	if fn == nil {
+		return time.Now().UnixMilli()
+	}
+	return fn().UnixMilli()
 }

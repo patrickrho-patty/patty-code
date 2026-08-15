@@ -2,10 +2,12 @@ package dari
 
 import (
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"patty/internal/admin"
 	"patty/internal/comms"
+	"patty/internal/provenancewire"
 )
 
 // comms_admin.go drains relay-pushed advisories into the live
@@ -43,7 +45,9 @@ func (p *Provider) AdminDispatcher() *admin.Dispatcher {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.adminDisp == nil {
-		p.adminDisp = admin.NewDispatcher(loggingAdminExecutor{})
+		// E5: the REAL executor — verified directives mutate the live
+		// changeboard/session state (changeboard_admin.go).
+		p.adminDisp = admin.NewDispatcher(directiveExecutor{p: p})
 		if p.policyIssuerKey != nil {
 			p.adminDisp.SetIssuerPubKey(p.policyIssuerKey)
 		}
@@ -101,3 +105,28 @@ func (p *Provider) handleAdminDirectivePayload(payload []byte) {
 	}
 	_, _ = p.AdminDispatcher().Dispatch(&cmd, time.Now().UnixMilli())
 }
+
+// emitActionDraft records a governed action envelope on the session's
+// provenance emitter (flushes with the next turn).
+func (p *Provider) emitActionDraft(d *provenanceActionDraft) {
+	env := &provenancewire.ActionEnvelope{
+		ActionID:         d.ActionID,
+		OrganizationID:   d.OrganizationID,
+		SessionID:        d.SessionID,
+		UserID:           d.UserID,
+		HarnessID:        d.HarnessID,
+		ModelPackageID:   d.ModelPackageID,
+		ActionType:       d.ActionType,
+		ActionPayload:    d.ActionPayload,
+		OccurredAtUnixMs: p.nowMs(),
+	}
+	if err := p.ProvenanceEmitter().EmitAction(env); err != nil {
+		slog.Warn("dari: changeboard submission envelope rejected", "err", err)
+	}
+}
+
+// orgIDForSession derives the org for connector-emitted envelopes from
+// the authenticated credential's organization (empty before auth).
+func (p *Provider) orgIDForSession() string { return p.credOrgID }
+
+// credOrgID is set at AUTH_PROOF from the verified credential.
