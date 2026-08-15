@@ -188,6 +188,7 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 
 	relayCmd := exec.Command(relayBin)
 	relayCmd.Env = append(os.Environ(),
+		"PCCP_DEV_BOOTSTRAP=1", // e2e brings up a fresh relay: first-run bootstrap
 		"PCCP_DB_DSN="+filepath.Join(tmp, "e2e.db"),
 		fmt.Sprintf("PCCP_RELAY_DARI_ADDR=%s", dariAddr),
 		fmt.Sprintf("PCCP_RELAY_HTTP_ADDR=%s", adminAddr),

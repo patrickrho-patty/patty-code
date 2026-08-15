@@ -84,7 +84,6 @@ type COSESign1 struct {
 	Signature   []byte     `cbor:"3,keyasint"`
 }
 
-
 // CreateCOSESign1WithAAD signs a payload with an external AAD per F.2:
 // protected = {1: -8, 4: kid} (both protected, nothing else), the
 // unprotected map empty, and the Sig_structure array
@@ -236,12 +235,7 @@ const AuthorizationGrantAAD = "DARI-AUTHORIZATION-GRANT-v1\x00"
 // SHA-256("DARI-SUBJECT-KEY-v1\0" || subject COSE_Key bytes). For the
 // Ed25519 baseline the subject COSE_Key is the 32-byte public key.
 func SubjectKeyThumbprint(pub ed25519.PublicKey) Digest {
-	h := sha256.New()
-	h.Write([]byte("DARI-SUBJECT-KEY-v1\x00"))
-	h.Write([]byte(pub))
-	var d Digest
-	copy(d[:], h.Sum(nil))
-	return d
+	return KernelObjectDigestRaw("DARI-SUBJECT-KEY-v1\x00", COSEKeyCBOR(pub))
 }
 
 // ---------------------------------------------------------------------------
@@ -431,4 +425,90 @@ func DecodeAuthorizationGrant(coseBytes []byte, signer ed25519.PublicKey) (*Gran
 		SignedDigest: KernelSignedObjectDigest(ObjTypeAuthorizationGrant, coseBytes),
 		SignerKey:    signer,
 	}, nil
+}
+
+// COSEKeyCBOR renders the deterministic COSE_Key (RFC 9053 Ed25519:
+// {1: OKP, -1: Ed25519, -2: key bytes}) — the thumbprint input per
+// F.3 ("deterministic_cbor(subject COSE_Key)").
+func COSEKeyCBOR(pub ed25519.PublicKey) []byte {
+	body, err := MarshalCBOR(map[int]any{1: 1, -1: 6, -2: []byte(pub)})
+	if err != nil {
+		return nil // unreachable: deterministic encoding of plain ints/bytes
+	}
+	return body
+}
+
+// SignKernelObject is the shared canonical signer for every kernel
+// object: canonical body → COSE with the object's AAD → envelope bytes
+// + signed-object digest.
+func SignKernelObject(body interface{}, aad string, priv ed25519.PrivateKey, objType ObjectType) (*COSESign1, []byte, Digest, error) {
+	payload, err := MarshalCBOR(body)
+	if err != nil {
+		return nil, nil, Digest{}, err
+	}
+	kid := SubjectKeyThumbprint(priv.Public().(ed25519.PublicKey))
+	sign1, err := CreateCOSESign1WithAAD(payload, []byte(aad), priv, kid[:])
+	if err != nil {
+		return nil, nil, Digest{}, err
+	}
+	coseBytes, err := MarshalCBOR(sign1)
+	if err != nil {
+		return nil, nil, Digest{}, err
+	}
+	return sign1, coseBytes, KernelSignedObjectDigest(objType, coseBytes), nil
+}
+
+// DecodeKernelObject is the shared verifier: decode envelope → decode
+// body → canonical re-encode must equal the attached payload →
+// signature under the AAD → signed-object digest.
+func DecodeKernelObject[T any](coseBytes []byte, aad string, canon func(*T) ([]byte, error), signer ed25519.PublicKey) (*T, *COSESign1, Digest, error) {
+	var sign1 COSESign1
+	if err := UnmarshalCBOR(coseBytes, &sign1); err != nil {
+		return nil, nil, Digest{}, err
+	}
+	var body T
+	if err := UnmarshalCBOR(sign1.Payload, &body); err != nil {
+		return nil, nil, Digest{}, err
+	}
+	reencoded, err := canon(&body)
+	if err != nil {
+		return nil, nil, Digest{}, err
+	}
+	if !bytes.Equal(reencoded, sign1.Payload) {
+		return nil, nil, Digest{}, errors.New("dari: body is not the canonical payload")
+	}
+	if err := VerifyCOSESign1WithAAD(&sign1, []byte(aad), reencoded, signer); err != nil {
+		return nil, nil, Digest{}, err
+	}
+	return &body, &sign1, KernelSignedObjectDigest(objectTypeForAAD(aad), coseBytes), nil
+}
+
+// objectTypeForAAD maps a kernel AAD to its F.12 object type for
+// signed-object digesting.
+func objectTypeForAAD(aad string) ObjectType {
+	if aad == AuthorizationGrantAAD {
+		return ObjTypeAuthorizationGrant
+	}
+	return 0xFFFF
+}
+
+// PathPrefixCovers reports whether childPrefix is covered by
+// parentPrefix per F.4: equal, or extends it with a '/' boundary.
+func PathPrefixCovers(parentPrefix, childPrefix string) bool {
+	if childPrefix == parentPrefix {
+		return true
+	}
+	return len(childPrefix) > len(parentPrefix) &&
+		childPrefix[:len(parentPrefix)] == parentPrefix &&
+		childPrefix[len(parentPrefix)] == '/'
+}
+
+// KernelObjectDigestRaw is the shared domain-prefixed digest helper.
+func KernelObjectDigestRaw(domain string, body []byte) Digest {
+	h := sha256.New()
+	h.Write([]byte(domain))
+	h.Write(body)
+	var d Digest
+	copy(d[:], h.Sum(nil))
+	return d
 }
