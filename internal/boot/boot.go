@@ -2032,6 +2032,9 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		if repoID, branch := workspaceGitIdentity(); repoID != "" {
 			dp.SetProvenanceContext(repoID, branch)
 		}
+		// D5: HELLO advertises the honest build version; the relay's
+		// floor refuses sub-minimum connectors at handshake time.
+		dp.SetHarnessVersion(harnessBuildVersion())
 		dp.SetGovernanceSink(func(snap *dariproto.GovernanceStateWire) {
 			st := governed.NewState()
 			id := dariproto.HarnessIdentity{Version: harnessBuildVersion(), Ring: "stable"}

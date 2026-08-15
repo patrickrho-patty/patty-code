@@ -316,3 +316,14 @@ func (p *Provider) applyGovernanceState(snap *dariproto.GovernanceStateWire) {
 	}
 	sink(snap)
 }
+
+// SetHarnessVersion installs the honest build identity the HELLO
+// advertises (D5). Boot passes the running binary's version; without
+// it the provider advertises "dev".
+func (p *Provider) SetHarnessVersion(v string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if v != "" {
+		p.harnessVersion = v
+	}
+}

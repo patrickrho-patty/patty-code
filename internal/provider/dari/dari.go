@@ -85,6 +85,10 @@ type Provider struct {
 	// commsInbox receives relay broadcasts (E2); adminDisp verifies +
 	// executes signed directives (E5); policyIssuerKey is the AUTH_ACK
 	// policy issuer public key the dispatcher verifies under.
+	// harnessVersion is the honest build identity HELLO advertises
+	// (D5 floor checks compare against it). Boot installs the real
+	// build version; the default stays explicit.
+	harnessVersion  string
 	commsInbox      *comms.Inbox
 	adminDisp       *admin.Dispatcher
 	adminExec       admin.Executor
@@ -143,6 +147,7 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		model:           cfg.Model,
 		relayAddr:       relayAddr,
 		harnessID:       harnessID,
+		harnessVersion:  "dev",
 		identity:        identity,
 		credPath:        credPath,
 		keyPath:         keyPath,
@@ -203,7 +208,7 @@ func (p *Provider) connect(ctx context.Context) error {
 		CryptoProfiles:        []string{"DARI-BASE-1"},
 		ClientNonce:           make([]byte, 32),
 		ImplementationName:    "patty-code",
-		ImplementationVersion: "v2-paper",
+		ImplementationVersion: p.harnessVersion,
 	}
 
 	helloBytes, err := dariproto.MarshalCBOR(hello)
@@ -233,6 +238,12 @@ func (p *Provider) connect(ctx context.Context) error {
 	if err := dariproto.UnmarshalCBOR(rec.Payload, &ack); err != nil {
 		conn.Close()
 		return fmt.Errorf("dari: decode HELLO_ACK: %w", err)
+	}
+	// D5: a relay-advertised harness floor refuses sub-minimum
+	// connectors at handshake time — fail fast rather than per-call.
+	if ack.MinHarnessVersion != "" && dariproto.VersionBelow(p.harnessVersion, ack.MinHarnessVersion) {
+		conn.Close()
+		return fmt.Errorf("dari: harness version %s is below the relay minimum %s — upgrade required", p.harnessVersion, ack.MinHarnessVersion)
 	}
 
 	slog.Info("dari: HELLO_ACK received",
