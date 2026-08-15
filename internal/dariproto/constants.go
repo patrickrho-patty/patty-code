@@ -86,6 +86,10 @@ const (
 	MsgBroadcast          MessageType = 0x0B00
 	MsgAdminCommand       MessageType = 0x0B01
 	MsgAdminCommandResult MessageType = 0x0B02
+	// Sovereign advisory (0x0B03) — relay-pushed offline advisory
+	// (E3 air-gap mode). Rides its own type so broadcasts and
+	// advisories stay distinguishable on the connector.
+	MsgSovereignAdvisory MessageType = 0x0B03
 )
 
 func (m MessageType) String() string {
@@ -160,6 +164,8 @@ func (m MessageType) String() string {
 		return "ADMIN_DIRECTIVE"
 	case MsgAdminCommandResult:
 		return "ADMIN_COMMAND_RESULT"
+	case MsgSovereignAdvisory:
+		return "SOVEREIGN_ADVISORY"
 	case MsgLeaseIssue:
 		return "LEASE_ISSUE"
 	case MsgLeaseRevoke:

@@ -149,6 +149,17 @@ func (d *Dispatcher) SetIssuerPubKey(pub ed25519.PublicKey) {
 	d.issuerPub = pub
 }
 
+// SetExecutor replaces the command executor (harness-specific
+// directive handlers install themselves after construction).
+func (d *Dispatcher) SetExecutor(exec Executor) {
+	if exec == nil {
+		return
+	}
+	d.mu.Lock()
+	d.executor = exec
+	d.mu.Unlock()
+}
+
 // SetCommandSink wires an optional audit-log upload. The harness
 // passes a callback that ships the Execution to the relay for
 // durable storage.

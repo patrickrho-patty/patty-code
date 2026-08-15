@@ -8,6 +8,7 @@ package dari
 
 import (
 	"context"
+	"crypto/ed25519"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -19,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"patty/internal/admin"
+	"patty/internal/comms"
 	"patty/internal/dariproto"
 	"patty/internal/provenancewire"
 	"patty/internal/provider"
@@ -79,6 +82,13 @@ type Provider struct {
 	provRepoID    string
 	provBranch    string
 	provTurnPaths map[string]bool
+	// commsInbox receives relay broadcasts (E2); adminDisp verifies +
+	// executes signed directives (E5); policyIssuerKey is the AUTH_ACK
+	// policy issuer public key the dispatcher verifies under.
+	commsInbox      *comms.Inbox
+	adminDisp       *admin.Dispatcher
+	adminExec       admin.Executor
+	policyIssuerKey ed25519.PublicKey
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
@@ -497,15 +507,23 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 				p.conn.SendControl(dariproto.MsgPong, nil, []byte("pong"))
 
 			case dariproto.MsgBroadcast:
-				// E2/E3: governed broadcast or sovereign advisory.
-				// Stored for the comms inbox / air-gap mode; never
-				// surfaced into the model stream.
+				// E2: governed broadcast. Stored for the air-gap
+				// surfaces AND delivered to the live comms inbox;
+				// never surfaced into the model stream.
 				p.storeAdvisory("broadcast", rec.Payload)
+				p.handleBroadcastPayload(rec.Payload)
 
 			case dariproto.MsgAdminCommand:
-				// E5: signed admin command — stored for the admin
-				// dispatcher; verification happens there.
+				// E5: signed admin command — stored and routed to the
+				// admin dispatcher (signature verification, expiry,
+				// and execution recording happen there).
 				p.storeAdvisory("admin-directive", rec.Payload)
+				p.handleAdminDirectivePayload(rec.Payload)
+
+			case dariproto.MsgSovereignAdvisory:
+				// E3: signed offline advisory (air-gap mode). Stored
+				// for the sovereign surfaces.
+				p.storeAdvisory("sovereign", rec.Payload)
 
 			case dariproto.MsgEvidenceReceipt:
 				// B3 e2e: the relay pushes a signed evidence receipt

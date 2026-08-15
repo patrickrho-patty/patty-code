@@ -171,9 +171,15 @@ func (p *Provider) installGovernanceClientsFromAuthAck(payload []byte) error {
 	if err != nil || len(pubBytes) != ed25519.PublicKeySize {
 		return fmt.Errorf("dari: invalid policy issuer public key in AUTH_ACK")
 	}
+	p.policyIssuerKey = ed25519.PublicKey(pubBytes)
 	if p.leaseClient == nil {
 		p.leaseClient = dariproto.NewLeaseClient(ed25519.PublicKey(pubBytes), info.PolicyIssuer)
 		p.leaseClient.WithAutoRenewBefore(p.autoRenewBefore)
+	}
+	// E5: directive verification key — the admin dispatcher verifies
+	// signed admin commands under the same issuer.
+	if p.adminDisp != nil {
+		p.adminDisp.SetIssuerPubKey(p.policyIssuerKey)
 	}
 	return nil
 }
