@@ -19,10 +19,12 @@ import (
 	"encoding/json"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
 	"patty/internal/approvals"
+	"patty/internal/changeboard"
 	"patty/internal/sandbox"
 	"patty/internal/workflow"
 )
@@ -43,6 +45,7 @@ type State struct {
 	registry *approvals.Registry
 	gates    *workflow.GatesClient
 	sandbox  *sandbox.PolicyStore
+	board    *changeboard.Board
 	repoID   string
 	modelID  string
 }
@@ -79,6 +82,17 @@ func (s *State) SetSandboxPolicy(p *sandbox.PolicyStore) {
 	}
 	s.mu.Lock()
 	s.sandbox = p
+	s.mu.Unlock()
+}
+
+// SetChangeBoard installs the change-control board (D2 §33.4):
+// high-risk AI writes auto-submit and block until approved.
+func (s *State) SetChangeBoard(b *changeboard.Board) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.board = b
 	s.mu.Unlock()
 }
 
@@ -154,6 +168,31 @@ func (s *State) CheckToolCall(toolName string, args json.RawMessage, readOnly bo
 		dec := gates.CheckDispatch(dispatchActionFor(toolName, readOnly), repoID, modelID)
 		if !dec.Allow {
 			return true, governanceReason(dec.Reason, dec.ReasonKo)
+		}
+	}
+
+	// D2: change-control board for high-risk AI writes. Approved
+	// submissions pass; anything else auto-submits and blocks with the
+	// Korean surface (§33.4) until a reviewer approves.
+	if s.board != nil && writeActionTools[toolName] && !readOnly {
+		if path, content := fileWritePayload(args); path != "" {
+			if risk := riskClassOf(path, content); risk != "" {
+				sub := &changeboard.Submission{
+					SubmissionID:  "sub-" + path,
+					RepositoryID:  repoID,
+					RiskClass:     risk,
+					Description:   "auto-submitted: high-risk change class",
+					DescriptionKo: "고위험 변경 클래스 자동 제출 — 승인까지 차단됩니다",
+					Submitter:     "patty-governed",
+				}
+				rec, _ := s.board.Submit(sub)
+				if rec == nil || !rec.IsApproved() {
+					if rec != nil && rec.Status == changeboard.StatusRejected {
+						return true, "변경 통제 위원회가 이 변경을 거절했습니다 (change-control board rejected)"
+					}
+					return true, "변경 통제 승인 대기중 — 고위험 변경은 승인 후 진행됩니다 (change-control approval pending)"
+				}
+			}
 		}
 	}
 
@@ -279,4 +318,37 @@ func boundedReason(reason string) string {
 		return reason
 	}
 	return reason[:maxReasonLen] + "…"
+}
+
+// riskPatterns maps high-risk change classes (D2 §33.4) to path /
+// content signals. A dependency-manifest change is high-risk by
+// definition; crypto/payment/PII paths match by name and content.
+var riskPatterns = []struct {
+	class changeboard.RiskClass
+	re    *regexp.Regexp
+}{
+	{changeboard.RiskCrypto, regexp.MustCompile(`(?i)(crypto|cipher|signature|ed25519|rsa|secp256|kms|keymgmt)`)},
+	{changeboard.RiskHigh, regexp.MustCompile(`(?i)(payment|billing|checkout|stripe|tosspayments|pg|evidence-receipt|secret|credential|pii|rrn|resident)`)},
+}
+
+// depManifestRe identifies dependency manifests: any change there is
+// a new dependency (MEDIUM at minimum).
+var depManifestRe = regexp.MustCompile(`(^|/)(go\.(mod|sum)|package\.json|pnpm-lock\.yaml|yarn\.lock|Cargo\.(toml|lock)|pyproject\.toml|requirements\.txt|Gemfile|pom\.xml)$`)
+
+// riskClassOf classifies a file write for the change board. Empty
+// means the change is not board-scope.
+func riskClassOf(path, content string) changeboard.RiskClass {
+	if depManifestRe.MatchString(path) {
+		return changeboard.RiskMedium
+	}
+	_ = content
+	for _, rp := range riskPatterns {
+		if rp.re.MatchString(path) || (len(content) < 1<<20 && rp.re.MatchString(content)) {
+			return rp.class
+		}
+	}
+	if strings.HasPrefix(path, "mcp") || strings.Contains(path, "/mcp/") || strings.Contains(path, "mcp.json") {
+		return changeboard.RiskHigh
+	}
+	return ""
 }

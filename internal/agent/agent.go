@@ -2306,6 +2306,10 @@ func (a *Agent) streamWithFrozen(ctx context.Context, turn int, sink event.Sink,
 	if err != nil {
 		return streamedTurn{usage: provider.UsageWithRequestAttemptCount(ctx, nil), err: err}
 	}
+	// F2: as soon as this turn's stream is open, prewarm the NEXT
+	// turn's transport in the background (parity with cached-WS
+	// prewarm; failures are audit-only and never block the turn).
+	go a.prewarmNextTurn()
 
 	// A PostLLMCall hook rewrites the whole reasoning block, so when one is wired
 	// up we buffer reasoning silently and emit the transformed text once after the
@@ -3509,4 +3513,26 @@ func finishReasonMessage(u *provider.Usage) (string, bool) {
 	default:
 		return "", false
 	}
+}
+
+// prewarmNextTurn prepares the DARI transport for the next turn
+// (harness plan F2): keeps the authenticated session warm and
+// renews the lease inside its renewal window so the next Stream pays
+// no setup cost. Non-DARI providers expose no Prewarm — nothing runs.
+func (a *Agent) prewarmNextTurn() {
+	type prewarmer interface{ Prewarm(context.Context) error }
+	var p prewarmer
+	if raw, ok := a.prov.(prewarmer); ok {
+		p = raw
+	} else if u, ok := a.prov.(interface{ Unwrap() provider.Provider }); ok {
+		if inner, ok := u.Unwrap().(prewarmer); ok {
+			p = inner
+		}
+	}
+	if p == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = p.Prewarm(ctx)
 }

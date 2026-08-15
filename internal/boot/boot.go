@@ -27,6 +27,7 @@ import (
 	"patty/internal/ablation"
 	"patty/internal/agent"
 	"patty/internal/capability"
+	"patty/internal/changeboard"
 	"patty/internal/command"
 	"patty/internal/config"
 	"patty/internal/control"
@@ -2026,6 +2027,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	// enterprise gates (freeze/recall/version/acks/tools/sandbox)
 	// fire on real tool calls. Without a DARI session no state is
 	// installed and the wrapper stays a pass-through.
+	sessionChangeBoard := changeboard.NewBoard()
 	if dp, ok := execProv.(*dari.Provider); ok {
 		// B1: give the provenance emitter the workspace git identity
 		// so real AI edits surface as attributed change sets/spans.
@@ -2042,6 +2044,7 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 			st.SetRegistry(snap.BuildApprovalsRegistry())
 			st.SetSandboxPolicy(snap.BuildSandboxStore())
 			st.SetContext(snap.RepoID, snap.ModelID)
+			st.SetChangeBoard(sessionChangeBoard)
 			ctrl.SetGovernanceState(st)
 		})
 	}
