@@ -80,9 +80,9 @@ type CatalogSnapshot struct {
 
 // CatalogDelta is the wire shape for an incremental catalog update.
 type CatalogDelta struct {
-	Version uint64 `cbor:"1,keyasint"`
-	EpochID string `cbor:"2,keyasint"`
-	IssuedAtUnixMs int64 `cbor:"3,keyasint"`
+	Version        uint64 `cbor:"1,keyasint"`
+	EpochID        string `cbor:"2,keyasint"`
+	IssuedAtUnixMs int64  `cbor:"3,keyasint"`
 	IssuedSequence uint64 `cbor:"4,keyasint"`
 	// Added are new entries the connector MUST accept.
 	Added []CatalogEntry `cbor:"5,keyasint,omitempty"`
@@ -135,11 +135,11 @@ func CatalogDigest(snap *CatalogSnapshot) [32]byte {
 // and their sequence is strictly greater than the held one. Stale
 // updates are rejected so a buggy relay cannot regress the catalog.
 type CatalogClient struct {
-	mu              sync.Mutex
-	current         *CatalogSnapshot
-	stalenessCount  int64
+	mu                sync.Mutex
+	current           *CatalogSnapshot
+	stalenessCount    int64
 	applyFailureCount int64
-	nowFn           func() time.Time
+	nowFn             func() time.Time
 }
 
 // NewCatalogClient constructs a client with the wall clock as the
@@ -340,13 +340,13 @@ func (c *CatalogClient) MetricsFor() CatalogMetrics {
 // CatalogMetrics is a snapshot of the catalog client's health, used
 // by the harness status bar (E1) and the audit log.
 type CatalogMetrics struct {
-	Version          uint64
-	EpochID          string
-	IssuedSequence   uint64
-	NotAfterUnixMs   int64
-	EntryCount       int
-	Digest           [32]byte
-	StalenessCount   int64
+	Version           uint64
+	EpochID           string
+	IssuedSequence    uint64
+	NotAfterUnixMs    int64
+	EntryCount        int
+	Digest            [32]byte
+	StalenessCount    int64
 	ApplyFailureCount int64
 	// IsStale mirrors IsStale so the metric snapshot is self-contained;
 	// callers should not need to call the method separately.
@@ -356,11 +356,11 @@ type CatalogMetrics struct {
 // Sentinel errors for the catalog boundary. The connector surfaces
 // these to the operator UI without translation.
 var (
-	ErrCatalogInvalid        = errors.New("dari: catalog snapshot is empty or malformed")
-	ErrCatalogUnbound        = errors.New("dari: no catalog applied to the connector")
-	ErrCatalogStale          = errors.New("dari: catalog snapshot is past its validity window")
-	ErrCatalogModelNotFound  = errors.New("dari: requested model is not in the relay's catalog")
-	ErrCatalogEntryExpired    = errors.New("dari: catalog entry is past its deactivation time")
+	ErrCatalogInvalid       = errors.New("dari: catalog snapshot is empty or malformed")
+	ErrCatalogUnbound       = errors.New("dari: no catalog applied to the connector")
+	ErrCatalogStale         = errors.New("dari: catalog snapshot is past its validity window")
+	ErrCatalogModelNotFound = errors.New("dari: requested model is not in the relay's catalog")
+	ErrCatalogEntryExpired  = errors.New("dari: catalog entry is past its deactivation time")
 )
 
 // IsCatalogStale reports whether err is the catalog-stale sentinel.

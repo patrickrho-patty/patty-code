@@ -16,17 +16,17 @@ import (
 // COSE-Sign1 signature; the connector never modifies any field after
 // issuance.
 type LeaseRequest struct {
-	SubjectPeerID   string
-	UserID          string
-	SessionID       string
-	PolicyEpochID   string
-	AllowedModels   []string
-	RepositoryScope []map[string]string
+	SubjectPeerID      string
+	UserID             string
+	SessionID          string
+	PolicyEpochID      string
+	AllowedModels      []string
+	RepositoryScope    []map[string]string
 	FilePathReadScope  []string
 	FilePathWriteScope []string
-	ToolClasses     []string
-	TokenBudget     int64
-	Validity        time.Duration
+	ToolClasses        []string
+	TokenBudget        int64
+	Validity           time.Duration
 }
 
 // LeaseClient manages the harness's currently-held capability lease. The
@@ -50,7 +50,7 @@ type LeaseClient struct {
 	nowFn func() time.Time
 
 	// metrics: surfaced for A1 (quota awareness) and audit logging.
-	lastRenewedAtUnixMs atomic.Int64
+	lastRenewedAtUnixMs  atomic.Int64
 	lastVerifiedAtUnixMs atomic.Int64
 	renewFailureCount    atomic.Int64
 }
@@ -66,7 +66,7 @@ func NewLeaseClient(issuerPub ed25519.PublicKey, issuerID string) *LeaseClient {
 		issuerPublicKey: append(ed25519.PublicKey(nil), issuerPub...),
 		issuerID:        issuerID,
 		autoRenewBefore: 5 * time.Minute,
-		nowFn:          time.Now,
+		nowFn:           time.Now,
 	}
 }
 
@@ -109,6 +109,12 @@ func (c *LeaseClient) Acquire(subjectPeerID, sessionID string, lease *Lease) err
 	c.lastRenewedAtUnixMs.Store(nowMs)
 	c.lastVerifiedAtUnixMs.Store(nowMs)
 	return nil
+}
+
+// IssuerPublicKey returns the policy issuer's public key this client
+// verifies leases (and session grants) under.
+func (c *LeaseClient) IssuerPublicKey() ed25519.PublicKey {
+	return append(ed25519.PublicKey(nil), c.issuerPublicKey...)
 }
 
 // Current returns the cached lease or nil if none is held. The connector
@@ -226,11 +232,11 @@ func (c *LeaseClient) MetricsFor() LeaseMetrics {
 		needsRenewal = notAfter.Sub(now) <= c.autoRenewBefore
 	}
 	m := LeaseMetrics{
-		IssuerID:           c.issuerID,
-		LastRenewedAtUnixMs: c.lastRenewedAtUnixMs.Load(),
+		IssuerID:             c.issuerID,
+		LastRenewedAtUnixMs:  c.lastRenewedAtUnixMs.Load(),
 		LastVerifiedAtUnixMs: c.lastVerifiedAtUnixMs.Load(),
-		RenewFailureCount:   c.renewFailureCount.Load(),
-		NeedsRenewal:        needsRenewal,
+		RenewFailureCount:    c.renewFailureCount.Load(),
+		NeedsRenewal:         needsRenewal,
 	}
 	if c.current != nil {
 		m.HeldLeaseID = c.current.LeaseID
@@ -244,14 +250,14 @@ func (c *LeaseClient) MetricsFor() LeaseMetrics {
 // LeaseMetrics is a snapshot of the lease client's health, used by the
 // harness status bar (E1) and the audit log.
 type LeaseMetrics struct {
-	IssuerID            string
-	HeldLeaseID         string
-	HeldSequence        uint64
-	NotAfterUnixMs      int64
-	PolicyEpochID       string
-	LastRenewedAtUnixMs int64
+	IssuerID             string
+	HeldLeaseID          string
+	HeldSequence         uint64
+	NotAfterUnixMs       int64
+	PolicyEpochID        string
+	LastRenewedAtUnixMs  int64
 	LastVerifiedAtUnixMs int64
-	RenewFailureCount   int64
+	RenewFailureCount    int64
 	// NeedsRenewal mirrors NeedsRenewal so the metric snapshot is
 	// self-contained; callers should not need to call the method
 	// separately.
@@ -334,17 +340,17 @@ func EncodeLeaseRequest(req *LeaseRequest) ([]byte, error) {
 		return nil, errors.New("dari: nil lease request")
 	}
 	msg := &leaseRequestWire{
-		SubjectPeerID:    req.SubjectPeerID,
-		UserID:           req.UserID,
-		SessionID:        req.SessionID,
-		PolicyEpochID:    req.PolicyEpochID,
-		AllowedModels:    req.AllowedModels,
-		RepositoryScope:  req.RepositoryScope,
+		SubjectPeerID:      req.SubjectPeerID,
+		UserID:             req.UserID,
+		SessionID:          req.SessionID,
+		PolicyEpochID:      req.PolicyEpochID,
+		AllowedModels:      req.AllowedModels,
+		RepositoryScope:    req.RepositoryScope,
 		FilePathReadScope:  req.FilePathReadScope,
 		FilePathWriteScope: req.FilePathWriteScope,
-		ToolClasses:      req.ToolClasses,
-		TokenBudget:      req.TokenBudget,
-		ValidityMs:       req.Validity.Milliseconds(),
+		ToolClasses:        req.ToolClasses,
+		TokenBudget:        req.TokenBudget,
+		ValidityMs:         req.Validity.Milliseconds(),
 	}
 	return MarshalCBOR(msg)
 }
@@ -360,17 +366,17 @@ func DecodeLeaseRequest(data []byte) (*LeaseRequest, error) {
 		return nil, fmt.Errorf("dari: decode lease request: %w", err)
 	}
 	return &LeaseRequest{
-		SubjectPeerID:    msg.SubjectPeerID,
-		UserID:           msg.UserID,
-		SessionID:        msg.SessionID,
-		PolicyEpochID:    msg.PolicyEpochID,
-		AllowedModels:    msg.AllowedModels,
-		RepositoryScope:  msg.RepositoryScope,
-		FilePathReadScope: msg.FilePathReadScope,
+		SubjectPeerID:      msg.SubjectPeerID,
+		UserID:             msg.UserID,
+		SessionID:          msg.SessionID,
+		PolicyEpochID:      msg.PolicyEpochID,
+		AllowedModels:      msg.AllowedModels,
+		RepositoryScope:    msg.RepositoryScope,
+		FilePathReadScope:  msg.FilePathReadScope,
 		FilePathWriteScope: msg.FilePathWriteScope,
-		ToolClasses:      msg.ToolClasses,
-		TokenBudget:      msg.TokenBudget,
-		Validity:         time.Duration(msg.ValidityMs) * time.Millisecond,
+		ToolClasses:        msg.ToolClasses,
+		TokenBudget:        msg.TokenBudget,
+		Validity:           time.Duration(msg.ValidityMs) * time.Millisecond,
 	}, nil
 }
 
@@ -401,17 +407,17 @@ func DecodeLeaseResponse(data []byte) (*Lease, error) {
 // struct mirrors them so the connector's encoder is byte-for-byte the
 // JSON the relay `policy.IssueCapabilityLease` decodes.
 type leaseRequestWire struct {
-	SubjectPeerID     string              `cbor:"1,keyasint"`
-	UserID            string              `cbor:"2,keyasint"`
-	SessionID         string              `cbor:"3,keyasint,omitempty"`
-	PolicyEpochID     string              `cbor:"4,keyasint"`
-	AllowedModels     []string            `cbor:"5,keyasint,omitempty"`
-	RepositoryScope   []map[string]string `cbor:"6,keyasint,omitempty"`
-	FilePathReadScope []string            `cbor:"7,keyasint,omitempty"`
-	FilePathWriteScope []string           `cbor:"8,keyasint,omitempty"`
-	ToolClasses       []string            `cbor:"9,keyasint,omitempty"`
-	TokenBudget       int64               `cbor:"10,keyasint,omitempty"`
-	ValidityMs        int64               `cbor:"11,keyasint,omitempty"`
+	SubjectPeerID      string              `cbor:"1,keyasint"`
+	UserID             string              `cbor:"2,keyasint"`
+	SessionID          string              `cbor:"3,keyasint,omitempty"`
+	PolicyEpochID      string              `cbor:"4,keyasint"`
+	AllowedModels      []string            `cbor:"5,keyasint,omitempty"`
+	RepositoryScope    []map[string]string `cbor:"6,keyasint,omitempty"`
+	FilePathReadScope  []string            `cbor:"7,keyasint,omitempty"`
+	FilePathWriteScope []string            `cbor:"8,keyasint,omitempty"`
+	ToolClasses        []string            `cbor:"9,keyasint,omitempty"`
+	TokenBudget        int64               `cbor:"10,keyasint,omitempty"`
+	ValidityMs         int64               `cbor:"11,keyasint,omitempty"`
 }
 
 // contextKey is a private type to avoid accidental collision with other

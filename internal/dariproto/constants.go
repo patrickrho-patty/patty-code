@@ -13,10 +13,10 @@ const VersionMajor byte = 1
 type MessageType uint16
 
 const (
-	MsgHello  MessageType = 0x0001
+	MsgHello    MessageType = 0x0001
 	MsgHelloAck MessageType = 0x0002
-	MsgPing   MessageType = 0x0003
-	MsgPong   MessageType = 0x0004
+	MsgPing     MessageType = 0x0003
+	MsgPong     MessageType = 0x0004
 	// Core allocation frozen by the deployed root registry (compat
 	// map §6 rule 3 / §12): DRAIN is 0x0005 and CLOSE is 0x0006. The
 	// connector previously carried CLOSE at 0x0005 — a renumbered
@@ -192,9 +192,9 @@ const (
 type PeerProfile string
 
 const (
-	ProfileHarness  PeerProfile = "HARNESS"
-	ProfileRelay    PeerProfile = "RELAY"
-	ProfilePIA      PeerProfile = "INFERENCE"
+	ProfileHarness PeerProfile = "HARNESS"
+	ProfileRelay   PeerProfile = "RELAY"
+	ProfilePIA     PeerProfile = "INFERENCE"
 )
 
 // COSEAlgorithm identifies a COSE signing algorithm.

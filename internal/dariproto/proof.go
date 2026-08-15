@@ -291,4 +291,3 @@ func writeLengthPrefixed(h interface{ Write([]byte) (int, error) }, value []byte
 	h.Write(length[:])
 	h.Write(value)
 }
-

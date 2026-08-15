@@ -105,6 +105,25 @@ func (p *Provider) openSession(conn *dariproto.TransportConn) error {
 			}
 
 		case dariproto.MsgSessionGrant:
+			var grant struct {
+				SessionID string `json:"session_id"`
+				GrantHex  string `json:"grant_hex"`
+			}
+			_ = json.Unmarshal(rec.Payload, &grant)
+			// The signed DARI Authorization Grant (Task 7): verify it
+			// under the AUTH_ACK policy issuer key and retain it as the
+			// session's authority object.
+			if grant.GrantHex != "" && p.leaseClient != nil {
+				raw, derr := hex.DecodeString(grant.GrantHex)
+				if derr != nil {
+					return fmt.Errorf("dari: session grant hex: %w", derr)
+				}
+				env, derr2 := dariproto.DecodeAuthorizationGrant(raw, p.leaseClient.IssuerPublicKey())
+				if derr2 != nil {
+					return fmt.Errorf("dari: session grant verification failed: %w", derr2)
+				}
+				p.sessionGrant = env
+			}
 			return nil
 
 		case dariproto.MsgClose:
@@ -214,4 +233,13 @@ func (p *Provider) Prewarm(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// SessionGrant returns the relay-issued, policy-signed DARI
+// Authorization Grant bound to this session (nil when the relay did
+// not send one, e.g. legacy deployments).
+func (p *Provider) SessionGrant() *dariproto.GrantEnvelope {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.sessionGrant
 }

@@ -79,19 +79,19 @@ func testIdentity(t *testing.T) (subjectPub ed25519.PublicKey, subjectPriv ed255
 // field re-order, a different int width, or an extra field makes the
 // issuer/verifier pubkey match but the payload digest diverge.
 type testPeerCredentialBody struct {
-	CredentialVersion       uint16     `cbor:"credential_version"`
-	Issuer                  string     `cbor:"issuer"`
-	SubjectPeerID           string     `cbor:"subject_peer_id"`
-	Organization            string     `cbor:"organization"`
+	CredentialVersion       uint16      `cbor:"credential_version"`
+	Issuer                  string      `cbor:"issuer"`
+	SubjectPeerID           string      `cbor:"subject_peer_id"`
+	Organization            string      `cbor:"organization"`
 	PeerProfile             PeerProfile `cbor:"peer_profile"`
-	PublicKey               []byte     `cbor:"public_key"`
-	NotBefore               int64      `cbor:"not_before"`
-	NotAfter                int64      `cbor:"not_after"`
-	Serial                  string     `cbor:"serial"`
-	RevocationAuthority     string     `cbor:"revocation_authority"`
-	AllowedProtocolVersions []uint8    `cbor:"protocol_versions"`
-	BuildChannel            string     `cbor:"build_channel,omitempty"`
-	DeploymentZone          string     `cbor:"deployment_zone,omitempty"`
+	PublicKey               []byte      `cbor:"public_key"`
+	NotBefore               int64       `cbor:"not_before"`
+	NotAfter                int64       `cbor:"not_after"`
+	Serial                  string      `cbor:"serial"`
+	RevocationAuthority     string      `cbor:"revocation_authority"`
+	AllowedProtocolVersions []uint8     `cbor:"protocol_versions"`
+	BuildChannel            string      `cbor:"build_channel,omitempty"`
+	DeploymentZone          string      `cbor:"deployment_zone,omitempty"`
 }
 
 // TestBuildAuthContextMatchesRelayVector asserts that the connector's
@@ -160,20 +160,20 @@ func TestBuildAuthContextMatchesRelayVector(t *testing.T) {
 // relay would compute a different context hash.
 func TestHelloAckResourceLimitsRoundTrip(t *testing.T) {
 	connector := &HelloAckMessage{
-		CoreVersion:       1,
-		CryptoProfile:     "DARI-BASE-1",
-		ServerNonce:       bytes.Repeat([]byte{0x33}, 32),
-		ResourceLimits:    map[string]uint64{"max_payload_len": 1024},
+		CoreVersion:    1,
+		CryptoProfile:  "DARI-BASE-1",
+		ServerNonce:    bytes.Repeat([]byte{0x33}, 32),
+		ResourceLimits: map[string]uint64{"max_payload_len": 1024},
 	}
 	connectorBytes, err := MarshalCBOR(connector)
 	if err != nil {
 		t.Fatalf("marshal connector ack: %v", err)
 	}
 	relay := &HelloAckMessage{
-		CoreVersion:       1,
-		CryptoProfile:     "DARI-BASE-1",
-		ServerNonce:       bytes.Repeat([]byte{0x33}, 32),
-		ResourceLimits:    map[string]uint64{"max_payload_len": 1024},
+		CoreVersion:    1,
+		CryptoProfile:  "DARI-BASE-1",
+		ServerNonce:    bytes.Repeat([]byte{0x33}, 32),
+		ResourceLimits: map[string]uint64{"max_payload_len": 1024},
 	}
 	relayBytes, err := MarshalCBOR(relay)
 	if err != nil {

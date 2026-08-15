@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"patty/internal/evidence"
 	"patty/internal/dariproto"
-	"patty/internal/provider"
+	"patty/internal/evidence"
 	"patty/internal/provenancewire"
+	"patty/internal/provider"
 )
 
 // live_e2e_test.go is the end-to-end validation of the DARI
@@ -300,6 +300,23 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 		t.Fatal("no lease held after session setup")
 	}
 	t.Logf("lease: id=%s seq=%d epoch=%s", metrics.HeldLeaseID, metrics.HeldSequence, metrics.PolicyEpochID)
+
+	// Task 7 e2e: the session grant must be present, policy-signed, and
+	// bound to this session.
+	if sg := pp.SessionGrant(); sg == nil {
+		t.Fatal("relay did not deliver a session authorization grant")
+	} else {
+		if sg.Body.SessionID != pp.SessionID() {
+			t.Fatalf("grant session %q != session %q", sg.Body.SessionID, pp.SessionID())
+		}
+		if sg.Body.SubjectPeerID == "" {
+			t.Fatal("grant must bind a subject peer")
+		}
+		if sg.Body.ParentGrantDigest != nil {
+			t.Fatal("session root grant must not carry a parent digest")
+		}
+		t.Logf("session grant: id=%s issuer=%s depth=%d models=%v", sg.Body.GrantID, sg.Body.Issuer, sg.Body.DelegationDepth, sg.Body.Scope.Models)
+	}
 
 	// Catalog must advertise the model (A5 e2e).
 	if pp.catalogClient != nil {

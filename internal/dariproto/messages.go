@@ -49,22 +49,22 @@ type AuthChallengeMessage struct {
 
 // AuthProofMessage is the AUTH_PROOF (DARI §18.2).
 type AuthProofMessage struct {
-	Credential   []byte        `cbor:"1,keyasint"`
-	Signature    []byte        `cbor:"2,keyasint"`
-	KeyAlgorithm COSEAlgorithm `cbor:"3,keyasint"`
-	ChallengeID  []byte        `cbor:"4,keyasint"`
-	RevocationEvidence []byte  `cbor:"5,keyasint,omitempty"`
+	Credential         []byte        `cbor:"1,keyasint"`
+	Signature          []byte        `cbor:"2,keyasint"`
+	KeyAlgorithm       COSEAlgorithm `cbor:"3,keyasint"`
+	ChallengeID        []byte        `cbor:"4,keyasint"`
+	RevocationEvidence []byte        `cbor:"5,keyasint,omitempty"`
 }
 
 // AIRequestPayload is the payload for AI_OPEN (DARI §10B).
 // Uses JSON for the request body so it can carry OpenAI-compatible messages.
 type AIRequestPayload struct {
-	Model       string        `json:"model"`
-	Messages    []AIMessage   `json:"messages"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-	Temperature *float64      `json:"temperature,omitempty"`
-	Tools       []AIToolDef   `json:"tools,omitempty"`
-	Stream      bool          `json:"stream,omitempty"`
+	Model       string      `json:"model"`
+	Messages    []AIMessage `json:"messages"`
+	MaxTokens   int         `json:"max_tokens,omitempty"`
+	Temperature *float64    `json:"temperature,omitempty"`
+	Tools       []AIToolDef `json:"tools,omitempty"`
+	Stream      bool        `json:"stream,omitempty"`
 }
 
 type AIMessage struct {
@@ -85,20 +85,20 @@ type AIToolFunction struct {
 
 // AITokenChunkPayload is the streaming token chunk (DARI §10B.20).
 type AITokenChunkPayload struct {
-	Text      string `json:"text"`
-	Done      bool   `json:"done"`
+	Text         string `json:"text"`
+	Done         bool   `json:"done"`
 	FinishReason string `json:"finish_reason,omitempty"`
 }
 
 // AICompletePayload is the completion message (DARI §10B.18).
 type AICompletePayload struct {
-	Content       string `json:"content"`
-	FinishReason  string `json:"finish_reason"`
-	InputTokens   int    `json:"input_tokens"`
-	OutputTokens  int    `json:"output_tokens"`
-	TotalTokens   int    `json:"total_tokens"`
-	CacheReadTokens  int `json:"cache_read_tokens,omitempty"`
-	CacheWriteTokens int `json:"cache_write_tokens,omitempty"`
+	Content          string `json:"content"`
+	FinishReason     string `json:"finish_reason"`
+	InputTokens      int    `json:"input_tokens"`
+	OutputTokens     int    `json:"output_tokens"`
+	TotalTokens      int    `json:"total_tokens"`
+	CacheReadTokens  int    `json:"cache_read_tokens,omitempty"`
+	CacheWriteTokens int    `json:"cache_write_tokens,omitempty"`
 }
 
 // MarshalCBOR wraps cbor.Marshal.
@@ -138,13 +138,13 @@ type canonicalLimitKV struct {
 }
 
 type canonicalAckMsg struct {
-	CoreVersion       uint8            `cbor:"1,keyasint"`
-	ExtensionVersions []canonicalKV    `cbor:"2,keyasint"`
-	CryptoProfile     string           `cbor:"3,keyasint"`
-	ServerNonce       []byte           `cbor:"4,keyasint"`
-	RelayCredential   []byte           `cbor:"5,keyasint"`
-	AuthChallenge     []byte           `cbor:"6,keyasint"`
-	MinHarnessVersion string           `cbor:"7,keyasint,omitempty"`
+	CoreVersion       uint8              `cbor:"1,keyasint"`
+	ExtensionVersions []canonicalKV      `cbor:"2,keyasint"`
+	CryptoProfile     string             `cbor:"3,keyasint"`
+	ServerNonce       []byte             `cbor:"4,keyasint"`
+	RelayCredential   []byte             `cbor:"5,keyasint"`
+	AuthChallenge     []byte             `cbor:"6,keyasint"`
+	MinHarnessVersion string             `cbor:"7,keyasint,omitempty"`
 	ResourceLimits    []canonicalLimitKV `cbor:"8,keyasint,omitempty"`
 }
 

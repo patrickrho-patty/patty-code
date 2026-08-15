@@ -17,21 +17,21 @@ import (
 // must remain at the zero value so the verifier's signing-bytes contract
 // stays stable.
 type LeaseBody struct {
-	LeaseID         string
-	SubjectPeerID   string
-	UserID          string
-	SessionID       string
-	PolicyEpochID   string
-	AllowedModels   []string
-	RepositoryScope []map[string]string
-	FilePathReadScope []string
+	LeaseID            string
+	SubjectPeerID      string
+	UserID             string
+	SessionID          string
+	PolicyEpochID      string
+	AllowedModels      []string
+	RepositoryScope    []map[string]string
+	FilePathReadScope  []string
 	FilePathWriteScope []string
-	ToolClasses     []string
-	TokenBudget     int64
-	NotBeforeUnixMs int64
-	NotAfterUnixMs  int64
-	IssuedAtUnixMs  int64
-	LeaseSequence   uint64
+	ToolClasses        []string
+	TokenBudget        int64
+	NotBeforeUnixMs    int64
+	NotAfterUnixMs     int64
+	IssuedAtUnixMs     int64
+	LeaseSequence      uint64
 }
 
 // Lease is the connector-side decoded view of a relay-issued capability
@@ -40,24 +40,24 @@ type LeaseBody struct {
 // signature alongside the body and uses it to authorize each
 // governance-gated exchange.
 type Lease struct {
-	Version        uint16 `cbor:"1,keyasint"`
-	Issuer         string `cbor:"2,keyasint"`
-	LeaseID        string `cbor:"3,keyasint"`
-	SubjectPeerID  string `cbor:"4,keyasint"`
-	UserID         string `cbor:"5,keyasint"`
-	SessionID      string `cbor:"6,keyasint,omitempty"`
-	PolicyEpochID  string `cbor:"7,keyasint"`
-	AllowedModels  []string `cbor:"8,keyasint,omitempty"`
-	RepositoryScope []map[string]string `cbor:"9,keyasint,omitempty"`
-	FilePathReadScope []string `cbor:"10,keyasint,omitempty"`
-	FilePathWriteScope []string `cbor:"11,keyasint,omitempty"`
-	ToolClasses    []string `cbor:"12,keyasint,omitempty"`
-	TokenBudget    int64  `cbor:"13,keyasint,omitempty"`
-	NotBeforeUnixMs int64 `cbor:"14,keyasint"`
-	NotAfterUnixMs  int64 `cbor:"15,keyasint"`
-	LeaseSequence  uint64 `cbor:"16,keyasint"`
-	IssuedAtUnixMs int64 `cbor:"17,keyasint,omitempty"`
-	Status         string `cbor:"18,keyasint,omitempty"`
+	Version            uint16              `cbor:"1,keyasint"`
+	Issuer             string              `cbor:"2,keyasint"`
+	LeaseID            string              `cbor:"3,keyasint"`
+	SubjectPeerID      string              `cbor:"4,keyasint"`
+	UserID             string              `cbor:"5,keyasint"`
+	SessionID          string              `cbor:"6,keyasint,omitempty"`
+	PolicyEpochID      string              `cbor:"7,keyasint"`
+	AllowedModels      []string            `cbor:"8,keyasint,omitempty"`
+	RepositoryScope    []map[string]string `cbor:"9,keyasint,omitempty"`
+	FilePathReadScope  []string            `cbor:"10,keyasint,omitempty"`
+	FilePathWriteScope []string            `cbor:"11,keyasint,omitempty"`
+	ToolClasses        []string            `cbor:"12,keyasint,omitempty"`
+	TokenBudget        int64               `cbor:"13,keyasint,omitempty"`
+	NotBeforeUnixMs    int64               `cbor:"14,keyasint"`
+	NotAfterUnixMs     int64               `cbor:"15,keyasint"`
+	LeaseSequence      uint64              `cbor:"16,keyasint"`
+	IssuedAtUnixMs     int64               `cbor:"17,keyasint,omitempty"`
+	Status             string              `cbor:"18,keyasint,omitempty"`
 	// Signature is the hex-encoded COSE-Sign1 wrapping the canonical
 	// lease body. The connector MUST verify it before relying on any
 	// field of the lease.
@@ -268,10 +268,10 @@ func writeLengthPrefixedU64(dst []byte, value uint64) []byte {
 // translation so operators can "is the lease expired vs. revoked vs.
 // invalid" without parsing prose.
 var (
-	ErrLeaseInvalid         = errors.New("dari: lease is empty or malformed")
-	ErrLeaseExpired         = errors.New("dari: lease expired")
-	ErrLeaseRevoked         = errors.New("dari: lease revoked")
-	ErrLeaseSubjectMismatch = errors.New("dari: lease subject peer does not match authenticated harness")
+	ErrLeaseInvalid          = errors.New("dari: lease is empty or malformed")
+	ErrLeaseExpired          = errors.New("dari: lease expired")
+	ErrLeaseRevoked          = errors.New("dari: lease revoked")
+	ErrLeaseSubjectMismatch  = errors.New("dari: lease subject peer does not match authenticated harness")
 	ErrLeaseSignatureInvalid = errors.New("dari: lease signature verification failed")
 )
 

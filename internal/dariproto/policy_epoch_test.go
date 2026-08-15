@@ -33,13 +33,13 @@ func (c *epochClock) Advance(d time.Duration) {
 // fork this and adjust fields to exercise failure paths.
 func sampleEpoch(now time.Time, id string, seq uint64) *PolicyEpoch {
 	return &PolicyEpoch{
-		EpochID:           id,
-		IssuedAtUnixMs:    now.UnixMilli(),
-		NotBeforeUnixMs:   now.UnixMilli(),
-		NotAfterUnixMs:    now.Add(time.Hour).UnixMilli(),
-		MonotonicSequence: seq,
+		EpochID:             id,
+		IssuedAtUnixMs:      now.UnixMilli(),
+		NotBeforeUnixMs:     now.UnixMilli(),
+		NotAfterUnixMs:      now.Add(time.Hour).UnixMilli(),
+		MonotonicSequence:   seq,
 		IssuerKeyThumbprint: [32]byte{0x01, 0x02, 0x03},
-		Digest:             [32]byte{0x10, 0x20, 0x30},
+		Digest:              [32]byte{0x10, 0x20, 0x30},
 	}
 }
 

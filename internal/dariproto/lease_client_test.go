@@ -475,17 +475,17 @@ func TestLeaseClientConcurrentRenewAndPresent(t *testing.T) {
 // LEASE_ISSUE body: the relay decodes what the connector sends.
 func TestLeaseRequestWireEncodingRoundTrip(t *testing.T) {
 	req := &LeaseRequest{
-		SubjectPeerID:     "hrn:patty:test",
-		UserID:            "alice",
-		SessionID:         "ses-1",
-		PolicyEpochID:     "epoch-2026-01",
-		AllowedModels:     []string{"patty-code-standard"},
-		RepositoryScope:   []map[string]string{{"repo": "pccp", "branch": "main"}},
-		FilePathReadScope: []string{"/etc/pccp"},
+		SubjectPeerID:      "hrn:patty:test",
+		UserID:             "alice",
+		SessionID:          "ses-1",
+		PolicyEpochID:      "epoch-2026-01",
+		AllowedModels:      []string{"patty-code-standard"},
+		RepositoryScope:    []map[string]string{{"repo": "pccp", "branch": "main"}},
+		FilePathReadScope:  []string{"/etc/pccp"},
 		FilePathWriteScope: []string{"/workspace"},
-		ToolClasses:       []string{"repo.read", "repo.write"},
-		TokenBudget:       8192,
-		Validity:          30 * time.Minute,
+		ToolClasses:        []string{"repo.read", "repo.write"},
+		TokenBudget:        8192,
+		Validity:           30 * time.Minute,
 	}
 	bytes, err := EncodeLeaseRequest(req)
 	if err != nil {

@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"patty/internal/dariproto"
-	"patty/internal/provider"
 	"patty/internal/provenancewire"
+	"patty/internal/provider"
 )
 
 func init() {
@@ -62,6 +62,9 @@ type Provider struct {
 	// provEmitter collects the session's provenance envelopes (B1);
 	// flushed to the relay after each governed exchange.
 	provEmitter *provenancewire.ProvenanceEmitter
+	// sessionGrant is the relay-issued, policy-signed DARI
+	// Authorization Grant (Task 7) — the session's authority object.
+	sessionGrant *dariproto.GrantEnvelope
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
@@ -112,14 +115,14 @@ func New(cfg provider.Config) (provider.Provider, error) {
 	}
 
 	return &Provider{
-		name:          cfg.Name,
-		model:         cfg.Model,
-		relayAddr:     relayAddr,
-		harnessID:     harnessID,
-		identity:      identity,
-		credPath:      credPath,
-		keyPath:       keyPath,
-		nowFn:         time.Now,
+		name:            cfg.Name,
+		model:           cfg.Model,
+		relayAddr:       relayAddr,
+		harnessID:       harnessID,
+		identity:        identity,
+		credPath:        credPath,
+		keyPath:         keyPath,
+		nowFn:           time.Now,
 		autoRenewBefore: defaultAutoRenewBefore,
 		tlsConfig: &tls.Config{
 			InsecureSkipVerify: true, // dev: PCCP uses self-signed certs
@@ -134,7 +137,7 @@ func envOr(name, fallback string) string {
 		return v
 	}
 	// Legacy PAPER_* names still resolve during the migration window.
-	if legacy := strings.TrimSpace(os.Getenv("PAPER_" + name[len("DARI_"):])) ; legacy != "" {
+	if legacy := strings.TrimSpace(os.Getenv("PAPER_" + name[len("DARI_"):])); legacy != "" {
 		return legacy
 	}
 	return fallback

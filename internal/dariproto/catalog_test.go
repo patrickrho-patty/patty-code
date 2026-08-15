@@ -33,24 +33,24 @@ func (c *catalogClock) Advance(d time.Duration) {
 // Tests fork this and adjust fields to exercise failure paths.
 func sampleCatalog(now time.Time, version uint64, epoch string, seq uint64) *CatalogSnapshot {
 	snap := &CatalogSnapshot{
-		Version:       version,
-		EpochID:       epoch,
-		IssuedAtUnixMs: now.UnixMilli(),
-		NotAfterUnixMs: now.Add(time.Hour).UnixMilli(),
-		IssuedSequence: seq,
+		Version:             version,
+		EpochID:             epoch,
+		IssuedAtUnixMs:      now.UnixMilli(),
+		NotAfterUnixMs:      now.Add(time.Hour).UnixMilli(),
+		IssuedSequence:      seq,
 		IssuerKeyThumbprint: [32]byte{0x01, 0x02, 0x03},
 		Entries: []CatalogEntry{
 			{
-				ModelID:           "patty-code-standard",
-				DisplayName:       "Patty Code Standard",
-				Version:           "1.0.0",
+				ModelID:            "patty-code-standard",
+				DisplayName:        "Patty Code Standard",
+				Version:            "1.0.0",
 				ModelPackageDigest: [32]byte{0x10},
 				EndpointDigest:     [32]byte{0x20},
-				Capabilities:      []string{"code", "review"},
-				TokenLimit:        8192,
-				ContextWindow:     262144,
-				PolicyEpochID:     epoch,
-				ActiveUntilUnixMs: now.Add(30 * 24 * time.Hour).UnixMilli(),
+				Capabilities:       []string{"code", "review"},
+				TokenLimit:         8192,
+				ContextWindow:      262144,
+				PolicyEpochID:      epoch,
+				ActiveUntilUnixMs:  now.Add(30 * 24 * time.Hour).UnixMilli(),
 			},
 		},
 	}
@@ -213,11 +213,11 @@ func TestCatalogApplyDeltaAddsEntry(t *testing.T) {
 		IssuedSequence: 2,
 		Added: []CatalogEntry{
 			{
-				ModelID:           "patty-code-pro",
-				Version:           "1.0.0",
+				ModelID:            "patty-code-pro",
+				Version:            "1.0.0",
 				ModelPackageDigest: [32]byte{0x30},
 				EndpointDigest:     [32]byte{0x40},
-				PolicyEpochID:     "epoch-2026-01",
+				PolicyEpochID:      "epoch-2026-01",
 				ActiveUntilUnixMs:  clock.Now().Add(30 * 24 * time.Hour).UnixMilli(),
 			},
 		},
@@ -270,11 +270,11 @@ func TestCatalogApplyDeltaUpdatesEntry(t *testing.T) {
 		IssuedSequence: 2,
 		Updated: []CatalogEntry{
 			{
-				ModelID:           "patty-code-standard",
-				Version:           "1.0.1",
+				ModelID:            "patty-code-standard",
+				Version:            "1.0.1",
 				ModelPackageDigest: [32]byte{0x99},
 				EndpointDigest:     [32]byte{0x20},
-				PolicyEpochID:     "epoch-2026-01",
+				PolicyEpochID:      "epoch-2026-01",
 				ActiveUntilUnixMs:  clock.Now().Add(30 * 24 * time.Hour).UnixMilli(),
 			},
 		},
@@ -446,11 +446,11 @@ func TestCatalogDeltaWireEncodingRoundTrip(t *testing.T) {
 		IssuedSequence: 2,
 		Added: []CatalogEntry{
 			{
-				ModelID:           "patty-code-pro",
-				Version:           "1.0.0",
+				ModelID:            "patty-code-pro",
+				Version:            "1.0.0",
 				ModelPackageDigest: [32]byte{0xaa},
 				EndpointDigest:     [32]byte{0xbb},
-				PolicyEpochID:     "epoch-2026-01",
+				PolicyEpochID:      "epoch-2026-01",
 				ActiveUntilUnixMs:  now.Add(30 * 24 * time.Hour).UnixMilli(),
 			},
 		},

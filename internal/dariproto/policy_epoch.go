@@ -90,8 +90,8 @@ func PolicyEpochDigest(p *PolicyEpoch) [32]byte {
 // when a fresh POLICY message arrives. Every governance-gated exchange
 // pins the bound epoch through `Verify`.
 type PolicyEpochClient struct {
-	mu          sync.Mutex
-	bound       *PolicyEpoch
+	mu                 sync.Mutex
+	bound              *PolicyEpoch
 	lastVerifiedUnixMs int64
 	bindFailureCount   int64
 	rebindFailureCount int64
@@ -241,13 +241,13 @@ func (c *PolicyEpochClient) MetricsFor() PolicyEpochMetrics {
 // PolicyEpochMetrics is the policy-epoch snapshot consumed by the
 // status bar (E1) and the audit log.
 type PolicyEpochMetrics struct {
-	BoundEpochID        string
-	IssuedAtUnixMs      int64
-	NotAfterUnixMs      int64
-	MonotonicSequence   uint64
-	LastVerifiedUnixMs  int64
-	BindFailureCount    int64
-	RebindFailureCount  int64
+	BoundEpochID       string
+	IssuedAtUnixMs     int64
+	NotAfterUnixMs     int64
+	MonotonicSequence  uint64
+	LastVerifiedUnixMs int64
+	BindFailureCount   int64
+	RebindFailureCount int64
 	// IsStale mirrors IsStale so the metric snapshot is self-contained;
 	// callers should not need to call the method separately.
 	IsStale bool
@@ -272,10 +272,10 @@ func (c *PolicyEpochClient) validate(epoch *PolicyEpoch, nowMs int64) error {
 // Sentinel errors for the policy-epoch boundary. The connector surfaces
 // these to the operator UI without translation.
 var (
-	ErrPolicyEpochInvalid     = errors.New("dari: policy epoch is empty or malformed")
-	ErrPolicyEpochUnbound     = errors.New("dari: no policy epoch bound to the connector")
-	ErrPolicyEpochMismatch    = errors.New("dari: presented policy epoch does not match the bound epoch")
-	ErrPolicyEpochExpired     = errors.New("dari: bound policy epoch is past its validity window")
+	ErrPolicyEpochInvalid  = errors.New("dari: policy epoch is empty or malformed")
+	ErrPolicyEpochUnbound  = errors.New("dari: no policy epoch bound to the connector")
+	ErrPolicyEpochMismatch = errors.New("dari: presented policy epoch does not match the bound epoch")
+	ErrPolicyEpochExpired  = errors.New("dari: bound policy epoch is past its validity window")
 )
 
 // IsPolicyEpochMismatch reports whether err is the epoch-mismatch sentinel.

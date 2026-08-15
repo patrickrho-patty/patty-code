@@ -233,12 +233,12 @@ func sampleCatalogForTest(t *testing.T) *dariproto.CatalogSnapshot {
 		IssuedSequence: 1,
 		Entries: []dariproto.CatalogEntry{
 			{
-				ModelID:           "patty-code-standard",
-				Version:           "1.0.0",
+				ModelID:            "patty-code-standard",
+				Version:            "1.0.0",
 				ModelPackageDigest: [32]byte{0x10},
 				EndpointDigest:     [32]byte{0x20},
-				PolicyEpochID:     "epoch-2026-01",
-				ActiveUntilUnixMs: now.Add(30 * 24 * time.Hour).UnixMilli(),
+				PolicyEpochID:      "epoch-2026-01",
+				ActiveUntilUnixMs:  now.Add(30 * 24 * time.Hour).UnixMilli(),
 			},
 		},
 	}

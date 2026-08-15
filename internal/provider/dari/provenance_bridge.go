@@ -43,4 +43,3 @@ func (p *Provider) flushProvenance() {
 	disp := provenancewire.NewDispatcher(emitter, connAckSender{conn: conn})
 	_ = disp.Flush(context.Background())
 }
-
