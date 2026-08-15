@@ -65,6 +65,9 @@ type Provider struct {
 	// sessionGrant is the relay-issued, policy-signed DARI
 	// Authorization Grant (Task 7) — the session's authority object.
 	sessionGrant *dariproto.GrantEnvelope
+	// advisories stores relay-pushed broadcasts/admin directives/
+	// sovereign advisories (E2/E3/E5) for the harness surfaces.
+	advisories []StoredAdvisory
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
@@ -477,6 +480,17 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 
 			case dariproto.MsgPing:
 				p.conn.SendControl(dariproto.MsgPong, nil, []byte("pong"))
+
+			case dariproto.MsgBroadcast:
+				// E2/E3: governed broadcast or sovereign advisory.
+				// Stored for the comms inbox / air-gap mode; never
+				// surfaced into the model stream.
+				p.storeAdvisory("broadcast", rec.Payload)
+
+			case dariproto.MsgAdminCommand:
+				// E5: signed admin command — stored for the admin
+				// dispatcher; verification happens there.
+				p.storeAdvisory("admin-directive", rec.Payload)
 
 			case dariproto.MsgEvidenceReceipt:
 				// B3 e2e: the relay pushes a signed evidence receipt

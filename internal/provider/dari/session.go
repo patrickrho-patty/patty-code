@@ -243,3 +243,29 @@ func (p *Provider) SessionGrant() *dariproto.GrantEnvelope {
 	defer p.mu.Unlock()
 	return p.sessionGrant
 }
+
+// StoredAdvisory is one relay-pushed broadcast/directive/advisory.
+type StoredAdvisory struct {
+	Kind    string
+	Payload []byte
+}
+
+// storeAdvisory records a relay push (thread-safe; the reader
+// goroutine is the only writer).
+func (p *Provider) storeAdvisory(kind string, payload []byte) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.advisories = append(p.advisories, StoredAdvisory{Kind: kind, Payload: append([]byte(nil), payload...)})
+	if len(p.advisories) > 128 {
+		p.advisories = p.advisories[len(p.advisories)-128:]
+	}
+}
+
+// Advisories drains the stored relay pushes (E2/E3/E5 surfaces).
+func (p *Provider) Advisories() []StoredAdvisory {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	out := make([]StoredAdvisory, len(p.advisories))
+	copy(out, p.advisories)
+	return out
+}
