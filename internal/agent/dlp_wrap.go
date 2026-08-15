@@ -3,8 +3,10 @@ package agent
 import (
 	"os"
 
+	"patty/internal/dariproto"
 	"patty/internal/dlp"
 	"patty/internal/provider"
+	"patty/internal/provider/dari"
 )
 
 // wrapProviderWithDLP wraps the supplied provider with the
@@ -24,7 +26,32 @@ func wrapProviderWithDLP(inner provider.Provider) provider.Provider {
 	hook := dlp.NewOutboundHook(scanner)
 	hook.BlockOnDeny = true
 	inspector := dlp.NewResponseInspector(scanner)
+	// C1.3: relay-pushed DLP rule packs reach the live scanner.
+	// The dari provider decodes the pack; the sink applies the org's
+	// class enables/disables to the built-in lexicon.
+	if dp, ok := inner.(*dari.Provider); ok {
+		dp.SetDLPRuleSink(func(pack *dariproto.DLPRulePackWire) {
+			applyPackToScanner(scanner, pack)
+		})
+	}
 	return dlp.NewProvider(inner, hook, inspector)
+}
+
+// applyPackToScanner disables built-in rule groups whose class the
+// org turned off (or omitted) from its pack.
+func applyPackToScanner(scanner *dlp.Scanner, pack *dariproto.DLPRulePackWire) {
+	if scanner == nil || pack == nil {
+		return
+	}
+	disabled := pack.DisabledRulePrefixes()
+	if len(disabled) == 0 {
+		return
+	}
+	for _, rule := range scanner.Rules() {
+		if dariproto.MatchesPrefix(rule.RuleID, disabled) && !rule.Disabled {
+			scanner.DisableRule(rule.RuleID)
+		}
+	}
 }
 
 // dlpEnabled reports whether the DLP wrapper should be active.
@@ -34,14 +61,14 @@ func wrapProviderWithDLP(inner provider.Provider) provider.Provider {
 // tests run the wrapper directly and don't need this escape
 // hatch.
 //
-// The escape hatch is PATTY_DLP_ENABLED=1 to enable and
-// PATTY_DLP_ENABLED=0 to disable; when unset, the default is
-// "disabled" so legacy tests that don't know about DLP don't
-// false-positive. Production binaries launched by the harness
-// CLI set PATTY_DLP_ENABLED=1 in the launcher.
+// DLP is ON BY DEFAULT (governed sessions must scan pre-send —
+// harness plan C acceptance). PATTY_DLP_ENABLED=0 is the escape
+// hatch for test binaries whose fixtures deliberately contain the
+// detector's trigger phrases; affected packages set it in their
+// TestMain.
 func dlpEnabled() bool {
 	if v := os.Getenv("PATTY_DLP_ENABLED"); v != "" {
-		return v == "1"
+		return v != "0"
 	}
-	return false
+	return true
 }

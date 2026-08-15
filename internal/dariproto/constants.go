@@ -63,6 +63,9 @@ const (
 	// Policy-epoch push (0x0D10) — relay pushes the active epoch at
 	// session setup and on policy change.
 	MsgPolicyEpochPush MessageType = 0x0D10
+	// DLP rule pack (0x0D11) — relay pushes the org's active DLP rules
+	// so the connector's scanner enforces the same lexicon (C1.3).
+	MsgDLPRulePack MessageType = 0x0D11
 
 	// Governance / evidence (0x0300–0x03FF) — mirrors the relay registry.
 	MsgEvidenceReceipt    MessageType = 0x0307
@@ -162,6 +165,8 @@ func (m MessageType) String() string {
 		return "LEASE_RENEW"
 	case MsgPolicyEpochPush:
 		return "POLICY_EPOCH"
+	case MsgDLPRulePack:
+		return "DLP_RULE_PACK"
 	default:
 		return "UNKNOWN"
 	}

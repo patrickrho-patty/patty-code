@@ -8,6 +8,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// Fixtures contain DLP trigger phrases; the wrapper is tested in internal/dlp.
+	os.Setenv("PATTY_DLP_ENABLED", "0")
 	// Boot tests instantiate providers from `kind = "openai"` test configs
 	// to validate the lifecycle flow without dialing a real PAPER relay. The
 	// PRD-mandated PAPER-only policy blocks those generic kinds unless

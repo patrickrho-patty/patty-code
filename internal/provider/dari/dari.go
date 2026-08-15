@@ -68,6 +68,8 @@ type Provider struct {
 	// advisories stores relay-pushed broadcasts/admin directives/
 	// sovereign advisories (E2/E3/E5) for the harness surfaces.
 	advisories []StoredAdvisory
+	// dlpRuleSink receives relay-pushed DLP rule packs (C1.3).
+	dlpRuleSink func(*dariproto.DLPRulePackWire)
 	// subjectPeerID is the authenticated harness peer ID. The lease's
 	// SubjectPeerID MUST match this value.
 	subjectPeerID string
@@ -523,6 +525,14 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 					if err := p.policyEpochClient.Rebind(epoch); err == nil {
 						p.policyEpoch = epoch.EpochID
 					}
+				}
+
+			case dariproto.MsgDLPRulePack:
+				// C1.3: the relay pushes the org's DLP rule pack. Apply
+				// the org's class enables/disables to the DLP scanner so
+				// the connector enforces the server's lexicon policy.
+				if pack, derr := dariproto.DecodeDLPRulePack(rec.Payload); derr == nil {
+					p.applyDLPRulePack(pack)
 				}
 
 			case dariproto.MsgCatalogDelta:

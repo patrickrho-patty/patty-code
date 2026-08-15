@@ -269,3 +269,23 @@ func (p *Provider) Advisories() []StoredAdvisory {
 	copy(out, p.advisories)
 	return out
 }
+
+// SetDLPRuleSink installs the consumer of relay-pushed DLP rule packs
+// (C1.3). The agent's DLP wrapper installs a sink that applies the
+// org's class enables/disables to the live scanner.
+func (p *Provider) SetDLPRuleSink(sink func(*dariproto.DLPRulePackWire)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.dlpRuleSink = sink
+}
+
+// applyDLPRulePack routes a decoded pack to the installed sink.
+func (p *Provider) applyDLPRulePack(pack *dariproto.DLPRulePackWire) {
+	p.mu.Lock()
+	sink := p.dlpRuleSink
+	p.mu.Unlock()
+	if sink == nil || pack == nil {
+		return
+	}
+	sink(pack)
+}

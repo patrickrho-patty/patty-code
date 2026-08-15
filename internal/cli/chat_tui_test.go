@@ -69,6 +69,8 @@ func TestMiddleClickPasteCommandHelper(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	// Fixtures contain DLP trigger phrases; the wrapper is tested in internal/dlp.
+	os.Setenv("PATTY_DLP_ENABLED", "0")
 	old := detectTermuxTerminal
 	detectTermuxTerminal = func() bool { return false }
 	cleanupUserState, err := testenv.IsolateUserState()
@@ -2310,6 +2312,11 @@ func TestMouseMiddleClickPasteOverSSHDoesNotReadRemotePrimary(t *testing.T) {
 
 func TestMiddleClickUsesPrimarySelectionOutsideTmux(t *testing.T) {
 	t.Setenv("TMUX", "")
+	// Deterministic: the SSH-detection branch must not hijack this
+	// vector when the test host itself runs over SSH.
+	t.Setenv("SSH_CONNECTION", "")
+	t.Setenv("SSH_CLIENT", "")
+	t.Setenv("SSH_TTY", "")
 	previousTmux := readTmuxPasteBuffer
 	previousPrimary := readPrimaryPasteSelection
 	t.Cleanup(func() {
