@@ -149,7 +149,16 @@ func (p *Provider) initSovereignOps() {
 		return
 	}
 	ag := sovereign.NewAirGapMode()
-	if os.Getenv("PATTY_AIRGAP") == "1" {
+	// Config first (patty.toml [sovereign] via SetSovereignConfig); the
+	// env pair remains the deployment escape hatch.
+	p.mu.Lock()
+	cfgEnabled, cfgAllow := p.sovereignCfgEnabled, p.sovereignCfgAllowlist
+	p.mu.Unlock()
+	if cfgEnabled {
+		ag.Enable()
+		ag.SetOnlineAllowList(cfgAllow)
+		slog.Warn("dari: sovereign air-gap mode ENABLED (config) — dials restricted to the allowlist")
+	} else if os.Getenv("PATTY_AIRGAP") == "1" {
 		ag.Enable()
 		var allow []string
 		for _, h := range strings.Split(os.Getenv("PATTY_AIRGAP_ALLOWLIST"), ",") {
@@ -158,7 +167,7 @@ func (p *Provider) initSovereignOps() {
 			}
 		}
 		ag.SetOnlineAllowList(allow)
-		slog.Warn("dari: sovereign air-gap mode ENABLED — dials restricted to the allowlist")
+		slog.Warn("dari: sovereign air-gap mode ENABLED (env) — dials restricted to the allowlist")
 	}
 	p.airgap = ag
 	p.awareness = operational.NewAwarenessClient(p.credOrgID, p.userID)
@@ -178,4 +187,12 @@ func (p *Provider) Awareness() *operational.AwarenessClient {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.awareness
+}
+
+// SetSovereignConfig installs the [sovereign] posture from patty.toml.
+func (p *Provider) SetSovereignConfig(enabled bool, allowlist []string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.sovereignCfgEnabled = enabled
+	p.sovereignCfgAllowlist = allowlist
 }

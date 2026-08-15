@@ -49,6 +49,7 @@ type Config struct {
 	Tools            ToolsConfig         `toml:"tools"`
 	Permissions      PermissionsConfig   `toml:"permissions"`
 	Sandbox          SandboxConfig       `toml:"sandbox"`
+	Sovereign        SovereignConfig     `toml:"sovereign"`
 	Network          NetworkConfig       `toml:"network"`
 	Environment      EnvironmentConfig   `toml:"environment"`
 	Plugins          []PluginEntry       `toml:"plugins"`
@@ -892,6 +893,14 @@ func (c *Config) IsSkillDisabled(name string) bool {
 		}
 	}
 	return false
+}
+
+// SovereignConfig is the E3 air-gap posture (patty.toml [sovereign]).
+type SovereignConfig struct {
+	// AirgapEnabled restricts outbound dials to the allowlist below.
+	AirgapEnabled bool `toml:"airgap_enabled"`
+	// AirgapAllowlist: hosts permitted in air-gap mode.
+	AirgapAllowlist []string `toml:"airgap_allowlist"`
 }
 
 type SandboxConfig struct {

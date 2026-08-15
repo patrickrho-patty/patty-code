@@ -2043,6 +2043,8 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		// D5: HELLO advertises the honest build version; the relay's
 		// floor refuses sub-minimum connectors at handshake time.
 		dp.SetHarnessVersion(harnessBuildVersion())
+		// E3: sovereign posture from patty.toml [sovereign].
+		dp.SetSovereignConfig(cfg.Sovereign.AirgapEnabled, cfg.Sovereign.AirgapAllowlist)
 		// B3: durable evidence-receipt store (receipts survive harness
 		// restarts). Best-effort: without a usable config home the
 		// in-memory store remains and a warning is logged.

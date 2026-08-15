@@ -97,6 +97,9 @@ type Provider struct {
 	// surfaces; lazily initialized by initSovereignOps.
 	airgap    *sovereign.AirGapMode
 	awareness *operational.AwarenessClient
+	// sovereignCfg* hold the patty.toml [sovereign] posture.
+	sovereignCfgEnabled   bool
+	sovereignCfgAllowlist []string
 	// provRepoID/provBranch carry the workspace git identity for B1
 	// provenance envelopes; provTurnPaths accumulates the turn's
 	// edited paths until the next flush seals them into a change set.
