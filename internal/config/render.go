@@ -99,9 +99,9 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 			b.WriteString("# language = \"ko-KR\"   # desktop UI language; empty/auto = browser/OS auto-detect\n")
 		}
 		if currency := c.DesktopCurrency(); currency != "" {
-			fmt.Fprintf(&b, "currency = %q   # official pricing currency: CNY|USD; empty/auto follows language\n", currency)
+			fmt.Fprintf(&b, "currency = %q   # official pricing currency: KRW|USD; empty/auto follows language\n", currency)
 		} else {
-			b.WriteString("# currency = \"USD\"   # official pricing currency: CNY|USD; empty/auto follows language\n")
+			b.WriteString("# currency = \"USD\"   # official pricing currency: KRW|USD; empty/auto follows language\n")
 		}
 		fmt.Fprintf(&b, "layout_style = %q   # desktop layout: classic|workbench|creation\n", c.DesktopLayoutStyle())
 		fmt.Fprintf(&b, "theme = %q   # desktop only: auto|dark|light\n", c.DesktopTheme())

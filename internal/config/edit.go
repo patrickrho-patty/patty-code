@@ -245,14 +245,14 @@ func (c *Config) SetDesktopCurrency(currency string) error {
 	switch strings.ToUpper(strings.TrimSpace(currency)) {
 	case "", "AUTO":
 		c.Desktop.Currency = ""
-	case "CNY", "RMB", "CNH":
-		c.Desktop.Currency = "CNY"
+	case "KRW", "WON":
+		c.Desktop.Currency = "KRW"
 		overridePersisted = true
 	case "USD":
 		c.Desktop.Currency = "USD"
 		overridePersisted = true
 	default:
-		return fmt.Errorf("desktop currency %q: must be auto|CNY|USD", currency)
+		return fmt.Errorf("desktop currency %q: must be auto|KRW|USD", currency)
 	}
 	applyDeepSeekOfficialDefaultPricingWithOverride(c, overridePersisted)
 	return nil

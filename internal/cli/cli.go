@@ -333,7 +333,7 @@ func cliProfileBuildOptions(modelName string, maxStepsOverride int, requireKey b
 func cliAutoPricingCurrency() string {
 	switch i18n.CurrentLanguage() {
 	case "ko":
-		return "CNY"
+		return "KRW"
 	default:
 		return "USD"
 	}
@@ -2702,7 +2702,7 @@ func configUsage() {
 	fmt.Print(`Usage:
   patcode config reasoning-language [--local] [auto|ko-KR|en]
   patcode config compact-ratio [--local] [65..97]
-  patcode config currency [auto|CNY|USD]
+  patcode config currency [auto|KRW|USD]
   patcode config telemetry [auto|on|off]
 `)
 }
@@ -2793,6 +2793,6 @@ func configReasoningLanguageUsage() {
 
 func configCurrencyUsage() {
 	fmt.Print(`Usage:
-  patcode config currency [auto|CNY|USD]
+  patcode config currency [auto|KRW|USD]
 `)
 }

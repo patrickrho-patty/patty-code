@@ -304,7 +304,7 @@ func TestToWireUsagePayloadJSON(t *testing.T) {
 		`"cacheHitTokens":900`, `"cacheMissTokens":100`, `"reasoningTokens":33`,
 		`"estimated":true`,
 		`"source":"title"`, `"sessionCacheHitTokens":8000`, `"sessionCacheMissTokens":2000`,
-		`"currency":"¥"`, `"costUsd":`, `"cacheDiagnostics":`, `"prefixHash":"p"`,
+		`"currency":"₩"`, `"costUsd":`, `"cacheDiagnostics":`, `"prefixHash":"p"`,
 		`"prefixChanged":true`, `"prefixChangeReasons":["log_rewrite"]`, `"toolSchemaTokens":42`,
 	} {
 		if !strings.Contains(s, want) {

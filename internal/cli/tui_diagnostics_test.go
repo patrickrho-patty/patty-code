@@ -136,7 +136,7 @@ func TestCLIProfileBuildOptionsUseResolvedLocaleForAutoPricing(t *testing.T) {
 		want     string
 	}{
 		{language: "en", want: "USD"},
-		{language: "ko", want: "CNY"},
+		{language: "ko", want: "KRW"},
 	} {
 		i18n.DetectLanguage(tt.language)
 		opts := cliProfileBuildOptions("provider/model", 0, false, event.Discard, "balanced", cliBuildOverrides{})

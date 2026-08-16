@@ -33,9 +33,9 @@ func TestUsageLine(t *testing.T) {
 		t.Errorf("usage line = %q (want 1200 tok and 900 cached / 100 new)", out)
 	}
 
-	// With pricing: 900*0.02 + 100*1 + 200*2 = 518 per 1M = 0.000518 -> "¥0.0005".
-	if out := renderUsage(u, &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "¥"}); !strings.Contains(out, "¥0.0005") {
-		t.Errorf("cost line = %q (want ¥0.0005...)", out)
+	// With pricing: 900*0.02 + 100*1 + 200*2 = 518 per 1M = 0.000518 -> "₩0.0005".
+	if out := renderUsage(u, &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "₩"}); !strings.Contains(out, "₩0.0005") {
+		t.Errorf("cost line = %q (want ₩0.0005...)", out)
 	}
 
 	// nil or zero usage prints nothing.

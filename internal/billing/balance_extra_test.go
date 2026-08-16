@@ -10,15 +10,23 @@ import (
 
 // symbol
 
-func TestSymbolCNY(t *testing.T) {
-	if got := symbol("CNY"); got != "¥" {
-		t.Errorf("symbol(CNY) = %q", got)
+func TestSymbolKRW(t *testing.T) {
+	if got := symbol("KRW"); got != "₩" {
+		t.Errorf("symbol(KRW) = %q", got)
 	}
 }
 
-func TestSymbolRMB(t *testing.T) {
-	if got := symbol("RMB"); got != "¥" {
-		t.Errorf("symbol(RMB) = %q", got)
+func TestSymbolWON(t *testing.T) {
+	if got := symbol("WON"); got != "₩" {
+		t.Errorf("symbol(WON) = %q", got)
+	}
+}
+
+func TestNormalizeCurrencyKRW(t *testing.T) {
+	for _, in := range []string{"KRW", "WON", "₩"} {
+		if got := normalizeCurrency(in); got != "KRW" {
+			t.Errorf("normalizeCurrency(%q) = %q, want KRW", in, got)
+		}
 	}
 }
 
@@ -63,13 +71,22 @@ func TestDisplayEmptyInfos(t *testing.T) {
 	}
 }
 
-func TestDisplayPrefersCNY(t *testing.T) {
+func TestDisplayPrefersKRW(t *testing.T) {
 	b := &Balance{Infos: []Info{
 		{Currency: "USD", TotalBalance: "10.00"},
-		{Currency: "CNY", TotalBalance: "50.00"},
+		{Currency: "KRW", TotalBalance: "50.00"},
 	}}
-	if got := b.Display(); got != "¥50.00" {
-		t.Errorf("Display = %q, want ¥50.00", got)
+	if got := b.Display(); got != "₩50" {
+		t.Errorf("Display = %q, want ₩50", got)
+	}
+}
+
+func TestDisplayKRWStripsDecimals(t *testing.T) {
+	b := &Balance{Infos: []Info{
+		{Currency: "KRW", TotalBalance: "3200.00"},
+	}}
+	if got := b.Display(); got != "₩3200" {
+		t.Errorf("Display = %q, want ₩3200", got)
 	}
 }
 

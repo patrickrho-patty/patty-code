@@ -24,7 +24,7 @@ type Balance struct {
 
 // Info is one currency's balance (DeepSeek returns one per currency).
 type Info struct {
-	Currency        string // "CNY" | "USD"
+	Currency        string // "KRW" | "USD"
 	TotalBalance    string // total available (granted + topped-up)
 	GrantedBalance  string // unexpired promotional credit
 	ToppedUpBalance string // paid-in credit
@@ -99,8 +99,8 @@ func FetchWithClient(ctx context.Context, client *http.Client, url, apiKey strin
 // through with a trailing space ("XYZ 12.00").
 func symbol(currency string) string {
 	switch strings.ToUpper(currency) {
-	case "CNY", "RMB":
-		return "¥"
+	case "KRW", "WON":
+		return "₩"
 	case "USD":
 		return "$"
 	default:
@@ -112,7 +112,7 @@ func symbol(currency string) string {
 }
 
 // Display renders the primary balance compactly, e.g. "¥110.00". It preserves
-// the legacy CNY-first behavior for callers that have no display-currency
+// the legacy KRW-first behavior for callers that have no display-currency
 // preference.
 func (b *Balance) Display() string {
 	return b.DisplayForCurrency("")
@@ -120,8 +120,8 @@ func (b *Balance) Display() string {
 
 // DisplayForCurrency renders the balance matching the requested pricing
 // currency. When the provider does not return that currency, it falls back to
-// Display's legacy CNY-first selection and prefixes the provider's real ISO
-// currency (for example "CNY ¥70.16"); it never performs an implicit
+// Display's legacy KRW-first selection and prefixes the provider's real ISO
+// currency (for example "KRW ₩70.16"); it never performs an implicit
 // exchange-rate conversion.
 func (b *Balance) DisplayForCurrency(currency string) string {
 	if b == nil || len(b.Infos) == 0 {
@@ -132,17 +132,17 @@ func (b *Balance) DisplayForCurrency(currency string) string {
 	if preferred != "" {
 		for _, i := range b.Infos {
 			if normalizeCurrency(i.Currency) == preferred {
-				return symbol(i.Currency) + strings.TrimSpace(i.TotalBalance)
+				return symbol(i.Currency) + formatBalanceAmount(i.Currency, i.TotalBalance)
 			}
 		}
 	}
 	for _, i := range b.Infos {
-		if normalizeCurrency(i.Currency) == "CNY" {
+		if normalizeCurrency(i.Currency) == "KRW" {
 			pick = i
 			break
 		}
 	}
-	display := symbol(pick.Currency) + strings.TrimSpace(pick.TotalBalance)
+	display := symbol(pick.Currency) + formatBalanceAmount(pick.Currency, pick.TotalBalance)
 	actual := normalizeCurrency(pick.Currency)
 	if preferred != "" && actual != "" && actual != preferred {
 		return actual + " " + display
@@ -152,11 +152,22 @@ func (b *Balance) DisplayForCurrency(currency string) string {
 
 func normalizeCurrency(currency string) string {
 	switch strings.ToUpper(strings.TrimSpace(currency)) {
-	case "CNY", "RMB", "CNH", "¥", "￥":
-		return "CNY"
+	case "KRW", "WON", "₩":
+		return "KRW"
 	case "USD", "$", "US$":
 		return "USD"
 	default:
 		return ""
 	}
+}
+
+// formatBalanceAmount renders a balance amount for display. The Korean Won
+// has no fractional subdivision, so a trailing ".00" (or ".0") from a
+// provider that reports decimal strings is stripped for KRW specifically.
+func formatBalanceAmount(currency, amount string) string {
+	amount = strings.TrimSpace(amount)
+	if normalizeCurrency(currency) == "KRW" {
+		amount = strings.TrimSuffix(strings.TrimSuffix(amount, ".00"), ".0")
+	}
+	return amount
 }

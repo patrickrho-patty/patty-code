@@ -1984,8 +1984,8 @@ func TestAddProviderPresetAccessSavesEditableProviderAndKey(t *testing.T) {
 	if !p.HasVisionModel("mimo-v2.5") || p.HasVisionModel("mimo-v2.5-pro") {
 		t.Fatalf("mimo vision_models = %+v, want only vision-capable MiMo models", p.VisionModels)
 	}
-	if price := p.PriceForModel("mimo-v2.5-pro"); price == nil || price.Currency != "¥" {
-		t.Fatalf("mimo-v2.5-pro price = %+v, want RMB pricing", price)
+	if price := p.PriceForModel("mimo-v2.5-pro"); price == nil || price.Currency != "₩" {
+		t.Fatalf("mimo-v2.5-pro price = %+v, want KRW pricing", price)
 	}
 	if !providerAccessSet(cfg.Desktop.ProviderAccess)["mimo-api"] {
 		t.Fatalf("provider_access missing mimo-api: %+v", cfg.Desktop.ProviderAccess)
@@ -3144,11 +3144,11 @@ language = "ko-KR"
 	}
 	flash := p.Prices["deepseek-v4-flash"]
 	pro := p.Prices["deepseek-v4-pro"]
-	if flash == nil || flash.Output != 2 || flash.Currency != "¥" {
-		t.Fatalf("flash price = %+v, want CNY preset", flash)
+	if flash == nil || flash.Output != 2 || flash.Currency != "₩" {
+		t.Fatalf("flash price = %+v, want KRW preset", flash)
 	}
-	if pro == nil || pro.Output != 6 || pro.Currency != "¥" {
-		t.Fatalf("pro price = %+v, want CNY preset", pro)
+	if pro == nil || pro.Output != 6 || pro.Currency != "₩" {
+		t.Fatalf("pro price = %+v, want KRW preset", pro)
 	}
 }
 
@@ -5409,7 +5409,7 @@ func TestBalanceForTabUsesDesktopPricingCurrency(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"is_available":true,"balance_infos":[{"currency":"CNY","total_balance":"70.16"},{"currency":"USD","total_balance":"9.82"}]}`)
+		_, _ = io.WriteString(w, `{"is_available":true,"balance_infos":[{"currency":"KRW","total_balance":"70.16"},{"currency":"USD","total_balance":"9.82"}]}`)
 	}))
 	defer srv.Close()
 

@@ -173,8 +173,8 @@ func TestSlashArgItems(t *testing.T) {
 	}
 	// /currency
 	items, _ = SlashArgItems("/currency ", data)
-	if !has(items, "auto") || !has(items, "CNY") || !has(items, "USD") {
-		t.Errorf("/currency should offer only auto/CNY/USD; got %v", labelsOf(items))
+	if !has(items, "auto") || !has(items, "KRW") || !has(items, "USD") {
+		t.Errorf("/currency should offer only auto/KRW/USD; got %v", labelsOf(items))
 	}
 	// /theme
 	items, _ = SlashArgItems("/theme ", data)

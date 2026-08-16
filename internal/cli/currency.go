@@ -71,12 +71,12 @@ func parseCLIPricingCurrency(value string) (string, error) {
 	switch strings.ToUpper(strings.TrimSpace(value)) {
 	case "", "AUTO":
 		return "", nil
-	case "CNY":
-		return "CNY", nil
+	case "KRW":
+		return "KRW", nil
 	case "USD":
 		return "USD", nil
 	default:
-		return "", fmt.Errorf("pricing currency %q: must be auto|CNY|USD", value)
+		return "", fmt.Errorf("pricing currency %q: must be auto|KRW|USD", value)
 	}
 }
 
@@ -88,7 +88,7 @@ func pricingCurrencyDisplay(currency string) string {
 }
 
 func describePricingCurrencies(current, resolved string) string {
-	items := []string{"auto", "CNY", "USD"}
+	items := []string{"auto", "KRW", "USD"}
 	var b strings.Builder
 	for _, item := range items {
 		marker := "  "

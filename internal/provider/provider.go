@@ -801,7 +801,7 @@ func (u *Usage) LatestPromptTokens() int {
 }
 
 // Pricing is a provider's per-1M-token rates, used to estimate spend. Currency
-// is a display symbol or ISO-like code (default "¥"). toml tags let config decode it.
+// is a display symbol or ISO-like code (default "₩"). toml tags let config decode it.
 type Pricing struct {
 	CacheHit float64 `toml:"cache_hit"` // per 1M cached prompt tokens
 	Input    float64 `toml:"input"`     // per 1M uncached prompt tokens
@@ -842,10 +842,10 @@ func (p *Pricing) Cost(u *Usage) float64 {
 		float64(u.CompletionTokens)*p.Output) / 1e6
 }
 
-// Symbol returns the currency display symbol, defaulting to "¥".
+// Symbol returns the currency display symbol, defaulting to "₩".
 func (p *Pricing) Symbol() string {
 	if p == nil || p.Currency == "" {
-		return "¥"
+		return "₩"
 	}
 	return currencySymbol(p.Currency)
 }
@@ -853,11 +853,11 @@ func (p *Pricing) Symbol() string {
 func currencySymbol(currency string) string {
 	value := strings.TrimSpace(currency)
 	if value == "" {
-		return "¥"
+		return "₩"
 	}
 	switch strings.ToLower(value) {
-	case "cny", "rmb", "yuan", "renminbi", "cnh":
-		return "¥"
+	case "krw", "won":
+		return "₩"
 	case "usd", "dollar", "dollars", "us dollar", "us dollars", "us$":
 		return "$"
 	case "eur", "euro", "euros":
@@ -870,7 +870,7 @@ func currencySymbol(currency string) string {
 	switch value {
 	case "￥", "¥":
 		return "¥"
-	case "$", "€", "£":
+	case "$", "€", "£", "₩":
 		return value
 	}
 	// any embedded currency sign → keep as-is (compact symbols like A$, HK$).
@@ -882,7 +882,7 @@ func currencySymbol(currency string) string {
 	if isThreeLetterCurrencyCode(value) {
 		return strings.ToUpper(value) + " "
 	}
-	return "¥"
+	return "₩"
 }
 
 func isThreeLetterCurrencyCode(value string) bool {

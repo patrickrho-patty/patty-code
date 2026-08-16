@@ -406,9 +406,9 @@ func TestPricingCostBothNil(t *testing.T) {
 
 func TestPricingCostCalculation(t *testing.T) {
 	p := &Pricing{
-		CacheHit: 0.5,  // ¥0.5 per 1M cached tokens
-		Input:    2.0,  // ¥2.0 per 1M uncached tokens
-		Output:   10.0, // ¥10.0 per 1M completion tokens
+		CacheHit: 0.5,  // ₩0.5 per 1M cached tokens
+		Input:    2.0,  // ₩2.0 per 1M uncached tokens
+		Output:   10.0, // ₩10.0 per 1M completion tokens
 	}
 	u := &Usage{
 		CacheHitTokens:   1_000_000,
@@ -463,15 +463,15 @@ func TestPricingCostZeroTokens(t *testing.T) {
 
 func TestPricingSymbolDefault(t *testing.T) {
 	p := &Pricing{}
-	if got := p.Symbol(); got != "¥" {
-		t.Errorf("empty Currency.Symbol() = %q, want ¥", got)
+	if got := p.Symbol(); got != "₩" {
+		t.Errorf("empty Currency.Symbol() = %q, want ₩", got)
 	}
 }
 
 func TestPricingSymbolNil(t *testing.T) {
 	var p *Pricing
-	if got := p.Symbol(); got != "¥" {
-		t.Errorf("nil.Symbol() = %q, want ¥", got)
+	if got := p.Symbol(); got != "₩" {
+		t.Errorf("nil.Symbol() = %q, want ₩", got)
 	}
 }
 
@@ -489,14 +489,15 @@ func TestPricingSymbolNormalizesCurrencyCodes(t *testing.T) {
 	}{
 		{currency: "USD", want: "$"},
 		{currency: "dollars", want: "$"},
-		{currency: "CNY", want: "¥"},
+		{currency: "KRW", want: "₩"},
+		{currency: "won", want: "₩"},
 		{currency: "￥", want: "¥"},
 		{currency: "EUR", want: "€"},
 		{currency: "₹", want: "₹"},
 		{currency: "aud", want: "AUD "},
 		{currency: "A$", want: "A$"},
 		{currency: "HK$", want: "HK$"},
-		{currency: "건물", want: "¥"},
+		{currency: "건물", want: "₩"},
 	}
 	for _, tc := range cases {
 		p := &Pricing{Currency: tc.currency}

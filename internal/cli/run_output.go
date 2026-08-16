@@ -239,8 +239,8 @@ func (s *runOutputSink) Finalize(sessionID string, started time.Time, runErr err
 func pricingCurrencyCode(value string) string {
 	value = strings.TrimSpace(value)
 	switch strings.ToUpper(value) {
-	case "", "CNY", "RMB", "CNH", "¥", "￥":
-		return "CNY"
+	case "", "KRW", "WON", "₩":
+		return "KRW"
 	case "USD", "$", "US$":
 		return "USD"
 	default:

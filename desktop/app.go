@@ -6696,7 +6696,7 @@ func (a *App) ContextUsageForTab(tabID string) ContextInfo {
 }
 
 // BalanceInfo is the wallet-balance readout for the status bar. Available is true
-// only when a balance was fetched; Display is the formatted amount (e.g. "¥110.00")
+// only when a balance was fetched; Display is the formatted amount (e.g. "₩110.00")
 // and is "" when the active provider declares no balance_url — the frontend then
 // omits the readout. Err carries a fetch failure for an optional tooltip.
 type BalanceInfo struct {

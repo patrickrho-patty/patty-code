@@ -1089,7 +1089,7 @@ func TestOfficialDeepSeekTemplateUsesRegionalPricing(t *testing.T) {
 		proOutput   float64
 	}{
 		{language: "en", currency: "$", flashOutput: 0.28, proOutput: 0.87},
-		{language: "ko-KR", currency: "¥", flashOutput: 2, proOutput: 6},
+		{language: "ko-KR", currency: "₩", flashOutput: 2, proOutput: 6},
 	} {
 		entries, keyEnv, err := officialProviderTemplate("deepseek", tt.language)
 		if err != nil {
@@ -1265,13 +1265,13 @@ func TestSetDesktopCurrencyPersistsRegionalOfficialPricing(t *testing.T) {
 	}
 
 	app := NewApp()
-	if err := app.SetDesktopCurrency("CNY"); err != nil {
+	if err := app.SetDesktopCurrency("KRW"); err != nil {
 		t.Fatalf("SetDesktopCurrency: %v", err)
 	}
 
 	view := app.Settings()
-	if view.DesktopCurrency != "CNY" {
-		t.Fatalf("Settings().DesktopCurrency = %q, want CNY", view.DesktopCurrency)
+	if view.DesktopCurrency != "KRW" {
+		t.Fatalf("Settings().DesktopCurrency = %q, want KRW", view.DesktopCurrency)
 	}
 	cfg = config.LoadForEdit(config.UserConfigPath())
 	deepseek, ok := cfg.Provider("deepseek")
@@ -1279,8 +1279,8 @@ func TestSetDesktopCurrencyPersistsRegionalOfficialPricing(t *testing.T) {
 		t.Fatal("saved DeepSeek provider is missing")
 	}
 	flash := deepseek.Prices["deepseek-v4-flash"]
-	if flash == nil || flash.Output != 2 || flash.Currency != "¥" {
-		t.Fatalf("saved DeepSeek flash price = %+v, want CNY official price", flash)
+	if flash == nil || flash.Output != 2 || flash.Currency != "₩" {
+		t.Fatalf("saved DeepSeek flash price = %+v, want KRW official price", flash)
 	}
 }
 

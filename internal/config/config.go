@@ -201,7 +201,7 @@ type CLIConfig struct {
 
 type DesktopConfig struct {
 	Language                string   `toml:"language"`                   // auto|en|ko-KR; empty/auto = browser/OS auto-detect
-	Currency                string   `toml:"currency"`                   // user-global auto|CNY|USD pricing preference shared by desktop and CLI
+	Currency                string   `toml:"currency"`                   // user-global auto|KRW|USD pricing preference shared by desktop and CLI
 	LayoutStyle             string   `toml:"layout_style"`               // classic|workbench|creation; desktop layout style
 	Theme                   string   `toml:"theme"`                      // auto|dark|light; empty resolves to auto
 	ThemeStyle              string   `toml:"theme_style"`                // graphite|aurora|slate|carbon|nocturne|amber and legacy aliases
@@ -386,8 +386,8 @@ func (c *Config) DesktopCurrency() string {
 		return ""
 	}
 	switch strings.ToUpper(strings.TrimSpace(c.Desktop.Currency)) {
-	case "CNY", "RMB", "CNH":
-		return "CNY"
+	case "KRW", "WON":
+		return "KRW"
 	case "USD":
 		return "USD"
 	default:

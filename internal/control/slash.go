@@ -151,7 +151,7 @@ func currencyArgItems(prior []string) []SlashItem {
 	}
 	return []SlashItem{
 		{Label: "auto", Insert: "auto", Hint: "follow the resolved CLI locale"},
-		{Label: "CNY", Insert: "CNY", Hint: "Korean won pricing"},
+		{Label: "KRW", Insert: "KRW", Hint: "Korean won pricing"},
 		{Label: "USD", Insert: "USD", Hint: "US dollar pricing"},
 	}
 }

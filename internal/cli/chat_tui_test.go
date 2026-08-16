@@ -2832,13 +2832,13 @@ func TestCurrencyCommandPersistsAndRefreshesCurrentController(t *testing.T) {
 		return control.New(control.Options{Label: "deepseek-flash"}), nil
 	}
 
-	cmd := m.runSlashCommand("/currency CNY")
+	cmd := m.runSlashCommand("/currency KRW")
 	if cmd == nil {
 		t.Fatal("/currency should queue a controller refresh")
 	}
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if got := cfg.DesktopCurrency(); got != "CNY" {
-		t.Fatalf("saved currency = %q, want CNY", got)
+	if got := cfg.DesktopCurrency(); got != "KRW" {
+		t.Fatalf("saved currency = %q, want KRW", got)
 	}
 	next, _ := m.Update(cmd())
 	m = next.(chatTUI)
@@ -2863,7 +2863,7 @@ func TestCurrencyRefreshFailureKeepsCurrentController(t *testing.T) {
 		return nil, errors.New("build failed")
 	}
 
-	cmd := m.runCurrencySubcommand("/currency CNY")
+	cmd := m.runCurrencySubcommand("/currency KRW")
 	if cmd == nil {
 		t.Fatal("/currency should queue a controller refresh")
 	}
@@ -2875,7 +2875,7 @@ func TestCurrencyRefreshFailureKeepsCurrentController(t *testing.T) {
 	if m.modelSwitchPending || m.pendingModelSwitch != nil {
 		t.Fatal("failed currency refresh left the runtime switch pending")
 	}
-	if got := config.LoadForEdit(config.UserConfigPath()).DesktopCurrency(); got != "CNY" {
+	if got := config.LoadForEdit(config.UserConfigPath()).DesktopCurrency(); got != "KRW" {
 		t.Fatalf("failed refresh should retain the persisted preference, got %q", got)
 	}
 }

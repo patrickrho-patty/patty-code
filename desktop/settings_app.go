@@ -3435,7 +3435,7 @@ func (a *App) SetDesktopLanguage(lang string) error {
 		targetCurrency := a.desktopAutoPricingCurrency()
 		switch strings.ToLower(strings.TrimSpace(lang)) {
 		case "ko-kr", "ko":
-			targetCurrency = "CNY"
+			targetCurrency = "KRW"
 		case "en":
 			targetCurrency = "USD"
 		}
@@ -3535,7 +3535,7 @@ func (a *App) desktopEffectivePricingCurrency(cfg *config.Config) string {
 }
 
 func (a *App) desktopOfficialPricingLanguage(cfg *config.Config) string {
-	if a.desktopEffectivePricingCurrency(cfg) == "CNY" {
+	if a.desktopEffectivePricingCurrency(cfg) == "KRW" {
 		return "ko-KR"
 	}
 	return "en"

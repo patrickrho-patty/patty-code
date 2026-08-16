@@ -223,7 +223,7 @@ func TestDesktopCurrencyNormalizesAndRefreshesOfficialPricing(t *testing.T) {
 	if got := c.DesktopCurrency(); got != "" {
 		t.Fatalf("auto desktop currency = %q, want empty", got)
 	}
-	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "¥" {
+	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "₩" {
 		t.Fatalf("auto Korean flash price = %+v", flash.Price)
 	}
 	if err := c.SetDesktopCurrency("EUR"); err == nil {

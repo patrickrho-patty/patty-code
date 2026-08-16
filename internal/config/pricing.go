@@ -7,18 +7,18 @@ import (
 	"patty/internal/provider"
 )
 
-func deepSeekV4FlashPriceCNY() *provider.Pricing {
-	return &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "¥"}
+func deepSeekV4FlashPriceKRW() *provider.Pricing {
+	return &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "₩"}
 }
 
-func deepSeekV4ProPriceCNY() *provider.Pricing {
-	return &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "¥"}
+func deepSeekV4ProPriceKRW() *provider.Pricing {
+	return &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "₩"}
 }
 
-func deepSeekV4PricesCNY() map[string]*provider.Pricing {
+func deepSeekV4PricesKRW() map[string]*provider.Pricing {
 	return map[string]*provider.Pricing{
-		"deepseek-v4-flash": deepSeekV4FlashPriceCNY(),
-		"deepseek-v4-pro":   deepSeekV4ProPriceCNY(),
+		"deepseek-v4-flash": deepSeekV4FlashPriceKRW(),
+		"deepseek-v4-pro":   deepSeekV4ProPriceKRW(),
 	}
 }
 
@@ -41,8 +41,8 @@ func deepSeekV4PricesUSD() map[string]*provider.Pricing {
 // Persisted custom prices still win; this is only used for built-in templates
 // and known-default refreshes.
 func DeepSeekV4PricesForCurrency(currency string) map[string]*provider.Pricing {
-	if normalizeDeepSeekPricingCurrency(currency) == "CNY" {
-		return deepSeekV4PricesCNY()
+	if normalizeDeepSeekPricingCurrency(currency) == "KRW" {
+		return deepSeekV4PricesKRW()
 	}
 	return deepSeekV4PricesUSD()
 }
@@ -51,7 +51,7 @@ func DeepSeekV4PricesForCurrency(currency string) map[string]*provider.Pricing {
 // sites. New desktop code should pass an explicit pricing currency.
 func DeepSeekV4PricesForLanguage(lang string) map[string]*provider.Pricing {
 	if normalizeDeepSeekPricingLanguage(lang) == "ko-KR" {
-		return DeepSeekV4PricesForCurrency("CNY")
+		return DeepSeekV4PricesForCurrency("KRW")
 	}
 	return DeepSeekV4PricesForCurrency("USD")
 }
@@ -73,13 +73,13 @@ func (c *Config) DeepSeekOfficialPricingCurrency() string {
 			return currency
 		}
 		if normalizeDeepSeekPricingLanguage(c.Desktop.Language) == "ko-KR" {
-			return "CNY"
+			return "KRW"
 		}
 		if normalizeDeepSeekPricingLanguage(c.Desktop.Language) == "en" {
 			return "USD"
 		}
 		if normalizeDeepSeekPricingLanguage(c.Language) == "ko-KR" {
-			return "CNY"
+			return "KRW"
 		}
 	}
 	return "USD"
@@ -110,7 +110,7 @@ func (c *Config) ApplyRuntimeAutoPricingCurrency(currency string) {
 // DeepSeekOfficialPricingLanguage is retained for older settings/template call
 // sites that still express the pricing region as a language.
 func (c *Config) DeepSeekOfficialPricingLanguage() string {
-	if c.DeepSeekOfficialPricingCurrency() == "CNY" {
+	if c.DeepSeekOfficialPricingCurrency() == "KRW" {
 		return "ko-KR"
 	}
 	return "en"
@@ -118,8 +118,8 @@ func (c *Config) DeepSeekOfficialPricingLanguage() string {
 
 func normalizeDeepSeekPricingCurrency(currency string) string {
 	switch strings.ToUpper(strings.TrimSpace(currency)) {
-	case "CNY", "RMB", "CNH", "¥", "￥":
-		return "CNY"
+	case "KRW", "WON", "₩":
+		return "KRW"
 	case "USD", "$", "US$":
 		return "USD"
 	default:
@@ -229,15 +229,15 @@ func completeDeepSeekOfficialPricingCurrency(p *ProviderEntry) string {
 }
 
 func mimoV25ProPrice() *provider.Pricing {
-	return &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "¥"}
+	return &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "₩"}
 }
 
 func mimoV25Price() *provider.Pricing {
-	return &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "¥"}
+	return &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "₩"}
 }
 
 func mimoV2FlashPrice() *provider.Pricing {
-	return &provider.Pricing{CacheHit: 0.07, Input: 0.70, Output: 2.10, Currency: "¥"}
+	return &provider.Pricing{CacheHit: 0.07, Input: 0.70, Output: 2.10, Currency: "₩"}
 }
 
 func mimoDomesticPrices(models []string) map[string]*provider.Pricing {
@@ -256,7 +256,7 @@ func mimoDomesticPrices(models []string) map[string]*provider.Pricing {
 }
 
 func longCat20Price() *provider.Pricing {
-	return &provider.Pricing{CacheHit: 0.04, Input: 2, Output: 8, Currency: "¥"}
+	return &provider.Pricing{CacheHit: 0.04, Input: 2, Output: 8, Currency: "₩"}
 }
 
 func longCat20Prices(models []string) map[string]*provider.Pricing {
@@ -392,7 +392,7 @@ func isKnownDeepSeekOfficialPricing(model string, price *provider.Pricing) bool 
 	if model == "" || price == nil {
 		return false
 	}
-	for _, prices := range []map[string]*provider.Pricing{deepSeekV4PricesCNY(), deepSeekV4PricesUSD()} {
+	for _, prices := range []map[string]*provider.Pricing{deepSeekV4PricesKRW(), deepSeekV4PricesUSD()} {
 		if samePricing(price, prices[model]) {
 			return true
 		}

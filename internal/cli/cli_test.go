@@ -999,16 +999,16 @@ func TestConfigCurrencyCommandWritesUserConfig(t *testing.T) {
 	isolateCLIConfigHome(t)
 
 	out := captureStdout(t, func() {
-		if rc := Run([]string{"config", "currency", "CNY"}, "test-version"); rc != 0 {
+		if rc := Run([]string{"config", "currency", "KRW"}, "test-version"); rc != 0 {
 			t.Fatalf("config currency rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, `currency = "CNY"`) || !strings.Contains(out, "resolved: CNY") {
+	if !strings.Contains(out, `currency = "KRW"`) || !strings.Contains(out, "resolved: KRW") {
 		t.Fatalf("config currency output = %q", out)
 	}
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	if got := cfg.DesktopCurrency(); got != "CNY" {
-		t.Fatalf("saved currency = %q, want CNY", got)
+	if got := cfg.DesktopCurrency(); got != "KRW" {
+		t.Fatalf("saved currency = %q, want KRW", got)
 	}
 }
 
@@ -1022,7 +1022,7 @@ func TestConfigCurrencyAutoUsesResolvedCLILocale(t *testing.T) {
 			t.Fatalf("config currency auto rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, `currency = "auto"`) || !strings.Contains(out, "resolved: CNY") {
+	if !strings.Contains(out, `currency = "auto"`) || !strings.Contains(out, "resolved: KRW") {
 		t.Fatalf("config currency auto output = %q", out)
 	}
 	cfg := config.LoadForEdit(config.UserConfigPath())

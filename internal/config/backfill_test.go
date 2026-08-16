@@ -43,8 +43,8 @@ func TestBackfillDeepSeekProUsesConfiguredLanguage(t *testing.T) {
 	pro := hasModel(c, "deepseek-v4-pro")
 	if pro == nil {
 		t.Fatal("deepseek-v4-pro not restored")
-	} else if pro.Price == nil || pro.Price.Output != 6 || pro.Price.Currency != "¥" {
-		t.Errorf("pro price = %+v, want CNY preset", pro.Price)
+	} else if pro.Price == nil || pro.Price.Output != 6 || pro.Price.Currency != "₩" {
+		t.Errorf("pro price = %+v, want KRW preset", pro.Price)
 	}
 }
 
@@ -1000,8 +1000,8 @@ func TestBackfillDeepSeekOfficialPricesUsesConfiguredLanguage(t *testing.T) {
 	if !ok {
 		t.Fatal("deepseek provider missing")
 	}
-	if p.Prices["deepseek-v4-flash"].Output != 2 || p.Prices["deepseek-v4-flash"].Currency != "¥" || p.Prices["deepseek-v4-pro"].Output != 6 || p.Prices["deepseek-v4-pro"].Currency != "¥" {
-		t.Fatalf("deepseek prices = %+v, want CNY flash/pro prices", p.Prices)
+	if p.Prices["deepseek-v4-flash"].Output != 2 || p.Prices["deepseek-v4-flash"].Currency != "₩" || p.Prices["deepseek-v4-pro"].Output != 6 || p.Prices["deepseek-v4-pro"].Currency != "₩" {
+		t.Fatalf("deepseek prices = %+v, want KRW flash/pro prices", p.Prices)
 	}
 }
 
@@ -1051,15 +1051,15 @@ func TestApplyDeepSeekOfficialDefaultPricingUsesConfiguredLanguage(t *testing.T)
 	if !ok {
 		t.Fatal("deepseek-flash provider missing")
 	}
-	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "¥" {
-		t.Fatalf("flash price = %+v, want CNY preset", flash.Price)
+	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "₩" {
+		t.Fatalf("flash price = %+v, want KRW preset", flash.Price)
 	}
 	pro, ok := c.Provider("deepseek-pro")
 	if !ok {
 		t.Fatal("deepseek-pro provider missing")
 	}
-	if pro.Price == nil || pro.Price.Output != 6 || pro.Price.Currency != "¥" {
-		t.Fatalf("pro price = %+v, want CNY preset", pro.Price)
+	if pro.Price == nil || pro.Price.Output != 6 || pro.Price.Currency != "₩" {
+		t.Fatalf("pro price = %+v, want KRW preset", pro.Price)
 	}
 }
 
@@ -1105,11 +1105,11 @@ price = { cache_hit = 0.0028, input = 0.14, output = 0.28, currency = "$" }
 		t.Fatalf("flash price = %+v, want persisted USD preset", flash.Price)
 	}
 
-	if err := c.SetDesktopCurrency("CNY"); err != nil {
-		t.Fatalf("SetDesktopCurrency CNY: %v", err)
+	if err := c.SetDesktopCurrency("KRW"); err != nil {
+		t.Fatalf("SetDesktopCurrency KRW: %v", err)
 	}
-	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "¥" {
-		t.Fatalf("flash price = %+v, want explicit CNY preset", flash.Price)
+	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "₩" {
+		t.Fatalf("flash price = %+v, want explicit KRW preset", flash.Price)
 	}
 }
 
@@ -1157,7 +1157,7 @@ price = { cache_hit = 0.0028, input = 0.14, output = 0.28, currency = "$" }
 	}
 
 	c := LoadForEdit(path)
-	c.ApplyRuntimeAutoPricingCurrency("CNY")
+	c.ApplyRuntimeAutoPricingCurrency("KRW")
 	flash, ok := c.Provider("deepseek-flash")
 	if !ok {
 		t.Fatal("deepseek-flash provider missing")
@@ -1197,8 +1197,8 @@ deepseek-v4-flash = { cache_hit = 0.0028, input = 0.14, output = 0.28, currency 
 	}
 	for _, model := range p.Models {
 		price := p.Prices[model]
-		if price == nil || price.Currency != "¥" {
-			t.Fatalf("price for %q = %+v, want consistent CNY table", model, price)
+		if price == nil || price.Currency != "₩" {
+			t.Fatalf("price for %q = %+v, want consistent KRW table", model, price)
 		}
 	}
 }
@@ -1212,10 +1212,10 @@ func TestDeepSeekOfficialPricingCurrencyResolution(t *testing.T) {
 	}{
 		{name: "old config defaults to USD", want: "USD"},
 		{name: "English auto", desktop: DesktopConfig{Language: "en"}, want: "USD"},
-		{name: "Korean auto", desktop: DesktopConfig{Language: "ko-KR"}, want: "CNY"},
-		{name: "CLI Korean fallback", language: "ko-KR", want: "CNY"},
+		{name: "Korean auto", desktop: DesktopConfig{Language: "ko-KR"}, want: "KRW"},
+		{name: "CLI Korean fallback", language: "ko-KR", want: "KRW"},
 		{name: "explicit USD wins over Korean", language: "ko-KR", desktop: DesktopConfig{Language: "ko-KR", Currency: "USD"}, want: "USD"},
-		{name: "explicit CNY wins over English", language: "en", desktop: DesktopConfig{Language: "en", Currency: "CNY"}, want: "CNY"},
+		{name: "explicit KRW wins over English", language: "en", desktop: DesktopConfig{Language: "en", Currency: "KRW"}, want: "KRW"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Config{Language: tt.language, Desktop: tt.desktop}
@@ -1234,7 +1234,7 @@ func TestLoadForRootKeepsPricingRegionUserGlobal(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(home, "config.toml"), []byte("[desktop]\nlanguage = \"en\"\ncurrency = \"USD\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(project, "patty.toml"), []byte("[desktop]\nlanguage = \"ko-KR\"\ncurrency = \"CNY\"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(project, "patty.toml"), []byte("[desktop]\nlanguage = \"ko-KR\"\ncurrency = \"KRW\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1262,10 +1262,10 @@ func TestApplyDeepSeekOfficialDefaultPricingExplicitCurrencyWins(t *testing.T) {
 	}
 
 	c.Desktop.Language = "en"
-	c.Desktop.Currency = "CNY"
+	c.Desktop.Currency = "KRW"
 	applyDeepSeekOfficialDefaultPricing(c)
-	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "¥" {
-		t.Fatalf("flash price = %+v, want explicit CNY preset", flash.Price)
+	if flash.Price == nil || flash.Price.Output != 2 || flash.Price.Currency != "₩" {
+		t.Fatalf("flash price = %+v, want explicit KRW preset", flash.Price)
 	}
 }
 
@@ -1523,8 +1523,8 @@ func TestResolveModelUsesPerModelPricing(t *testing.T) {
 		Default: "deepseek-v4-flash",
 		Price:   &provider.Pricing{CacheHit: 9, Input: 9, Output: 9, Currency: "$"},
 		Prices: map[string]*provider.Pricing{
-			"deepseek-v4-flash": &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "¥"},
-			"deepseek-v4-pro":   &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "¥"},
+			"deepseek-v4-flash": &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "₩"},
+			"deepseek-v4-pro":   &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "₩"},
 		},
 	}}}
 	pro, ok := c.ResolveModel("deepseek/deepseek-v4-pro")
@@ -1605,7 +1605,7 @@ func TestNormalizeLegacyMimoProviderCatalogsBackfillsOfficialMimoTokenPlanStub(t
 			BaseURL:   "https://token-plan-cn.xiaomimimo.com/v1",
 			Model:     "mimo-v2.5-pro",
 			APIKeyEnv: "MIMO_API_KEY",
-			Price:     &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "CNY"},
+			Price:     &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "KRW"},
 		}},
 	}
 
@@ -1618,7 +1618,7 @@ func TestNormalizeLegacyMimoProviderCatalogsBackfillsOfficialMimoTokenPlanStub(t
 	if !reflect.DeepEqual(p.ModelList(), []string{"mimo-v2.5-pro", "mimo-v2.5"}) {
 		t.Fatalf("mimo-token-plan models = %v, want token plan catalog", p.ModelList())
 	}
-	if p.Price == nil || p.Price.Currency != "CNY" {
+	if p.Price == nil || p.Price.Currency != "KRW" {
 		t.Fatalf("mimo-token-plan price = %+v, want preserved custom provider-wide price", p.Price)
 	}
 	if !reflect.DeepEqual(p.VisionModels, []string{"mimo-v2.5"}) {

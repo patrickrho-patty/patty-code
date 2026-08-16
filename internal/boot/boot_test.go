@@ -66,12 +66,12 @@ func TestApplyRuntimeAutoPricingCurrency(t *testing.T) {
 		wantCurrency    string
 		wantOutput      float64
 	}{
-		{name: "auto regional locale", runtimeCurrency: "CNY", wantCurrency: "¥", wantOutput: 2},
+		{name: "auto regional locale", runtimeCurrency: "KRW", wantCurrency: "₩", wantOutput: 2},
 		{name: "auto English locale", runtimeCurrency: "USD", wantCurrency: "$", wantOutput: 0.28},
-		{name: "explicit USD wins", runtimeCurrency: "CNY", desktopCurrency: "USD", wantCurrency: "$", wantOutput: 0.28},
-		{name: "explicit CNY wins", runtimeCurrency: "USD", desktopCurrency: "CNY", wantCurrency: "¥", wantOutput: 2},
-		{name: "desktop language wins", runtimeCurrency: "USD", desktopLanguage: "ko-KR", wantCurrency: "¥", wantOutput: 2},
-		{name: "CLI language wins", runtimeCurrency: "USD", language: "ko-KR", wantCurrency: "¥", wantOutput: 2},
+		{name: "explicit USD wins", runtimeCurrency: "KRW", desktopCurrency: "USD", wantCurrency: "$", wantOutput: 0.28},
+		{name: "explicit KRW wins", runtimeCurrency: "USD", desktopCurrency: "KRW", wantCurrency: "₩", wantOutput: 2},
+		{name: "desktop language wins", runtimeCurrency: "USD", desktopLanguage: "ko-KR", wantCurrency: "₩", wantOutput: 2},
+		{name: "CLI language wins", runtimeCurrency: "USD", language: "ko-KR", wantCurrency: "₩", wantOutput: 2},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

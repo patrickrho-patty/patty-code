@@ -345,8 +345,8 @@ func TestCuratedProviderPresetCapabilities(t *testing.T) {
 	if cap := EffortCapabilityForEntry(longcat); !cap.Supported || cap.Default != "enabled" || !containsString(cap.Levels, "disabled") {
 		t.Fatalf("longcat-openai effort capability = %+v, want enabled/disabled", cap)
 	}
-	if price := longcat.PriceForModel("LongCat-2.0"); price == nil || price.Currency != "¥" || price.Input != 2 || price.Output != 8 || price.CacheHit != 0.04 {
-		t.Fatalf("LongCat-2.0 price = %+v, want RMB discounted pricing", price)
+	if price := longcat.PriceForModel("LongCat-2.0"); price == nil || price.Currency != "₩" || price.Input != 2 || price.Output != 8 || price.CacheHit != 0.04 {
+		t.Fatalf("LongCat-2.0 price = %+v, want KRW discounted pricing", price)
 	}
 	longcatAnthropic, ok := cfg.Provider("longcat-anthropic")
 	if !ok {
@@ -369,8 +369,8 @@ func TestCuratedProviderPresetCapabilities(t *testing.T) {
 	if mimo.DefaultModel() != "mimo-v2.5-pro" || !mimo.HasVisionModel("mimo-v2.5") || mimo.HasVisionModel("mimo-v2.5-pro") {
 		t.Fatalf("mimo vision capability mismatch: %+v", mimo.VisionModels)
 	}
-	if price := mimo.PriceForModel("mimo-v2.5-pro"); price == nil || price.Currency != "¥" {
-		t.Fatalf("mimo-v2.5-pro price = %+v, want RMB pricing", price)
+	if price := mimo.PriceForModel("mimo-v2.5-pro"); price == nil || price.Currency != "₩" {
+		t.Fatalf("mimo-v2.5-pro price = %+v, want KRW pricing", price)
 	}
 	mimoAnthropic, ok := cfg.Provider("mimo-anthropic")
 	if !ok {

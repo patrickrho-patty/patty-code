@@ -24,10 +24,10 @@ func TestResultClassSeparatesGuardStopsFromWrongPatches(t *testing.T) {
 }
 
 func TestCostPerSolvedIsNotAnAverageOverAttempts(t *testing.T) {
-	if got := costPerSolved(0.4, 2, "CNY"); got != "CNY 0.2000" {
-		t.Fatalf("cost per solved = %q, want CNY 0.2000", got)
+	if got := costPerSolved(0.4, 2, "KRW"); got != "KRW 0.2000" {
+		t.Fatalf("cost per solved = %q, want KRW 0.2000", got)
 	}
-	if got := costPerSolved(0.4, 0, "CNY"); got != "n/a" {
+	if got := costPerSolved(0.4, 0, "KRW"); got != "n/a" {
 		t.Fatalf("zero solved = %q, want n/a", got)
 	}
 	if got := tokensPerSolved(1000, 0); got != "n/a" {
@@ -38,13 +38,13 @@ func TestCostPerSolvedIsNotAnAverageOverAttempts(t *testing.T) {
 func TestRenderLeadsWithCostPerSolvedAndFailureClasses(t *testing.T) {
 	out := render([]result{
 		{task: task{ID: "solved-one"}, Passed: true, WallMs: 4000,
-			runMetrics: runMetrics{Outcome: "success", Cost: 0.02, Currency: "CNY", PromptTokens: 1000, CacheHitTokens: 900, CacheMissTokens: 100, ToolCalls: 6}},
+			runMetrics: runMetrics{Outcome: "success", Cost: 0.02, Currency: "KRW", PromptTokens: 1000, CacheHitTokens: 900, CacheMissTokens: 100, ToolCalls: 6}},
 		{task: task{ID: "stopped"}, WallMs: 9000,
-			runMetrics: runMetrics{Outcome: "max_steps", Cost: 0.02, Currency: "CNY", PromptTokens: 1000, ToolCalls: 40, ToolFailures: 3}},
+			runMetrics: runMetrics{Outcome: "max_steps", Cost: 0.02, Currency: "KRW", PromptTokens: 1000, ToolCalls: 40, ToolFailures: 3}},
 	})
 
 	for _, want := range []string{
-		"**Cost per solved:** CNY 0.0400",
+		"**Cost per solved:** KRW 0.0400",
 		"**Failures by class:** max_steps ×1",
 		"| Task | Result | Class |",
 		"| `stopped` | ❌ fail | max_steps |",

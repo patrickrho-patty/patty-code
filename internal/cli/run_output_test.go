@@ -61,7 +61,7 @@ func TestRunOutputJSONIncludesCurrencyAwareCostFields(t *testing.T) {
 		wantCode string
 	}{
 		{name: "USD", currency: "$", wantCode: "USD"},
-		{name: "CNY", currency: "¥", wantCode: "CNY"},
+		{name: "KRW", currency: "₩", wantCode: "KRW"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var out bytes.Buffer
@@ -88,7 +88,7 @@ func TestRunOutputJSONIncludesCurrencyAwareCostFields(t *testing.T) {
 func TestRunOutputJSONRejectsMixedPricingCurrencies(t *testing.T) {
 	var out bytes.Buffer
 	sink := newRunOutputSink(&out, runOutputJSON)
-	for _, currency := range []string{"$", "¥"} {
+	for _, currency := range []string{"$", "₩"} {
 		sink.Emit(event.Event{
 			Kind:    event.Usage,
 			Usage:   &provider.Usage{PromptTokens: 1_000_000},

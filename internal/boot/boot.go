@@ -130,7 +130,7 @@ type Options struct {
 	// AutoPricingCurrency supplies a frontend-resolved pricing region when the
 	// persisted desktop currency and language settings are all automatic. It is
 	// applied to the in-memory config only and never turns Auto into a persisted
-	// CNY/USD choice.
+	// KRW/USD choice.
 	AutoPricingCurrency string
 	// StatsSource labels this frontend's usage records (desktop/cli/serve).
 	// Empty disables usage recording for this controller.

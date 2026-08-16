@@ -53,7 +53,7 @@ func TestWorkspaceTabAggregatesSessionUsageTelemetry(t *testing.T) {
 		UsageSource: event.UsageSourceSubagent,
 		SessionHit:  70,
 		SessionMiss: 30,
-		Pricing:     &provider.Pricing{CacheHit: 1, Input: 2, Output: 3, Currency: "¥"},
+		Pricing:     &provider.Pricing{CacheHit: 1, Input: 2, Output: 3, Currency: "₩"},
 	})
 	tab.recordTurnDone(start + 1500)
 
@@ -70,8 +70,8 @@ func TestWorkspaceTabAggregatesSessionUsageTelemetry(t *testing.T) {
 	if got.ElapsedMs != 1500 {
 		t.Fatalf("elapsed = %d, want 1500", got.ElapsedMs)
 	}
-	if got.SessionCost <= 0 || got.SessionCurrency != "¥" {
-		t.Fatalf("cost = %f %q, want positive ¥", got.SessionCost, got.SessionCurrency)
+	if got.SessionCost <= 0 || got.SessionCurrency != "₩" {
+		t.Fatalf("cost = %f %q, want positive ₩", got.SessionCost, got.SessionCurrency)
 	}
 	if got.Sources[event.UsageSourceSubagent].SessionCost <= 0 || got.Sources[event.UsageSourceSubagent].RequestCount != 3 {
 		t.Fatalf("subagent source stats = %+v, want three costed requests", got.Sources[event.UsageSourceSubagent])
@@ -85,8 +85,8 @@ func TestWorkspaceTabAggregatesSessionUsageTelemetry(t *testing.T) {
 	if context.SessionTokens != 140 {
 		t.Fatalf("context usage session tokens = %d, want 140", context.SessionTokens)
 	}
-	if context.SessionCost <= 0 || context.SessionCurrency != "¥" {
-		t.Fatalf("context usage cost = %f %q, want positive ¥", context.SessionCost, context.SessionCurrency)
+	if context.SessionCost <= 0 || context.SessionCurrency != "₩" {
+		t.Fatalf("context usage cost = %f %q, want positive ₩", context.SessionCost, context.SessionCurrency)
 	}
 	if context.CacheHitTokens != 70 || context.CacheMissTokens != 30 {
 		t.Fatalf("context usage cache tokens = hit %d miss %d, want 70/30", context.CacheHitTokens, context.CacheMissTokens)
@@ -121,7 +121,7 @@ func TestWorkspaceTabRepricesUsageWithoutMixingCurrencies(t *testing.T) {
 	tab.recordUsage(event.Event{
 		Usage:       &provider.Usage{PromptTokens: 1_000_000, CompletionTokens: 100_000, TotalTokens: 1_100_000},
 		UsageSource: event.UsageSourceExecutor,
-		Pricing:     &provider.Pricing{Input: 1, Output: 2, Currency: "CNY"},
+		Pricing:     &provider.Pricing{Input: 1, Output: 2, Currency: "KRW"},
 	})
 	if ok := tab.repriceUsage(map[string]*provider.Pricing{
 		event.UsageSourceExecutor: {Input: 0.14, Output: 0.28, Currency: "USD"},
@@ -146,7 +146,7 @@ func TestWorkspaceTabRepricesCacheWritesWithoutLosingBillingTier(t *testing.T) {
 			CacheWriteBilledTokens: 200_000,
 		},
 		UsageSource: event.UsageSourceExecutor,
-		Pricing:     &provider.Pricing{Input: 2, Currency: "CNY"},
+		Pricing:     &provider.Pricing{Input: 2, Currency: "KRW"},
 	})
 	if ok := tab.repriceUsage(map[string]*provider.Pricing{
 		event.UsageSourceExecutor: {Input: 1, Currency: "USD"},
@@ -190,7 +190,7 @@ func TestWorkspaceTabDoesNotAddDifferentCurrencies(t *testing.T) {
 	tab := &WorkspaceTab{}
 	tab.recordUsage(event.Event{
 		Usage:   &provider.Usage{PromptTokens: 1_000_000, TotalTokens: 1_000_000},
-		Pricing: &provider.Pricing{Input: 1, Currency: "CNY"},
+		Pricing: &provider.Pricing{Input: 1, Currency: "KRW"},
 	})
 	tab.recordUsage(event.Event{
 		Usage:   &provider.Usage{PromptTokens: 1_000_000, TotalTokens: 1_000_000},
@@ -541,7 +541,7 @@ func TestContextPanelUsesLastUsageBreakdownWithTelemetryTotal(t *testing.T) {
 func costedUsageEvent() event.Event {
 	return event.Event{
 		Usage:   &provider.Usage{PromptTokens: 100, CompletionTokens: 40, TotalTokens: 140},
-		Pricing: &provider.Pricing{CacheHit: 1, Input: 2, Output: 3, Currency: "¥"},
+		Pricing: &provider.Pricing{CacheHit: 1, Input: 2, Output: 3, Currency: "₩"},
 	}
 }
 

@@ -609,7 +609,7 @@ func TestSlashArgCompletionCurrency(t *testing.T) {
 	if !m.completion.active || m.completion.kind != compSlashArg {
 		t.Fatalf("/currency should open arg completion: %+v", m.completion)
 	}
-	for _, want := range []string{"auto", "CNY", "USD"} {
+	for _, want := range []string{"auto", "KRW", "USD"} {
 		if !hasLabel(m.completion.items, want) {
 			t.Fatalf("/currency completion missing %q: %v", want, labels(m.completion.items))
 		}
