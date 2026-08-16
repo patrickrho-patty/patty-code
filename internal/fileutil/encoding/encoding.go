@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"os"
+	"sync"
 	"unicode/utf8"
 
 	"golang.org/x/text/encoding/korean"
@@ -72,17 +73,18 @@ func Detect(data []byte) (Kind, []byte) {
 	decGB := simplifiedchinese.GB18030.NewDecoder()
 	outGB, _, errGB := transform.Bytes(decGB, data)
 
-	krHangul, krHanzi := 0, 0
+	krHangul, krHanzi, commonKR := 0, 0, 0
 	if errKR == nil {
 		krHangul, krHanzi = countHangulAndHanzi(outKR)
+		commonKR = countCommonKorean(outKR)
 	}
 
-	gbHangul, _ := 0, 0
+	gbHanzi := 0
 	if errGB == nil {
-		gbHangul, _ = countHangulAndHanzi(outGB)
+		_, gbHanzi = countHangulAndHanzi(outGB)
 	}
 
-	if krHangul > 0 && krHangul > krHanzi*3 && krHangul > gbHangul {
+	if errKR == nil && krHangul > 0 && ((krHanzi == 0 && krHangul >= gbHanzi) || (commonKR > 0 && krHangul >= gbHanzi/2)) {
 		return EUCKR, data
 	}
 	if errGB == nil {
@@ -239,6 +241,44 @@ func Encode(text string, enc Kind) []byte {
 		return out
 	}
 	return []byte(text)
+}
+
+var (
+	commonKoreanRunes map[rune]bool
+	commonKoreanOnce  sync.Once
+)
+
+func initCommonKorean() {
+	commonKoreanRunes = make(map[rune]bool, 100)
+	runes := []rune(
+		"가나다라마바사아자차카타파하" +
+			"고노도로모보소오조초코토포호" +
+			"구누두루무부수우주추쿠투푸후" +
+			"기니디리미비시이지치키티피히" +
+			"는은을를의에로서도과와한국원" +
+			"명번호일월년상하전후신구용수" +
+			"성대중소입출금액내역건합계잔",
+	)
+	for _, r := range runes {
+		commonKoreanRunes[r] = true
+	}
+}
+
+func countCommonKorean(b []byte) int {
+	commonKoreanOnce.Do(initCommonKorean)
+	count := 0
+	for i := 0; i < len(b); {
+		r, size := utf8.DecodeRune(b[i:])
+		if r == utf8.RuneError && size == 1 {
+			i++
+			continue
+		}
+		if commonKoreanRunes[r] {
+			count++
+		}
+		i += size
+	}
+	return count
 }
 
 // countHangulAndHanzi counts Hangul and Hanzi/Hanja runes in b (valid UTF-8).

@@ -191,6 +191,125 @@ The `liveFeatures` §33 tracker extends with a per-tier visibility column so
    `profile == "production" || "sovereign"` (loader.go:111) — align constant
    names with the harness profile package.
 
+## Code-structure impact (concrete layout)
+
+### Naming collision, resolved
+
+`internal/profile` **already exists** — it is the *edition* profile system
+(Patty Code vs GongCode product metadata: editions, branding, capabilities).
+The deployment-tier concept gets its own package: **`internal/tier`** —
+reads better than `buildprofile` at call sites and cannot be confused with
+either the edition profiles or the DARI wire-protocol profiles
+(`internal/dari/profiles.go`, F.13 negotiation — orthogonal).
+
+### Package layout (current → proposed)
+
+```
+# TODAY — everything compiles into every binary
+cmd/patcode/main.go          ← blank-imports ONLY dari + builtin tools, but
+                                generic providers/presets/telemetry/crashreport
+                                link transitively via config/boot/cli
+internal/
+  provider/{dari,openai,anthropic,responses}/   all in tree; generics registered
+                                but blocked by env-var policy (PATTY_ALLOW_GENERIC)
+  config/provider_presets.go  ← 47 public-cloud presets, ALL builds
+  telemetry/                  ← vendor endpoint (crash.patty.io), runtime opt-in
+  crashreport/                ← upload path, consent-gated at runtime
+  billing/                    ← DeepSeek balance API, all builds
+  mcpregistry/ installsource/ ← public registry + GitHub endpoints, all builds
+  bot/ botruntime/            ← all builds
+  profile/                    ← EDITION profiles (Patty vs GongCode) — unrelated
+```
+
+```
+# PROPOSED
+internal/
+  tier/                       ← NEW: deployment-tier package
+    tier.go                   // type Tier; Public/Enterprise/Sovereign; Allows(cap)
+    lock.go                   // Lock(cap) fail-closed checks (compile-time truth)
+    tags_public.go            //go:build profile_public     → Default = Public
+    tags_enterprise.go        //go:build !profile_public && !profile_sovereign
+    tags_sovereign.go         //go:build profile_sovereign  → Default = Sovereign
+  auth/                       ← NEW (G1)
+    auth.go                   // LoginProvider interface (unconditional)
+    oauthpub/…                //go:build profile_public
+    samlent/…                 //go:build profile_enterprise || profile_sovereign
+    adgov/…                   //go:build profile_sovereign
+  provider/
+    dari/                     // UNCONDITIONAL — the governed data plane
+    openai/ anthropic/ responses/
+                              //go:build profile_public (G4: generics compile only
+                                into public builds; their Register init() calls
+                                vanish from other binaries)
+  config/
+    provider_presets.go       //go:build profile_public   (G4)
+    sovereign_defaults.go     //go:build profile_sovereign (air-gap default-on)
+  telemetry/
+    client.go                 //go:build !profile_sovereign  (G2)
+    noop.go                   //go:build profile_sovereign — same API, does nothing
+  crashreport/
+    upload.go                 //go:build !profile_sovereign  (G2)
+  update/
+    online.go                 //go:build !profile_sovereign  (G3)
+    advisory_import.go        //go:build profile_sovereign — new operator command
+  billing/                    //go:build profile_public      (G4)
+  mcpregistry/ installsource/ // default endpoints behind tier checks + G5 tags
+  bot/ botruntime/            //go:build !profile_sovereign  (G6)
+```
+
+### Mechanics that make this fit THIS codebase
+
+1. **Provider registration is already interface-based.**
+   `provider.Register(kind, New)` with `init()` per package
+   (internal/provider/*/…go). Because `cmd/patcode/main.go` blank-imports
+   only `provider/dari`, generics register only when transitively linked —
+   adding `//go:build profile_public` to their files means enterprise and
+   sovereign builds **do not compile them at all**. Minimal diff, no
+   registration registry changes.
+
+2. **Env checks become `tier` seam checks.** Today's
+   `PATTY_ALLOW_GENERIC` gate in `provider.New()` (provider.go:1167–1172)
+   becomes `if !tier.Default.Allows(tier.CapGenericProviders)`. In a
+   sovereign build the constant is compile-time false — the branch is
+   provably dead code, and the env hatch is deleted because nothing reads
+   it anymore.
+
+3. **No-op twin pattern for pervasive interfaces.** Telemetry and
+   crashreport are called from many sites; instead of tagging every call
+   site, each package grows a `noop.go` twin with the identical API
+   (`//go:build profile_sovereign`). Call sites are untouched; the linker
+   resolves to the no-op in sovereign builds.
+
+4. **`boot.Build` gains one early step: `tier.Lock()`** — asserted right
+   after config load. Sovereign binary + config attempting to enable an
+   excluded capability → hard startup error. This is the fail-closed
+   backstop for anything that parses from config even though its
+   implementation is tagged out.
+
+5. **Single `cmd/patcode`, three binaries via `-tags`.** No new command
+   directories; `make build-public|build-enterprise|build-sovereign` pass
+   the tag sets. `make test-profiles` runs the core suite under each.
+
+### What does NOT move
+
+`agent/`, `dariproto/`, `daricollab/`, `dlp/`, `governed/`, `workflow/`,
+`tool/`, `control/`, and the whole session/provenance machinery — the
+core. The diff footprint of profile-gating is ~10 packages at the edges,
+zero in the middle. (This is the ADR's "the data plane is
+profile-agnostic" principle made concrete.)
+
+### Diff estimate
+
+| Item | Size |
+|---|---|
+| `internal/tier` package + tests | ~150 LOC |
+| Build tags on existing files | ~15 files, one-line headers |
+| Noop twins (telemetry, crashreport) | 2 small files |
+| `tier.Lock` boot hook | ~20 LOC |
+| Makefile + CI matrix | ~100 LOC |
+| Env hatches retired (ALLOW_GENERIC, PATTY_AIRGAP) | deletions |
+| G1 auth providers | new feature code regardless of this ADR |
+
 ## Consequences
 
 - **+** Sovereign binaries provably lack external endpoints (grep-able,
@@ -211,18 +330,17 @@ The `liveFeatures` §33 tracker extends with a per-tier visibility column so
 
 ## Implementation plan (ordered)
 
-1. `internal/profile` package + build-tag files defining `Default` and
-   `Allows(...)`; `profile.Lock` fail-closed semantics. Unit tests per tag.
-2. Makefile + CI matrix (`build-{public,enterprise,sovereign}`,
-   `test-profiles`); wire into existing workflows before any feature moves
-   behind tags (matrix first, gates second — never gate what CI can't see).
-3. G4 (provider catalog + generic-provider constructors) — highest-value,
+0. **Code-structure groundwork** — create `internal/tier` (resolving the
+   `internal/profile` edition-package collision documented above), wire the
+   Makefile/CI matrix, add `tier.Lock` to boot. Matrix first, gates second —
+   never gate what CI can't see.
+1. G4 (provider catalog + generic-provider constructors) — highest-value,
    removes the `PATTY_ALLOW_GENERIC` env hatch.
-4. G2/G3 (telemetry, crash send, upgrade fetch) — sovereign no-ops +
+2. G2/G3 (telemetry, crash send, upgrade fetch) — sovereign no-ops +
    `patcode update import`.
-5. G1 auth provider interface + OAuth public flow (pairs with the public
+3. G1 auth provider interface + OAuth public flow (pairs with the public
    login/enrollment design — OAuth above, enrollment below, per the auth
    ADR discussion).
-6. G5–G8 enforcement posture + command surfacing.
-7. Root-repo alignment items (profile seeding, console visibility,
+4. G5–G8 enforcement posture + command surfacing.
+5. Root-repo alignment items (profile seeding, console visibility,
    SCIM/payments).

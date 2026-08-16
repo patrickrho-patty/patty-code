@@ -86,6 +86,18 @@ func TestDetectCP949(t *testing.T) {
 	}
 }
 
+func TestDetectEUCKR_Hanja(t *testing.T) {
+	// Mixed Hangul and Hanja in EUC-KR
+	euc, err := korean.EUCKR.NewEncoder().String("고객명 (顧客名) 계좌번호")
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	enc, _ := Detect([]byte(euc))
+	if enc != EUCKR {
+		t.Errorf("got %v, want EUCKR", enc)
+	}
+}
+
 func TestDetectEmpty(t *testing.T) {
 	enc, _ := Detect(nil)
 	if enc != UTF8 {
