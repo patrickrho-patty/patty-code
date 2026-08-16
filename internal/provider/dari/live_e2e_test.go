@@ -295,6 +295,34 @@ func runLiveE2E(t *testing.T, livePIAURL, livePIAKey, liveModel string) {
 		t.Fatalf("live model must stream token-by-token, got %d chunk(s)", chunkCount)
 	}
 
+	// §42.1 regression (code-review C1): a SECOND governed exchange on
+	// the SAME persistent connection must complete — the relay's replay
+	// window dropped every AI_OPEN after the first when the connector
+	// stamped a constant sequence.
+	{
+		ctx2, cancel2 := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel2()
+		ch2, err2 := pp.Stream(ctx2, provider.Request{
+			Messages: []provider.Message{{Role: provider.RoleUser, Content: "Reply again: pong2"}},
+		})
+		if err2 != nil {
+			t.Fatalf("second stream: %v", err2)
+		}
+		var text2 string
+		for chunk := range ch2 {
+			switch chunk.Type {
+			case provider.ChunkText:
+				text2 += chunk.Text
+			case provider.ChunkError:
+				t.Fatalf("second stream error: %v", chunk.Err)
+			}
+		}
+		if strings.TrimSpace(text2) == "" {
+			t.Fatal("second exchange on the same connection was dropped (replay-window regression)")
+		}
+		t.Logf("second governed exchange on same conn: %q", text2)
+	}
+
 	// Lease must be held and healthy (A3 e2e).
 	metrics := pp.LeaseMetrics()
 	if metrics.HeldLeaseID == "" {

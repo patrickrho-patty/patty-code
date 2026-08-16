@@ -103,8 +103,24 @@ type AICompletePayload struct {
 
 // MarshalCBOR wraps cbor.Marshal.
 func MarshalCBOR(v interface{}) ([]byte, error) {
-	return cbor.Marshal(v)
+	return defaultEncMode.Marshal(v)
 }
+
+// defaultEncMode is the CANONICAL encoder (RFC 8949 core
+// deterministic) — byte-identical to the root kernel's encoder, which
+// is the whole point of the mirror: multi-key maps must not encode in
+// Go map-iteration order.
+var defaultEncMode = func() cbor.EncMode {
+	mode, err := cbor.EncOptions{
+		Sort:        cbor.SortCoreDeterministic,
+		IndefLength: cbor.IndefLengthForbidden,
+		Time:        cbor.TimeUnix,
+	}.EncMode()
+	if err != nil {
+		panic("dariproto: init cbor encoder mode: " + err.Error())
+	}
+	return mode
+}()
 
 // UnmarshalCBOR wraps cbor.Unmarshal.
 func UnmarshalCBOR(data []byte, v interface{}) error {

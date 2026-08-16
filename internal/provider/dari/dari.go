@@ -18,6 +18,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"patty/internal/admin"
@@ -87,9 +88,14 @@ type Provider struct {
 	// collabHandler receives relay-routed dari.collab/1 envelopes.
 	collabHandler func(fromHarness, conversationID string, envelope []byte)
 	// activeStream is the current AI-lane subscription (nil between
-	// turns); pumpRunning guards the persistent inbound reader.
+	// turns); pumpRunning/pumpConn identity-bind the persistent reader
+	// to ONE connection so a stale pump never suppresses a new reader.
 	activeStream *streamState
 	pumpRunning  bool
+	pumpConn     *dariproto.TransportConn
+	// pendingRecords are control records consumed during handshake/
+	// resume that predate the pump; the pump dispatches them first.
+	pendingRecords []*dariproto.Record
 	// governedGates is the installed workflow gate set (D1 acks); set
 	// by the boot governance sink.
 	governedGates *workflow.GatesClient
@@ -97,6 +103,8 @@ type Provider struct {
 	// legacy relays that send no token).
 	resumeToken   []byte
 	resumeSession string
+	// laneSeq is the per-connection monotonic AI_OPEN sequence (§42.1).
+	laneSeq atomic.Uint64
 	// receiptStore is the boot-installable durable store (B3); nil
 	// falls back to the in-memory store.
 	receiptStore *provenancewire.ReceiptStore
@@ -504,9 +512,14 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 	if herr != nil {
 		return nil, fmt.Errorf("dari: idempotency header: %w", herr)
 	}
-	if err := p.conn.SendMessage(dariproto.MsgAIOpen, idemHeader, payloadBytes, 1, 1); err != nil {
-		p.conn.Close()
-		p.conn = nil
+	// §42.1: monotonic per-connection sequence — the relay's replay
+	// window dedupes by (conn, seq); a hardcoded seq would drop every
+	// turn after the first on a persistent connection.
+	openSeq := p.laneSeq.Add(1)
+	if err := p.conn.SendMessage(dariproto.MsgAIOpen, idemHeader, payloadBytes, 1, openSeq); err != nil {
+		p.mu.Lock()
+		p.dropConnLocked(p.conn)
+		p.mu.Unlock()
 		return nil, fmt.Errorf("dari: send AI_OPEN: %w", err)
 	}
 
@@ -527,10 +540,15 @@ type streamState struct {
 	ctx context.Context
 }
 
-// registerStream installs the active stream (pump-held lock).
+// registerStream installs the active stream (pump-held lock). A
+// previous still-installed stream is closed first — an orphaned
+// subscription must never leave its consumer ranging forever.
 func (p *Provider) registerStream(out chan provider.Chunk, ctx context.Context) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.activeStream != nil {
+		close(p.activeStream.out)
+	}
 	p.activeStream = &streamState{out: out, ctx: ctx}
 }
 
@@ -546,7 +564,9 @@ func (p *Provider) endStream() {
 }
 
 // emit sends a chunk to the active stream (no-op when idle). Returns
-// false when the stream's context is done.
+// false when the subscription is gone (ctx done or consumer stalled
+// past the grace) — the caller drops the subscription so the pump
+// keeps serving control-plane records either way.
 func (p *Provider) emit(ch provider.Chunk) bool {
 	p.mu.Lock()
 	st := p.activeStream
@@ -558,6 +578,10 @@ func (p *Provider) emit(ch provider.Chunk) bool {
 	case st.out <- ch:
 		return true
 	case <-st.ctx.Done():
+		return false
+	case <-time.After(5 * time.Second):
+		// Stalled consumer: drop the subscription (never block the
+		// pump — receipts, epochs, and collab must keep flowing).
 		return false
 	}
 }
@@ -574,53 +598,104 @@ func (p *Provider) ensurePump() {
 }
 
 // startPumpLocked starts the pump assuming the caller holds p.mu
-// (connect's LOCK CONTRACT — acquiring here self-deadlocks).
+// (connect's LOCK CONTRACT — acquiring here self-deadlocks). The pump
+// is identity-bound to the current connection: a stale pump from a
+// dead conn never suppresses the reader for a new one, and the AI_OPEN
+// sequence restarts per connection (relay window is per-conn).
 func (p *Provider) startPumpLocked() {
-	if p.pumpRunning || p.conn == nil {
+	if p.conn == nil {
+		return
+	}
+	if p.pumpRunning && p.pumpConn == p.conn {
 		return
 	}
 	p.pumpRunning = true
-	go p.pump()
+	p.pumpConn = p.conn
+	p.laneSeq.Store(0)
+	p.pendingRecords = nil
+	go p.pump(p.conn)
 }
 
-// pump is the single inbound reader for the live connection.
-func (p *Provider) pump() {
+// pump is the single inbound reader for ONE connection (identity-
+// bound): it exits when that conn dies or is replaced, and its
+// teardown never touches a newer connection installed in the meantime.
+func (p *Provider) pump(myConn *dariproto.TransportConn) {
 	defer func() {
 		p.mu.Lock()
-		p.pumpRunning = false
-		p.mu.Unlock()
-	}()
-	for {
-		p.mu.Lock()
-		conn := p.conn
-		p.mu.Unlock()
-		if conn == nil {
-			return
+		if p.pumpConn == myConn {
+			p.pumpRunning = false
+			p.pumpConn = nil
 		}
-		rec, err := conn.RecvRecord()
-		if err != nil {
-			// Connection lost: surface to any active stream, then drop.
-			p.emit(provider.Chunk{
-				Type: provider.ChunkError,
-				Err:  provider.StreamInterrupt(fmt.Errorf("dari: connection lost: %w", err), provider.StreamInterruptConnectionReset),
-			})
-			p.endStream()
+		newer := p.conn
+		p.mu.Unlock()
+		// A connection installed after ours died still needs a reader.
+		if newer != nil && newer != myConn {
 			p.mu.Lock()
-			if p.conn != nil {
-				p.conn.Close()
-				p.conn = nil
-			}
+			p.startPumpLocked()
 			p.mu.Unlock()
+		}
+	}()
+	// Keepalive (L4): the relay's read deadline is 30s; a persistent
+	// connection between turns must stay alive for mid-session pushes.
+	keepAlive := time.NewTicker(15 * time.Second)
+	defer keepAlive.Stop()
+	for {
+		select {
+		case <-keepAlive.C:
+			if err := myConn.SendControl(dariproto.MsgPing, nil, []byte("keepalive")); err != nil {
+				return
+			}
+			continue
+		default:
+		}
+		// Handshake/resume-era control records buffered before the
+		// pump existed are dispatched first — nothing consumed during
+		// setup is ever lost.
+		p.mu.Lock()
+		pending := p.pendingRecords
+		p.pendingRecords = nil
+		p.mu.Unlock()
+		for _, pre := range pending {
+			p.dispatchRecord(myConn, pre)
+		}
+		rec, err := myConn.RecvRecord()
+		if err != nil {
+			// THIS connection is gone. Only act on state that still
+			// belongs to it: a newer conn (installed while we were
+			// blocked) is never touched.
+			p.mu.Lock()
+			stillOurs := p.conn == myConn
+			stream := p.activeStream
+			p.mu.Unlock()
+			if stillOurs {
+				p.emit(provider.Chunk{
+					Type: provider.ChunkError,
+					Err:  provider.StreamInterrupt(fmt.Errorf("dari: connection lost: %w", err), provider.StreamInterruptConnectionReset),
+				})
+				p.endStream()
+				p.dropConnLocked(myConn)
+			} else if stream == nil {
+				// Our death already raced a reconnect; nothing to surface.
+			}
 			return
 		}
-		p.dispatchRecord(rec)
+		p.dispatchRecord(myConn, rec)
+	}
+}
+
+// dropConnLocked closes + clears the connection ONLY when it is still
+// the current one (caller holds p.mu).
+func (p *Provider) dropConnLocked(which *dariproto.TransportConn) {
+	if p.conn == which {
+		p.conn.Close()
+		p.conn = nil
 	}
 }
 
 // dispatchRecord handles one inbound record: AI-lane records route to
 // the active stream; governance/control records are handled globally
 // (they arrive between turns too).
-func (p *Provider) dispatchRecord(rec *dariproto.Record) {
+func (p *Provider) dispatchRecord(from *dariproto.TransportConn, rec *dariproto.Record) {
 	switch dariproto.MessageType(rec.MessageType) {
 	case dariproto.MsgAITokenChunk:
 		var chunk dariproto.AITokenChunkPayload
@@ -656,6 +731,7 @@ func (p *Provider) dispatchRecord(rec *dariproto.Record) {
 		// If content was sent directly (non-streaming), emit as text
 		if result.Content != "" {
 			if !p.emit(provider.Chunk{Type: provider.ChunkText, Text: result.Content}) {
+				p.endStream()
 				return
 			}
 		}
@@ -682,7 +758,12 @@ func (p *Provider) dispatchRecord(rec *dariproto.Record) {
 		return
 
 	case dariproto.MsgPing:
-		p.conn.SendControl(dariproto.MsgPong, nil, []byte("pong"))
+		p.mu.Lock()
+		conn := p.conn
+		p.mu.Unlock()
+		if conn != nil {
+			conn.SendControl(dariproto.MsgPong, nil, []byte("pong"))
+		}
 
 	case dariproto.MsgBroadcast:
 		// E2: governed broadcast. Stored for the air-gap
@@ -831,10 +912,7 @@ func (p *Provider) dispatchRecord(rec *dariproto.Record) {
 		})
 		p.endStream()
 		p.mu.Lock()
-		if p.conn != nil {
-			p.conn.Close()
-			p.conn = nil
-		}
+		p.dropConnLocked(from)
 		p.mu.Unlock()
 	}
 }

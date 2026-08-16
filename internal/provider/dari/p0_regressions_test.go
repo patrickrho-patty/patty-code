@@ -57,7 +57,7 @@ func TestChangeSetNackClearsPendingPaths(t *testing.T) {
 	p := &Provider{}
 	p.provTurnPaths = map[string]bool{"a.go": true, "b.go": true}
 	nack, _ := json.Marshal(map[string]string{"error": "change freeze active", "freeze_reason": "quarter close"})
-	p.dispatchRecord(&dariproto.Record{Kind: dariproto.KindMessage, MessageType: 0x0704, Payload: nack})
+	p.dispatchRecord(nil, &dariproto.Record{Kind: dariproto.KindMessage, MessageType: 0x0704, Payload: nack})
 	p.mu.Lock()
 	remaining := len(p.provTurnPaths)
 	p.mu.Unlock()
@@ -80,5 +80,39 @@ func TestAcknowledgeGovernanceAckUnblocksGate(t *testing.T) {
 	// The gate now allows dispatch.
 	if dec := gates.CheckDispatch("tool_use", "repo", "model"); !dec.Allow {
 		t.Fatalf("after ack, dispatch blocked: %+v", dec)
+	}
+}
+
+// C2 (code review): patty.toml [sovereign] must actually enable the
+// air-gap even when the airgap was initialized before the config
+// arrived — SetSovereignConfig is authoritative, never fail-open.
+func TestSovereignConfigAuthoritative(t *testing.T) {
+	p := &Provider{}
+	// Simulate the bad ordering: airgap initialized BEFORE config.
+	_ = p.AirGap()
+	if p.AirGap().IsEnabled() {
+		t.Fatal("precondition: airgap should start disabled")
+	}
+	p.SetSovereignConfig(true, []string{"mirror.internal"})
+	if !p.AirGap().IsEnabled() {
+		t.Fatal("sovereign config must apply even after prior initialization")
+	}
+	if p.AirGap().AllowsDial("mirror.internal") != true || p.AirGap().AllowsDial("evil.example") != false {
+		t.Fatal("allowlist must be enforced from config")
+	}
+}
+
+// M3 (code review): nested MarshalCBOR is canonical — map-key order
+// must not leak Go map iteration order (byte-matches the root kernel).
+func TestMarshalCBORCanonicalMapOrder(t *testing.T) {
+	m1 := map[int][]byte{13: []byte("idem"), 7: []byte("peer")}
+	m2 := map[int][]byte{7: []byte("peer"), 13: []byte("idem")}
+	b1, err1 := dariproto.MarshalCBOR(m1)
+	b2, err2 := dariproto.MarshalCBOR(m2)
+	if err1 != nil || err2 != nil {
+		t.Fatal(err1, err2)
+	}
+	if string(b1) != string(b2) {
+		t.Fatalf("non-canonical map encoding:\n%x\n%x", b1, b2)
 	}
 }

@@ -66,7 +66,6 @@ import (
 	"patty/internal/secrets"
 	"patty/internal/sessiontemp"
 	"patty/internal/skill"
-	"patty/internal/sovereign"
 	"patty/internal/stats"
 	"patty/internal/tool"
 	"patty/internal/tool/builtin"
@@ -2029,12 +2028,17 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	// enterprise gates (freeze/recall/version/acks/tools/sandbox)
 	// fire on real tool calls. Without a DARI session no state is
 	// installed and the wrapper stays a pass-through.
-	// E3: resolve the sovereign air-gap policy BEFORE the first session
-	// (dp.AirGap() must never be called from inside connect()'s lock —
-	// the governance sink runs there; the deadlock pinned by audit).
+	// E3: install the sovereign config FIRST (patty.toml [sovereign]),
+	// then resolve the dial policy BEFORE the first session — the
+	// resolution must both follow the config and never run inside
+	// connect()'s lock (the governance sink runs there; the deadlock
+	// pinned by audit).
 	airgapDialPolicy := func(string) bool { return true }
-	if ag := dp2Airgap(execProv); ag != nil {
-		airgapDialPolicy = ag.AllowsDial
+	if dp, ok := execProv.(*dari.Provider); ok {
+		dp.SetSovereignConfig(cfg.Sovereign.AirgapEnabled, cfg.Sovereign.AirgapAllowlist)
+		if ag := dp.AirGap(); ag != nil {
+			airgapDialPolicy = ag.AllowsDial
+		}
 	}
 
 	sessionChangeBoard := changeboard.NewBoard()
@@ -2052,8 +2056,6 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		// D5: HELLO advertises the honest build version; the relay's
 		// floor refuses sub-minimum connectors at handshake time.
 		dp.SetHarnessVersion(harnessBuildVersion())
-		// E3: sovereign posture from patty.toml [sovereign].
-		dp.SetSovereignConfig(cfg.Sovereign.AirgapEnabled, cfg.Sovereign.AirgapAllowlist)
 		// D2: the provider's directive executor and the governed
 		// gate's board MUST be the SAME durable board — otherwise a
 		// signed changeboard.approve directive lands on a throwaway
@@ -3126,14 +3128,4 @@ func workspaceGitIdentity() (repoID, branch string) {
 		repoID = filepath.Base(dir)
 	}
 	return repoID, branch
-}
-
-// dp2Airgap extracts a DARI provider's air-gap mode without holding its
-// lock across the call (initSovereignOps is self-contained).
-func dp2Airgap(prov provider.Provider) *sovereign.AirGapMode {
-	dp, ok := prov.(*dari.Provider)
-	if !ok {
-		return nil
-	}
-	return dp.AirGap()
 }

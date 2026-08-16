@@ -178,8 +178,10 @@ func (p *Provider) openSession(conn *dariproto.TransportConn) error {
 			}
 
 		default:
-			// Unknown extension during setup — skip, the relay may
-			// interleave advisory pushes.
+			// Unexpected control record during setup (broadcasts,
+			// collab envelopes…): buffer for the pump — never consumed
+			// and lost (the pump dispatches pendingRecords first).
+			p.pendingRecords = append(p.pendingRecords, rec)
 		}
 	}
 }
@@ -478,8 +480,19 @@ func (p *Provider) tryResumeSession(conn *dariproto.TransportConn) bool {
 	}
 	// Await the response (bounded): granted → re-bound; anything else →
 	// the caller falls back to the full handshake.
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
+	// Watchdog: the transport's per-read deadline is far longer than
+	// the resume budget; closing the conn from here unblocks a hung
+	// read and forces the caller's full-handshake fallback.
+	watchdogStopped := make(chan struct{})
+	defer close(watchdogStopped)
+	go func() {
+		select {
+		case <-time.After(10 * time.Second):
+			conn.Close()
+		case <-watchdogStopped:
+		}
+	}()
+	for {
 		rec, err := conn.RecvRecord()
 		if err != nil {
 			return false
@@ -498,7 +511,9 @@ func (p *Provider) tryResumeSession(conn *dariproto.TransportConn) bool {
 			// Relay redirected to full setup — rewind nothing; the
 			// caller runs openSession which re-reads from here.
 			return false
+		default:
+			// Control records during resume: buffer for the pump.
+			p.pendingRecords = append(p.pendingRecords, rec)
 		}
 	}
-	return false
 }

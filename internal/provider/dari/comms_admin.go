@@ -154,9 +154,8 @@ func (p *Provider) initSovereignOps() {
 	}
 	ag := sovereign.NewAirGapMode()
 	// Config first (patty.toml [sovereign] via SetSovereignConfig); the
-	// env pair remains the deployment escape hatch. Caller holds p.mu
-	// via AirGap()/Awareness() — single lock acquisition (the previous
-	// re-acquire self-deadlocked every real boot at the governance push).
+	// env pair remains the deployment escape hatch. This function fully
+	// acquires and releases p.mu itself — callers must NOT hold it.
 	cfgEnabled, cfgAllow := p.sovereignCfgEnabled, p.sovereignCfgAllowlist
 	if cfgEnabled {
 		ag.Enable()
@@ -195,11 +194,17 @@ func (p *Provider) Awareness() *operational.AwarenessClient {
 }
 
 // SetSovereignConfig installs the [sovereign] posture from patty.toml.
+// It is AUTHORITATIVE over an env-only initialization: an airgap
+// instance created before config arrived is discarded so the next
+// access re-initializes with the config applied (ordering can never
+// silently fail-open the control).
 func (p *Provider) SetSovereignConfig(enabled bool, allowlist []string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.sovereignCfgEnabled = enabled
 	p.sovereignCfgAllowlist = allowlist
+	p.airgap = nil
+	p.awareness = nil
 }
 
 // SendCollabEnvelope routes a dari.collab/1 envelope to an org peer
