@@ -10,6 +10,7 @@ import (
 	"os"
 	"unicode/utf8"
 
+	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 )
@@ -37,6 +38,8 @@ const (
 	UTF16LENoBOM
 	// UTF16BENoBOM is UTF-16 Big-Endian without a BOM.
 	UTF16BENoBOM
+	// EUCKR is a legacy Korean charset (EUC-KR / CP949 superset).
+	EUCKR
 )
 
 var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
@@ -61,11 +64,32 @@ func Detect(data []byte) (Kind, []byte) {
 	if utf8.Valid(data) {
 		return UTF8, data
 	}
-	// Try GB18030 — it is a strict superset of GBK and rejects truly
-	// invalid byte sequences, so a successful decode is a reliable signal.
-	dec := simplifiedchinese.GB18030.NewDecoder()
-	if _, _, err := transform.Bytes(dec, data); err == nil {
+
+	// Try EUC-KR/CP949 and GB18030 decoders to resolve 2-byte overlap.
+	decKR := korean.EUCKR.NewDecoder()
+	outKR, _, errKR := transform.Bytes(decKR, data)
+
+	decGB := simplifiedchinese.GB18030.NewDecoder()
+	outGB, _, errGB := transform.Bytes(decGB, data)
+
+	krHangul, krHanzi := 0, 0
+	if errKR == nil {
+		krHangul, krHanzi = countHangulAndHanzi(outKR)
+	}
+
+	gbHangul, _ := 0, 0
+	if errGB == nil {
+		gbHangul, _ = countHangulAndHanzi(outGB)
+	}
+
+	if krHangul > 0 && krHangul > krHanzi*3 && krHangul > gbHangul {
+		return EUCKR, data
+	}
+	if errGB == nil {
 		return GB18030, data
+	}
+	if errKR == nil {
+		return EUCKR, data
 	}
 	return LossyUTF8, data
 }
@@ -138,6 +162,12 @@ func Decode(data []byte, enc Kind) []byte {
 			return data // should not happen after Detect, but be safe
 		}
 		return out
+	case EUCKR:
+		out, _, err := transform.Bytes(korean.EUCKR.NewDecoder(), data)
+		if err != nil {
+			return data
+		}
+		return out
 	}
 	// UTF8 and LossyUTF8 both pass through — LossyUTF8 is already
 	// "best effort" and Go strings can hold arbitrary bytes.
@@ -172,6 +202,8 @@ func Decoder(enc Kind) transform.Transformer {
 		return nil
 	case GB18030:
 		return simplifiedchinese.GB18030.NewDecoder()
+	case EUCKR:
+		return korean.EUCKR.NewDecoder()
 	}
 	// UTF16LE/BE are not self-synchronising and cannot be streamed
 	// line-by-line without full-file buffering. Callers must handle
@@ -199,8 +231,32 @@ func Encode(text string, enc Kind) []byte {
 			return []byte(text)
 		}
 		return out
+	case EUCKR:
+		out, _, err := transform.Bytes(korean.EUCKR.NewEncoder(), []byte(text))
+		if err != nil {
+			return []byte(text)
+		}
+		return out
 	}
 	return []byte(text)
+}
+
+// countHangulAndHanzi counts Hangul and Hanzi/Hanja runes in b (valid UTF-8).
+func countHangulAndHanzi(b []byte) (hangul int, hanzi int) {
+	for i := 0; i < len(b); {
+		r, size := utf8.DecodeRune(b[i:])
+		if r == utf8.RuneError && size == 1 {
+			i++
+			continue
+		}
+		if (r >= 0xAC00 && r <= 0xD7A3) || (r >= 0x1100 && r <= 0x11FF) || (r >= 0x3131 && r <= 0x318E) {
+			hangul++
+		} else if (r >= 0x4E00 && r <= 0x9FFF) || (r >= 0xF900 && r <= 0xFAFF) {
+			hanzi++
+		}
+		i += size
+	}
+	return hangul, hanzi
 }
 
 // decodeUTF16 converts UTF-16 bytes (BOM already stripped) to UTF-8.

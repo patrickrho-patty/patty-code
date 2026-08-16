@@ -9,6 +9,7 @@ import (
 	"testing"
 	"unicode/utf16"
 
+	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
@@ -59,6 +60,29 @@ func TestDetectGB18030(t *testing.T) {
 	enc, _ := Detect([]byte(gb))
 	if enc != GB18030 {
 		t.Errorf("got %v, want GB18030", enc)
+	}
+}
+
+func TestDetectEUCKR(t *testing.T) {
+	euc, err := korean.EUCKR.NewEncoder().String("안녕하세요 고객님 계좌번호")
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	enc, _ := Detect([]byte(euc))
+	if enc != EUCKR {
+		t.Errorf("got %v, want EUCKR", enc)
+	}
+}
+
+func TestDetectCP949(t *testing.T) {
+	// CP949 extended Hangul syllables (e.g. 똠, 댸) outside classic 2,350 EUC-KR table
+	cp, err := korean.EUCKR.NewEncoder().String("똠방각하 댸")
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	enc, _ := Detect([]byte(cp))
+	if enc != EUCKR {
+		t.Errorf("got %v, want EUCKR", enc)
 	}
 }
 
@@ -134,6 +158,22 @@ func TestDecodeGB18030(t *testing.T) {
 	}
 }
 
+func TestDecodeEUCKR(t *testing.T) {
+	euc, _ := korean.EUCKR.NewEncoder().String("안녕하세요 고객님\n잔액 확인")
+	out := Decode([]byte(euc), EUCKR)
+	if string(out) != "안녕하세요 고객님\n잔액 확인" {
+		t.Errorf("got %q", out)
+	}
+}
+
+func TestEncodeEUCKR(t *testing.T) {
+	out := Encode("안녕하세요", EUCKR)
+	dec, _ := korean.EUCKR.NewDecoder().Bytes(out)
+	if string(dec) != "안녕하세요" {
+		t.Errorf("round-trip failed: got %q", dec)
+	}
+}
+
 func TestDecodeLossyUTF8(t *testing.T) {
 	in := []byte{0xFF, 0xFE, 'a'}
 	out := Decode(in, LossyUTF8)
@@ -200,6 +240,27 @@ func TestRoundTripGB18030(t *testing.T) {
 	}
 
 	edited := strings.Replace(decoded, "둘째 줄", "새로운 줄", 1)
+	reencoded := Encode(edited, enc)
+	redecoded := string(Decode(reencoded, enc))
+	if redecoded != edited {
+		t.Errorf("round-trip failed: got %q, want %q", redecoded, edited)
+	}
+}
+
+func TestRoundTripEUCKR(t *testing.T) {
+	original := "고객명,계좌번호,잔액\n홍길동,110-123-4567,1000000\n"
+	euc, _ := korean.EUCKR.NewEncoder().String(original)
+
+	enc, _ := Detect([]byte(euc))
+	if enc != EUCKR {
+		t.Fatalf("detect: got %v, want EUCKR", enc)
+	}
+	decoded := string(Decode([]byte(euc), enc))
+	if decoded != original {
+		t.Fatalf("decode mismatch: %q", decoded)
+	}
+
+	edited := strings.Replace(decoded, "홍길동", "성춘향", 1)
 	reencoded := Encode(edited, enc)
 	redecoded := string(Decode(reencoded, enc))
 	if redecoded != edited {
