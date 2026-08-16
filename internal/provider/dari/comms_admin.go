@@ -15,6 +15,7 @@ import (
 	"patty/internal/operational"
 	"patty/internal/provenancewire"
 	"patty/internal/sovereign"
+	"patty/internal/workflow"
 )
 
 // comms_admin.go drains relay-pushed advisories into the live
@@ -147,16 +148,16 @@ func (p *Provider) orgIDForSession() string { return p.credOrgID }
 
 func (p *Provider) initSovereignOps() {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.airgap != nil {
+		p.mu.Unlock()
 		return
 	}
 	ag := sovereign.NewAirGapMode()
 	// Config first (patty.toml [sovereign] via SetSovereignConfig); the
-	// env pair remains the deployment escape hatch.
-	p.mu.Lock()
+	// env pair remains the deployment escape hatch. Caller holds p.mu
+	// via AirGap()/Awareness() — single lock acquisition (the previous
+	// re-acquire self-deadlocked every real boot at the governance push).
 	cfgEnabled, cfgAllow := p.sovereignCfgEnabled, p.sovereignCfgAllowlist
-	p.mu.Unlock()
 	if cfgEnabled {
 		ag.Enable()
 		ag.SetOnlineAllowList(cfgAllow)
@@ -174,6 +175,7 @@ func (p *Provider) initSovereignOps() {
 	}
 	p.airgap = ag
 	p.awareness = operational.NewAwarenessClient(p.credOrgID, p.userID)
+	p.mu.Unlock()
 }
 
 // AirGap exposes the air-gap mode (dial checks + advisory application).
@@ -249,4 +251,41 @@ func DecodeCollabEnvelope(raw []byte) (*daricollab.EnvelopeBody, error) {
 		return nil, err
 	}
 	return &env, nil
+}
+
+// AcknowledgeGovernanceAck acknowledges a pushed acknowledgement
+// requirement (D1 §33.6) LOCALLY (unblocks the dispatch gate) AND
+// reports the ack to the relay so the control plane records it. The
+// wire report rides an ActionEnvelope — the same governed-evidence
+// channel as every other connector action.
+func (p *Provider) AcknowledgeGovernanceAck(ruleID string) error {
+	// Local unblock first.
+	p.mu.Lock()
+	gates := p.governedGates
+	p.mu.Unlock()
+	if gates == nil {
+		return errors.New("dari: no governed gates installed")
+	}
+	if err := gates.AcknowledgePolicy(ruleID, p.nowMs()); err != nil {
+		return err
+	}
+	// Wire report (best-effort; the local unblock is authoritative for
+	// dispatch, the report is authoritative for the CP record).
+	p.emitActionDraft(&provenanceActionDraft{
+		ActionID:       "act-ack-" + ruleID,
+		OrganizationID: p.orgIDForSession(),
+		SessionID:      p.SessionID(),
+		UserID:         p.userID,
+		HarnessID:      p.harnessID,
+		ActionType:     "policy.acknowledge",
+		ActionPayload:  `{"rule_id":"` + ruleID + `"}`,
+	})
+	return nil
+}
+
+// SetGovernedGates installs the session's workflow gates (D1 ack path).
+func (p *Provider) SetGovernedGates(g *workflow.GatesClient) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.governedGates = g
 }

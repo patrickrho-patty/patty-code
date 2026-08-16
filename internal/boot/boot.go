@@ -66,6 +66,7 @@ import (
 	"patty/internal/secrets"
 	"patty/internal/sessiontemp"
 	"patty/internal/skill"
+	"patty/internal/sovereign"
 	"patty/internal/stats"
 	"patty/internal/tool"
 	"patty/internal/tool/builtin"
@@ -2028,6 +2029,14 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	// enterprise gates (freeze/recall/version/acks/tools/sandbox)
 	// fire on real tool calls. Without a DARI session no state is
 	// installed and the wrapper stays a pass-through.
+	// E3: resolve the sovereign air-gap policy BEFORE the first session
+	// (dp.AirGap() must never be called from inside connect()'s lock —
+	// the governance sink runs there; the deadlock pinned by audit).
+	airgapDialPolicy := func(string) bool { return true }
+	if ag := dp2Airgap(execProv); ag != nil {
+		airgapDialPolicy = ag.AllowsDial
+	}
+
 	sessionChangeBoard := changeboard.NewBoard()
 	if home, herr := os.UserConfigDir(); herr == nil {
 		if berr := sessionChangeBoard.EnablePersistence(filepath.Join(home, "patty", "changeboard")); berr != nil {
@@ -2045,6 +2054,11 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 		dp.SetHarnessVersion(harnessBuildVersion())
 		// E3: sovereign posture from patty.toml [sovereign].
 		dp.SetSovereignConfig(cfg.Sovereign.AirgapEnabled, cfg.Sovereign.AirgapAllowlist)
+		// D2: the provider's directive executor and the governed
+		// gate's board MUST be the SAME durable board — otherwise a
+		// signed changeboard.approve directive lands on a throwaway
+		// instance and never clears the block (audit finding).
+		dp.SetChangeBoard(sessionChangeBoard)
 		// B3: durable evidence-receipt store (receipts survive harness
 		// restarts). Best-effort: without a usable config home the
 		// in-memory store remains and a warning is logged.
@@ -2070,14 +2084,15 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 			st.SetSandboxPolicy(snap.BuildSandboxStore())
 			st.SetContext(snap.RepoID, snap.ModelID)
 			st.SetChangeBoard(sessionChangeBoard)
+			// D1: the provider carries the gates so the ack surface
+			// (AcknowledgeGovernanceAck) unblocks the same instance.
+			dp.SetGovernedGates(snap.BuildGatesClient(dariproto.HarnessIdentity{Version: harnessBuildVersion(), Ring: "stable"}))
 			// D2: new pending submissions surface to the control plane
 			// as governed action envelopes (the reviewer queue).
 			st.SetSubmissionSink(dp.EmitChangeboardSubmission)
 			// E3: air-gap dial policy is authoritative on the network
 			// check path (sovereign deployments).
-			if ag := dp.AirGap(); ag != nil {
-				st.SetDialPolicy(ag.AllowsDial)
-			}
+			st.SetDialPolicy(airgapDialPolicy)
 			ctrl.SetGovernanceState(st)
 		})
 	}
@@ -3111,4 +3126,14 @@ func workspaceGitIdentity() (repoID, branch string) {
 		repoID = filepath.Base(dir)
 	}
 	return repoID, branch
+}
+
+// dp2Airgap extracts a DARI provider's air-gap mode without holding its
+// lock across the call (initSovereignOps is self-contained).
+func dp2Airgap(prov provider.Provider) *sovereign.AirGapMode {
+	dp, ok := prov.(*dari.Provider)
+	if !ok {
+		return nil
+	}
+	return dp.AirGap()
 }

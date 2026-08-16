@@ -28,6 +28,7 @@ import (
 	"patty/internal/provenancewire"
 	"patty/internal/provider"
 	"patty/internal/sovereign"
+	"patty/internal/workflow"
 )
 
 func init() {
@@ -89,6 +90,9 @@ type Provider struct {
 	// turns); pumpRunning guards the persistent inbound reader.
 	activeStream *streamState
 	pumpRunning  bool
+	// governedGates is the installed workflow gate set (D1 acks); set
+	// by the boot governance sink.
+	governedGates *workflow.GatesClient
 	// receiptStore is the boot-installable durable store (B3); nil
 	// falls back to the in-memory store.
 	receiptStore *provenancewire.ReceiptStore
@@ -688,6 +692,23 @@ func (p *Provider) dispatchRecord(rec *dariproto.Record) {
 			}
 			h(routed.FromHarness, routed.ConversationID, raw)
 		}
+
+	case dariproto.MsgChangeSetNack:
+		// D3: the relay refused a provenance changeset (e.g. an active
+		// change freeze). Surface + stop accumulating: the paths in the
+		// refused changeset are dropped from the pending turn set so a
+		// retry storm cannot build, and the refusal is recorded for the
+		// operator surfaces.
+		var nack struct {
+			Error        string `json:"error"`
+			FreezeReason string `json:"freeze_reason"`
+		}
+		_ = json.Unmarshal(rec.Payload, &nack)
+		p.mu.Lock()
+		p.provTurnPaths = nil
+		p.mu.Unlock()
+		slog.Warn("dari: changeset NACKed by relay — pending paths dropped",
+			"error", nack.Error, "freeze_reason", nack.FreezeReason)
 
 	case dariproto.MsgSovereignAdvisory:
 		// E3: signed offline advisory (air-gap mode). Stored
