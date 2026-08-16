@@ -178,3 +178,14 @@ stalled_warning_seconds = 900   # warn once per background job after this many q
 # token      = ""          # pre-shared token for auth_mode = "token" (auto-generated if empty)
 # password_hash = ""       # bcrypt hash for auth_mode = "password". Generate with: patty code serve --hash-password <password>
 # behind_proxy = false      # set true when behind a trusted reverse proxy (nginx, Caddy, etc.) that sets X-Forwarded-* headers
+
+# ---------------------------------------------------------------------------
+# Sovereign / air-gap posture (sovereign builds default this ON; other
+# builds default it off). See docs/adr/2026-08-16-harness-build-profiles.md.
+# ---------------------------------------------------------------------------
+[sovereign]
+# airgap_enabled = false     # restrict outbound dials to the allowlist below
+# airgap_allowlist = [       # hosts permitted while air-gapped
+#   "relay.internal.example:8444",
+#   "mirror.internal.example",
+# ]
