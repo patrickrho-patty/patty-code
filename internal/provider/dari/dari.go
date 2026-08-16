@@ -534,22 +534,60 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 	return out, nil
 }
 
-// streamState is one active stream subscription.
+// streamState is one active stream subscription. mu + dead make
+// close and send mutually exclusive: the pump emits on a stream while
+// a concurrent Stream() may replace (and close) it — an unguarded
+// send on a closed channel would panic the pump.
 type streamState struct {
-	out chan provider.Chunk
-	ctx context.Context
+	out  chan provider.Chunk
+	ctx  context.Context
+	mu   sync.Mutex
+	dead bool
+}
+
+// kill closes the stream's channel exactly once (idempotent,
+// nil-safe). Callers: registerStream replacing a prior subscription,
+// endStream tearing the active one down.
+func (st *streamState) kill() {
+	if st == nil {
+		return
+	}
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if st.dead {
+		return
+	}
+	st.dead = true
+	close(st.out)
+}
+
+// send delivers one chunk; false when the stream is dead, its ctx is
+// done, or the consumer stalled past the grace.
+func (st *streamState) send(ch provider.Chunk) bool {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if st.dead {
+		return false
+	}
+	select {
+	case st.out <- ch:
+		return true
+	case <-st.ctx.Done():
+		return false
+	case <-time.After(5 * time.Second):
+		return false
+	}
 }
 
 // registerStream installs the active stream (pump-held lock). A
-// previous still-installed stream is closed first — an orphaned
+// previous still-installed stream is killed first — an orphaned
 // subscription must never leave its consumer ranging forever.
 func (p *Provider) registerStream(out chan provider.Chunk, ctx context.Context) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.activeStream != nil {
-		close(p.activeStream.out)
-	}
+	old := p.activeStream
 	p.activeStream = &streamState{out: out, ctx: ctx}
+	p.mu.Unlock()
+	old.kill()
 }
 
 // endStream closes + clears the active stream (idempotent).
@@ -558,9 +596,7 @@ func (p *Provider) endStream() {
 	st := p.activeStream
 	p.activeStream = nil
 	p.mu.Unlock()
-	if st != nil {
-		close(st.out)
-	}
+	st.kill()
 }
 
 // emit sends a chunk to the active stream (no-op when idle). Returns
@@ -574,16 +610,7 @@ func (p *Provider) emit(ch provider.Chunk) bool {
 	if st == nil {
 		return true // idle pump: control-plane records only
 	}
-	select {
-	case st.out <- ch:
-		return true
-	case <-st.ctx.Done():
-		return false
-	case <-time.After(5 * time.Second):
-		// Stalled consumer: drop the subscription (never block the
-		// pump — receipts, epochs, and collab must keep flowing).
-		return false
-	}
+	return st.send(ch)
 }
 
 // ensurePump starts the persistent inbound reader exactly once per
@@ -612,7 +639,10 @@ func (p *Provider) startPumpLocked() {
 	p.pumpRunning = true
 	p.pumpConn = p.conn
 	p.laneSeq.Store(0)
-	p.pendingRecords = nil
+	// pendingRecords is NOT cleared here: openSession/tryResumeSession
+	// buffered handshake-era records earlier in the SAME connect()
+	// critical section — wiping them would lose exactly what the pump
+	// must dispatch first. Only the pump drains it (under p.mu).
 	go p.pump(p.conn)
 }
 
@@ -639,10 +669,32 @@ func (p *Provider) pump(myConn *dariproto.TransportConn) {
 	// connection between turns must stay alive for mid-session pushes.
 	keepAlive := time.NewTicker(15 * time.Second)
 	defer keepAlive.Stop()
+	// connLost is the single teardown for a dying connection: surface
+	// the loss to an active stream, drop the subscription, and clear
+	// the conn — but ONLY state that still belongs to THIS connection.
+	connLost := func(err error) {
+		p.mu.Lock()
+		stillOurs := p.conn == myConn
+		p.mu.Unlock()
+		if !stillOurs {
+			// Our death already raced a reconnect; never touch the
+			// newer connection.
+			return
+		}
+		p.emit(provider.Chunk{
+			Type: provider.ChunkError,
+			Err:  provider.StreamInterrupt(fmt.Errorf("dari: connection lost: %w", err), provider.StreamInterruptConnectionReset),
+		})
+		p.endStream()
+		p.mu.Lock()
+		p.dropConnLocked(myConn)
+		p.mu.Unlock()
+	}
 	for {
 		select {
 		case <-keepAlive.C:
 			if err := myConn.SendControl(dariproto.MsgPing, nil, []byte("keepalive")); err != nil {
+				connLost(err)
 				return
 			}
 			continue
@@ -660,23 +712,7 @@ func (p *Provider) pump(myConn *dariproto.TransportConn) {
 		}
 		rec, err := myConn.RecvRecord()
 		if err != nil {
-			// THIS connection is gone. Only act on state that still
-			// belongs to it: a newer conn (installed while we were
-			// blocked) is never touched.
-			p.mu.Lock()
-			stillOurs := p.conn == myConn
-			stream := p.activeStream
-			p.mu.Unlock()
-			if stillOurs {
-				p.emit(provider.Chunk{
-					Type: provider.ChunkError,
-					Err:  provider.StreamInterrupt(fmt.Errorf("dari: connection lost: %w", err), provider.StreamInterruptConnectionReset),
-				})
-				p.endStream()
-				p.dropConnLocked(myConn)
-			} else if stream == nil {
-				// Our death already raced a reconnect; nothing to surface.
-			}
+			connLost(err)
 			return
 		}
 		p.dispatchRecord(myConn, rec)
@@ -684,9 +720,9 @@ func (p *Provider) pump(myConn *dariproto.TransportConn) {
 }
 
 // dropConnLocked closes + clears the connection ONLY when it is still
-// the current one (caller holds p.mu).
+// the current one (caller holds p.mu). A nil which never matches.
 func (p *Provider) dropConnLocked(which *dariproto.TransportConn) {
-	if p.conn == which {
+	if which != nil && p.conn == which {
 		p.conn.Close()
 		p.conn = nil
 	}

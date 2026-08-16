@@ -1,9 +1,11 @@
 package dari
 
 import (
+	"context"
 	"encoding/json"
 
 	"patty/internal/dariproto"
+	"patty/internal/provider"
 	"testing"
 	"time"
 
@@ -114,5 +116,45 @@ func TestMarshalCBORCanonicalMapOrder(t *testing.T) {
 	}
 	if string(b1) != string(b2) {
 		t.Fatalf("non-canonical map encoding:\n%x\n%x", b1, b2)
+	}
+}
+
+// R2-H1 (code review round 2): replacing or ending a stream while the
+// pump emits must never send on a closed channel — send/kill are
+// mutex-guarded on the stream itself, and kill is idempotent.
+func TestStreamReplaceAndKillNeverPanics(t *testing.T) {
+	p := &Provider{}
+	ctx := context.Background()
+	out1 := make(chan provider.Chunk, 1)
+	p.registerStream(out1, ctx)
+	if !p.emit(provider.Chunk{Type: provider.ChunkText, Text: "x"}) {
+		t.Fatal("live stream must accept a chunk")
+	}
+	// Replacing the subscription closes out1 (a consumer ranging it
+	// must terminate), and a concurrent emit target can never panic.
+	out2 := make(chan provider.Chunk, 1)
+	p.registerStream(out2, ctx)
+	drained := 0
+	for range out1 { // buffered chunk first, then closure
+		drained++
+	}
+	if drained != 1 {
+		t.Fatalf("replaced stream delivered %d chunks, want the 1 buffered", drained)
+	}
+	p.endStream()
+	if _, open := <-out2; open {
+		t.Fatal("ended stream channel must be closed")
+	}
+	p.endStream() // idempotent — no double-close panic
+	// Emit on an idle pump is a no-op success (control-plane only).
+	if !p.emit(provider.Chunk{Type: provider.ChunkDone}) {
+		t.Fatal("idle emit must be a no-op success")
+	}
+	// A killed stream rejects further sends without panicking.
+	st := &streamState{out: make(chan provider.Chunk, 1), ctx: ctx}
+	st.kill()
+	st.kill()
+	if st.send(provider.Chunk{Type: provider.ChunkDone}) {
+		t.Fatal("send after kill must report false")
 	}
 }
