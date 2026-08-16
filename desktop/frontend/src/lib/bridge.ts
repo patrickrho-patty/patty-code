@@ -2972,7 +2972,7 @@ function makeMockApp(): AppBindings {
       // Mirror the active mock provider: deepseek-flash carries a balance_url.
       const p = settings.providers.find((x) => x.name === settings.defaultModel);
       if (!p?.balanceUrl) return { available: false, display: "" };
-          return { available: true, display: "¥128.50" };
+          return { available: true, display: "₩128.50" };
         },
         async BalanceForTab() {
           return this.Balance();
@@ -4286,7 +4286,7 @@ function makeMockApp(): AppBindings {
           settings.desktopLanguage = lang === "en" ? lang : "";
         },
         async SetDesktopCurrency(currency: string) {
-          settings.desktopCurrency = currency === "CNY" || currency === "USD" ? currency : "";
+          settings.desktopCurrency = currency === "KRW" || currency === "USD" ? currency : "";
         },
         async SetDesktopAppearance(theme: string, style: string) {
           settings.desktopTheme = theme === "auto" || theme === "light" ? theme : "dark";
@@ -4865,8 +4865,8 @@ function makeMockApp(): AppBindings {
     },
     async ContextPanel(_tabID: string) {
       const now = Date.now();
-      const currency = "¥";
-      const cost = (usd: number) => currency === "¥" ? Number((usd * 7.15).toFixed(4)) : usd;
+      const currency = "₩";
+      const cost = (usd: number) => currency === "₩" ? Number((usd * 1400).toFixed(4)) : usd;
       return {
         usedTokens: 42124,
         windowTokens: 128000,

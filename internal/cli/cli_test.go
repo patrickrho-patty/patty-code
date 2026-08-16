@@ -995,56 +995,8 @@ func TestConfigCompactRatioRejectsValuesOutsideEditableRange(t *testing.T) {
 	}
 }
 
-func TestConfigCurrencyCommandWritesUserConfig(t *testing.T) {
-	isolateCLIConfigHome(t)
 
-	out := captureStdout(t, func() {
-		if rc := Run([]string{"config", "currency", "KRW"}, "test-version"); rc != 0 {
-			t.Fatalf("config currency rc = %d, want 0", rc)
-		}
-	})
-	if !strings.Contains(out, `currency = "KRW"`) || !strings.Contains(out, "resolved: KRW") {
-		t.Fatalf("config currency output = %q", out)
-	}
-	cfg := config.LoadForEdit(config.UserConfigPath())
-	if got := cfg.DesktopCurrency(); got != "KRW" {
-		t.Fatalf("saved currency = %q, want KRW", got)
-	}
-}
 
-func TestConfigCurrencyAutoUsesResolvedCLILocale(t *testing.T) {
-	isolateCLIConfigHome(t)
-	i18n.DetectLanguage("ko-KR")
-	t.Cleanup(func() { i18n.DetectLanguage("en") })
-
-	out := captureStdout(t, func() {
-		if rc := configCurrencyCommand([]string{"auto"}); rc != 0 {
-			t.Fatalf("config currency auto rc = %d, want 0", rc)
-		}
-	})
-	if !strings.Contains(out, `currency = "auto"`) || !strings.Contains(out, "resolved: KRW") {
-		t.Fatalf("config currency auto output = %q", out)
-	}
-	cfg := config.LoadForEdit(config.UserConfigPath())
-	if got := cfg.DesktopCurrency(); got != "" {
-		t.Fatalf("auto should clear saved currency, got %q", got)
-	}
-}
-
-func TestConfigCurrencyRejectsProjectScope(t *testing.T) {
-	isolateCLIConfigHome(t)
-	errOut := captureStderr(t, func() {
-		if rc := Run([]string{"config", "currency", "--local", "USD"}, "test-version"); rc != 2 {
-			t.Fatalf("config currency --local rc = %d, want 2", rc)
-		}
-	})
-	if !strings.Contains(errOut, "user-level only") {
-		t.Fatalf("config currency --local stderr = %q", errOut)
-	}
-	if _, err := os.Stat("patty.toml"); !os.IsNotExist(err) {
-		t.Fatalf("config currency --local wrote project config, stat err=%v", err)
-	}
-}
 
 func TestProvidersWithMissingKeysOnlyChecksActiveDefaultModel(t *testing.T) {
 	isolateCLIConfigHome(t)

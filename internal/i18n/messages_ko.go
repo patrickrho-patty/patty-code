@@ -175,9 +175,6 @@ var Korean = Messages{
 	LanguageHeader:               "언어:",
 	LanguageHint:                 "/language <auto|en|ko>로 전환",
 	LanguageChangedFmt:           "언어가 %s(으)로 설정됨 (해석: %s)",
-	CurrencyHeader:               "가격 통화:",
-	CurrencyHint:                 "/currency <auto|KRW|USD>로 전환",
-	CurrencyChangedFmt:           "가격 통화가 %s(으)로 설정됨 (해석: %s)",
 	RuntimeRefreshBusy:           "이 설정을 변경하기 전에 활성 작업을 끝내거나 취소하고 백그라운드 작업을 중지하세요",
 	RuntimeRefreshUnavailable:    "이 세션에서는 런타임 새로고침을 사용할 수 없습니다",
 
@@ -290,7 +287,6 @@ var Korean = Messages{
 	CmdOutputStyle:      "출력 스타일 전환",
 	CmdTheme:            "CLI 테마 전환",
 	CmdLanguage:         "CLI 언어 전환",
-	CmdCurrency:         "가격 통화 전환",
 	CmdSkill:            "스킬 관리",
 	CmdVerbose:          "생각 텍스트 전환",
 	CmdReloadCmd:        "사용자 정의 명령 다시 로드",

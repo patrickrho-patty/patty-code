@@ -119,7 +119,7 @@ type chatTUI struct {
 	// retained in transcript scrollback. Usage accounting remains active either way.
 	showTurnUsage bool
 
-	// balance is the last-fetched wallet-balance readout (e.g. "¥110.00"), "" when
+	// balance is the last-fetched wallet-balance readout (e.g. "₩110"), "" when
 	// the provider declares no balance_url or a fetch failed. Refreshed async on
 	// startup and after each turn so the status line stays roughly current without
 	// blocking the event loop.
@@ -5103,9 +5103,6 @@ func (m *chatTUI) runSlashCommand(input string) tea.Cmd {
 	case "/language":
 		m.echoLocalCommand(input)
 		return m.runLanguageSubcommand(input)
-	case "/currency":
-		m.echoLocalCommand(input)
-		return m.runCurrencySubcommand(input)
 	case "/help":
 		m.echoLocalCommand(input)
 		m.showHelp()

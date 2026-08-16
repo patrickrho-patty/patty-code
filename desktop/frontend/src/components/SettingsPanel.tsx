@@ -1384,10 +1384,10 @@ function normalizeSettingsView(view: SettingsView | null | undefined): SettingsV
   };
 }
 
-type DesktopCurrency = "" | "CNY" | "USD";
+type DesktopCurrency = "" | "KRW" | "USD";
 
 function normalizeDesktopCurrency(currency: string | undefined): DesktopCurrency {
-  return currency === "CNY" || currency === "USD" ? currency : "";
+  return currency === "KRW" || currency === "USD" ? currency : "";
 }
 
 type CloseBehavior = "background" | "quit";
@@ -1724,7 +1724,7 @@ function GeneralSection({ s, busy, apply, agentRunning }: SectionProps & { agent
       </SettingsField>
       <SettingsField label={t("settings.currency")}>
         <div className="set-seg">
-          {(["", "CNY", "USD"] as DesktopCurrency[]).map((currency) => (
+          {(["", "KRW", "USD"] as DesktopCurrency[]).map((currency) => (
             <button
               key={currency || "auto"}
               className={`set-seg__btn${desktopCurrency === currency ? " set-seg__btn--on" : ""}`}

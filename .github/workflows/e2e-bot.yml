@@ -126,7 +126,7 @@ jobs:
           cache_hit = ${{ vars.PATTY_E2E_PRICE_CACHE_HIT || '0.02' }}
           input = ${{ vars.PATTY_E2E_PRICE_INPUT || '1' }}
           output = ${{ vars.PATTY_E2E_PRICE_OUTPUT || '2' }}
-          currency = "${{ vars.PATTY_E2E_PRICE_CURRENCY || '¥' }}"
+          currency = "${{ vars.PATTY_E2E_PRICE_CURRENCY || '₩' }}"
 
           [permissions]
           mode = "allow"

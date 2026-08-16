@@ -602,20 +602,6 @@ func TestSlashArgCompletionLanguage(t *testing.T) {
 	}
 }
 
-func TestSlashArgCompletionCurrency(t *testing.T) {
-	m := newTestChatTUI()
-	m.input.SetValue("/currency ")
-	m.updateCompletion()
-	if !m.completion.active || m.completion.kind != compSlashArg {
-		t.Fatalf("/currency should open arg completion: %+v", m.completion)
-	}
-	for _, want := range []string{"auto", "KRW", "USD"} {
-		if !hasLabel(m.completion.items, want) {
-			t.Fatalf("/currency completion missing %q: %v", want, labels(m.completion.items))
-		}
-	}
-}
-
 func labels(items []compItem) []string {
 	out := make([]string, len(items))
 	for i, it := range items {

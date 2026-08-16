@@ -176,28 +176,28 @@ console.log("\ncontext panel cost");
 const infoCost = contextCostDisplay({
   info: { sessionCost: 0.1759, sessionCurrency: "$", sessionCostUsd: 0.1759 },
   sessionCost: 0,
-  sessionCurrency: "¥",
-  usage: { cost: 0, costUsd: 0, currency: "¥" },
+  sessionCurrency: "₩",
+  usage: { cost: 0, costUsd: 0, currency: "₩" },
 });
 eq(infoCost, { amount: 0.1759, currency: "$" }, "panel cost keeps the panel currency instead of state default");
 const singleRequestOnly = contextCostDisplay({
   info: { sessionCost: 0, sessionCurrency: "", sessionCostUsd: 0 },
   sessionCost: 0,
-  sessionCurrency: "¥",
-  usage: { cost: 0.42, costUsd: 0.42, currency: "¥" },
+  sessionCurrency: "₩",
+  usage: { cost: 0.42, costUsd: 0.42, currency: "₩" },
 });
 eq(
   singleRequestOnly,
-  { amount: 0, currency: "¥" },
+  { amount: 0, currency: "₩" },
   "a single request's cost never renders under the session-cost label",
 );
 const localAccumulated = contextCostDisplay({
   info: { sessionCost: 0, sessionCurrency: "", sessionCostUsd: 0 },
   sessionCost: 1.5,
-  sessionCurrency: "¥",
+  sessionCurrency: "₩",
   usage: { cost: 0.42, costUsd: 0.42, currency: "$" },
 });
-eq(localAccumulated, { amount: 1.5, currency: "¥" }, "locally accumulated session cost still renders");
+eq(localAccumulated, { amount: 1.5, currency: "₩" }, "locally accumulated session cost still renders");
 
 console.log("\ncontext panel session cache scope");
 
@@ -234,13 +234,13 @@ eq(
   "no data renders as empty, not NaN",
 );
 eq(formatMoney(infoCost.amount, infoCost.currency, "dash"), "$0.1759", "USD panel cost renders with dollar sign");
-eq(currencySymbol("층"), "¥", "unexpected currency text does not leak into money values");
+eq(currencySymbol("층"), "₩", "unexpected currency text does not leak into money values");
 eq(currencySymbol("aud"), "AUD ", "unknown ISO currency codes stay readable");
 eq(currencySymbol("A$"), "A$", "compact multi-character currency symbols are preserved");
 const usdLocalized = formatMoneyLocalized(0.1759, "USD", { locale: "en" });
 ok(/\$|USD|US\$/.test(usdLocalized) && usdLocalized.includes("0.1759"), "ISO USD cost renders with locale-aware currency formatting");
-const cnyLocalized = formatMoneyLocalized(12.3, "CNY", { locale: "ko-KR" });
-ok(/¥|CNY|CN¥/.test(cnyLocalized) && cnyLocalized.includes("12.30"), "ISO CNY cost renders with locale-aware currency formatting");
+const krwLocalized = formatMoneyLocalized(12.3, "KRW", { locale: "ko-KR" });
+ok(/₩|KRW/.test(krwLocalized) && krwLocalized.includes("12.30"), "ISO KRW cost renders with locale-aware currency formatting");
 eq(formatMoneyLocalized(0.1759, "A$", { locale: "en" }), "A$0.1759", "symbol currency remains symbol-based");
 eq(formatMoneyLocalized(0, "USD", { locale: "en", empty: "dash" }), "-", "localized money preserves dash empty state");
 
@@ -311,11 +311,11 @@ const sourceRows = contextSourceRows({
       cacheMissTokens: 300,
       requestCount: 2,
       sessionCost: 0.42,
-      sessionCurrency: "¥",
+      sessionCurrency: "₩",
       estimated: true,
     },
   },
-}, "¥");
+}, "₩");
 
 eq(sourceRows.map((row) => row.source), ["executor", "planner"], "source rows keep executor before planner");
 eq(
@@ -377,7 +377,7 @@ const executorOnlyRows = contextSourceRows({
       requestCount: 0,
     },
   },
-}, "¥");
+}, "₩");
 eq(executorOnlyRows.map((row) => row.source), ["executor"], "source rows omit unused planner and subagent entries");
 
 console.log("\ncontext panel metric token labels");

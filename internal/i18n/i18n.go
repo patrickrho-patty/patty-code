@@ -179,9 +179,6 @@ type Messages struct {
 	LanguageHeader               string // header above the /language listing
 	LanguageHint                 string // how to select a language
 	LanguageChangedFmt           string // "/language <tag>" succeeded, %s = saved tag, %s = resolved tag
-	CurrencyHeader               string // header above the /currency listing
-	CurrencyHint                 string // how to select a pricing currency
-	CurrencyChangedFmt           string // "/currency <mode>" succeeded, %s = saved mode, %s = resolved currency
 	RuntimeRefreshBusy           string // runtime-affecting setting cannot change while work is active
 	RuntimeRefreshUnavailable    string // current session cannot rebuild after a runtime-affecting setting change
 
@@ -252,7 +249,6 @@ type Messages struct {
 	CmdOutputStyle      string // /output-style
 	CmdTheme            string // /theme
 	CmdLanguage         string // /language
-	CmdCurrency         string // /currency
 	CmdSkill            string // /skills
 	CmdVerbose          string // /verbose
 	CmdReloadCmd        string // /reload-cmd

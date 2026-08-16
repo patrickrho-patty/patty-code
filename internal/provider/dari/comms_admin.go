@@ -294,3 +294,11 @@ func (p *Provider) SetGovernedGates(g *workflow.GatesClient) {
 	defer p.mu.Unlock()
 	p.governedGates = g
 }
+
+// SetGovernedGatesLocked installs the workflow gates WITHOUT taking
+// p.mu — for callers already holding it (the boot governance sink,
+// which runs inside connect()'s LOCK CONTRACT; taking the mutex there
+// self-deadlocks session setup).
+func (p *Provider) SetGovernedGatesLocked(g *workflow.GatesClient) {
+	p.governedGates = g
+}

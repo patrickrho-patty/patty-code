@@ -74,17 +74,6 @@ func TestRuntimeSwitchesRejectRunningBackgroundJobs(t *testing.T) {
 			t.Fatalf("blocked language switch wrote config, stat err=%v", err)
 		}
 	})
-
-	t.Run("currency", func(t *testing.T) {
-		isolateUserConfig(t)
-		m := chatTUIWithRunningBackgroundJob(t)
-		if cmd := m.runCurrencySubcommand("/currency KRW"); cmd != nil {
-			t.Fatal("currency switch queued a rebuild while a background job was running")
-		}
-		if _, err := os.Stat(config.UserConfigPath()); !os.IsNotExist(err) {
-			t.Fatalf("blocked currency switch wrote config, stat err=%v", err)
-		}
-	})
 }
 
 // divergedSessionController builds a controller whose in-memory transcript has

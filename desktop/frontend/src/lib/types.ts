@@ -1648,7 +1648,7 @@ export interface ProviderModelOverrideView {
 
 // BalanceInfo is the wallet-balance readout (desktop/app.go Balance). available
 // is false when the provider declares no balanceUrl or a fetch failed; display is
-// the formatted amount (e.g. "¥110.00").
+// the formatted amount (e.g. "₩110.00").
 export interface BalanceInfo {
   available: boolean;
   display: string;

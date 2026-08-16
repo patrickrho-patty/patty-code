@@ -137,7 +137,7 @@ let backendContext: ContextInfo = {
 };
 let contextCalls = 0;
 let contextLoader: (() => Promise<ContextInfo>) | undefined;
-let backendBalance: BalanceInfo = { available: true, display: "¥88.00" };
+let backendBalance: BalanceInfo = { available: true, display: "₩88.00" };
 let backendModel = "model";
 let balanceCalls = 0;
 let balanceLoader: (() => Promise<BalanceInfo>) | undefined;
@@ -286,7 +286,7 @@ ok(
   await settleUntil(() => controller?.activeTabId === "tab-live-context" && controller.state.context.cacheMissTokens === 100),
   "initial completed-turn context loads",
 );
-ok(await settleUntil(() => renderedBalance() === "¥88.00"), "initial DeepSeek balance loads");
+ok(await settleUntil(() => renderedBalance() === "₩88.00"), "initial DeepSeek balance loads");
 const initialContextCalls = contextCalls;
 
 backendContext = {
@@ -474,7 +474,7 @@ eq(coalescedLatestResult, true, "the latest coalesced model switch owns reconcil
 eq(backendModel, "provider-i/model-i", "the skipped intermediate model never reaches the backend");
 eq(modelSwitchCalls, coalescedStartCalls + 2, "three rapid picks perform only two controller rebuilds");
 
-staleBalance.resolve({ available: true, display: "¥88.00" });
+staleBalance.resolve({ available: true, display: "₩88.00" });
 await act(async () => {
   await flushPromises();
 });

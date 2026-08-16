@@ -2088,7 +2088,10 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 			st.SetChangeBoard(sessionChangeBoard)
 			// D1: the provider carries the gates so the ack surface
 			// (AcknowledgeGovernanceAck) unblocks the same instance.
-			dp.SetGovernedGates(snap.BuildGatesClient(dariproto.HarnessIdentity{Version: harnessBuildVersion(), Ring: "stable"}))
+			// LOCK CONTRACT: this sink runs INSIDE connect() under the
+			// provider's mutex — only the lock-free variants may run
+			// here (SetGovernedGatesLocked).
+			dp.SetGovernedGatesLocked(snap.BuildGatesClient(dariproto.HarnessIdentity{Version: harnessBuildVersion(), Ring: "stable"}))
 			// D2: new pending submissions surface to the control plane
 			// as governed action envelopes (the reviewer queue).
 			st.SetSubmissionSink(dp.EmitChangeboardSubmission)

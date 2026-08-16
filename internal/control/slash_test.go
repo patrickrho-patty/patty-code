@@ -171,11 +171,6 @@ func TestSlashArgItems(t *testing.T) {
 	if items, _ := SlashArgItems("/reasoning-language ", data); len(items) != 0 {
 		t.Errorf("/reasoning-language should offer no suggestions; got %v", labelsOf(items))
 	}
-	// /currency
-	items, _ = SlashArgItems("/currency ", data)
-	if !has(items, "auto") || !has(items, "KRW") || !has(items, "USD") {
-		t.Errorf("/currency should offer only auto/KRW/USD; got %v", labelsOf(items))
-	}
 	// /theme
 	items, _ = SlashArgItems("/theme ", data)
 	if !has(items, "auto") || !has(items, "light") || !has(items, "seoul-night") || !has(items, "hanji-light") {

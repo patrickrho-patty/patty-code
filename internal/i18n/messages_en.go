@@ -175,9 +175,6 @@ var English = Messages{
 	LanguageHeader:               "languages:",
 	LanguageHint:                 "switch with /language <auto|en|ko-KR>",
 	LanguageChangedFmt:           "language set to %s (resolved: %s)",
-	CurrencyHeader:               "pricing currency:",
-	CurrencyHint:                 "switch with /currency <auto|KRW|USD>",
-	CurrencyChangedFmt:           "pricing currency set to %s (resolved: %s)",
 	RuntimeRefreshBusy:           "finish or cancel active work and stop background jobs before changing this setting",
 	RuntimeRefreshUnavailable:    "runtime refresh is unavailable in this session",
 
@@ -290,7 +287,6 @@ var English = Messages{
 	CmdOutputStyle:      "switch output style",
 	CmdTheme:            "switch CLI theme",
 	CmdLanguage:         "switch CLI language",
-	CmdCurrency:         "switch pricing currency",
 	CmdSkill:            "manage skills",
 	CmdVerbose:          "toggle thinking text",
 	CmdReloadCmd:        "reload custom commands",

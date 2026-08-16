@@ -2815,70 +2815,7 @@ func TestLanguageCommandRefreshesCurrentController(t *testing.T) {
 	}
 }
 
-func TestCurrencyCommandPersistsAndRefreshesCurrentController(t *testing.T) {
-	isolateUserConfig(t)
-	i18n.DetectLanguage("en")
-	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
-	oldCtrl := control.New(control.Options{Label: "deepseek-flash"})
-	t.Cleanup(oldCtrl.Close)
-	m := newTestChatTUI()
-	m.ctrl = oldCtrl
-	m.modelRef = "deepseek-flash/deepseek-v4-flash"
-	m.runtimeProfile = "full"
-	var gotSpec controllerBuildSpec
-	m.buildController = func(spec controllerBuildSpec, _ []provider.Message, _ string, _ control.SessionAPI) (*control.Controller, error) {
-		gotSpec = spec
-		return control.New(control.Options{Label: "deepseek-flash"}), nil
-	}
-
-	cmd := m.runSlashCommand("/currency KRW")
-	if cmd == nil {
-		t.Fatal("/currency should queue a controller refresh")
-	}
-	cfg := config.LoadForEdit(config.UserConfigPath())
-	if got := cfg.DesktopCurrency(); got != "KRW" {
-		t.Fatalf("saved currency = %q, want KRW", got)
-	}
-	next, _ := m.Update(cmd())
-	m = next.(chatTUI)
-	t.Cleanup(m.ctrl.Close)
-	if m.ctrl == oldCtrl {
-		t.Fatal("/currency kept the stale controller after a successful refresh")
-	}
-	if gotSpec.ModelRef != m.modelRef || gotSpec.RuntimeProfile != "full" {
-		t.Fatalf("currency refresh spec = %+v", gotSpec)
-	}
-}
-
-func TestCurrencyRefreshFailureKeepsCurrentController(t *testing.T) {
-	isolateUserConfig(t)
-	oldCtrl := control.New(control.Options{Label: "deepseek-flash"})
-	t.Cleanup(oldCtrl.Close)
-	m := newTestChatTUI()
-	m.ctrl = oldCtrl
-	m.modelRef = "deepseek-flash/deepseek-v4-flash"
-	m.runtimeProfile = "full"
-	m.buildController = func(controllerBuildSpec, []provider.Message, string, control.SessionAPI) (*control.Controller, error) {
-		return nil, errors.New("build failed")
-	}
-
-	cmd := m.runCurrencySubcommand("/currency KRW")
-	if cmd == nil {
-		t.Fatal("/currency should queue a controller refresh")
-	}
-	next, _ := m.Update(cmd())
-	m = next.(chatTUI)
-	if m.ctrl != oldCtrl {
-		t.Fatal("failed currency refresh replaced the usable controller")
-	}
-	if m.modelSwitchPending || m.pendingModelSwitch != nil {
-		t.Fatal("failed currency refresh left the runtime switch pending")
-	}
-	if got := config.LoadForEdit(config.UserConfigPath()).DesktopCurrency(); got != "KRW" {
-		t.Fatalf("failed refresh should retain the persisted preference, got %q", got)
-	}
-}
 
 func TestLanguageCommandAutoClearsPinnedLanguage(t *testing.T) {
 	isolateUserConfig(t)

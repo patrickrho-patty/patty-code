@@ -604,7 +604,7 @@ console.log("\nuse controller meta");
   eq(reset.context.cacheMissTokens, undefined, "reset clears restored cache miss tokens");
   eq(reset.context.sessionCost, undefined, "reset clears restored context session cost");
   eq(reset.sessionCost, 0, "reset clears restored session cost state");
-  eq(reset.sessionCurrency, "¥", "reset restores default session currency");
+  eq(reset.sessionCurrency, "₩", "reset restores default session currency");
 }
 
 {

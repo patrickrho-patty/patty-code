@@ -111,7 +111,7 @@ func symbol(currency string) string {
 	}
 }
 
-// Display renders the primary balance compactly, e.g. "¥110.00". It preserves
+// Display renders the primary balance compactly, e.g. "₩110". It preserves
 // the legacy KRW-first behavior for callers that have no display-currency
 // preference.
 func (b *Balance) Display() string {

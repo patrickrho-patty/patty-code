@@ -54,7 +54,6 @@ func builtinSlashSpecs() []builtinSlashSpec {
 		{name: "/effort", ko: "/추론강도", insert: "/effort ", hint: i18n.M.CmdEffort, descend: true},
 		{name: "/theme", ko: "/테마변경", insert: "/theme ", hint: i18n.M.CmdTheme, descend: true},
 		{name: "/language", ko: "/언어설정", insert: "/language ", hint: i18n.M.CmdLanguage, descend: true, showInHelp: true},
-		{name: "/currency", ko: "/통화설정", insert: "/currency ", hint: i18n.M.CmdCurrency, descend: true, showInHelp: true, hidden: true},
 		{name: "/help", ko: "/도움말", insert: "/help", hint: i18n.M.CmdHelp, hidden: true},
 		{name: "/docs", ko: "/문서검색", aliases: []string{"/patty:docs"}, insert: "/docs ", hint: i18n.M.CmdDocs, showInHelp: true, hidden: true},
 		{name: "/memory", ko: "/메모리", insert: "/memory ", hint: i18n.M.CmdMemory, showInHelp: true},

@@ -461,7 +461,7 @@ export const initialState: State = {
   turnArgChars: 0,
   sessionTokens: 0,
   sessionCost: 0,
-  sessionCurrency: "¥",
+  sessionCurrency: "₩",
   seq: 0,
   sessionGen: 0,
   contextPanelSeq: 0,
@@ -1543,7 +1543,7 @@ function applyEvent(s: State, e: WireEvent): State {
       const usageCost = e.usage?.cost ?? e.usage?.costUsd ?? 0;
       const turnCost = s.turnCost + usageCost;
       const sessionCost = s.sessionCost + usageCost;
-      const sessionCurrency = e.usage?.currency || s.sessionCurrency || "¥";
+      const sessionCurrency = e.usage?.currency || s.sessionCurrency || "₩";
       const usage = updateContextGauge ? e.usage : s.usage;
       // The completed round's usage now accounts for the streamed tool-call
       // arguments, so drop the live estimate rather than double-count it.

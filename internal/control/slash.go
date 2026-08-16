@@ -46,7 +46,7 @@ type ArgData struct {
 // (everything after the command word). It returns the suggestions filtered by
 // the token being typed and the byte offset where that token begins, so a caller
 // replaces just that token. Only structured commands participate (/mcp /model
-// /skills /hooks /effort /goal /theme /language /currency /memory);
+// /skills /hooks /effort /goal /theme /language /memory);
 // others yield nil. Single source of truth for CLI + desktop.
 func SlashArgItems(line string, d ArgData) ([]SlashItem, int) {
 	cmdEnd := strings.IndexAny(line, " \t")
@@ -76,8 +76,6 @@ func SlashArgItems(line string, d ArgData) ([]SlashItem, int) {
 		raw = themeArgItems(prior)
 	case "/language":
 		raw = languageArgItems(prior)
-	case "/currency":
-		raw = currencyArgItems(prior)
 	case "/memory":
 		raw = memoryArgItems(prior, d)
 	default:
@@ -142,17 +140,6 @@ func languageArgItems(prior []string) []SlashItem {
 		{Label: "auto", Insert: "auto", Hint: i18n.M.ArgLanguageAuto},
 		{Label: "en", Insert: "en", Hint: i18n.M.ArgLanguageEn},
 		{Label: "ko-KR", Insert: "ko-KR", Hint: i18n.M.ArgLanguageKo},
-	}
-}
-
-func currencyArgItems(prior []string) []SlashItem {
-	if len(prior) != 1 {
-		return nil
-	}
-	return []SlashItem{
-		{Label: "auto", Insert: "auto", Hint: "follow the resolved CLI locale"},
-		{Label: "KRW", Insert: "KRW", Hint: "Korean won pricing"},
-		{Label: "USD", Insert: "USD", Hint: "US dollar pricing"},
 	}
 }
 

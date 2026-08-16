@@ -2363,68 +2363,12 @@ func configCommand(args []string) int {
 		return configReasoningLanguageCommand(args[1:])
 	case "compact-ratio":
 		return configCompactRatioCommand(args[1:])
-	case "currency":
-		return configCurrencyCommand(args[1:])
 	case "telemetry":
 		return configTelemetryCommand(args[1:])
 	default:
 		configUsage()
 		return 2
 	}
-}
-
-func configCurrencyCommand(args []string) int {
-	fs := flag.NewFlagSet("config currency", flag.ContinueOnError)
-	local := fs.Bool("local", false, "unsupported; pricing currency is user-level only")
-	if code, ok := parseCommandFlags(fs, args); !ok {
-		return code
-	}
-	if *local {
-		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, "currency is user-level only; --local is not supported")
-		return 2
-	}
-	rest := fs.Args()
-	if len(rest) > 1 {
-		configCurrencyUsage()
-		return 2
-	}
-	if len(rest) == 0 {
-		cfg, err := config.LoadForRootReadOnly(".")
-		if err != nil {
-			fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
-			return 1
-		}
-		cfg.ApplyRuntimeAutoPricingCurrency(cliAutoPricingCurrency())
-		fmt.Printf("currency = %q (resolved: %s)\n", pricingCurrencyDisplay(cfg.DesktopCurrency()), cfg.DeepSeekOfficialPricingCurrency())
-		return 0
-	}
-	mode, err := parseCLIPricingCurrency(rest[0])
-	if err != nil {
-		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
-		return 2
-	}
-	path := config.UserConfigPath()
-	if path == "" {
-		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, "cannot resolve user config path")
-		return 1
-	}
-	unlock := config.LockUserConfigEdits()
-	defer unlock()
-	cfg := config.LoadForEdit(path)
-	if err := cfg.SetDesktopCurrency(mode); err != nil {
-		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
-		return 2
-	}
-	resolved := cfg.DeepSeekOfficialPricingCurrency()
-	if mode == "" && cfg.DesktopLanguage() == "" {
-		resolved = cliAutoPricingCurrency()
-	}
-	if err := cfg.SaveTo(path); err != nil {
-		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
-		return 1
-	}
-	fmt.Printf("currency = %q (resolved: %s, %s)\n", pricingCurrencyDisplay(mode), resolved, displayPath(path))
-	return 0
 }
 
 var (
@@ -2702,7 +2646,6 @@ func configUsage() {
 	fmt.Print(`Usage:
   patcode config reasoning-language [--local] [auto|ko-KR|en]
   patcode config compact-ratio [--local] [65..97]
-  patcode config currency [auto|KRW|USD]
   patcode config telemetry [auto|on|off]
 `)
 }
@@ -2788,11 +2731,5 @@ func configAutoPlanCompatibilityUsage() {
 func configReasoningLanguageUsage() {
 	fmt.Print(`Usage:
   patcode config reasoning-language [--local] [auto|ko-KR|en]
-`)
-}
-
-func configCurrencyUsage() {
-	fmt.Print(`Usage:
-  patcode config currency [auto|KRW|USD]
 `)
 }
