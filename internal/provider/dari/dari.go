@@ -93,6 +93,10 @@ type Provider struct {
 	// governedGates is the installed workflow gate set (D1 acks); set
 	// by the boot governance sink.
 	governedGates *workflow.GatesClient
+	// §53 resumption credential for the last granted session (nil on
+	// legacy relays that send no token).
+	resumeToken   []byte
+	resumeSession string
 	// receiptStore is the boot-installable durable store (B3); nil
 	// falls back to the in-memory store.
 	receiptStore *provenancewire.ReceiptStore
@@ -236,10 +240,16 @@ func (p *Provider) connect(ctx context.Context) error {
 
 	// PAPER HELLO handshake
 	hello := &dariproto.HelloMessage{
-		CoreVersions:          []uint8{1},
-		PeerProfile:           dariproto.ProfileHarness,
-		TransportFeatures:     []string{"tcp-tls"},
-		Extensions:            map[string]uint8{"dari.ai/1": 1, "dari.model-supply/1": 1},
+		CoreVersions:      []uint8{1},
+		PeerProfile:       dariproto.ProfileHarness,
+		TransportFeatures: []string{"tcp-tls"},
+		// Map §3: the connector OFFERS its implemented extension set;
+		// the relay's HELLO_ACK carries the negotiated agreement.
+		Extensions: map[string]uint8{
+			"dari.ai/1":           1,
+			"dari.model-supply/1": 1,
+			"dari.collab/1":       1, // member-encrypted delivery (live e2e pinned)
+		},
 		EncodingProfiles:      []string{"cbor", "json"},
 		CryptoProfiles:        []string{"DARI-BASE-1"},
 		ClientNonce:           make([]byte, 32),
@@ -369,6 +379,17 @@ func (p *Provider) connect(ctx context.Context) error {
 		p.subjectPeerID = peerID
 	}
 
+	// §53 fast path: with a retained resumption credential, try
+	// SESSION_RESUME first — the relay re-binds the working session
+	// without full setup. Any failure falls back to SESSION_OPEN
+	// (fail-closed never weakens: the fallback IS the full handshake).
+	if resumed := p.tryResumeSession(conn); resumed {
+		p.conn = conn
+		p.authenticated = true
+		p.startPumpLocked()
+		return nil
+	}
+
 	// Session-governance handshake (A3/A4/A5): SESSION_OPEN → epoch →
 	// catalog → lease → grant. Fail-closed — no session, no dispatch.
 	if err := p.openSession(conn); err != nil {
@@ -473,8 +494,17 @@ func (p *Provider) Stream(ctx context.Context, req provider.Request) (<-chan pro
 		return nil, fmt.Errorf("dari: marshal request: %w", err)
 	}
 
-	// Send AI_OPEN
-	if err := p.conn.SendMessage(dariproto.MsgAIOpen, nil, payloadBytes, 1, 1); err != nil {
+	// Send AI_OPEN with a per-request idempotency key (§42.1): a
+	// retransmission of THIS request replays the relay's cached
+	// response instead of re-governing + re-metering.
+	idemKey := fmt.Sprintf("idem-%s-%d", p.SessionID(), time.Now().UnixNano())
+	idemHeader, herr := dariproto.EncodeHeader(map[dariproto.HeaderKey][]byte{
+		dariproto.HKIdempotencyKey: []byte(idemKey),
+	})
+	if herr != nil {
+		return nil, fmt.Errorf("dari: idempotency header: %w", herr)
+	}
+	if err := p.conn.SendMessage(dariproto.MsgAIOpen, idemHeader, payloadBytes, 1, 1); err != nil {
 		p.conn.Close()
 		p.conn = nil
 		return nil, fmt.Errorf("dari: send AI_OPEN: %w", err)

@@ -33,6 +33,8 @@ const (
 	MsgLeaseIssue  MessageType = 0x0210
 	MsgLeaseRevoke MessageType = 0x0211
 	MsgLeaseRenew  MessageType = 0x0212
+	// Session resumption (0x0213) — §53.
+	MsgSessionResume MessageType = 0x0213
 
 	// Auth (0x0100–0x01FF)
 	MsgAuthChallenge MessageType = 0x0100
@@ -174,6 +176,8 @@ func (m MessageType) String() string {
 		return "ADMIN_COMMAND_RESULT"
 	case MsgSovereignAdvisory:
 		return "SOVEREIGN_ADVISORY"
+	case MsgSessionResume:
+		return "SESSION_RESUME"
 	case MsgCollabEnvelope:
 		return "COLLAB_ENVELOPE"
 	case MsgChangeSetNack:
@@ -234,4 +238,18 @@ type COSEAlgorithm int
 const (
 	COSEAlgEdDSA COSEAlgorithm = -8
 	COSEAlgES256 COSEAlgorithm = -7
+)
+
+// HeaderKey identifies a DARI §9 record header map label.
+type HeaderKey uint64
+
+// Header keys (DARI §9 record header map) — the subset the connector
+// sets/reads; labels mirror the root kernel.
+const (
+	HKPeerID         HeaderKey = 7
+	HKLeaseID        HeaderKey = 8
+	HKPolicyEpoch    HeaderKey = 9
+	HKContentType    HeaderKey = 11
+	HKIdempotencyKey HeaderKey = 13
+	HKClassification HeaderKey = 14
 )

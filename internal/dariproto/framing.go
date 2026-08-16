@@ -101,3 +101,32 @@ func DecodeRecord(r io.Reader) (*Record, error) {
 }
 
 var _ = errors.New
+
+// EncodeHeader CBOR-encodes a record header map (DARI §9). Mirrors the
+// root kernel's codec byte-for-byte (canonical CBOR, sorted keys).
+func EncodeHeader(kv map[HeaderKey][]byte) ([]byte, error) {
+	if len(kv) == 0 {
+		return nil, nil
+	}
+	m := make(map[int]interface{}, len(kv))
+	for k, v := range kv {
+		m[int(k)] = v
+	}
+	return MarshalCBOR(m)
+}
+
+// DecodeHeader parses a CBOR header map back to key→bytes.
+func DecodeHeader(raw []byte) (map[HeaderKey][]byte, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var m map[int][]byte
+	if err := UnmarshalCBOR(raw, &m); err != nil {
+		return nil, fmt.Errorf("dari: decode header: %w", err)
+	}
+	out := make(map[HeaderKey][]byte, len(m))
+	for k, v := range m {
+		out[HeaderKey(k)] = v
+	}
+	return out, nil
+}

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"patty/internal/changeboard"
@@ -138,13 +139,21 @@ func (p *Provider) openSession(conn *dariproto.TransportConn) error {
 
 		case dariproto.MsgSessionGrant:
 			var grant struct {
-				SessionID string `json:"session_id"`
-				GrantHex  string `json:"grant_hex"`
+				SessionID   string `json:"session_id"`
+				GrantHex    string `json:"grant_hex"`
+				ResumeToken string `json:"resume_token"`
 			}
 			_ = json.Unmarshal(rec.Payload, &grant)
 			// The signed DARI Authorization Grant (Task 7): verify it
 			// under the AUTH_ACK policy issuer key and retain it as the
 			// session's authority object.
+			// §53: retain the resumption credential for reconnects.
+			if grant.ResumeToken != "" {
+				if rawTok, terr := hex.DecodeString(grant.ResumeToken); terr == nil {
+					p.resumeToken = rawTok
+					p.resumeSession = sessionID
+				}
+			}
 			if grant.GrantHex != "" && p.leaseClient != nil {
 				raw, derr := hex.DecodeString(grant.GrantHex)
 				if derr != nil {
@@ -447,4 +456,49 @@ func (p *Provider) nowMs() int64 {
 		return time.Now().UnixMilli()
 	}
 	return fn().UnixMilli()
+}
+
+// tryResumeSession attempts §53 session resumption on a fresh
+// connection. Returns true when the relay granted the resume (the
+// session is re-bound and the pump can start). Caller holds p.mu.
+func (p *Provider) tryResumeSession(conn *dariproto.TransportConn) bool {
+	if len(p.resumeToken) == 0 || p.resumeSession == "" {
+		return false
+	}
+	req := &dariproto.SessionResumptionRequest{
+		WorkingSessionID: p.resumeSession,
+		ResumptionToken:  p.resumeToken,
+	}
+	body, err := dariproto.MarshalCBOR(req)
+	if err != nil {
+		return false
+	}
+	if err := conn.SendMessage(dariproto.MsgSessionResume, nil, body, 0, 0); err != nil {
+		return false
+	}
+	// Await the response (bounded): granted → re-bound; anything else →
+	// the caller falls back to the full handshake.
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		rec, err := conn.RecvRecord()
+		if err != nil {
+			return false
+		}
+		switch dariproto.MessageType(rec.MessageType) {
+		case dariproto.MsgSessionResume:
+			var resp dariproto.SessionResumptionResponse
+			if dariproto.UnmarshalCBOR(rec.Payload, &resp) != nil || !resp.Granted {
+				slog.Info("dari: session resume not granted — full handshake", "reason", resp.Reason)
+				return false
+			}
+			p.sessionID = p.resumeSession
+			slog.Info("dari: session RESUMED (§53)", "session", p.sessionID, "from_seq", resp.ResumedFromSeq)
+			return true
+		case dariproto.MsgClose, dariproto.MsgAuthChallenge:
+			// Relay redirected to full setup — rewind nothing; the
+			// caller runs openSession which re-reads from here.
+			return false
+		}
+	}
+	return false
 }
