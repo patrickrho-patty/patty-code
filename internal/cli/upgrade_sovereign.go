@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"patty/internal/sovereign"
+	"patty/internal/tier"
 )
 
 const maxAdvisoryBytes = 1 << 20 // 1 MiB; signed advisories are KB-range.
@@ -30,6 +31,7 @@ const maxAdvisoryBytes = 1 << 20 // 1 MiB; signed advisories are KB-range.
 var ErrUpgradeUnavailable = errors.New("upgrade: online update fetch is not available in this build profile — apply signed offline updates via 'patcode update import <advisory-file> --key <pubkey>'")
 
 func upgradeCommand(args []string, version string) int {
+	tier.AssertDisallowed(tier.CapOnlineUpdate)
 	_ = version
 	if len(args) > 0 && args[0] == "import" {
 		return runUpdateImport(args[1:])

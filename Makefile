@@ -68,6 +68,13 @@ test-profiles:
 # tier twin files (tier.AssertAllowed/AssertDisallowed at every gate
 # boundary) and the per-gate materialization tests; this grep is the
 # belt-and-suspenders binary check.
+#
+# Desktop artifact: the desktop binary is not grepped here (its CI legs run
+# on runners without the desktop linking toolchain). Its sovereign endpoint
+# exclusion is enforced the same way at the source level — the endpoint
+# constants live only in !profile_sovereign twin files — and pinned by
+# desktop/telemetry_post_sovereign_test.go and crash_post_sovereign_test.go,
+# which run in the profile_sovereign desktop leg of make test-profiles.
 audit-sovereign: build-sovereign
 	@hits=$$(strings bin/patcode-sovereign$(GOEXE) | grep -c -E 'https://crash\.patty\.io|https://api\.github\.com|https://github\.com/pattycorp/PattyCode/releases/download|https://api\.deepseek\.com/user/balance'); \
 	if [ "$$hits" -ne 0 ]; then \

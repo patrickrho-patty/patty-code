@@ -203,7 +203,7 @@ func (a *AirGapMode) RejectedAdvisoryCount() int64 {
 
 // VerifyAdvisorySignature is the exported form used by the CLI's offline
 // update import path (ADR G3: signed offline advisory is the sovereign
-// update channel). It mirrors the inline check inside ApplyUpdateAdvisory
+// update channel). ApplyUpdateAdvisory delegates here for its check
 // so callers that don't already hold a *AirGapMode can verify an
 // advisory without re-stating the public-key and signature length
 // rules. We require a canonical 32-byte ed25519 public key; longer keys
