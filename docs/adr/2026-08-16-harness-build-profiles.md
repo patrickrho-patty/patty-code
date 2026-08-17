@@ -1,6 +1,6 @@
 # ADR: Harness Build-Time Profile Gating (public / enterprise / sovereign)
 
-**Status:** Proposed
+**Status:** Accepted (phase 0 + G4 + G2/G3 implemented; G1/G5–G8 and root-repo items tracked as follow-up plans)
 **Date:** 2026-08-16
 **Deciders:** Patrick
 **Repos:** patty-code-pccp (primary), pccp (relay/CP alignment)
@@ -79,7 +79,7 @@ runtime-undone by env vars or compromised config.
 
 ## Gate inventory (harness)
 
-Each row: what is excluded/emabled per build and why. "—" = compiled in all
+Each row: what is excluded/enabled per build and why. "—" = compiled in all
 profiles. Evidence cites current code the gate replaces or wraps.
 
 ### G1 Authentication providers
@@ -344,3 +344,33 @@ profile-agnostic" principle made concrete.)
 4. G5–G8 enforcement posture + command surfacing.
 5. Root-repo alignment items (profile seeding, console visibility,
    SCIM/payments).
+
+## Deviations from the original ADR
+
+These three deliberate deviations honored the intent of the ADR while
+lowering execution risk. All of them preserve the G-row outcome; the
+mechanics differ.
+
+- **G2 telemetry — egress-twin vs whole-file noop.** The ADR proposed a
+  full `client.go` no-op twin (`//go:build profile_sovereign`). The
+  implementation kept the live `client.go` unconditional and added a
+  `noop_egress.go` egress-only twin (`Send`/`Flush` no-ops) so the
+  counter-bucket code paths stay reachable from any profile. Rationale:
+  a whole-file noop would leave dangling `init()` symbols and the
+  `Enabled` gate would have to be reconstructed by every consumer. The
+  twin keeps the public API uniform; only the outbound transport
+  vanishes.
+- **`openaiapi` leaf package extraction (G4 prep).** The ADR did not
+  mention `internal/openaiapi` as a separate leaf. During G4 we
+  extracted a shared helper package from `provider/openai` because
+  `internal/cli` and `internal/config` import the response-shaping
+  helpers and would otherwise have been transitively gated behind the
+  `profile_public` tag. The leaf is `//go:build !profile_sovereign` for
+  the Anthropic-translation helper and unconditional for the shape
+  parser; downstream consumers are unchanged.
+- **Exported-surface drift in `openaiapi` (G4).** Six capitalization-only
+  renames (`ID` → `Id`, `URL` → `Url`, etc.) landed during the leaf
+  extraction to match the rest of the harness. The ADR was silent on
+  identifier style; the rename keeps linter noise out of the public
+  build, but downstream importers (none in-tree) would have to follow.
+  This is acceptable inside this monorepo.
