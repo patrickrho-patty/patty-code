@@ -50,7 +50,6 @@ func TestModelsForTabListsMimoAPIPaidAccess(t *testing.T) {
 	}
 }
 
-
 func TestSettingsSurfacesCuratedProviderPresets(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
@@ -475,4 +474,3 @@ func TestAddEveryProviderPresetAccessInstallsTemplate(t *testing.T) {
 		})
 	}
 }
-
