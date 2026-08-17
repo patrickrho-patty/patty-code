@@ -5088,6 +5088,9 @@ func (m *chatTUI) runSlashCommand(input string) tea.Cmd {
 		return m.beginClipboardImagePaste()
 	case "/output-style", "/output-styles":
 		m.openOutputStylePicker()
+	case "/compliance":
+		m.echoLocalCommand(input)
+		m.runComplianceSubcommand(input)
 	case "/diff-fold":
 		m.echoLocalCommand(input)
 		if m.diffMaxLines == 0 {

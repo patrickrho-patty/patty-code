@@ -161,6 +161,16 @@ type Messages struct {
 
 	OutputStyleNone              string // no styles available
 	OutputStylePickerTitle       string // /output-style picker title
+	CompliancePickerTitle       string // /compliance picker title
+	ComplianceItemAll           string // full audit item label
+	ComplianceItemAllDesc       string // full audit item description
+	ComplianceItemPipa          string // PIPA audit item label
+	ComplianceItemPipaDesc      string // PIPA audit item description
+	ComplianceItemKisa          string // KISA audit item label
+	ComplianceItemKisaDesc      string // KISA audit item description
+	ComplianceItemCsap          string // CSAP audit item label
+	ComplianceItemCsapDesc      string // CSAP audit item description
+	ComplianceRunningFmt        string // compliance execution notice
 	OutputStyleExplanatory       string // builtin explanatory style label
 	OutputStyleExplanatoryDesc   string // builtin explanatory style description
 	OutputStyleLearning          string // builtin learning style label
@@ -251,9 +261,6 @@ type Messages struct {
 	CmdLanguage         string // /language
 	CmdSkill            string // /skills
 	CmdCompliance       string // /compliance
-	CmdPipa             string // /pipa
-	CmdKisa             string // /kisa
-	CmdCsap             string // /csap
 	CmdVerbose          string // /verbose
 	CmdReloadCmd        string // /reload-cmd
 	CmdReload           string // /reload
