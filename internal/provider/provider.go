@@ -20,6 +20,7 @@ import (
 	"unicode"
 
 	"patty/internal/nilutil"
+	"patty/internal/provider/policy"
 	"patty/internal/tier"
 )
 
@@ -1147,32 +1148,7 @@ type Factory func(cfg Config) (Provider, error)
 var registry = map[string]Factory{}
 
 // Register adds a factory under a kind (e.g. "openai"). Intended for init().
-// genericBlockedKinds are the generic HTTP LLM protocol providers excluded
-// from non-public build profiles by the DARI-only policy (PRD v2 §0.2,
-// §826). The official Harness must not use OpenAI/Anthropic/REST for Patty
-// service inference.
-var genericBlockedKinds = map[string]bool{
-	"openai":              true,
-	"anthropic":           true,
-	"responses":           true,
-	"dashscope-responses": true,
-}
-
-// LegacyPaperKind maps the historical provider kind to its DARI
-// successor so pre-migration configs keep resolving.
-const LegacyPaperKind = "paper"
-
-// IsBlockedKind reports whether kind is excluded from the linked build
-// profile (ADR G4). Generic HTTP-protocol providers compile only into
-// public builds; the former env hatch is retired — a compile-time gate
-// cannot be runtime-undone.
-func IsBlockedKind(kind string) bool {
-	if tier.Default.Allows(tier.CapGenericProviders) {
-		return false
-	}
-	return genericBlockedKinds[kind]
-}
-
+//
 // It panics on a duplicate kind, since that is a compile-time wiring mistake.
 func Register(kind string, f Factory) {
 	if _, dup := registry[kind]; dup {
@@ -1186,10 +1162,10 @@ func Register(kind string, f Factory) {
 // G4). The historical "paper" kind resolves to its DARI successor so
 // pre-migration configs keep working.
 func New(kind string, cfg Config) (Provider, error) {
-	if kind == LegacyPaperKind {
+	if kind == policy.LegacyPaperKind {
 		kind = "dari"
 	}
-	if IsBlockedKind(kind) {
+	if policy.IsBlockedKind(kind) {
 		return nil, fmt.Errorf(
 			"provider %q is excluded from the %s build profile: official Patty Code inference uses the DARI protocol only (PRD v2 §0.2)", kind, tier.Default)
 	}

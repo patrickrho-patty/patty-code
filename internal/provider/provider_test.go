@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"patty/internal/provider/policy"
 	"patty/internal/tier"
 )
 
@@ -13,7 +14,7 @@ import (
 // are allowed exactly when the linked build profile allows them, with no env
 // hatch — and DARI is never blocked.
 func TestIsBlockedKindFollowsBuildProfile(t *testing.T) {
-	blocked := IsBlockedKind("openai")
+	blocked := policy.IsBlockedKind("openai")
 	if tier.Default.Allows(tier.CapGenericProviders) {
 		if blocked {
 			t.Fatal("public profile must allow generic providers by default (BYOK, ADR G4)")
@@ -21,7 +22,7 @@ func TestIsBlockedKindFollowsBuildProfile(t *testing.T) {
 	} else if !blocked {
 		t.Fatal("enterprise/sovereign profiles must block generic kinds with no env hatch")
 	}
-	if IsBlockedKind("dari") {
+	if policy.IsBlockedKind("dari") {
 		t.Fatal("DARI kind is never blocked")
 	}
 }

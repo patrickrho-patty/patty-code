@@ -60,6 +60,7 @@ import (
 	"patty/internal/productdocs"
 	"patty/internal/provenancewire"
 	"patty/internal/provider"
+	"patty/internal/provider/policy"
 	"patty/internal/provider/dari"
 	"patty/internal/recovery"
 	"patty/internal/sandbox"
@@ -2269,7 +2270,7 @@ func tierLockInput(cfg *config.Config) tier.LockInput {
 		return in
 	}
 	for _, p := range cfg.Providers {
-		if !allowsGeneric && p.Kind != "dari" && provider.IsBlockedKind(p.Kind) {
+		if !allowsGeneric && p.Kind != "dari" && policy.IsBlockedKind(p.Kind) {
 			in.ExcludedProviders = append(in.ExcludedProviders, p.Name)
 		}
 		// Empty-Kind entries are flagged with a "(empty kind)" annotation
