@@ -67,6 +67,7 @@ import (
 	"patty/internal/sessiontemp"
 	"patty/internal/skill"
 	"patty/internal/stats"
+	"patty/internal/tier"
 	"patty/internal/tool"
 	"patty/internal/tool/builtin"
 	"patty/internal/tool/sessiontool"
@@ -235,6 +236,12 @@ func build(ctx context.Context, opts Options) (*BuildResult, error) {
 	memoryCompilerMigrated, memoryCompilerMigErr := config.MigrateLegacyMemoryCompilerForRoot(root)
 	cfg, err := config.LoadForRoot(root)
 	if err != nil {
+		return nil, err
+	}
+	// ADR 2026-08-16 decision 2: fail closed when the linked build profile
+	// excludes something the config tries to enable. Runs before any
+	// subsystem consumes cfg.
+	if err := tier.Lock(tierLockInput(cfg)); err != nil {
 		return nil, err
 	}
 	applyRuntimeAutoPricingCurrency(cfg, opts.AutoPricingCurrency)
@@ -2248,6 +2255,34 @@ func applyRuntimeAutoPricingCurrency(cfg *config.Config, currency string) {
 	if cfg != nil {
 		cfg.ApplyRuntimeAutoPricingCurrency(currency)
 	}
+}
+
+// tierLockInput extracts the profile-relevant provider surface from cfg
+// (ADR 2026-08-16, boot-side half of tier.Lock). Kinds blocked by the
+// DARI-only policy and balance URLs are only reportable in profiles that
+// exclude them; public configs pass through untouched.
+func tierLockInput(cfg *config.Config) tier.LockInput {
+	var in tier.LockInput
+	if tier.Default.Allows(tier.CapGenericProviders) && tier.Default.Allows(tier.CapBalanceFetch) {
+		return in
+	}
+	// PATTY_ALLOW_GENERIC=1 is the existing dev bypass of the DARI-only
+	// policy (provider.IsBlockedKind). Until Task 5 makes the policy a
+	// build-time property, the opt-in that lets generic kinds register must
+	// also suppress this boot-side lock — otherwise every dev/test boot on
+	// legacy DeepSeek config (balance_url) fails before the bypass applies.
+	if os.Getenv("PATTY_ALLOW_GENERIC") == "1" {
+		return in
+	}
+	for _, p := range cfg.Providers {
+		if !tier.Default.Allows(tier.CapGenericProviders) && p.Kind != "dari" && provider.IsBlockedKind(p.Kind) {
+			in.ExcludedProviders = append(in.ExcludedProviders, p.Name)
+		}
+		if !tier.Default.Allows(tier.CapBalanceFetch) && p.BalanceURL != "" {
+			in.BalanceProviders = append(in.BalanceProviders, p.Name)
+		}
+	}
+	return in
 }
 
 func rememberPermissionRule(workspaceRoot, rule string) control.RememberResult {
