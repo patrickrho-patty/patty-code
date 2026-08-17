@@ -437,4 +437,3 @@ func TestNormalizeLegacyOpenCodeGoKimiK3CatalogMigratesOnlyUntouchedPreset(t *te
 		t.Fatal("migration added a duplicate case-insensitive Kimi K3 override")
 	}
 }
-

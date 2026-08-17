@@ -2266,15 +2266,6 @@ func tierLockInput(cfg *config.Config) tier.LockInput {
 	if tier.Default.Allows(tier.CapGenericProviders) && tier.Default.Allows(tier.CapBalanceFetch) {
 		return in
 	}
-	// PATTY_ALLOW_GENERIC=1 remains as a TEST-ONLY bridge (boot TestMain sets
-	// it) that suppresses this boot-side lock for legacy-migration fixtures
-	// whose legacy DeepSeek entries carry balance_url under the enterprise
-	// default. provider.IsBlockedKind ignores it since ADR G4 made the policy
-	// a compile-time property; Task 6 stubs the legacy presets and deletes
-	// this early-return together with the test-side Setenv.
-	if os.Getenv("PATTY_ALLOW_GENERIC") == "1" {
-		return in
-	}
 	for _, p := range cfg.Providers {
 		if !tier.Default.Allows(tier.CapGenericProviders) && p.Kind != "dari" && provider.IsBlockedKind(p.Kind) {
 			in.ExcludedProviders = append(in.ExcludedProviders, p.Name)

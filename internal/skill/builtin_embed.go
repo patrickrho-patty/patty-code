@@ -46,5 +46,6 @@ func skillFromEmbedded(item builtincontent.SkillMarkdown) Skill {
 		ReadOnly:     parseBoolFrontmatter(item.Frontmatter["read-only"]),
 		Triggers:     parseCSVFrontmatter(item.Frontmatter["triggers"]),
 		AllowedTools: parseAllowedTools(item.Frontmatter["allowed-tools"]),
+		AutoUse:      parseAutoUse(item.Frontmatter["auto-use"]),
 	}
 }

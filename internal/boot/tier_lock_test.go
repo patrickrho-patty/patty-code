@@ -8,10 +8,6 @@ import (
 )
 
 func TestTierLockInputFlagsExcludedCapabilities(t *testing.T) {
-	// main_test.go's TestMain opts the whole binary into PATTY_ALLOW_GENERIC=1
-	// for the legacy lifecycle fixtures; this test must exercise the locked
-	// path, so neutralize it for its duration (restored automatically).
-	t.Setenv("PATTY_ALLOW_GENERIC", "0")
 	cfg := &config.Config{Providers: []config.ProviderEntry{
 		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", BalanceURL: "https://api.deepseek.com/user/balance"},
 		{Name: "org-relay", Kind: "dari"},

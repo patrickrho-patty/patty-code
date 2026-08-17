@@ -1164,8 +1164,8 @@ const LegacyPaperKind = "paper"
 
 // IsBlockedKind reports whether kind is excluded from the linked build
 // profile (ADR G4). Generic HTTP-protocol providers compile only into
-// public builds; the PATTY_ALLOW_GENERIC env hatch is retired — a
-// compile-time gate cannot be runtime-undone.
+// public builds; the former env hatch is retired — a compile-time gate
+// cannot be runtime-undone.
 func IsBlockedKind(kind string) bool {
 	if tier.Default.Allows(tier.CapGenericProviders) {
 		return false

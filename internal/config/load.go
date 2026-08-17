@@ -15,6 +15,7 @@ import (
 	"patty/internal/fileutil"
 	fileencoding "patty/internal/fileutil/encoding"
 	"patty/internal/provider"
+	"patty/internal/tier"
 )
 
 // Load builds the configuration: defaults, then user config, then project
@@ -430,7 +431,10 @@ func backfillDeepSeekOfficialEndpointDefaults(p *ProviderEntry) {
 	if p == nil {
 		return
 	}
-	if strings.TrimSpace(p.BalanceURL) == "" {
+	// Balance fetching is a public-profile capability (ADR G4): injecting the
+	// DeepSeek balance endpoint into enterprise/sovereign configs would arm
+	// the boot-side tier lock against a URL the user never wrote.
+	if tier.Default.Allows(tier.CapBalanceFetch) && strings.TrimSpace(p.BalanceURL) == "" {
 		p.BalanceURL = "https://api.deepseek.com/user/balance"
 	}
 	backfillOfficialContextWindow(p, 1_000_000)
