@@ -1257,9 +1257,9 @@ func TestPlanGitHubRepoDiscoversMultipleSkills(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	oldAPIBase := githubAPIBaseURL
-	githubAPIBaseURL = srv.URL
-	defer func() { githubAPIBaseURL = oldAPIBase }()
+	oldAPIBase := githubAPIBaseURLFn
+	githubAPIBaseURLFn = func() (string, error) { return srv.URL, nil }
+	defer func() { githubAPIBaseURLFn = oldAPIBase }()
 
 	tl := NewTool(Options{ProjectRoot: project, HomeDir: home, HTTPClient: srv.Client()})
 	resp := execInstall(t, tl, map[string]any{

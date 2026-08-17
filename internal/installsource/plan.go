@@ -3,23 +3,44 @@ package installsource
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"testing"
 	"unicode"
 
 	"patty/internal/skill"
 )
 
-// githubAPIBaseURL is the default base URL for fetching plugin/skill
-// metadata from the GitHub Contents API. It is declared in plan_github.go
-// for non-sovereign builds ("https://api.github.com") and empty in
-// plan_github_sovereign.go for sovereign builds (air-gapped installs must
-// configure internal mirrors via runtime config — ADR G5).
-var githubAPIBaseURL string
+// ErrGitHubFetchUnavailable is returned by defaultGitHubAPIBaseURL on
+// build profiles that disable the GitHub Contents API fetch (sovereign
+// — ADR G5). Operators must configure an internal mirror via
+// install.github_mirror to fetch any plugin or skill whose source URL
+// is github://.
+var ErrGitHubFetchUnavailable = errors.New("install source: GitHub fetch unavailable in this build profile — configure an internal mirror via install.github_mirror")
+
+// githubAPIBaseURLFn is the swappable hook tests use to point the
+// fetch at an httptest.Server. Production code calls defaultGitHubAPIBaseURL
+// (declared in plan_github*.go with build tags) which writes this hook
+// at init time. Tests can then re-point the hook via setGitHubAPIBaseURL
+// and restore it on cleanup.
+var githubAPIBaseURLFn = defaultGitHubAPIBaseURL
+
+// setGitHubAPIBaseURL replaces the GitHub base URL hook for the
+// lifetime of a test and returns a restore function the test should
+// defer. It is undefined outside the test build because no production
+// code path is allowed to redirect the GitHub fetch — the swap exists
+// purely to point fetchGitHubContents at an httptest server.
+func setGitHubAPIBaseURL(t testing.TB, fn func() (string, error)) func() {
+	t.Helper()
+	prev := githubAPIBaseURLFn
+	githubAPIBaseURLFn = fn
+	return func() { githubAPIBaseURLFn = prev }
+}
 
 // plan turns a request into a list of actions plus a warnings slice. It
 // does not touch the disk; the apply phase is responsible for side effects.
@@ -309,7 +330,11 @@ func (t *installSourceTool) githubSkillCandidate(ctx context.Context, req reques
 }
 
 func (t *installSourceTool) fetchGitHubContents(ctx context.Context, src githubRepoSource, branch, path string) ([]githubContentEntry, error) {
-	apiURL, err := url.Parse(strings.TrimRight(githubAPIBaseURL, "/"))
+	base, err := githubAPIBaseURLFn()
+	if err != nil {
+		return nil, fmt.Errorf("install source: %w", err)
+	}
+	apiURL, err := url.Parse(strings.TrimRight(base, "/"))
 	if err != nil {
 		return nil, err
 	}
