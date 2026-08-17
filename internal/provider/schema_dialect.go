@@ -3,21 +3,8 @@ package provider
 import (
 	"bytes"
 	"encoding/json"
-	"net/url"
 	"strings"
 )
-
-// IsMiMoEndpoint reports whether rawURL points at an official Xiaomi MiMo API
-// host, including the regional token-plan subdomains. The bare apex is rejected
-// because it is not an API endpoint.
-func IsMiMoEndpoint(rawURL string) bool {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return false
-	}
-	host := strings.ToLower(u.Hostname())
-	return host != "xiaomimimo.com" && strings.HasSuffix(host, ".xiaomimimo.com")
-}
 
 // NormalizeLegacyTupleItemsForDraft202012 rewrites only the pre-2020-12 tuple
 // keywords in a JSON Schema. It is intentionally separate from

@@ -160,6 +160,28 @@ func TestIsMiMo(t *testing.T) {
 	}
 }
 
+func TestIsMiMoEndpoint(t *testing.T) {
+	for _, tc := range []struct {
+		url  string
+		want bool
+	}{
+		{"https://api.xiaomimimo.com/v1", true},
+		{"https://api.xiaomimimo.com/anthropic", true},
+		{"https://token-plan-cn.xiaomimimo.com/v1", true},
+		{"https://token-plan-sgp.xiaomimimo.com/anthropic", true},
+		{"https://token-plan-ams.xiaomimimo.com/v1", true},
+		{"https://xiaomimimo.com/v1", false},
+		{"https://api.deepseek.com", false},
+		{"https://xiaomimimo.com.example.org", false},
+		{"", false},
+		{"not-a-url", false},
+	} {
+		if got := IsMiMoEndpoint(tc.url); got != tc.want {
+			t.Errorf("IsMiMoEndpoint(%q) = %v, want %v", tc.url, got, tc.want)
+		}
+	}
+}
+
 // TestIsZhipu pins the host-matching rule for the remaining international
 // Z.AI GLM endpoint family.
 func TestIsZhipu(t *testing.T) {

@@ -4,8 +4,6 @@ import (
 	"net/url"
 	"slices"
 	"strings"
-
-	"patty/internal/provider"
 )
 
 // matchesVendorHost reports whether baseURL points at one of the canonical
@@ -134,7 +132,19 @@ func IsMiniMax(baseURL string) bool {
 // MiMo follows the OpenAI chat shape but authenticates with an `api-key` header
 // instead of the usual Authorization bearer header.
 func IsMiMo(baseURL string) bool {
-	return provider.IsMiMoEndpoint(baseURL)
+	return IsMiMoEndpoint(baseURL)
+}
+
+// IsMiMoEndpoint reports whether rawURL points at an official Xiaomi MiMo API
+// host, including the regional token-plan subdomains. The bare apex is rejected
+// because it is not an API endpoint.
+func IsMiMoEndpoint(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	return host != "xiaomimimo.com" && strings.HasSuffix(host, ".xiaomimimo.com")
 }
 
 // IsZhipu reports whether baseURL points at Zhipu's OpenAI-compatible endpoint

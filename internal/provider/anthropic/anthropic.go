@@ -131,7 +131,7 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		thinking:         thinking,
 		effort:           effort,
 		vision:           vision,
-		mimo:             provider.IsMiMoEndpoint(root),
+		mimo:             openaiapi.IsMiMoEndpoint(root),
 		webSearch:        webSearch,
 		headers:          cleanCustomHeaders(headers),
 		authHeader:       authHeader,
