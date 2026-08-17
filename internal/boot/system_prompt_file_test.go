@@ -69,7 +69,7 @@ system_prompt_file = "` + path + `"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"

@@ -122,7 +122,7 @@ func writeRuntimeFixtureWithConflictingProvider(t *testing.T, dir, name string) 
 	appendRuntimeFixture(t, dir, fmt.Sprintf(`
 [[providers]]
 name = "plugin"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "%s/fake/x"
 api_key_env = "PATTY_TEST_KEY_UNSET"

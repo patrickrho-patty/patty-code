@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,10 +36,10 @@ import (
 	"patty/internal/tool/builtin"
 
 	// Blank import registers the provider kind the same way cmd/patcode's main
-	// does; importing builtin above registers the built-in tools.
-	_ "patty/internal/provider/anthropic"
+	// does; importing builtin above registers the built-in tools. The generic
+	// openai/anthropic kinds compile only into public builds (ADR G4) and are
+	// registered by the profile_public-tagged contract test files instead.
 	_ "patty/internal/provider/dari"
-	_ "patty/internal/provider/openai"
 )
 
 func TestAgentKeepPolicyFromConfig(t *testing.T) {
@@ -77,7 +75,7 @@ func TestApplyRuntimeAutoPricingCurrency(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := config.Default()
 			cfg.Providers = []config.ProviderEntry{{
-				Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com",
+				Name: "deepseek-flash", Kind: "dari", BaseURL: "https://api.deepseek.com",
 				Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY",
 				Price: config.DeepSeekV4PricesForLanguage("en")["deepseek-v4-flash"],
 			}}
@@ -116,7 +114,7 @@ system_prompt = "BASE SYSTEM PROMPT"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -161,7 +159,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -1128,7 +1126,7 @@ system_prompt = "GLOBAL"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -1146,7 +1144,7 @@ system_prompt = "PROJECT"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -1300,284 +1298,6 @@ func (p *headlessTaskWriteTestProvider) Stream(context.Context, provider.Request
 	return ch, nil
 }
 
-func TestNewProviderAppliesConfiguredDefaultEffort(t *testing.T) {
-	var gotReq map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n"))
-	}))
-	defer srv.Close()
-
-	p, err := NewProvider(&config.ProviderEntry{
-		Name:             "custom",
-		Kind:             "openai",
-		BaseURL:          srv.URL,
-		Model:            "m",
-		SupportedEfforts: []string{"low", "medium", "high"},
-		DefaultEffort:    "MEDIUM",
-	})
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
-	ch, err := p.Stream(context.Background(), provider.Request{
-		Messages: []provider.Message{{Role: provider.RoleUser, Content: "hi"}},
-	})
-	if err != nil {
-		t.Fatalf("Stream: %v", err)
-	}
-	for chunk := range ch {
-		if chunk.Type == provider.ChunkError {
-			t.Fatalf("stream error: %v", chunk.Err)
-		}
-	}
-	if got := gotReq["reasoning_effort"]; got != "medium" {
-		t.Fatalf("reasoning_effort = %#v, want medium from default_effort", got)
-	}
-}
-
-func TestNewProviderPreservesExplicitlySupportedKimiK3Efforts(t *testing.T) {
-	var gotReq map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n"))
-	}))
-	defer srv.Close()
-
-	p, err := NewProvider(&config.ProviderEntry{
-		Name:              "opencode-go",
-		Kind:              "openai",
-		BaseURL:           srv.URL,
-		Model:             "kimi-k3",
-		ReasoningProtocol: config.ReasoningProtocolOpenAI,
-		SupportedEfforts:  []string{"high", "max"},
-		DefaultEffort:     "max",
-	})
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
-	ch, err := p.Stream(context.Background(), provider.Request{
-		Messages: []provider.Message{{Role: provider.RoleUser, Content: "hi"}},
-	})
-	if err != nil {
-		t.Fatalf("Stream: %v", err)
-	}
-	for chunk := range ch {
-		if chunk.Type == provider.ChunkError {
-			t.Fatalf("stream error: %v", chunk.Err)
-		}
-	}
-	if got := gotReq["reasoning_effort"]; got != "max" {
-		t.Fatalf("reasoning_effort = %#v, want explicitly supported max", got)
-	}
-}
-
-func TestNewProviderAppliesOfficialKimiK3RequestContract(t *testing.T) {
-	var gotReq map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n"))
-	}))
-	defer srv.Close()
-
-	p, err := NewProvider(&config.ProviderEntry{
-		Name:              "kimi-global",
-		Kind:              "openai",
-		BaseURL:           "https://api.moonshot.ai/v1",
-		ChatURL:           srv.URL,
-		Model:             "kimi-k3",
-		ReasoningProtocol: config.ReasoningProtocolOpenAI,
-		SupportedEfforts:  []string{"low", "high", "max"},
-		DefaultEffort:     "max",
-	})
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
-	ch, err := p.Stream(context.Background(), provider.Request{
-		Messages:    []provider.Message{{Role: provider.RoleUser, Content: "hi"}},
-		Temperature: provider.TemperaturePtr(0),
-		MaxTokens:   2000,
-	})
-	if err != nil {
-		t.Fatalf("Stream: %v", err)
-	}
-	for chunk := range ch {
-		if chunk.Type == provider.ChunkError {
-			t.Fatalf("stream error: %v", chunk.Err)
-		}
-	}
-	if gotReq["reasoning_effort"] != "max" || gotReq["max_completion_tokens"] != float64(2000) {
-		t.Fatalf("official Kimi K3 request = %+v, want max effort and max_completion_tokens", gotReq)
-	}
-	for _, field := range []string{"temperature", "max_tokens"} {
-		if _, ok := gotReq[field]; ok {
-			t.Fatalf("official Kimi K3 request must omit %q: %+v", field, gotReq)
-		}
-	}
-}
-
-func TestNewProviderPropagatesConfiguredMaxOutputTokens(t *testing.T) {
-	var gotReq map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n"))
-	}))
-	defer srv.Close()
-
-	p, err := NewProvider(&config.ProviderEntry{
-		Name: "openai", Kind: "openai", BaseURL: "https://api.openai.com/v1",
-		ChatURL: srv.URL, Model: "o3", MaxOutputTokens: 4096,
-	})
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
-	ch, err := p.Stream(context.Background(), provider.Request{
-		Messages: []provider.Message{{Role: provider.RoleUser, Content: "hi"}},
-	})
-	if err != nil {
-		t.Fatalf("Stream: %v", err)
-	}
-	for chunk := range ch {
-		if chunk.Type == provider.ChunkError {
-			t.Fatalf("stream error: %v", chunk.Err)
-		}
-	}
-	if gotReq["max_completion_tokens"] != float64(4096) {
-		t.Fatalf("max_completion_tokens = %#v, want 4096: %+v", gotReq["max_completion_tokens"], gotReq)
-	}
-	if _, exists := gotReq["max_tokens"]; exists {
-		t.Fatalf("official OpenAI request must omit max_tokens: %+v", gotReq)
-	}
-}
-
-func TestNewProviderAppliesModelReasoningProtocol(t *testing.T) {
-	var gotReq map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n"))
-	}))
-	defer srv.Close()
-
-	p, err := NewProvider(&config.ProviderEntry{
-		Name:    "deepseek-proxy",
-		Kind:    "openai",
-		BaseURL: srv.URL,
-		Model:   "deepseek-v4-flash",
-	})
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
-	ch, err := p.Stream(context.Background(), provider.Request{
-		Messages: []provider.Message{{Role: provider.RoleUser, Content: "hi"}},
-	})
-	if err != nil {
-		t.Fatalf("Stream: %v", err)
-	}
-	for chunk := range ch {
-		if chunk.Type == provider.ChunkError {
-			t.Fatalf("stream error: %v", chunk.Err)
-		}
-	}
-	if got := gotReq["reasoning_effort"]; got != "high" {
-		t.Fatalf("reasoning_effort = %#v, want high from DeepSeek model capability", got)
-	}
-	thinking, ok := gotReq["thinking"].(map[string]any)
-	if !ok || thinking["type"] != "enabled" {
-		t.Fatalf("thinking = %#v, want enabled", gotReq["thinking"])
-	}
-}
-
-func TestNewProviderBuildsDeepSeekAnthropicPreset(t *testing.T) {
-	preset, ok := config.CuratedProviderPreset("deepseek-anthropic")
-	if !ok || len(preset.Entries) != 1 {
-		t.Fatalf("DeepSeek Anthropic preset = %+v", preset)
-	}
-	var cfg config.Config
-	if err := cfg.UpsertProvider(preset.Entries[0]); err != nil {
-		t.Fatalf("UpsertProvider: %v", err)
-	}
-	entry, ok := cfg.ResolveModel("deepseek-anthropic/deepseek-v4-flash")
-	if !ok {
-		t.Fatal("ResolveModel failed")
-	}
-	p, err := NewProvider(entry)
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
-	if p.Name() != "deepseek-anthropic" || !provider.RequiresToolCallReasoning(p) || provider.RequiresReasoningRoundTrip(p) {
-		t.Fatalf("assembled DeepSeek Anthropic provider = %T/%q policies=%v/%v", p, p.Name(), provider.RequiresToolCallReasoning(p), provider.RequiresReasoningRoundTrip(p))
-	}
-}
-
-func TestNewProviderAllowsExplicitOfficialDeepSeekVisionModel(t *testing.T) {
-	var gotReq map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n"))
-	}))
-	defer srv.Close()
-
-	p, err := NewProvider(&config.ProviderEntry{
-		Name:         "deepseek",
-		Kind:         "openai",
-		BaseURL:      "https://api.deepseek.com",
-		ChatURL:      srv.URL,
-		Model:        "deepseek-v5-vision",
-		VisionModels: []string{"deepseek-v5-vision"},
-	})
-	if err != nil {
-		t.Fatalf("NewProvider: %v", err)
-	}
-	ch, err := p.Stream(context.Background(), provider.Request{
-		Messages: []provider.Message{{
-			Role: provider.RoleUser, Content: "describe",
-			Images: []string{"data:image/png;base64,AAAA"},
-		}},
-	})
-	if err != nil {
-		t.Fatalf("Stream: %v", err)
-	}
-	for chunk := range ch {
-		if chunk.Type == provider.ChunkError {
-			t.Fatalf("stream error: %v", chunk.Err)
-		}
-	}
-
-	messages, ok := gotReq["messages"].([]any)
-	if !ok || len(messages) != 1 {
-		t.Fatalf("messages = %#v, want one message", gotReq["messages"])
-	}
-	message, ok := messages[0].(map[string]any)
-	if !ok {
-		t.Fatalf("message = %#v, want object", messages[0])
-	}
-	parts, ok := message["content"].([]any)
-	if !ok || len(parts) != 2 {
-		t.Fatalf("content = %#v, want [text, image_url]", message["content"])
-	}
-	imagePart, ok := parts[1].(map[string]any)
-	if !ok || imagePart["type"] != "image_url" {
-		t.Fatalf("image part = %#v, want image_url", parts[1])
-	}
-}
-
 func TestBuildHonorsSessionDirOverride(t *testing.T) {
 	dir := t.TempDir()
 	home := t.TempDir()
@@ -1591,7 +1311,7 @@ default_model = "test-model"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -1626,7 +1346,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -1699,7 +1419,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -3247,7 +2967,7 @@ disabled_skills = ["projskill", "review"]
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -3300,7 +3020,7 @@ excluded_paths = [%q]
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -3344,7 +3064,7 @@ system_prompt = "JUST THE BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -3390,7 +3110,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -3453,7 +3173,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -3482,7 +3202,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -4026,87 +3746,6 @@ func hasPlanModeReadOnlyCommand(commands []string, want string) bool {
 	return false
 }
 
-// TestBuildMigratesLegacyConfigEndToEnd drives the real boot path: a v0.x
-// ~/.patty/config.json with no v1+ config present must be imported during
-// Build — config written, key pinned into the env, and the user told via a notice.
-func TestBuildMigratesLegacyConfigEndToEnd(t *testing.T) {
-	home := robustTempDir(t)
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)                               // os.UserHomeDir on Windows
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config")) // os.UserConfigDir on Linux
-	t.Setenv("AppData", filepath.Join(home, "AppData"))         // os.UserConfigDir on Windows
-	t.Setenv("PATTY_CREDENTIALS_STORE", "file")
-	t.Setenv("DEEPSEEK_API_KEY", "") // track for cleanup; migration os.Setenv's it live
-
-	proj := robustTempDir(t)
-	t.Chdir(proj)
-	// Project config merges over the migrated user config without dropping the
-	// migrated plugins.
-	writeFile(t, proj, "patty.toml", "")
-	writeFile(t, filepath.Join(home, ".patty"), "config.json",
-		`{"apiKey":"sk-e2e","lang":"ko-KR","mcpServers":{"fs":{"command":"npx","args":["-y","server-fs"]}}}`)
-	writeFile(t, filepath.Join(home, ".patty", "sessions"), "chat-1.events.jsonl",
-		`{"type":"user.message","id":1,"ts":"t","turn":0,"text":"hello from v0.x"}`+"\n"+
-			`{"type":"model.final","id":2,"ts":"t","turn":0,"content":"hi","toolCalls":[],"usage":{},"costUsd":0}`+"\n")
-
-	var notices []string
-	sink := event.FuncSink(func(e event.Event) {
-		if e.Kind == event.Notice {
-			notices = append(notices, e.Text)
-		}
-	})
-
-	ctrl, err := Build(context.Background(), Options{Sink: sink})
-	if err != nil {
-		t.Fatalf("Build: %v", err)
-	}
-	defer ctrl.Close()
-
-	migrated := false
-	for _, n := range notices {
-		if strings.Contains(n, "migrated your previous configuration") {
-			migrated = true
-		}
-	}
-	if !migrated {
-		t.Fatalf("no migration notice emitted; got %v", notices)
-	}
-
-	dest := config.UserConfigPath()
-	data, err := os.ReadFile(dest)
-	if err != nil {
-		t.Fatalf("v2 config not written to %s: %v", dest, err)
-	}
-	if !strings.Contains(string(data), `name    = "fs"`) || !strings.Contains(string(data), `language      = "ko-KR"`) {
-		t.Errorf("migrated config missing plugin/lang:\n%s", data)
-	}
-
-	if got := os.Getenv("DEEPSEEK_API_KEY"); got != "sk-e2e" {
-		t.Errorf("DEEPSEEK_API_KEY not pinned into env after migration: %q", got)
-	}
-
-	if data, err := os.ReadFile(config.UserCredentialsPath()); err != nil || !strings.Contains(string(data), "DEEPSEEK_API_KEY=sk-e2e") {
-		t.Errorf("credentials store missing migrated key: %q (err %v)", data, err)
-	}
-	if _, err := os.Stat(filepath.Join(home, ".env")); !os.IsNotExist(err) {
-		t.Errorf("migration must not write the user's ~/.env, stat err=%v", err)
-	}
-
-	sessionImported := false
-	for _, n := range notices {
-		if strings.Contains(n, "imported") && strings.Contains(n, "past session") {
-			sessionImported = true
-		}
-	}
-	if !sessionImported {
-		t.Errorf("no session-import notice emitted; got %v", notices)
-	}
-	migratedSession := filepath.Join(config.SessionDir(), "chat-1.jsonl")
-	if _, err := os.Stat(migratedSession); err != nil {
-		t.Errorf("legacy session not imported to %s: %v", migratedSession, err)
-	}
-}
-
 func TestBuildMigratesDeprecatedAgentStepLimitsWithOneNotice(t *testing.T) {
 	home := isolateConfigHome(t)
 	t.Setenv("PATTY_HOME", filepath.Join(home, "patty-home"))
@@ -4121,7 +3760,7 @@ planner_max_steps = 4
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -4185,7 +3824,7 @@ redact_tool_output = true
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -4557,7 +4196,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -4602,7 +4241,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -4652,7 +4291,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "root-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -4944,7 +4583,7 @@ system_prompt = "BASE"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"

@@ -1,3 +1,8 @@
+//go:build profile_public
+
+// Wire-contract test for the generic OpenAI-compatible chat client (public
+// builds only, ADR G4): streams against an httptest gateway impersonating
+// Kimi's API.
 package boot
 
 import (
@@ -10,6 +15,9 @@ import (
 
 	"patty/internal/config"
 	"patty/internal/provider"
+
+	// Registers the generic kind this contract test constructs.
+	_ "patty/internal/provider/openai"
 )
 
 func TestNewProviderAppliesExplicitKimiK3RequestContractToCustomGateway(t *testing.T) {

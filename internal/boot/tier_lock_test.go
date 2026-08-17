@@ -17,8 +17,19 @@ func TestTierLockInputFlagsExcludedCapabilities(t *testing.T) {
 		{Name: "org-relay", Kind: "dari"},
 	}}
 	in := tierLockInput(cfg)
-	// Under the default (enterprise) profile the openai entry is excluded
-	// and the balance URL is excluded; the DARI relay entry never is.
+	// The expectation is profile-conditional (ADR G4): the public profile
+	// allows generic providers and balance fetching, so nothing is excluded;
+	// enterprise/sovereign exclude the openai entry and its balance URL. The
+	// DARI relay entry is never excluded on any profile.
+	if tier.Default.Allows(tier.CapGenericProviders) && tier.Default.Allows(tier.CapBalanceFetch) {
+		if len(in.ExcludedProviders) != 0 || len(in.BalanceProviders) != 0 {
+			t.Fatalf("public profile must flag nothing: excluded=%v balance=%v", in.ExcludedProviders, in.BalanceProviders)
+		}
+		if err := tier.Lock(in); err != nil {
+			t.Fatalf("Lock must pass clean under the public profile: %v", err)
+		}
+		return
+	}
 	if len(in.ExcludedProviders) != 1 || in.ExcludedProviders[0] != "deepseek-flash" {
 		t.Fatalf("ExcludedProviders = %v, want [deepseek-flash]", in.ExcludedProviders)
 	}

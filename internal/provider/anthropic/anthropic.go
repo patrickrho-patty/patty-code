@@ -34,8 +34,8 @@ import (
 	"time"
 
 	"patty/internal/netclient"
-	"patty/internal/provider"
 	"patty/internal/openaiapi"
+	"patty/internal/provider"
 )
 
 // defaultStreamIdleTimeout caps how long a started SSE stream may go silent before

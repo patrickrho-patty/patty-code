@@ -19,9 +19,8 @@ import (
 	"syscall"
 	"unicode"
 
-	"os"
-
 	"patty/internal/nilutil"
+	"patty/internal/tier"
 )
 
 // Role is the role of a message.
@@ -1148,10 +1147,10 @@ type Factory func(cfg Config) (Provider, error)
 var registry = map[string]Factory{}
 
 // Register adds a factory under a kind (e.g. "openai"). Intended for init().
-// genericBlockedKinds are the generic HTTP LLM protocol providers blocked
-// by the DARI-only policy (PRD v2 §0.2, §826). The official Harness must
-// not use OpenAI/Anthropic/REST for Patty service inference.
-// PATTY_ALLOW_GENERIC=1 re-enables for development.
+// genericBlockedKinds are the generic HTTP LLM protocol providers excluded
+// from non-public build profiles by the DARI-only policy (PRD v2 §0.2,
+// §826). The official Harness must not use OpenAI/Anthropic/REST for Patty
+// service inference.
 var genericBlockedKinds = map[string]bool{
 	"openai":              true,
 	"anthropic":           true,
@@ -1159,13 +1158,16 @@ var genericBlockedKinds = map[string]bool{
 	"dashscope-responses": true,
 }
 
-// IsBlockedKind reports whether kind is blocked by the DARI-only policy.
 // LegacyPaperKind maps the historical provider kind to its DARI
 // successor so pre-migration configs keep resolving.
 const LegacyPaperKind = "paper"
 
+// IsBlockedKind reports whether kind is excluded from the linked build
+// profile (ADR G4). Generic HTTP-protocol providers compile only into
+// public builds; the PATTY_ALLOW_GENERIC env hatch is retired — a
+// compile-time gate cannot be runtime-undone.
 func IsBlockedKind(kind string) bool {
-	if os.Getenv("PATTY_ALLOW_GENERIC") == "1" {
+	if tier.Default.Allows(tier.CapGenericProviders) {
 		return false
 	}
 	return genericBlockedKinds[kind]
@@ -1180,8 +1182,8 @@ func Register(kind string, f Factory) {
 }
 
 // New instantiates the provider of the given kind. Generic HTTP protocol
-// providers are blocked unless PATTY_ALLOW_GENERIC=1 (PRD v2 §0.2). The
-// historical "paper" kind resolves to its DARI successor so
+// providers are excluded from non-public build profiles (PRD v2 §0.2, ADR
+// G4). The historical "paper" kind resolves to its DARI successor so
 // pre-migration configs keep working.
 func New(kind string, cfg Config) (Provider, error) {
 	if kind == LegacyPaperKind {
@@ -1189,7 +1191,7 @@ func New(kind string, cfg Config) (Provider, error) {
 	}
 	if IsBlockedKind(kind) {
 		return nil, fmt.Errorf(
-			"provider %q is blocked: official Patty Code inference uses the DARI protocol only (PRD v2 §0.2). Set PATTY_ALLOW_GENERIC=1 for development.", kind)
+			"provider %q is excluded from the %s build profile: official Patty Code inference uses the DARI protocol only (PRD v2 §0.2)", kind, tier.Default)
 	}
 	f, ok := registry[kind]
 	if !ok {

@@ -8,7 +8,6 @@ import (
 	"patty/internal/config"
 	"patty/internal/event"
 
-	_ "patty/internal/provider/openai"
 	_ "patty/internal/tool/builtin"
 )
 
@@ -27,7 +26,7 @@ default_model = "legacy-missing"
 
 [[providers]]
 name = "deepseek-flash"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "deepseek-v4-flash"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -53,7 +52,7 @@ default_model = "deepseek-pro"
 
 [[providers]]
 name = "deepseek-pro"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "deepseek-v4-pro"
 api_key_env = "PATTY_TEST_KEY_UNSET"
@@ -89,30 +88,6 @@ default_model = "deepseek-flash"
 	t.Fatalf("expected a warning naming the ignored project model and user fallback; got %v", notices)
 }
 
-func TestBuildMigratesLegacyBareMimoModelOverride(t *testing.T) {
-	dir := robustTempDir(t)
-	t.Chdir(dir)
-	writeFile(t, dir, "patty.toml", `
-default_model = "deepseek-flash"
-
-[[providers]]
-name = "deepseek-flash"
-kind = "openai"
-base_url = "https://example.invalid"
-model = "deepseek-v4-flash"
-api_key_env = "PATTY_TEST_KEY_UNSET"
-`)
-
-	ctrl, err := Build(context.Background(), Options{Sink: event.Discard, Model: "mimo-v2.5-pro"})
-	if err != nil {
-		t.Fatalf("Build should migrate legacy bare MiMo model override: %v", err)
-	}
-	defer ctrl.Close()
-	if ctrl.Label() != "mimo-v2.5-pro" {
-		t.Fatalf("controller label = %q, want mimo-v2.5-pro", ctrl.Label())
-	}
-}
-
 // TestBuildNoticesMissingAPIKey: a resolvable model whose API key env is unset
 // builds fine (RequireKey is false so the UI stays reachable) but must emit a
 // notice naming the env var, instead of silently showing a dead/empty model.
@@ -125,7 +100,7 @@ default_model = "x"
 
 [[providers]]
 name = "x"
-kind = "openai"
+kind = "dari"
 base_url = "https://example.invalid"
 model = "m"
 api_key_env = "`+keyEnv+`"
@@ -165,7 +140,7 @@ default_model = "local/model-a"
 
 [[providers]]
 name = "local"
-kind = "openai"
+kind = "dari"
 base_url = "http://127.0.0.1:23333/v1"
 models = ["model-a"]
 api_key_env = "`+keyEnv+`"
@@ -215,21 +190,21 @@ default_model = "deepseek/deepseek-v4-flash"
 
 [[providers]]
 name = "deepseek"
-kind = "openai"
+kind = "dari"
 base_url = "https://api.deepseek.com"
 model = "deepseek-v4-flash"
 api_key_env = "`+keylessEnv+`"
 
 [[providers]]
 name = "audio"
-kind = "openai"
+kind = "dari"
 base_url = "https://audio.example.com/v1"
 model = "tts-1"
 api_key_env = "`+configuredEnv+`"
 
 [[providers]]
 name = "minimax"
-kind = "openai"
+kind = "dari"
 base_url = "https://api.MiniMax.chat/v1"
 model = "MiniMax-M3"
 api_key_env = "`+configuredEnv+`"
@@ -267,14 +242,14 @@ default_model = "minimax/MiniMax-M3"
 
 [[providers]]
 name = "deepseek"
-kind = "openai"
+kind = "dari"
 base_url = "https://api.deepseek.com"
 model = "deepseek-v4-flash"
 api_key_env = "`+keylessEnv+`"
 
 [[providers]]
 name = "minimax"
-kind = "openai"
+kind = "dari"
 base_url = "https://api.MiniMax.chat/v1"
 model = "MiniMax-M3"
 api_key_env = "`+configuredEnv+`"
