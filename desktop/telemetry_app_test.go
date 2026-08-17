@@ -1,3 +1,5 @@
+//go:build !profile_sovereign
+
 package main
 
 import (

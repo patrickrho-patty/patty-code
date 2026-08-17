@@ -10,6 +10,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -1447,13 +1448,16 @@ func TestConnectKeyRejectsUnusableCatalogBeforeSavingKey(t *testing.T) {
 			fetch: func(context.Context, config.ProviderEntry, string) ([]string, error) {
 				return []string{"small", "large"}, nil
 			},
-			wantError: `validate: stock model "medium" is unavailable`,
+			// wantError is derived from the live stock entry below.
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			isolateDesktopUserDirs(t)
 			entry := onboardingTestProvider(t)
+			if test.name == "stock model missing" {
+				test.wantError = fmt.Sprintf("validate: stock model %q is unavailable", entry.Model)
+			}
 			t.Setenv(entry.APIKeyEnv, "")
 			if err := os.Unsetenv(entry.APIKeyEnv); err != nil {
 				t.Fatalf("unset onboarding key: %v", err)
@@ -1497,7 +1501,7 @@ func TestConnectKeyRejectsProviderConflictBeforeSavingKey(t *testing.T) {
 
 	oldFetch := connectKeyModelFetch
 	connectKeyModelFetch = func(context.Context, config.ProviderEntry, string) ([]string, error) {
-		return []string{"medium"}, nil
+		return []string{dariPattyStockEntry().Model}, nil
 	}
 	t.Cleanup(func() { connectKeyModelFetch = oldFetch })
 
@@ -1533,11 +1537,12 @@ func TestConnectKeyRestoresPattyProviderAccess(t *testing.T) {
 	}
 
 	oldFetch := connectKeyModelFetch
+	stockProbe := dariPattyStockEntry()
 	connectKeyModelFetch = func(_ context.Context, entry config.ProviderEntry, apiKey string) ([]string, error) {
-		if entry.BaseURL != "https://omni.agents.patty.io/v1" || apiKey != "sk-test" {
+		if entry.BaseURL != stockProbe.BaseURL || apiKey != "sk-test" {
 			t.Fatalf("model probe = %q/%q", entry.BaseURL, apiKey)
 		}
-		return []string{"medium"}, nil
+		return []string{stockProbe.Model}, nil
 	}
 	t.Cleanup(func() { connectKeyModelFetch = oldFetch })
 
@@ -1562,7 +1567,7 @@ func TestConnectKeyRestoresPattyProviderAccess(t *testing.T) {
 	if !ok {
 		t.Fatal("Patty provider template should be restored")
 	}
-	stock := officialPattyStockEntry()
+	stock := dariPattyStockEntry()
 	if patty.Kind != stock.Kind || patty.APIKeyEnv != stock.APIKeyEnv || patty.Model != stock.Model || patty.ContextWindow != stock.ContextWindow || patty.BaseURL != stock.BaseURL {
 		t.Fatalf("restored Patty provider = %+v, want stock wire contract %+v", patty, stock)
 	}
@@ -1609,7 +1614,7 @@ func TestConnectKeyRebuildLeaseHeldKeepsCurrentController(t *testing.T) {
 
 	oldFetch := connectKeyModelFetch
 	connectKeyModelFetch = func(context.Context, config.ProviderEntry, string) ([]string, error) {
-		return []string{"medium"}, nil
+		return []string{dariPattyStockEntry().Model}, nil
 	}
 	t.Cleanup(func() { connectKeyModelFetch = oldFetch })
 
@@ -1737,7 +1742,7 @@ func TestSetEffortMigratesStaleOfficialDeepSeekTabModel(t *testing.T) {
 	app.ctx = context.Background()
 	app.readyHook = func() {}
 	old := control.New(control.Options{Label: "old-controller"})
-	app.setTestCtrl(old, "patty/medium")
+	app.setTestCtrl(old, "patty/patty-code-standard")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()
@@ -1756,15 +1761,17 @@ func TestSetEffortMigratesStaleOfficialDeepSeekTabModel(t *testing.T) {
 	}
 }
 
-// seedOfficialPattyFixture writes an explicit official-patty (omni) config
-// plus credential so rebuild paths can resolve the patty/medium model ref
-// without depending on the runtime DARI stock default.
+// seedOfficialPattyFixture writes an explicit official-patty (stock DARI)
+// config plus credential so rebuild paths can resolve the stock model ref
+// without depending on the runtime default. A legacy omni fixture would be
+// migrated to exactly this shape at load (normalizeLegacyOmniOfficialProvider).
 func seedOfficialPattyFixture(t *testing.T) {
 	t.Helper()
-	setDesktopTestCredential(t, "AGENTS_PATTY_API_KEY", "sk-test")
+	stock := dariPattyStockEntry()
+	setDesktopTestCredential(t, stock.APIKeyEnv, "sk-test")
 	cfg := config.Default()
-	cfg.Providers = []config.ProviderEntry{officialPattyStockEntry()}
-	cfg.DefaultModel = "patty/medium"
+	cfg.Providers = []config.ProviderEntry{stock}
+	cfg.DefaultModel = "patty/" + stock.Model
 	cfg.Desktop.ProviderAccess = []string{"patty"}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -1779,7 +1786,7 @@ func TestSetTokenModeRebuildsController(t *testing.T) {
 	app.ctx = context.Background()
 	app.readyHook = func() {}
 	old := control.New(control.Options{Label: "old-controller"})
-	app.setTestCtrl(old, "patty/medium")
+	app.setTestCtrl(old, "patty/patty-code-standard")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()
@@ -1819,7 +1826,7 @@ func TestSetTokenModeDeliveryRebuildsAndPersistsProfile(t *testing.T) {
 	app.ctx = context.Background()
 	app.readyHook = func() {}
 	old := control.New(control.Options{Label: "old-controller"})
-	app.setTestCtrl(old, "patty/medium")
+	app.setTestCtrl(old, "patty/patty-code-standard")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()
@@ -2087,7 +2094,7 @@ func TestClearSessionCancelsRunningRuntimeAndKeepsTopic(t *testing.T) {
 	app := NewApp()
 	app.projectTreeChangedHook = func() {}
 	seedOfficialPattyFixture(t)
-	app.setTestCtrl(oldCtrl, "patty/medium")
+	app.setTestCtrl(oldCtrl, "patty/patty-code-standard")
 	app.tabs["test"].TopicID = "topic_clear"
 	app.tabs["test"].TopicTitle = "Clear topic"
 	defer func() {
@@ -2136,7 +2143,7 @@ func TestClearSessionRemovesRunningJobArtifacts(t *testing.T) {
 	app := NewApp()
 	app.projectTreeChangedHook = func() {}
 	seedOfficialPattyFixture(t)
-	app.setTestCtrl(oldCtrl, "patty/medium")
+	app.setTestCtrl(oldCtrl, "patty/patty-code-standard")
 	defer func() {
 		if c := app.activeCtrl(); c != nil {
 			c.Close()

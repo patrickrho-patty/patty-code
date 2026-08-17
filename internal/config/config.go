@@ -17,6 +17,7 @@ import (
 	fileencoding "patty/internal/fileutil/encoding"
 	"patty/internal/netclient"
 	"patty/internal/provider"
+	"patty/internal/tier"
 )
 
 var validSkillName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`)
@@ -541,7 +542,9 @@ func normalizeDesktopStatusBarItems(items []string) []string {
 
 func (c *Config) DesktopCheckUpdates() bool {
 	if c == nil || c.Desktop.CheckUpdates == nil {
-		return true
+		// Sovereign builds have no online update channel at all (ADR G3):
+		// the default is off; offline advisories are the update path.
+		return tier.Default.Allows(tier.CapOnlineUpdate)
 	}
 	return *c.Desktop.CheckUpdates
 }
@@ -617,14 +620,16 @@ func NormalizeReasoningLanguage(lang string) string {
 
 func (c *Config) DesktopTelemetry() bool {
 	if c == nil || c.Desktop.Telemetry == nil {
-		return true
+		// Vendor telemetry is compiled out of sovereign builds (ADR G2).
+		return tier.Default.Allows(tier.CapVendorTelemetry)
 	}
 	return *c.Desktop.Telemetry
 }
 
 func (c *Config) DesktopMetrics() bool {
 	if c == nil || c.Desktop.Metrics == nil {
-		return true
+		// Usage metrics share the vendor-telemetry egress path (ADR G2).
+		return tier.Default.Allows(tier.CapVendorTelemetry)
 	}
 	return *c.Desktop.Metrics
 }

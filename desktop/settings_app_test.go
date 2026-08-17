@@ -17,6 +17,7 @@ import (
 	"patty/internal/hook"
 	"patty/internal/provider"
 	"patty/internal/sandbox"
+	"patty/internal/tier"
 )
 
 func TestWithFreshSystemPromptReplacesExistingSystemMessage(t *testing.T) {
@@ -38,6 +39,14 @@ func TestWithFreshSystemPromptReplacesExistingSystemMessage(t *testing.T) {
 	if msgs[0].Content != "old" {
 		t.Fatalf("input slice was mutated: %+v", msgs[0])
 	}
+}
+
+// dariPattyStockEntry is the production official Patty entry: the stock DARI
+// relay provider from config.Default() (PRD v2 §0.2). Production never uses
+// the omni endpoint — it is a vLLM mimic kept as a legacy/test fixture.
+func dariPattyStockEntry() config.ProviderEntry {
+	entry, _ := config.Default().Provider("patty")
+	return *entry
 }
 
 // officialPattyStockEntry is the pre-DARI official Patty stock entry
@@ -84,12 +93,12 @@ func TestOfficialPattyTemplateRestoresStockProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("officialProviderTemplate(patty): %v", err)
 	}
-	if len(entries) != 1 || keyEnv != "AGENTS_PATTY_API_KEY" {
-		t.Fatalf("Patty template = %+v/%q, entries/keyEnv", entries, keyEnv)
+	want := dariPattyStockEntry()
+	if len(entries) != 1 || keyEnv != want.APIKeyEnv {
+		t.Fatalf("Patty template = %+v/%q, want stock keyEnv %q", entries, keyEnv, want.APIKeyEnv)
 	}
-	want := officialPattyStockEntry()
 	if got := entries[0]; got.Name != want.Name || got.BaseURL != want.BaseURL || got.Model != want.Model || got.ContextWindow != want.ContextWindow || got.APIKeyEnv != want.APIKeyEnv || got.Kind != want.Kind {
-		t.Fatalf("Patty template = %+v, want official stock %+v", got, want)
+		t.Fatalf("Patty template = %+v, want stock DARI entry %+v", got, want)
 	}
 }
 
@@ -1387,8 +1396,10 @@ func TestSetDesktopCheckUpdatesPersistsToUserConfig(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	app := NewApp()
-	if !app.Settings().CheckUpdates {
-		t.Fatal("Settings().CheckUpdates default = false, want true")
+	// The default follows the build profile: online-update profiles default
+	// on; sovereign builds have no online channel and default off (ADR G3).
+	if got, want := app.Settings().CheckUpdates, tier.Default.Allows(tier.CapOnlineUpdate); got != want {
+		t.Fatalf("Settings().CheckUpdates default = %v, want %v (profile default)", got, want)
 	}
 	if err := app.SetDesktopCheckUpdates(false); err != nil {
 		t.Fatalf("SetDesktopCheckUpdates: %v", err)
@@ -1515,8 +1526,10 @@ func TestSetDesktopMetricsDefaultsOnAndPersistsOff(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	app := NewApp()
-	if !app.Settings().Metrics {
-		t.Fatal("Settings().Metrics default = false, want true")
+	// Metrics default follows the vendor-telemetry capability (ADR G2):
+	// on where telemetry exists, off in sovereign builds.
+	if got, want := app.Settings().Metrics, tier.Default.Allows(tier.CapVendorTelemetry); got != want {
+		t.Fatalf("Settings().Metrics default = %v, want %v (profile default)", got, want)
 	}
 	if err := app.SetDesktopMetrics(false); err != nil {
 		t.Fatalf("SetDesktopMetrics: %v", err)

@@ -224,6 +224,7 @@ func loadForRoot(root string, migrateOnDisk bool) (*Config, error) {
 	normalizeLegacyOpenCodeGoKimiK3Catalog(cfg)
 	normalizeLegacyMimoCustomProviders(cfg)
 	normalizeLegacyProviderModels(cfg)
+	normalizeLegacyOmniOfficialProvider(cfg)
 	normalizeDesktopOfficialProviderAccess(cfg)
 	normalizeOfficialDeepSeekModels(cfg)
 	applyDeepSeekOfficialDefaultPricing(cfg)
@@ -771,6 +772,7 @@ func normalizeConfigForEdit(cfg *Config) bool {
 	changed = normalizeLegacyOpenCodeGoKimiK3Catalog(cfg) || changed
 	changed = normalizeLegacyMimoCustomProviders(cfg) || changed
 	normalizeLegacyProviderModels(cfg)
+	normalizeLegacyOmniOfficialProvider(cfg)
 	normalizeDesktopOfficialProviderAccess(cfg)
 	applyDeepSeekOfficialDefaultPricing(cfg)
 	backfillDeepSeekOfficialPrices(cfg)
@@ -1753,6 +1755,35 @@ func normalizeDesktopOfficialProviderAccess(c *Config) {
 	retargetDesktopOfficialRefs(c, seen)
 }
 
+// normalizeLegacyOmniOfficialProvider rewrites the pre-DARI official Patty
+// entry (kind=openai, omni.agents.patty.io) to the stock DARI relay entry.
+// The vendor replaced its own endpoint (PRD v2 §0.2); a vendor-issued entry
+// migrates at load rather than tripping the boot tier lock, which exists to
+// fail closed on user-added generic BYOK endpoints — not on the vendor's own
+// renamed service. Safe per-entry customizations are preserved; the legacy
+// credential stays untouched in the store.
+func normalizeLegacyOmniOfficialProvider(c *Config) {
+	if c == nil {
+		return
+	}
+	stock := Default()
+	repl, ok := stock.Provider("patty")
+	if !ok {
+		return
+	}
+	for i := range c.Providers {
+		p := &c.Providers[i]
+		if strings.TrimSpace(p.Name) != "patty" || officialProviderHost(p.BaseURL) != "omni.agents.patty.io" {
+			continue
+		}
+		next := *repl
+		next.Headers = p.Headers
+		next.ExtraBody = p.ExtraBody
+		next.NoProxy = p.NoProxy
+		c.Providers[i] = next
+	}
+}
+
 // NormalizeLegacyDesktopProviderAccess seeds the desktop provider-access list
 // for configs written before Settings tracked explicit provider access. Callers
 // should only use this when they know the TOML did not declare provider_access;
@@ -1803,6 +1834,7 @@ func NormalizeLegacyDesktopProviderAccess(c *Config) {
 		return
 	}
 	c.Desktop.ProviderAccess = access
+	normalizeLegacyOmniOfficialProvider(c)
 	normalizeDesktopOfficialProviderAccess(c)
 }
 

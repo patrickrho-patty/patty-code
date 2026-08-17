@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -24,8 +22,6 @@ import (
 // snapshots, POSTed once per launch. Never carries content, keys, prompts, paths,
 // or base URLs; custom provider/model identifiers are normalized into bounded
 // buckets. Gated on config desktop.metrics (default on), dev-skipped.
-
-var metricsEndpoint = "https://crash.patty.io/v1/metrics"
 
 const metricsPendingFile = "metrics-pending.json"
 const metricsPostTimeout = 8 * time.Second
@@ -553,27 +549,4 @@ func (a *App) flushMetrics() {
 	writeCounters(path, pending)
 	metricsPendingMu.Unlock()
 	_ = os.Remove(temp)
-}
-
-func (a *App) postMetrics(p metricsPayload) bool {
-	body, err := json.Marshal(p)
-	if err != nil {
-		return false
-	}
-	c, err := httpClient()
-	if err != nil {
-		return false
-	}
-	c.Timeout = metricsPostTimeout
-	req, err := http.NewRequestWithContext(a.bootContext(), http.MethodPost, metricsEndpoint, bytes.NewReader(body))
-	if err != nil {
-		return false
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.Do(req)
-	if err != nil {
-		return false
-	}
-	resp.Body.Close()
-	return resp.StatusCode < 300
 }

@@ -521,6 +521,14 @@ func officialProviderHost(baseURL string) string {
 
 func officialProviderKindFromEntry(p config.ProviderEntry) string {
 	host := officialProviderHost(p.BaseURL)
+	// The stock official entry is the DARI relay provider (any relay address —
+	// DARI_RELAY_ADDR makes the host configurable, so recognition keys on the
+	// kind, not the URL).
+	if strings.TrimSpace(p.Name) == "patty" && strings.EqualFold(strings.TrimSpace(p.Kind), "dari") {
+		return "patty"
+	}
+	// Pre-DARI official entries (omni.agents.patty.io, kind=openai) remain
+	// recognizable until the load-time migration rewrites them.
 	if strings.TrimSpace(p.Name) == "patty" && host == "omni.agents.patty.io" {
 		return "patty"
 	}
@@ -850,26 +858,6 @@ func officialProviderAddedSet(entries []config.ProviderEntry, added map[string]b
 	return out
 }
 
-// sameProviderEntries reports whether a and b agree on the wire-relevant
-// fields of every entry (used to detect the untouched stock default list;
-// map-valued fields compare by cardinality because stock entries carry
-// none).
-func sameProviderEntries(a, b []config.ProviderEntry) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		x, y := a[i], b[i]
-		if x.Name != y.Name || x.Kind != y.Kind || x.BaseURL != y.BaseURL ||
-			x.Model != y.Model || x.ModelsURL != y.ModelsURL || x.APIKeyEnv != y.APIKeyEnv ||
-			x.Default != y.Default || x.ContextWindow != y.ContextWindow ||
-			len(x.Models) != len(y.Models) || len(x.Headers) != len(y.Headers) {
-			return false
-		}
-	}
-	return true
-}
-
 func desktopStartupSettingsFromConfig(cfg *config.Config) DesktopStartupSettingsView {
 	if cfg == nil {
 		return DesktopStartupSettingsView{
@@ -1094,28 +1082,10 @@ func (a *App) Settings() SettingsView {
 	added := providerAccessSet(cfg.Desktop.ProviderAccess)
 	resolver := config.NewCredentialResolverForRoot(root)
 	credentialsRevision := providerCredentialsRevision()
-	// Official Patty view reconciliation: the runtime default provider is
-	// the DARI relay (PRD v2 §0.2), but the desktop official-provider
-	// surface keys on the pre-DARI omni stock entry. When the config still
-	// carries the untouched stock default providers — no user-defined patty
-	// entry exists — the Settings view surfaces the official omni entry as
-	// the "patty" row and infers Added from a configured key, exactly as
-	// the pre-DARI stock behaved. The runtime/boot config is never touched.
-	viewProviders := cfg.Providers
-	if sameProviderEntries(cfg.Providers, config.Default().Providers) {
-		if entries, _, err := officialProviderTemplate("patty", a.desktopOfficialPricingLanguage(cfg)); err == nil {
-			viewProviders = entries
-			for i := range viewProviders {
-				if p := &viewProviders[i]; !added[p.Name] && resolver.ResolveGlobalFirst(p.APIKeyEnv).Set {
-					added[p.Name] = true
-				}
-			}
-		}
-	}
-	v.OfficialProviders = officialProviderViewsForRootWithResolver(officialProviderAddedSet(viewProviders, added), a.desktopOfficialPricingLanguage(cfg), root, resolver)
+	v.OfficialProviders = officialProviderViewsForRootWithResolver(officialProviderAddedSet(cfg.Providers, added), a.desktopOfficialPricingLanguage(cfg), root, resolver)
 	v.ProviderPresets = providerPresetViewsForRootWithResolver(cfg, root, resolver)
-	for i := range viewProviders {
-		p := viewProviders[i]
+	for i := range cfg.Providers {
+		p := cfg.Providers[i]
 		v.Providers = append(v.Providers, providerViewFromEntryForRootWithResolverAndCredentials(p, isOfficialBuiltInProvider(p), added[p.Name], root, resolver, credentialsRevision))
 	}
 	return v
@@ -2201,18 +2171,16 @@ func (a *App) SetDefaultAutoRecoveryCheckpoint(_ bool) error { return nil }
 func officialProviderTemplate(kind, pricingLanguage string) ([]config.ProviderEntry, string, error) {
 	switch strings.ToLower(strings.TrimSpace(kind)) {
 	case "patty", "patty-official":
-		// The official Patty template is pinned to the pre-DARI omni stock
-		// entry (commit d53bbe282), independent of config.Default()'s
-		// runtime DARI boot default (PRD v2 §0.2). officialProviderKindFromEntry
-		// recognizes this surface by host omni.agents.patty.io.
-		return []config.ProviderEntry{{
-			Name:          "patty",
-			Kind:          "openai",
-			BaseURL:       "https://omni.agents.patty.io/v1",
-			Model:         "medium",
-			APIKeyEnv:     "AGENTS_PATTY_API_KEY",
-			ContextWindow: 248124,
-		}}, "AGENTS_PATTY_API_KEY", nil
+		// The official Patty template is the stock DARI relay entry (PRD v2
+		// §0.2) — production never uses the omni endpoint; it is a vLLM
+		// mimic kept only as a test fixture. Legacy configs that still carry
+		// the omni entry are migrated at load (normalizeLegacyOmniOfficialProvider).
+		stock := config.Default()
+		entry, ok := stock.Provider("patty")
+		if !ok {
+			return nil, "", fmt.Errorf("stock Patty provider is unavailable")
+		}
+		return []config.ProviderEntry{*entry}, entry.APIKeyEnv, nil
 	case "deepseek", "deepseek-official":
 		return []config.ProviderEntry{{
 			Name:          "deepseek",

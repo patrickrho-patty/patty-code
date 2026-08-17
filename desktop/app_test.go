@@ -1572,7 +1572,7 @@ api_key_env = "DEEPSEEK_API_KEY"
 
 func TestSettingsInfersConfiguredBuiltInsWithoutConfigFile(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	setDesktopTestCredential(t, "AGENTS_PATTY_API_KEY", "sk-test")
+	setDesktopTestCredential(t, dariPattyStockEntry().APIKeyEnv, "sk-test")
 	setDesktopTestCredential(t, "MIMO_API_KEY", "sk-test")
 
 	got := NewApp().Settings()
@@ -1641,7 +1641,7 @@ api_key_env = "DEEPSEEK_API_KEY"
 
 func TestOfficialPattyAccessCanBeRemovedAndRestored(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	official := officialPattyStockEntry()
+	official := dariPattyStockEntry()
 	official.Headers = map[string]string{"X-Patty-Route": "custom"}
 	cfg := config.Default()
 	cfg.Providers = []config.ProviderEntry{
@@ -1675,7 +1675,7 @@ func TestOfficialPattyAccessCanBeRemovedAndRestored(t *testing.T) {
 		t.Fatalf("Patty access was not restored: %+v", restored.Desktop.ProviderAccess)
 	}
 	got, ok := restored.Provider("patty")
-	want := officialPattyStockEntry()
+	want := dariPattyStockEntry()
 	if !ok || got.BaseURL != want.BaseURL || got.Model != want.Model || got.ContextWindow != want.ContextWindow || got.APIKeyEnv != want.APIKeyEnv {
 		t.Fatalf("restored Patty provider = %+v, found=%v; want official stock %+v", got, ok, want)
 	}

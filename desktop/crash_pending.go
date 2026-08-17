@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"patty/internal/config"
+	"patty/internal/tier"
 )
 
 // crash_pending.go captures Go-side panics to disk and ships them on the next
@@ -155,7 +156,12 @@ func (a *App) flushPendingCrash() {
 		return
 	}
 	if !cfg.DesktopTelemetry() {
-		removeAllPendingCrashes()
+		// Telemetry-off drops the queue only where upload is possible at
+		// all. Sovereign builds compile upload out (ADR G2): local
+		// list/show/delete must survive, so the pending records are kept.
+		if tier.Default.Allows(tier.CapCrashUpload) {
+			removeAllPendingCrashes()
+		}
 		return
 	}
 	c, err := httpClient()
