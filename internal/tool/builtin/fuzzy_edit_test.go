@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 func TestEditFileFuzzyTrailingWhitespace(t *testing.T) {
@@ -195,5 +197,75 @@ func TestMultiEditFuzzyReplaceAll(t *testing.T) {
 	want := "thing\nthing\n"
 	if string(got) != want {
 		t.Fatalf("content = %q, want %q", got, want)
+	}
+}
+
+func TestEditFileFuzzyNFDFileWithNFCOldString(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "korean_nfd.txt")
+	// File content on disk in NFD (decomposed Jamo)
+	nfdSeed := norm.NFD.String("안녕하세요 고객님\n반갑습니다\n")
+	if err := os.WriteFile(path, []byte(nfdSeed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Model passes old_string in NFC (composed Hangul)
+	nfcOld := norm.NFC.String("안녕하세요 고객님\n")
+	nfcNew := norm.NFC.String("감사합니다 고객님\n")
+
+	out, err := (editFile{}).Execute(context.Background(), argsJSON(t, map[string]any{
+		"path":       path,
+		"old_string": nfcOld,
+		"new_string": nfcNew,
+	}))
+	if err != nil {
+		t.Fatalf("edit_file: %v", err)
+	}
+	if !strings.Contains(out, "fuzzy match") {
+		t.Fatalf("output should disclose fuzzy matching, got %q", out)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "감사합니다 고객님\n" + norm.NFD.String("반갑습니다\n")
+	if string(got) != want {
+		t.Fatalf("content = %q, want %q", string(got), want)
+	}
+}
+
+func TestEditFileFuzzyNFCFileWithNFDOldString(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "korean_nfc.txt")
+	// File content on disk in NFC (composed Hangul)
+	nfcSeed := norm.NFC.String("안녕하세요 고객님\n반갑습니다\n")
+	if err := os.WriteFile(path, []byte(nfcSeed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Model passes old_string in NFD (decomposed Jamo)
+	nfdOld := norm.NFD.String("안녕하세요 고객님\n")
+	nfcNew := norm.NFC.String("감사합니다 고객님\n")
+
+	out, err := (editFile{}).Execute(context.Background(), argsJSON(t, map[string]any{
+		"path":       path,
+		"old_string": nfdOld,
+		"new_string": nfcNew,
+	}))
+	if err != nil {
+		t.Fatalf("edit_file: %v", err)
+	}
+	if !strings.Contains(out, "fuzzy match") {
+		t.Fatalf("output should disclose fuzzy matching, got %q", out)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "감사합니다 고객님\n반갑습니다\n"
+	if string(got) != want {
+		t.Fatalf("content = %q, want %q", string(got), want)
 	}
 }

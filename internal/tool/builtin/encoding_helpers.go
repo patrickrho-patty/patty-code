@@ -8,6 +8,7 @@ import (
 
 	"patty/internal/fileutil"
 	fileenc "patty/internal/fileutil/encoding"
+	"patty/internal/textutil"
 )
 
 // readFileEncoded reads a file and decodes its encoding to UTF-8.
@@ -212,6 +213,7 @@ type fuzzyMode struct {
 	trimTrailing         bool
 	expandTabs           bool
 	trimLeading          bool
+	normalizeNFC         bool
 }
 
 func fuzzyEditRanges(content, old string) []editRange {
@@ -235,6 +237,13 @@ func fuzzyEditRanges(content, old string) []editRange {
 			fuzzyMode{stripOldReadPrefixes: true, trimTrailing: true, expandTabs: true},
 		)
 	}
+
+	nfcModes := make([]fuzzyMode, 0, len(modes))
+	for _, m := range modes {
+		m.normalizeNFC = true
+		nfcModes = append(nfcModes, m)
+	}
+	modes = append(modes, nfcModes...)
 
 	for _, mode := range modes {
 		normOld := make([]string, len(oldLines))
@@ -313,6 +322,9 @@ func normalizeFuzzyLine(line string, includeNewline bool, mode fuzzyMode, stripR
 	if stripReadPrefix {
 		body, _ = stripReadFileLinePrefix(body)
 	}
+	if mode.normalizeNFC {
+		body = textutil.NormalizeNFC(body)
+	}
 	if mode.trimTrailing {
 		body = strings.TrimRight(body, " \t\r")
 	}
@@ -370,7 +382,7 @@ func nearestContentLine(oldString, content string) (int, string, bool) {
 	if len(oldLines) == 0 {
 		return 0, "", false
 	}
-	target := strings.TrimSpace(normalizeFuzzyLine(oldLines[0].raw, false, fuzzyMode{trimTrailing: true, expandTabs: true}, true))
+	target := strings.TrimSpace(normalizeFuzzyLine(oldLines[0].raw, false, fuzzyMode{trimTrailing: true, expandTabs: true, normalizeNFC: true}, true))
 	if target == "" {
 		return 0, "", false
 	}
@@ -379,7 +391,8 @@ func nearestContentLine(oldString, content string) (int, string, bool) {
 	bestText := ""
 	for i, line := range splitLineSegments(content) {
 		text := strings.TrimSuffix(line.raw, "\n")
-		score := commonPrefixLen(strings.TrimSpace(strings.ReplaceAll(text, "\t", "    ")), target)
+		normalizedText := textutil.NormalizeNFC(text)
+		score := commonPrefixLen(strings.TrimSpace(strings.ReplaceAll(normalizedText, "\t", "    ")), target)
 		if score > bestScore {
 			bestLine = i + 1
 			bestScore = score
@@ -400,11 +413,13 @@ func oldStringMatchLineSummary(oldString, content string, limit int) string {
 	if target == "" {
 		return ""
 	}
+	targetNFC := textutil.NormalizeNFC(target)
 	var matches []int
 	for i, line := range splitLineSegments(content) {
 		text := strings.TrimSuffix(line.raw, "\n")
 		text = strings.TrimSuffix(text, "\r")
-		if strings.Contains(text, target) {
+		textNFC := textutil.NormalizeNFC(text)
+		if strings.Contains(text, target) || strings.Contains(textNFC, targetNFC) {
 			matches = append(matches, i+1)
 		}
 	}
