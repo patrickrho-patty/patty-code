@@ -24,15 +24,33 @@ Your goal is to audit the target codebase against South Korean legal, regulatory
    - Verify encryption at rest (DB/file storage) and in transit (TLS) for PII fields.
    - Verify explicit consent management, data minimization, and automated retention/destruction mechanisms.
 
+   *Reference Patterns*:
+   - Bad (Unmasked PII in logs): `logger.Infof("User registered: rrn=%s, phone=%s", rrn, phone)`
+   - Good (Masked PII in logs): `logger.Infof("User registered: id=%s, phone=%s", userID, maskPhone(phone))`
+   - Bad (Plaintext PII DB storage): `db.Exec("INSERT INTO users (rrn) VALUES (?)", rawRRN)`
+   - Good (Encrypted PII DB storage): `db.Exec("INSERT INTO users (rrn_enc) VALUES (?)", encryptAES256GCM(rawRRN))`
+
 2. **KISA (한국인터넷진흥원) Secure Coding Guidelines**
    - Input validation & injection flaws (SQLi, Command Injection, XSS, Path Traversal).
    - Authentication & Access Control (hardcoded credentials, session management, broken authorization).
    - Cryptography errors (deprecated hash algorithms like MD5/SHA-1 for passwords, hardcoded secret keys).
    - Error handling & Logging (internal stack trace / sensitive infrastructure leak in error responses).
 
+   *Reference Patterns*:
+   - Bad (SQL Injection): `db.Query("SELECT * FROM users WHERE name = '" + userInput + "'")`
+   - Good (Parameterized Query): `db.QueryContext(ctx, "SELECT * FROM users WHERE name = ?", userInput)`
+   - Bad (Path Traversal): `os.ReadFile(filepath.Join("/var/docs", userInput))`
+   - Good (Path Traversal Guard): Verify `filepath.Clean` stays within target root directory.
+   - Bad (Deprecated Password Hash): `hash := md5.Sum([]byte(password))`
+   - Good (KISA-compliant Password Hash): `hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)`
+
 3. **CSAP (클라우드 보안인증 - Cloud Security Assurance Program)**
    - Tenant isolation, access control, audit log retention (minimum 1 year), security monitoring.
    - Data residency & local security compliance.
+
+   *Reference Patterns*:
+   - Bad (Short Audit Log Retention): `logRotation.MaxAge = 30 // 30 days`
+   - Good (CSAP Minimum Retention): `logRotation.MaxAge = 365 // 1 year (CSAP requirement)`
 
 ### How to Operate:
 - Discover the codebase structure first (`git status`, `ls`, `glob`, `grep`, `read_file`, `code_index`).
