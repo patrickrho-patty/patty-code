@@ -42,6 +42,7 @@ func builtinSlashSpecs() []builtinSlashSpec {
 		{name: "/status", ko: "/현재상태", insert: "/status", hint: i18n.M.CmdStatus, showInHelp: true},
 		{name: "/provider", ko: "/공급자변경", insert: "/provider", hint: i18n.M.CmdProvider, descend: true, showInHelp: true, hidden: true},
 		{name: "/skills", ko: "/스킬설정", aliases: []string{"/skill"}, insert: "/skills", hint: i18n.M.CmdSkill, showInHelp: true},
+		{name: "/compliance", ko: "/컴플라이언스", aliases: []string{"/pipa", "/kisa", "/csap"}, insert: "/compliance ", hint: i18n.M.CmdCompliance, showInHelp: true},
 		{name: "/reload-cmd", ko: "/명령어갱신", insert: "/reload-cmd", hint: i18n.M.CmdReloadCmd, showInHelp: true, hidden: true},
 		{name: "/reload", ko: "/새로고침", insert: "/reload", hint: i18n.M.CmdReload, showInHelp: true},
 		{name: "/hooks", ko: "/훅설정", insert: "/hooks ", hint: i18n.M.CmdHooks, descend: true, showInHelp: true},

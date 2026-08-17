@@ -101,7 +101,7 @@ func TestOutputStylePickerLocalizesBuiltinsAndMarksActive(t *testing.T) {
 	for _, it := range p.items {
 		labels = append(labels, it.Label)
 	}
-	for _, want := range []string{"설명형", "학습형", "원시인"} {
+	for _, want := range []string{"설명형", "학습형", "간결형"} {
 		if !slices.Contains(labels, want) {
 			t.Fatalf("picker missing %q: %v", want, labels)
 		}
@@ -127,7 +127,7 @@ func TestApplyOutputStyleQueuesRebuildAndPersists(t *testing.T) {
 		return control.New(control.Options{Label: "deepseek-flash"}), nil
 	}
 
-	m.applyOutputStyle("concise", "원시인")
+	m.applyOutputStyle("concise", "간결형")
 	if m.pendingModelSwitch == nil {
 		t.Fatal("applyOutputStyle did not queue a rebuild")
 	}
@@ -158,7 +158,7 @@ func TestApplyOutputStyleAlreadyActiveIsNoop(t *testing.T) {
 	}
 	m.outputStyle = "concise"
 
-	m.applyOutputStyle("concise", "원시인")
+	m.applyOutputStyle("concise", "간결형")
 	if m.pendingModelSwitch != nil {
 		t.Fatal("already-active style queued a rebuild")
 	}

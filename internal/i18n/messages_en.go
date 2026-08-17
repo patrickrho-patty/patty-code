@@ -288,6 +288,7 @@ var English = Messages{
 	CmdTheme:            "switch CLI theme",
 	CmdLanguage:         "switch CLI language",
 	CmdSkill:            "manage skills",
+	CmdCompliance:       "Korean compliance audit (PIPA/KISA/CSAP)",
 	CmdVerbose:          "toggle thinking text",
 	CmdReloadCmd:        "reload custom commands",
 	CmdReload:           "reload the agent runtime (tools, skills, commands, hooks) keeping this session",

@@ -13,7 +13,7 @@ import (
 	"patty/internal/frontmatter"
 )
 
-//go:embed patty-guide/SKILL.md
+//go:embed */SKILL.md
 var files embed.FS
 
 // SkillMarkdown is one embedded skill file after frontmatter split.

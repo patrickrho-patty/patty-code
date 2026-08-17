@@ -288,6 +288,7 @@ var Korean = Messages{
 	CmdTheme:            "CLI 테마 전환",
 	CmdLanguage:         "CLI 언어 전환",
 	CmdSkill:            "스킬 관리",
+	CmdCompliance:       "한국 규제 준수 진단 (PIPA/KISA/CSAP)",
 	CmdVerbose:          "생각 텍스트 전환",
 	CmdReloadCmd:        "사용자 정의 명령 다시 로드",
 	CmdReload:           "에이전트 런타임 다시 로드 (도구, 스킬, 명령, 훅) — 이 세션 유지",

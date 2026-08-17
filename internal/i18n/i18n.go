@@ -250,6 +250,7 @@ type Messages struct {
 	CmdTheme            string // /theme
 	CmdLanguage         string // /language
 	CmdSkill            string // /skills
+	CmdCompliance       string // /compliance
 	CmdVerbose          string // /verbose
 	CmdReloadCmd        string // /reload-cmd
 	CmdReload           string // /reload
