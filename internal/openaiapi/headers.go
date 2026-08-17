@@ -44,7 +44,7 @@ func ApplyAPIKeyHeader(h http.Header, baseURL, apiKey string) {
 	if apiKey == "" {
 		return
 	}
-	if IsMiMo(baseURL) {
+	if IsMiMoEndpoint(baseURL) {
 		h.Set("api-key", apiKey)
 		return
 	}

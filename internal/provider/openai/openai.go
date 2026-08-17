@@ -253,7 +253,7 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		zhipu:           zhipu,
 		longcat:         longcat,
 		kimiK3:          kimiK3,
-		mimo:            openaiapi.IsMiMo(cfg.BaseURL),
+		mimo:            openaiapi.IsMiMoEndpoint(cfg.BaseURL),
 		thinkingType:    thinkingType,
 		vision:          vision,
 		visionDetail:    visionDetail,

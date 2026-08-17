@@ -140,26 +140,6 @@ func TestIsMiniMax(t *testing.T) {
 	}
 }
 
-func TestIsMiMo(t *testing.T) {
-	for _, tc := range []struct {
-		baseURL string
-		want    bool
-	}{
-		{"https://api.xiaomimimo.com/v1", true},
-		{"https://token-plan-cn.xiaomimimo.com/v1", true},
-		{"https://token-plan-sgp.xiaomimimo.com/v1", true},
-		{"https://token-plan-ams.xiaomimimo.com/v1", true},
-		{"https://xiaomimimo.com/v1", false},
-		{"https://api.deepseek.com", false},
-		{"", false},
-		{"not-a-url", false},
-	} {
-		if got := IsMiMo(tc.baseURL); got != tc.want {
-			t.Errorf("IsMiMo(%q) = %v, want %v", tc.baseURL, got, tc.want)
-		}
-	}
-}
-
 func TestIsMiMoEndpoint(t *testing.T) {
 	for _, tc := range []struct {
 		url  string

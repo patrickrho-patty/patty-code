@@ -128,13 +128,6 @@ func IsMiniMax(baseURL string) bool {
 	)
 }
 
-// IsMiMo reports whether baseURL points at Xiaomi MiMo's OpenAI-compatible API.
-// MiMo follows the OpenAI chat shape but authenticates with an `api-key` header
-// instead of the usual Authorization bearer header.
-func IsMiMo(baseURL string) bool {
-	return IsMiMoEndpoint(baseURL)
-}
-
 // IsMiMoEndpoint reports whether rawURL points at an official Xiaomi MiMo API
 // host, including the regional token-plan subdomains. The bare apex is rejected
 // because it is not an API endpoint.
