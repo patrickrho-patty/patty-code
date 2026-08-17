@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -18,8 +17,6 @@ import (
 	"patty/internal/fileutil"
 	"patty/internal/netclient"
 )
-
-const endpoint = "https://crash.patty.io/v1"
 
 var uploadSignals = map[string]bool{
 	"finish_reason": true, "empty_final": true, "provider_error": true,
@@ -306,26 +303,4 @@ func validPendingPayload(p pendingPayload) bool {
 func validCounter(c Counter) bool {
 	return uploadSignals[c.Signal] && c.Count > 0 && c.Count <= 1_000_000 &&
 		len(c.Bucket) > 0 && len(c.Bucket) <= 96 && !unsafeBucketChars.MatchString(c.Bucket)
-}
-
-func (c *Client) post(ctx context.Context, path string, payload any) error {
-	b, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint+path, bytes.NewReader(b))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("telemetry: HTTP %d", resp.StatusCode)
-	}
-	return nil
 }

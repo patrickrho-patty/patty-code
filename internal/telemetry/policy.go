@@ -5,6 +5,8 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"patty/internal/tier"
 )
 
 var releaseVersionPattern = regexp.MustCompile(`^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z._-]+)?$`)
@@ -13,6 +15,9 @@ var releaseVersionPattern = regexp.MustCompile(`^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-
 // local headless runs, but never overrides CI, development builds, or
 // environment opt-outs.
 func Enabled(mode, version string, interactive bool) bool {
+	if !tier.Default.Allows(tier.CapVendorTelemetry) {
+		return false
+	}
 	mode = strings.ToLower(strings.TrimSpace(mode))
 	if mode == "off" || !releaseVersionPattern.MatchString(strings.TrimSpace(version)) {
 		return false

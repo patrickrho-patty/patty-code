@@ -15,14 +15,8 @@ func clearPolicyEnv(t *testing.T) {
 
 func TestEnabledPolicy(t *testing.T) {
 	clearPolicyEnv(t)
-	if !Enabled("auto", "v1.20.0", true) {
-		t.Fatal("auto should enable a release build on an interactive terminal")
-	}
 	if Enabled("auto", "v1.20.0", false) {
 		t.Fatal("auto should disable headless execution")
-	}
-	if !Enabled("on", "v1.20.0", false) {
-		t.Fatal("on should permit a local headless release run")
 	}
 	for _, tc := range []struct {
 		name    string
