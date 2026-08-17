@@ -8,6 +8,7 @@ package cli
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,6 +23,11 @@ import (
 
 const maxAdvisoryBytes = 1 << 20 // 1 MiB; signed advisories are KB-range.
 
+// ErrUpgradeUnavailable is returned by upgradeCommand in sovereign builds
+// (ADR G3): the online update fetch is compiled out; the offline advisory
+// channel via `patcode update import` is the supported update path.
+var ErrUpgradeUnavailable = errors.New("upgrade: online update fetch is not available in this build profile — apply signed offline updates via 'patcode update import <advisory-file> --key <pubkey>'")
+
 func upgradeCommand(args []string, version string) int {
 	_ = version
 	if len(args) > 0 && args[0] == "import" {
@@ -31,7 +37,7 @@ func upgradeCommand(args []string, version string) int {
 		fmt.Fprint(os.Stdout, sovereignUpgradeHelp)
 		return 0
 	}
-	fmt.Fprintln(os.Stderr, "upgrade: online update fetch is not available in this build profile — apply signed offline updates via `patcode update import <advisory-file> --key <pubkey>`")
+	fmt.Fprintln(os.Stderr, ErrUpgradeUnavailable)
 	return 1
 }
 
