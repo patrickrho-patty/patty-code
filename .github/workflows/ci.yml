@@ -226,10 +226,13 @@ jobs:
         run: go test -race ./...
 
   # ADR 2026-08-16-harness-build-profiles (docs/adr/): compile-time gates
-  # rot silently unless CI exercises every tag set on every change.
+  # rot silently unless CI exercises every tag set on every change. Desktop
+  # is in the changes skip set, but `make test-profiles` includes a
+  # `cd desktop && go build` leg under each profile tag, so this job must
+  # also run when desktop/ changes.
   profiles:
     needs: changes
-    if: always() && (github.event_name != 'pull_request' || needs.changes.outputs.code != 'false')
+    if: always() && (github.event_name != 'pull_request' || needs.changes.outputs.code != 'false' || needs.changes.outputs.desktop != 'false')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -239,8 +242,30 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # Bubblewrap backs the sandbox tests inside `make test-profiles`. Mirror
+      # the install + sysctl + warn idiom from the race job above so the
+      # unavailable-backend path is exercised identically in this leg.
+      - name: Install and verify Linux sandbox backend
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+          if sysctl -n kernel.unprivileged_userns_clone >/dev/null 2>&1; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
+          if sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          bwrap --ro-bind / / --dev /dev --proc /proc -- true || \
+            echo "::warning::bubblewrap is installed but this runner denies user namespaces; unavailable-backend tests will run fail-closed"
+
       - name: Test all build profiles
         run: make test-profiles
+
+      # ADR G2/G3 auditor-friendly proof: a sovereign binary must contain
+      # zero endpoint-shaped strings. `make audit-sovereign` builds the
+      # profile_sovereign binary and greps it for the endpoint contract.
+      - name: Audit sovereign binary for endpoint strings
+        run: make audit-sovereign
 
   # sdk/go is a nested stdlib-only module invisible to root `go test ./...`.
   # Its DTOs are generated from internal/extension/protocol, and the
