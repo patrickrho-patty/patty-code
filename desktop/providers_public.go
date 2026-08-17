@@ -3,8 +3,8 @@
 package main
 
 // Generic providers register only in public builds (ADR G4). This file is
-// the desktop side of the gate; cmd/patcode needs no equivalent because it
-// never blank-imported the generic packages.
+// the desktop side of the gate; cmd/patcode/providers_public.go wires the
+// same packages into the public CLI.
 import (
 	_ "patty/internal/provider/anthropic"
 	_ "patty/internal/provider/openai"
