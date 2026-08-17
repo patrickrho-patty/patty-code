@@ -3,8 +3,7 @@
 // Legacy-config migration tests whose migrated configs resolve to generic
 // (openai-kind) presets — DeepSeek and MiMo presets are public-build
 // capabilities (ADR G4), so constructing the migrated provider compiles only
-// here. Task 6 replaces the legacy presets with DARI-stub equivalents; until
-// then these assertions run on the public leg only.
+// here.
 package boot
 
 import (
