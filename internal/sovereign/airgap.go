@@ -181,7 +181,16 @@ func (a *AirGapMode) ApplyUpdateAdvisory(advisory *UpdateAdvisory, sourcePub []b
 		a.rejectedAdvisories++
 		return errors.New("sovereign: advisory expired")
 	}
-	if !verifyAdvisorySignature(sourcePub, advisory) {
+	// ed25519.Verify expects a 32-byte public key. A custom
+	// source might supply a longer key for downstream tooling;
+	// we require the canonical 32-byte length and reject an
+	// empty signature outright — neither is a legitimate
+	// verification path.
+	if len(sourcePub) != ed25519PublicKeySize || len(advisory.Signature) == 0 {
+		a.rejectedAdvisories++
+		return errors.New("sovereign: advisory signature verification failed")
+	}
+	if !ed25519Verify(sourcePub, advisory.SigningBytes(), advisory.Signature) {
 		a.rejectedAdvisories++
 		return errors.New("sovereign: advisory signature verification failed")
 	}
@@ -204,31 +213,23 @@ func (a *AirGapMode) RejectedAdvisoryCount() int64 {
 	return a.rejectedAdvisories
 }
 
-// verifyAdvisorySignature checks the advisory's signature under
-// the supplied source public key.
-func verifyAdvisorySignature(sourcePub []byte, advisory *UpdateAdvisory) bool {
-	if len(sourcePub) == 0 {
-		return false
-	}
-	if len(advisory.Signature) == 0 {
-		return false
-	}
-	// ed25519.Verify expects a 32-byte public key. A custom
-	// source might supply a longer key for downstream tooling;
-	// we require the canonical 32-byte length.
-	if len(sourcePub) != ed25519PublicKeySize {
-		return false
-	}
-	// Re-import the ed25519.Verify path here so callers don't
-	// have to. The build constraint enforces ed25519 import.
-	return ed25519Verify(sourcePub, advisory.SigningBytes(), advisory.Signature)
-}
-
 // VerifyAdvisorySignature is the exported form used by the CLI's offline
 // update import path (ADR G3: signed offline advisory is the sovereign
-// update channel).
+// update channel). It mirrors the inline check inside ApplyUpdateAdvisory
+// so callers that don't already hold a *AirGapMode can verify an
+// advisory without re-stating the public-key and signature length
+// rules. We require a canonical 32-byte ed25519 public key; longer keys
+// are rejected to keep the trust bundle unambiguous. An empty public
+// key or an empty signature is also rejected — neither is a legitimate
+// verification path.
 func VerifyAdvisorySignature(sourcePub []byte, advisory *UpdateAdvisory) bool {
-	return verifyAdvisorySignature(sourcePub, advisory)
+	if advisory == nil {
+		return false
+	}
+	if len(sourcePub) != ed25519PublicKeySize || len(advisory.Signature) == 0 {
+		return false
+	}
+	return ed25519Verify(sourcePub, advisory.SigningBytes(), advisory.Signature)
 }
 
 // _ keeps the time import visible when tests evolve to use it.
