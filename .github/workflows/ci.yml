@@ -225,6 +225,23 @@ jobs:
           PATTY_RELEASE_CACHE_GUARD: "1"
         run: go test -race ./...
 
+  # ADR 2026-08-16-harness-build-profiles (docs/adr/): compile-time gates
+  # rot silently unless CI exercises every tag set on every change.
+  profiles:
+    needs: changes
+    if: always() && (github.event_name != 'pull_request' || needs.changes.outputs.code != 'false')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test all build profiles
+        run: make test-profiles
+
   # sdk/go is a nested stdlib-only module invisible to root `go test ./...`.
   # Its DTOs are generated from internal/extension/protocol, and the
   # host-side conformance tests spawn the SDK example, so the job runs the
