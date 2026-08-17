@@ -44,8 +44,6 @@ import (
 // gateway still avoids GitHub's repository-wide /releases/latest shortcut so the
 // app is not coupled to GitHub's homepage badge semantics.
 const (
-	r2Base                     = "https://dl.patty.io"
-	releaseGatewayBase         = "https://crash.patty.io/v1/desktop/releases"
 	downloadPageURL            = "https://patty.io/#start"
 	manifestDownloadPageURL    = "https://patty.io/?download=desktop#start"
 	httpTimeout                = 15 * time.Second
@@ -56,6 +54,10 @@ const (
 )
 
 var fetchAttemptTimeout = 5 * time.Second
+
+// ErrUpdateUnavailable reports that this build profile has no online update
+// channel (sovereign: ADR G3 — offline signed media is the update path).
+var ErrUpdateUnavailable = errors.New("online update fetch is not available in this build profile — apply signed offline updates via media")
 
 var (
 	stableDesktopVersionRE = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
@@ -84,14 +86,6 @@ var (
 )
 
 // githubManifestFallback is the stable channel's last-resort manifest source.
-// dl.patty.io and crash.patty.io share one Cloudflare zone, so bot
-// protection that 403s a user's egress IP takes out both first-party endpoints
-// at once (#6005); GitHub is separate infrastructure. Stable desktop releases
-// own the repo-wide latest badge and publish latest.json directly, while
-// The unified official Release carries the desktop manifest as a final fallback
-// when both first-party endpoints are unavailable.
-const githubManifestFallback = "https://github.com/pattycorp/PattyCode/releases/latest/download/latest.json"
-
 func normalizeUpdateChannel(ch string) string {
 	return config.NormalizeDesktopUpdateChannel(ch)
 }
@@ -115,14 +109,6 @@ func runningUpdateChannel() string {
 
 // manifestEndpoints returns the manifest URLs for the selected update channel,
 // in the order fetchManifest tries them.
-func manifestEndpoints(selected string) []string {
-	_ = selected
-	return []string{
-		r2Base + "/latest/latest.json",
-		releaseGatewayBase + "/stable/latest.json",
-		githubManifestFallback,
-	}
-}
 
 // updaterUserAgent identifies updater traffic. Go's default Go-http-client UA
 // is exactly what edge bot protection scores worst (#6005); a descriptive UA
@@ -303,17 +289,6 @@ func desktopReleaseTag(_ string, version string) string {
 	return "desktop-" + version
 }
 
-func desktopAssetBases(selected, version string, allowLegacyPreview bool) []string {
-	_ = selected
-	_ = allowLegacyPreview
-	tag := desktopReleaseTag(selected, version)
-	return []string{
-		fmt.Sprintf("%s/%s/", r2Base, tag),
-		fmt.Sprintf("https://github.com/pattycorp/PattyCode/releases/download/%s/", tag),
-		fmt.Sprintf("https://github.com/pattycorp/PattyCode/releases/download/%s/", version),
-	}
-}
-
 func validateManifestAsset(selected, version, filename string, asset update.Asset, allowLegacyPreview bool) (string, error) {
 	base := ""
 	for _, candidate := range desktopAssetBases(selected, version, allowLegacyPreview) {
@@ -405,7 +380,13 @@ func validateDesktopManifest(selected string, m *update.Manifest) error {
 func fetchManifest(ctx context.Context, c, fallback *http.Client, selected string) (*update.Manifest, error) {
 	var errs []error
 	selected = normalizeUpdateChannel(selected)
-	for _, url := range manifestEndpoints(selected) {
+	endpoints := manifestEndpoints(selected)
+	if len(endpoints) == 0 {
+		// Sovereign builds compile the online channel out (ADR G3): fail
+		// closed with the profile error instead of dialing anything.
+		return nil, ErrUpdateUnavailable
+	}
+	for _, url := range endpoints {
 		endpointCtx, cancel := context.WithTimeout(ctx, manifestEndpointTimeout)
 		b, err := fetchManifestBytes(endpointCtx, c, fallback, selected, url)
 		cancel()

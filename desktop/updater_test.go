@@ -1,3 +1,8 @@
+//go:build !profile_sovereign
+
+// Online update-channel tests (ADR G3): the manifest/asset endpoints and
+// fetch machinery exist only outside sovereign builds.
+
 package main
 
 import (
