@@ -1,4 +1,4 @@
-package openai
+package openaiapi
 
 import (
 	"context"
@@ -70,7 +70,7 @@ func FetchModelsWithOptions(ctx context.Context, baseURL, apiKey string, opts Fe
 	}
 	applyModelFetchAPIKeyHeader(req.Header, baseURL, apiKey, opts.AuthMode)
 	req.Header.Set("Accept", "application/json")
-	applyCustomHeaders(req.Header, opts.Headers)
+	ApplyCustomHeaders(req.Header, opts.Headers)
 
 	resp, err := cli.Do(req)
 	if err != nil {
@@ -101,7 +101,7 @@ func FetchModelsWithOptions(ctx context.Context, baseURL, apiKey string, opts Fe
 
 	ids := make([]string, 0, len(result.Data))
 	for _, m := range result.Data {
-		if id := normalizeModelID(baseURL, m.ID); id != "" {
+		if id := NormalizeModelID(baseURL, m.ID); id != "" {
 			ids = append(ids, id)
 		}
 	}
@@ -120,7 +120,7 @@ func applyModelFetchAPIKeyHeader(h http.Header, baseURL, apiKey string, mode Mod
 	case ModelFetchAuthXAPIKey:
 		h.Set("x-api-key", apiKey)
 	default:
-		applyAPIKeyHeader(h, baseURL, apiKey)
+		ApplyAPIKeyHeader(h, baseURL, apiKey)
 	}
 }
 

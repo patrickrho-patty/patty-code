@@ -38,7 +38,7 @@ import (
 	"patty/internal/i18n"
 	"patty/internal/notify"
 	"patty/internal/provider"
-	"patty/internal/provider/openai"
+	"patty/internal/openaiapi"
 	"patty/internal/serve"
 	"patty/internal/sessiontemp"
 	"patty/internal/stats"
@@ -1697,12 +1697,12 @@ func fetchModelListCompat(ctx context.Context, baseURL, apiKey string) ([]string
 	var lastErr error
 	var firstHardErr error
 	for _, u := range candidates {
-		models, err := openai.FetchModels(ctx, u, apiKey, nil)
+		models, err := openaiapi.FetchModels(ctx, u, apiKey, nil)
 		if err == nil {
 			return models, nil
 		}
 		lastErr = err
-		if !openai.IsModelFetchEndpointMiss(err) && firstHardErr == nil {
+		if !openaiapi.IsModelFetchEndpointMiss(err) && firstHardErr == nil {
 			firstHardErr = err
 		}
 	}

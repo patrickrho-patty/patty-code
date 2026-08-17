@@ -35,7 +35,7 @@ import (
 
 	"patty/internal/netclient"
 	"patty/internal/provider"
-	"patty/internal/provider/openai"
+	"patty/internal/openaiapi"
 )
 
 // defaultStreamIdleTimeout caps how long a started SSE stream may go silent before
@@ -93,7 +93,7 @@ func New(cfg provider.Config) (provider.Provider, error) {
 	if root == "" {
 		root = defaultBaseURL
 	}
-	officialDeepSeek := openai.IsDeepSeek(root)
+	officialDeepSeek := openaiapi.IsDeepSeek(root)
 	keyEnv, _ := cfg.Extra["api_key_env"].(string) // for actionable auth errors
 	keySource, _ := cfg.Extra["api_key_source"].(string)
 	thinking, _ := cfg.Extra["thinking"].(string)

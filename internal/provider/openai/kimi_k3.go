@@ -1,11 +1,15 @@
 package openai
 
-import "strings"
+import (
+	"strings"
+
+	"patty/internal/openaiapi"
+)
 
 var kimiK3EffortVocabulary = []string{"low", "high", "max"}
 
 func usesKimiK3Contract(protocol, baseURL, model string) bool {
-	return protocol == "kimi-k3" || (IsKimiAPI(baseURL) && strings.EqualFold(strings.TrimSpace(model), "kimi-k3"))
+	return protocol == "kimi-k3" || (openaiapi.IsKimiAPI(baseURL) && strings.EqualFold(strings.TrimSpace(model), "kimi-k3"))
 }
 
 func reasoningEffortVocabulary(kimiK3 bool, configured []string) ([]string, bool) {

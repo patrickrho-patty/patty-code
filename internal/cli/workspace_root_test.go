@@ -44,8 +44,8 @@ default_model = "test-model"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
-base_url = "https://example.invalid"
+kind = "dari"
+base_url = "relay.example.invalid:8444"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
 `

@@ -1,4 +1,4 @@
-package openai
+package openaiapi
 
 import (
 	"context"
@@ -95,7 +95,7 @@ func TestFetchModelsWithOptionsUsesXAPIKey(t *testing.T) {
 
 func TestApplyAPIKeyHeaderUsesMiMoAPIKeyHeader(t *testing.T) {
 	h := http.Header{}
-	applyAPIKeyHeader(h, "https://api.xiaomimimo.com/v1", "mimo-key")
+	ApplyAPIKeyHeader(h, "https://api.xiaomimimo.com/v1", "mimo-key")
 	if got := h.Get("api-key"); got != "mimo-key" {
 		t.Fatalf("api-key = %q, want mimo-key", got)
 	}
@@ -104,7 +104,7 @@ func TestApplyAPIKeyHeaderUsesMiMoAPIKeyHeader(t *testing.T) {
 	}
 
 	h = http.Header{}
-	applyAPIKeyHeader(h, "https://api.deepseek.com", "deepseek-key")
+	ApplyAPIKeyHeader(h, "https://api.deepseek.com", "deepseek-key")
 	if got := h.Get("Authorization"); got != "Bearer deepseek-key" {
 		t.Fatalf("Authorization = %q, want Bearer deepseek-key", got)
 	}

@@ -17,12 +17,16 @@ const (
 )
 
 func newDefaultModelTestConfig() *config.Config {
+	// DARI fixtures keep these lifecycle tests profile-agnostic: generic
+	// kinds compile only into public builds (ADR G4), and these tests
+	// exercise model resolution, not provider wire behavior. Base URLs are
+	// unchanged so RequiresAPIKey's keyless semantics stay identical.
 	return &config.Config{
 		Providers: []config.ProviderEntry{
-			{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: defaultModelTestKeylessEnv},
-			{Name: "audio", Kind: "openai", BaseURL: "https://audio.example.com", Model: "tts-1", APIKeyEnv: defaultModelTestConfiguredEnv},
-			{Name: "embedding", Kind: "openai", BaseURL: "https://embedding.example.com", Model: "text-embedding-3-small", APIKeyEnv: defaultModelTestConfiguredEnv},
-			{Name: "minimax", Kind: "openai", BaseURL: "https://api.MiniMax.chat/v1", Model: "MiniMax-M3", APIKeyEnv: defaultModelTestConfiguredEnv},
+			{Name: "deepseek-flash", Kind: "dari", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: defaultModelTestKeylessEnv},
+			{Name: "audio", Kind: "dari", BaseURL: "https://audio.example.com", Model: "tts-1", APIKeyEnv: defaultModelTestConfiguredEnv},
+			{Name: "embedding", Kind: "dari", BaseURL: "https://embedding.example.com", Model: "text-embedding-3-small", APIKeyEnv: defaultModelTestConfiguredEnv},
+			{Name: "minimax", Kind: "dari", BaseURL: "https://api.MiniMax.chat/v1", Model: "MiniMax-M3", APIKeyEnv: defaultModelTestConfiguredEnv},
 		},
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"patty/internal/provider/openai"
+	"patty/internal/openaiapi"
 )
 
 var knownModelFetchCompatSuffixes = []string{
@@ -46,7 +46,7 @@ func (e *ProviderEntry) FetchModelsWithAPIKey(ctx context.Context, key string) (
 	var firstHardErr error
 	authMode := modelFetchAuthMode(e)
 	for _, u := range candidates {
-		models, err := openai.FetchModelsWithOptions(ctx, u, key, openai.FetchModelsOptions{
+		models, err := openaiapi.FetchModelsWithOptions(ctx, u, key, openaiapi.FetchModelsOptions{
 			Headers:  e.Headers,
 			AuthMode: authMode,
 		})
@@ -54,7 +54,7 @@ func (e *ProviderEntry) FetchModelsWithAPIKey(ctx context.Context, key string) (
 			return models, nil
 		}
 		lastErr = err
-		if !openai.IsModelFetchEndpointMiss(err) && firstHardErr == nil {
+		if !openaiapi.IsModelFetchEndpointMiss(err) && firstHardErr == nil {
 			firstHardErr = err
 		}
 	}
@@ -64,14 +64,14 @@ func (e *ProviderEntry) FetchModelsWithAPIKey(ctx context.Context, key string) (
 	return nil, lastErr
 }
 
-func modelFetchAuthMode(e *ProviderEntry) openai.ModelFetchAuthMode {
+func modelFetchAuthMode(e *ProviderEntry) openaiapi.ModelFetchAuthMode {
 	if e == nil || !strings.EqualFold(strings.TrimSpace(e.Kind), "anthropic") {
-		return openai.ModelFetchAuthAuto
+		return openaiapi.ModelFetchAuthAuto
 	}
 	if e.AuthHeader {
-		return openai.ModelFetchAuthBearer
+		return openaiapi.ModelFetchAuthBearer
 	}
-	return openai.ModelFetchAuthXAPIKey
+	return openaiapi.ModelFetchAuthXAPIKey
 }
 
 // BuildModelFetchURLs derives likely OpenAI-compatible model-list endpoints.

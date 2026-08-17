@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"patty/internal/provider/openai"
+	"patty/internal/openaiapi"
 )
 
 var mimoVisionModels = map[string]bool{
@@ -75,7 +75,7 @@ func EffectiveVision(e *ProviderEntry) bool {
 	// vision flag is set, so stale configs cannot make requests 400. A concrete
 	// model can still opt in through vision_models or a model override when
 	// DeepSeek documents a future multimodal request shape.
-	if openai.IsDeepSeek(e.BaseURL) {
+	if openaiapi.IsDeepSeek(e.BaseURL) {
 		return false
 	}
 	if e.Vision {

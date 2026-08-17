@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"patty/internal/netclient"
+	"patty/internal/openaiapi"
 	"patty/internal/provider"
 )
 
@@ -86,12 +87,12 @@ func New(cfg provider.Config) (provider.Provider, error) {
 	supportedEfforts, hasExplicitEfforts := reasoningEffortVocabulary(kimiK3, supportedEfforts)
 	chatURL, _ := cfg.Extra["chat_url"].(string)
 	chatURL = normalizeChatURL(cfg.BaseURL, chatURL)
-	prefixChatURL := deepSeekPrefixChatURL(chatURL)
+	prefixChatURL := openaiapi.DeepSeekPrefixChatURL(chatURL)
 	headers, _ := cfg.Extra["headers"].(map[string]string)
 	extraBody, _ := cfg.Extra["extra_body"].(map[string]any)
 	vision, _ := cfg.Extra["vision"].(bool)
 	explicitModelVision, _ := cfg.Extra["vision_model_explicit"].(bool)
-	officialDeepSeek := IsDeepSeek(cfg.BaseURL)
+	officialDeepSeek := openaiapi.IsDeepSeek(cfg.BaseURL)
 	// DeepSeek's official chat API accepts string message content only. Keep
 	// this provider-boundary guard even though config capability resolution
 	// normally prevents image attachments from reaching this layer. A positive
@@ -106,10 +107,10 @@ func New(cfg provider.Config) (provider.Provider, error) {
 	deepseek := protocol == "deepseek" || (protocol == "" && officialDeepSeek)
 	maxOutputTokens, _ := cfg.Extra["max_output_tokens"].(int)
 	deepseekV4Flash := strings.EqualFold(strings.TrimSpace(cfg.Model), "deepseek-v4-flash")
-	minimax := protocol == "" && IsMiniMax(cfg.BaseURL)
-	zhipu := protocol == "glm" || (protocol == "" && IsZhipu(cfg.BaseURL))
-	longcat := protocol == "" && IsLongCat(cfg.BaseURL)
-	ollamaCloud := protocol == "" && IsOllamaCloud(cfg.BaseURL)
+	minimax := protocol == "" && openaiapi.IsMiniMax(cfg.BaseURL)
+	zhipu := protocol == "glm" || (protocol == "" && openaiapi.IsZhipu(cfg.BaseURL))
+	longcat := protocol == "" && openaiapi.IsLongCat(cfg.BaseURL)
+	ollamaCloud := protocol == "" && openaiapi.IsOllamaCloud(cfg.BaseURL)
 	// Optional explicit `thinking` config field — a vendor-agnostic escape hatch
 	// (credit @eghrhegpe, #5063) for OpenAI-compatible providers we don't
 	// auto-detect (e.g. opencode.ai). "enabled"/"disabled" drive thinking.type;
@@ -242,15 +243,15 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		baseURL:         strings.TrimRight(cfg.BaseURL, "/"),
 		chatURL:         chatURL,
 		prefixChatURL:   prefixChatURL,
-		headers:         cleanCustomHeaders(headers),
+		headers:         openaiapi.CleanCustomHeaders(headers),
 		extraBody:       cleanExtraBody(extraBody),
-		model:           normalizeModelID(cfg.BaseURL, cfg.Model),
+		model:           openaiapi.NormalizeModelID(cfg.BaseURL, cfg.Model),
 		deepseek:        deepseek,
 		minimax:         minimax,
 		zhipu:           zhipu,
 		longcat:         longcat,
 		kimiK3:          kimiK3,
-		mimo:            IsMiMo(cfg.BaseURL),
+		mimo:            openaiapi.IsMiMo(cfg.BaseURL),
 		thinkingType:    thinkingType,
 		vision:          vision,
 		visionDetail:    visionDetail,
@@ -395,43 +396,6 @@ func normalizeChatURL(baseURL, chatURL string) string {
 	return strings.TrimRight(strings.TrimSpace(baseURL), "/") + "/chat/completions"
 }
 
-func cleanCustomHeaders(in map[string]string) map[string]string {
-	if len(in) == 0 {
-		return nil
-	}
-	out := make(map[string]string, len(in))
-	for rawName, rawValue := range in {
-		name := strings.TrimSpace(rawName)
-		value := strings.TrimSpace(rawValue)
-		if name == "" || value == "" || reservedCustomHeader(name) {
-			continue
-		}
-		out[name] = value
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
-}
-
-func applyCustomHeaders(h http.Header, headers map[string]string) {
-	for name, value := range cleanCustomHeaders(headers) {
-		h.Set(name, value)
-	}
-}
-
-func applyAPIKeyHeader(h http.Header, baseURL, apiKey string) {
-	apiKey = strings.TrimSpace(apiKey)
-	if apiKey == "" {
-		return
-	}
-	if IsMiMo(baseURL) {
-		h.Set("api-key", apiKey)
-		return
-	}
-	h.Set("Authorization", "Bearer "+apiKey)
-}
-
 func cleanExtraBody(in map[string]any) map[string]any {
 	if len(in) == 0 {
 		return nil
@@ -453,15 +417,6 @@ func cleanExtraBody(in map[string]any) map[string]any {
 func reservedExtraBodyField(name string) bool {
 	switch strings.ToLower(strings.TrimSpace(name)) {
 	case "model", "messages", "tools", "stream", "stream_options", "temperature", "max_tokens", "max_completion_tokens", "max_output_tokens", "reasoning_effort", "thinking":
-		return true
-	default:
-		return false
-	}
-}
-
-func reservedCustomHeader(name string) bool {
-	switch strings.ToLower(strings.TrimSpace(name)) {
-	case "authorization", "content-type", "accept", "host":
 		return true
 	default:
 		return false
@@ -508,9 +463,9 @@ func (c *client) openStream(ctx context.Context, targetURL string, wireReq chatR
 			return nil, err
 		}
 		httpReq.Header.Set("Content-Type", "application/json")
-		applyAPIKeyHeader(httpReq.Header, c.baseURL, c.apiKey)
+		openaiapi.ApplyAPIKeyHeader(httpReq.Header, c.baseURL, c.apiKey)
 		httpReq.Header.Set("Accept", "text/event-stream")
-		applyCustomHeaders(httpReq.Header, c.headers)
+		openaiapi.ApplyCustomHeaders(httpReq.Header, c.headers)
 		return httpReq, nil
 	}
 	resp, err := provider.SendWithRetry(requestCtx, c.http, c.sendOpts(), newReq)
@@ -754,7 +709,7 @@ func (c *client) buildRequest(req provider.Request) chatRequest {
 			wire := chatToolCall{ID: tc.ID, Type: "function"}
 			wire.Function.Name = tc.Name
 			wire.Function.Arguments = tc.Arguments
-			if tc.ThoughtSignature != "" && usesGeminiThoughtSignatures(c.baseURL, c.model) {
+			if tc.ThoughtSignature != "" && openaiapi.UsesGeminiThoughtSignatures(c.baseURL, c.model) {
 				// Gemini's current OpenAI compatibility schema carries the
 				// opaque signature beside the function payload. Keep the
 				// legacy function.thought_signature field decode-only below so
@@ -820,7 +775,7 @@ func (c *client) buildRequest(req provider.Request) chatRequest {
 		out.MaxCompletionTokens = maxOutputTokens
 		out.ExtraBody = omitExtraBodyFields(out.ExtraBody,
 			"temperature", "top_p", "n", "presence_penalty", "frequency_penalty", "max_completion_tokens")
-	case IsOpenAI(c.baseURL):
+	case openaiapi.IsOpenAI(c.baseURL):
 		// OpenAI's current Chat Completions contract replaces max_tokens with
 		// max_completion_tokens, which includes visible and reasoning tokens and
 		// is required by o-series models. Compatible gateways retain max_tokens.

@@ -1,3 +1,5 @@
+//go:build profile_public
+
 package cli
 
 import (
@@ -12,6 +14,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	// The scenario under test — a generic openai-compatible provider with a
+	// balance_url diagnostic — is a public-build capability (ADR G4), so this
+	// test compiles only there and must register the kind itself.
+	_ "patty/internal/provider/openai"
 )
 
 const serveMissingKeyHelperEnv = "PATTY_TEST_SERVE_MISSING_KEY_HELPER"

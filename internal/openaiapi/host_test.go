@@ -1,4 +1,4 @@
-package openai
+package openaiapi
 
 import "testing"
 
@@ -68,8 +68,8 @@ func TestDeepSeekPrefixChatURL(t *testing.T) {
 		{name: "garbage", in: "not-a-url", want: ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := deepSeekPrefixChatURL(tc.in); got != tc.want {
-				t.Fatalf("deepSeekPrefixChatURL(%q) = %q, want %q", tc.in, got, tc.want)
+			if got := DeepSeekPrefixChatURL(tc.in); got != tc.want {
+				t.Fatalf("DeepSeekPrefixChatURL(%q) = %q, want %q", tc.in, got, tc.want)
 			}
 		})
 	}
@@ -85,8 +85,8 @@ func TestGeminiAPIModelNormalization(t *testing.T) {
 		{"https://generativelanguage.googleapis.com/v1beta/openai", "gemini-3.6-flash", "gemini-3.6-flash"},
 		{"https://api.example.com/v1", "models/gemini-3.6-flash", "models/gemini-3.6-flash"},
 	} {
-		if got := normalizeModelID(tc.baseURL, tc.model); got != tc.want {
-			t.Errorf("normalizeModelID(%q, %q) = %q, want %q", tc.baseURL, tc.model, got, tc.want)
+		if got := NormalizeModelID(tc.baseURL, tc.model); got != tc.want {
+			t.Errorf("NormalizeModelID(%q, %q) = %q, want %q", tc.baseURL, tc.model, got, tc.want)
 		}
 	}
 }
@@ -104,8 +104,8 @@ func TestUsesGeminiThoughtSignatures(t *testing.T) {
 		{"incidental model text", "https://api.example.com/v1", "not-gemini-compatible", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := usesGeminiThoughtSignatures(tc.baseURL, tc.model); got != tc.want {
-				t.Fatalf("usesGeminiThoughtSignatures(%q, %q) = %v, want %v", tc.baseURL, tc.model, got, tc.want)
+			if got := UsesGeminiThoughtSignatures(tc.baseURL, tc.model); got != tc.want {
+				t.Fatalf("UsesGeminiThoughtSignatures(%q, %q) = %v, want %v", tc.baseURL, tc.model, got, tc.want)
 			}
 		})
 	}

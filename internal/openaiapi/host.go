@@ -1,4 +1,4 @@
-package openai
+package openaiapi
 
 import (
 	"net/url"
@@ -59,11 +59,11 @@ func IsOpenAI(baseURL string) bool {
 	return strings.EqualFold(u.Hostname(), "api.openai.com")
 }
 
-// deepSeekPrefixChatURL returns the official Beta chat endpoint that enables
+// DeepSeekPrefixChatURL returns the official Beta chat endpoint that enables
 // assistant-prefix completion. Derive it only from a URL already hosted by
 // DeepSeek: custom gateways may opt into the DeepSeek reasoning wire shape, but
 // must never be bypassed by an automatic request to the vendor's direct API.
-func deepSeekPrefixChatURL(chatURL string) string {
+func DeepSeekPrefixChatURL(chatURL string) string {
 	if !IsDeepSeek(chatURL) {
 		return ""
 	}
@@ -89,13 +89,13 @@ func IsGeminiAPI(baseURL string) bool {
 	return strings.EqualFold(u.Hostname(), "generativelanguage.googleapis.com")
 }
 
-// usesGeminiThoughtSignatures reports whether the current endpoint/model speaks
+// UsesGeminiThoughtSignatures reports whether the current endpoint/model speaks
 // Gemini's OpenAI-compatible thought-signature extension. The official endpoint
 // is authoritative even when a custom model alias is used; compatible gateways
 // are detected from the model ID they route (for example google/gemini-3-pro).
 // Keeping this decision on the current client prevents a Gemini-authored history
 // from leaking extra_content.google fields after a same-session provider switch.
-func usesGeminiThoughtSignatures(baseURL, model string) bool {
+func UsesGeminiThoughtSignatures(baseURL, model string) bool {
 	if IsGeminiAPI(baseURL) {
 		return true
 	}
@@ -109,10 +109,10 @@ func usesGeminiThoughtSignatures(baseURL, model string) bool {
 	return false
 }
 
-// normalizeModelID converts Gemini's resource-form model names returned by some
+// NormalizeModelID converts Gemini's resource-form model names returned by some
 // /models responses into the bare IDs required by OpenAI-compatible chat calls.
 // Other providers and already-normalized Gemini IDs pass through unchanged.
-func normalizeModelID(baseURL, model string) string {
+func NormalizeModelID(baseURL, model string) string {
 	model = strings.TrimSpace(model)
 	if IsGeminiAPI(baseURL) {
 		model = strings.TrimPrefix(model, "models/")
