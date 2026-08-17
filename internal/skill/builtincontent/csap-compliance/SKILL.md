@@ -5,6 +5,7 @@ runas: subagent
 agent: review
 context: codebase
 read-only: true
+allowed-tools: read_file, ls, glob, grep, code_index
 triggers:
   - csap
   - 클라우드보안인증

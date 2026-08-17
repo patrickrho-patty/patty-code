@@ -5090,7 +5090,7 @@ func (m *chatTUI) runSlashCommand(input string) tea.Cmd {
 		m.openOutputStylePicker()
 	case "/compliance":
 		m.echoLocalCommand(input)
-		m.runComplianceSubcommand(input)
+		return m.runComplianceSubcommand(input)
 	case "/diff-fold":
 		m.echoLocalCommand(input)
 		if m.diffMaxLines == 0 {

@@ -205,7 +205,9 @@ func TestSetDesktopTerminalThemeValidatesPreference(t *testing.T) {
 
 func TestDesktopCurrencyNormalizesAndRefreshesOfficialPricing(t *testing.T) {
 	c := Default()
-	c.Providers = legacyDeepSeekProviderEntries()
+	c.Providers = []ProviderEntry{
+		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", Price: deepSeekV4FlashPriceUSD()},
+	}
 	c.Desktop.Language = "ko-KR"
 	if err := c.SetDesktopCurrency("usd"); err != nil {
 		t.Fatalf("SetDesktopCurrency USD: %v", err)
@@ -564,7 +566,9 @@ func TestUpsertProvider(t *testing.T) {
 
 func TestSetProviderEffort(t *testing.T) {
 	c := Default()
-	c.Providers = legacyDeepSeekProviderEntries()
+	c.Providers = []ProviderEntry{
+		{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash"},
+	}
 	if err := c.SetProviderEffort("deepseek-flash", "MAX"); err != nil {
 		t.Fatalf("SetProviderEffort: %v", err)
 	}
@@ -938,7 +942,9 @@ func TestResolveModelAppliesModelOverrides(t *testing.T) {
 
 func TestRemoveProvider(t *testing.T) {
 	c := Default()
-	c.Providers = append(c.Providers, legacyDeepSeekProviderEntries()...)
+	c.Providers = append(c.Providers, ProviderEntry{
+		Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro",
+	})
 	c.Agent.PlannerModel = "deepseek-pro"
 
 	// Cannot remove the default model when no configured fallback is available.
@@ -1995,7 +2001,9 @@ func TestSaveToExistingProjectPersistsTopLevelDelta(t *testing.T) {
 	}
 	cfg := Default()
 	cfg.ConfigVersion = 2
-	cfg.Providers = append(cfg.Providers, legacyDeepSeekProviderEntries()...)
+	cfg.Providers = append(cfg.Providers, ProviderEntry{
+		Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", APIKeyEnv: "DEEPSEEK_API_KEY",
+	})
 	if err := cfg.SetDefaultModel("deepseek-pro"); err != nil {
 		t.Fatal(err)
 	}

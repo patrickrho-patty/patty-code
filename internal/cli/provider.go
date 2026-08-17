@@ -158,7 +158,7 @@ func (m chatTUI) handleQuickPickerKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) 
 			return m, m.pendingModelSwitch
 		}
 	case quickPickerCompliance:
-		m.applyComplianceSelection(choice.ID)
+		return m, m.applyComplianceSelection(choice.ID)
 	}
 	return m, nil
 }

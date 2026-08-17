@@ -1,3 +1,11 @@
+//go:build profile_public
+
+// Curated BYOK public-cloud presets (ADR G4): this catalog is compiled only
+// into public builds. Enterprise and sovereign builds get nil-returning stubs
+// (provider_presets_stub.go) — their catalogs come from the org relay at
+// runtime. Shared types and legacy-migration catalogs live in the untagged
+// provider_preset_type.go so migration code compiles on every profile.
+
 package config
 
 import (
@@ -7,22 +15,7 @@ import (
 	"patty/internal/provider"
 )
 
-type ProviderPreset struct {
-	ID          string
-	Label       string
-	Description string
-	KeyEnv      string
-	Entries     []ProviderEntry
-}
-
-const (
-	ProviderPresetVersion        = 1
-	longCat20ContextWindow       = 1_048_576
-	legacyLongCat20ContextWindow = 131_072
-	longCatOpenAIBaseURL         = "https://api.longcat.chat/openai/v1"
-	longCatAnthropicBaseURL      = "https://api.longcat.chat/anthropic"
-	deepSeekAnthropicBaseURL     = "https://api.deepseek.com/anthropic"
-)
+const deepSeekAnthropicBaseURL = "https://api.deepseek.com/anthropic"
 
 func CuratedProviderPresets() []ProviderPreset {
 	presets := cloneProviderPresets(curatedProviderPresets)
@@ -64,12 +57,9 @@ func providerPresetDisplayRank(id string) int {
 }
 
 var (
-	legacyKimiAPIModels = []string{"kimi-k2.7-code", "kimi-k2.7-code-highspeed", "kimi-k2.6", "kimi-k2.5"}
-	kimiAPIModels       = []string{"kimi-k3", "kimi-k2.7-code", "kimi-k2.7-code-highspeed", "kimi-k2.6", "kimi-k2.5"}
 	kimiAPIVisionModels = []string{"kimi-k3", "kimi-k2.7-code", "kimi-k2.7-code-highspeed", "kimi-k2.6", "kimi-k2.5"}
 	kimiCodingModels    = []string{"kimi-for-coding"}
 
-	longCat20Models   = []string{"LongCat-2.0"}
 	deepSeekV4Models  = []string{"deepseek-v4-flash", "deepseek-v4-pro"}
 	tokenRhythmModels = []string{
 		"deepseek-v4-flash", "deepseek-v4-pro", "glm-5", "glm-5.1",
@@ -98,8 +88,6 @@ var (
 
 	stepfunPlanModels = []string{"step-3.7-flash", "step-3.5-flash", "step-3.5-flash-2603"}
 
-	legacyOpenCodeGoModels           = []string{"glm-5.2", "glm-5.1", "kimi-k2.7-code", "kimi-k2.6", "deepseek-v4-pro", "deepseek-v4-flash", "mimo-v2.5-pro", "mimo-v2.5"}
-	opencodeGoModels                 = []string{"glm-5.2", "glm-5.1", "kimi-k3", "kimi-k2.7-code", "kimi-k2.6", "deepseek-v4-pro", "deepseek-v4-flash", "mimo-v2.5-pro", "mimo-v2.5"}
 	opencodeGoVisionModels           = []string{"kimi-k3"}
 	opencodeGoAnthropicModels        = []string{"qwen3.7-plus", "qwen3.7-max", "qwen3.6-plus", "minimax-m3", "minimax-m2.7", "minimax-m2.5"}
 	opencodeZenAnthropicModels       = []string{"claude-sonnet-4-6", "claude-opus-4-8", "claude-haiku-4-5", "qwen3.6-plus", "qwen3.5-plus", "qwen3.6-plus-free"}
@@ -163,15 +151,6 @@ func tokenRhythmModelOverrides() map[string]ProviderModelOverride {
 		"minimax-m2.5":   {ContextWindow: 200_000},
 		"mimo-v2.5-pro":  {ContextWindow: 256_000},
 		"kimi-k2.7-code": {ContextWindow: 256_000},
-	}
-}
-
-func kimiK3DirectOverride() ProviderModelOverride {
-	return ProviderModelOverride{
-		ReasoningProtocol: ReasoningProtocolOpenAI,
-		SupportedEfforts:  []string{"low", "high", "max"},
-		DefaultEffort:     "max",
-		ContextWindow:     1_048_576,
 	}
 }
 

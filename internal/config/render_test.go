@@ -226,7 +226,9 @@ func TestRenderTOMLUsesResolvableStockModelExamples(t *testing.T) {
 
 func TestRenderTOMLRoundTrips(t *testing.T) {
 	orig := Default()
-	orig.Providers = append(orig.Providers, legacyDeepSeekProviderEntries()...)
+	orig.Providers = append(orig.Providers, ProviderEntry{
+		Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY",
+	})
 	orig.Providers = append(orig.Providers, legacyMimoCustomProvider("mimo-pro"))
 	orig.DefaultModel = "mimo-pro"
 	orig.Language = "ko-KR"

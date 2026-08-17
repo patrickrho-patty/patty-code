@@ -1,3 +1,8 @@
+//go:build profile_public
+
+// Preset-catalog assertions: the curated BYOK presets are a public-profile
+// capability (ADR G4), so these compile only there.
+
 package config
 
 import "testing"

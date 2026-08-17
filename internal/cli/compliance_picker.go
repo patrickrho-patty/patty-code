@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
+
 	"patty/internal/i18n"
 )
 
@@ -43,18 +45,18 @@ func (m *chatTUI) openCompliancePicker() {
 // runComplianceSubcommand handles /compliance (or /컴플라이언스). Bare /compliance
 // opens the quickPicker single-choice overlay; sub-arguments (/compliance pipa)
 // invoke the target audit sub-skill directly.
-func (m *chatTUI) runComplianceSubcommand(input string) {
+func (m *chatTUI) runComplianceSubcommand(input string) tea.Cmd {
 	fields := strings.Fields(input)
 	if len(fields) <= 1 {
 		m.openCompliancePicker()
-		return
+		return nil
 	}
 	sub := strings.ToLower(fields[1])
-	m.applyComplianceSelection(sub)
+	return m.applyComplianceSelection(sub)
 }
 
 // applyComplianceSelection dispatches the chosen compliance audit item.
-func (m *chatTUI) applyComplianceSelection(choiceID string) {
+func (m *chatTUI) applyComplianceSelection(choiceID string) tea.Cmd {
 	var targetSkill string
 	var label string
 	switch strings.ToLower(choiceID) {
@@ -73,5 +75,5 @@ func (m *chatTUI) applyComplianceSelection(choiceID string) {
 	}
 	cmd := "/" + targetSkill + " Perform compliance audit for " + label
 	m.notice(fmt.Sprintf(i18n.M.ComplianceRunningFmt, label))
-	m.startControllerTurn(cmd, cmd, func() { m.ctrl.SubmitDisplay(cmd, cmd) })
+	return m.startControllerTurn(cmd, cmd, func() { m.ctrl.SubmitDisplay(cmd, cmd) })
 }
