@@ -14,7 +14,12 @@ import (
 	"patty/internal/skill"
 )
 
-var githubAPIBaseURL = "https://api.github.com"
+// githubAPIBaseURL is the default base URL for fetching plugin/skill
+// metadata from the GitHub Contents API. It is declared in plan_github.go
+// for non-sovereign builds ("https://api.github.com") and empty in
+// plan_github_sovereign.go for sovereign builds (air-gapped installs must
+// configure internal mirrors via runtime config — ADR G5).
+var githubAPIBaseURL string
 
 // plan turns a request into a list of actions plus a warnings slice. It
 // does not touch the disk; the apply phase is responsible for side effects.

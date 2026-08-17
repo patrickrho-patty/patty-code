@@ -1,3 +1,5 @@
+//go:build !profile_sovereign
+
 // Package releaseasset downloads and verifies immutable Patty Code CLI release
 // artifacts for a requested platform. It is used when a local Desktop or CLI
 // needs to provision the remote `patcode serve` binary without requiring

@@ -117,7 +117,7 @@ tool_timeout_seconds = { "generate_video" = 1800 }   # 선택적 원시 MCP 도�
 
 ### CLI 텔레메트리(telemetry)
 
-CLI는 하루에 한 번의 익명 활성 설치 핑(ping)과 제한된 콘텐츠 없는 이벤트 카운터를 `https://crash.patty.io`로 보낼 수 있습니다. 사용자 전역 정책은 다음과 같이 구성합니다:
+CLI는 하루에 한 번의 익명 활성 설치 핑(ping)과 제한된 콘텐츠 없는 이벤트 카운터를 벤더 텔레메트리 엔드포인트로 보낼 수 있습니다. 사용자 전역 정책은 다음과 같이 구성합니다:
 
 ```bash
 patcode config telemetry          # 현재 적용 중인 모드 출력

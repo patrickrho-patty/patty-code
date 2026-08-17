@@ -39,13 +39,21 @@ test-profiles:
 
 # ADR G2/G3 consequence: sovereign binaries must provably lack external
 # endpoints. Auditors grep the binary; so does CI.
+#
+# Pattern targets ONLY endpoint-shaped strings (full URLs), not bare hosts.
+# Tightening from bare hosts to full URLs filters out false-positive
+# matches from profile-agnostic host-matching logic (config.go:1640,
+# cache_policy.go:61, web_search.go:31) and from prose mentions in i18n
+# messages_en/ko and the embedded docs corpus (docs/embed.go). The remaining
+# matches are real endpoint literals that should never appear in a sovereign
+# binary.
 audit-sovereign: build-sovereign
-	@hits=$$(strings bin/patcode-sovereign$(GOEXE) | grep -c -E 'crash\.patty\.io|api\.github\.com|github\.com/pattycorp/PattyCode/releases|api\.deepseek\.com'); \
+	@hits=$$(strings bin/patcode-sovereign$(GOEXE) | grep -c -E 'https://crash\.patty\.io|https://api\.github\.com|https://github\.com/pattycorp/PattyCode/releases/download|https://api\.deepseek\.com/user/balance'); \
 	if [ "$$hits" -ne 0 ]; then \
-		echo "audit-sovereign: FAIL — $$hits external endpoint string(s) found in sovereign binary"; \
+		echo "audit-sovereign: FAIL - $$hits external endpoint string(s) found in sovereign binary"; \
 		exit 1; \
 	fi; \
-	echo "audit-sovereign: OK — no external endpoints in binary"
+	echo "audit-sovereign: OK - no external endpoints in binary"
 
 # Refresh the checked-in macOS launcher from the canonical signed build output.
 # Keeping the copy in one target prevents source fixes from being followed by a
