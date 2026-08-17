@@ -178,15 +178,78 @@ func equalBytes(a, b []byte) bool {
 }
 
 // setNowUnixMilli replaces nowUnixMilli for the lifetime of a test and
-// restores it on cleanup.
-// setNowUnixMilli replaces nowUnixMilli for the lifetime of a test and
-// returns a restore function the test should defer. It is undefined
-// outside the test build because no production code path is allowed to
-// drift the wall clock — the swap exists purely to verify IsExpired
-// behaviour deterministically.
+// returns a restore function the test should defer. No production code path
+// is allowed to drift the wall clock — the swap exists purely to verify
+// IsExpired behaviour deterministically.
 func setNowUnixMilli(t testing.TB, fn func() int64) func() {
 	t.Helper()
 	prev := nowUnixMilli
 	nowUnixMilli = fn
 	return func() { nowUnixMilli = prev }
+}
+
+func TestUpdateImportRejectsEmptyAdvisoryIDAndVersion(t *testing.T) {
+	dir := t.TempDir()
+	keyPath := writeTestKey(t, dir)
+	for _, tc := range []struct{ name, id, version string }{
+		{"empty id", "", "1.2.3"},
+		{"whitespace id", "  ", "1.2.3"},
+		{"empty version", "adv-1", ""},
+	} {
+		raw, _ := json.Marshal(sovereign.UpdateAdvisory{AdvisoryID: tc.id, Version: tc.version})
+		p := filepath.Join(dir, tc.name+".json")
+		if err := os.WriteFile(p, raw, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if code := upgradeCommand([]string{"import", p, "--key", keyPath}, "1.0.0"); code != 1 {
+			t.Fatalf("%s: exit %d, want 1", tc.name, code)
+		}
+	}
+}
+
+func TestUpdateImportSanitizesTerminalControlSequences(t *testing.T) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	adv := sovereign.UpdateAdvisory{
+		AdvisoryID: "adv\x1b[31mRED\x1b[0m",
+		Version:    "1.2.3",
+	}
+	adv.Signature = ed25519.Sign(priv, adv.SigningBytes())
+	dir := t.TempDir()
+	raw, _ := json.Marshal(adv)
+	p := filepath.Join(dir, "adv.json")
+	if err := os.WriteFile(p, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	keyPath := writeTestKey(t, dir, pub)
+	if code := upgradeCommand([]string{"import", p, "--key", keyPath}, "1.0.0"); code != 0 {
+		t.Fatalf("valid advisory exited %d, want 0", code)
+	}
+}
+
+func TestUpdateImportHelpExitsZero(t *testing.T) {
+	if code := upgradeCommand([]string{"import", "--help"}, "1.0.0"); code != 0 {
+		t.Fatalf("--help exited %d, want 0", code)
+	}
+}
+
+func writeTestKey(t *testing.T, dir string, pub ...[]byte) string {
+	t.Helper()
+	var key []byte
+	if len(pub) == 1 {
+		key = pub[0]
+	} else {
+		_, priv, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key = priv.Public().(ed25519.PublicKey)
+	}
+	p := filepath.Join(dir, "pub.hex")
+	if err := os.WriteFile(p, []byte(hex.EncodeToString(key)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return p
 }

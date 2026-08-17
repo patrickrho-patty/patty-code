@@ -171,6 +171,9 @@ func (a *App) flushPendingCrash() {
 		}
 		var r crashReport
 		if json.Unmarshal(body, &r) != nil {
+			// Corrupt entry: drop the file but do not claim the whole queue
+			// was processed — the directory sweep below must not run.
+			processedAll = false
 			_ = os.Remove(path)
 			continue
 		}
