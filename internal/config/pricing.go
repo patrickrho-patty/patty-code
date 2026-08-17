@@ -189,14 +189,9 @@ func markPersistedDeepSeekOfficialPricing(c *Config) {
 	}
 }
 
-func isStandardDeepSeekProviderTemplate(p *ProviderEntry) bool {
-	if p == nil || officialProviderKind(p) != "deepseek" {
-		return false
-	}
-	return strings.TrimSpace(p.APIKeyEnv) == "DEEPSEEK_API_KEY" &&
-		strings.TrimSpace(p.BalanceURL) == "https://api.deepseek.com/user/balance" &&
-		p.ContextWindow == 1_000_000
-}
+// isStandardDeepSeekProviderTemplate lives in the profile-gated twins
+// (provider_legacy_deepseek.go / _stub.go): its marker string — the vendor
+// wallet endpoint — must not compile outside the public profile (ADR G4).
 
 func completeDeepSeekOfficialPricingCurrency(p *ProviderEntry) string {
 	if p == nil {

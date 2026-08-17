@@ -13,3 +13,15 @@ const (
 // legacyDeepSeekProviderEntries is compiled out outside the public profile
 // (ADR G4); callers in load.go/migrate.go treat nil as "no legacy entries".
 func legacyDeepSeekProviderEntries() []ProviderEntry { return nil }
+
+// backfillLegacyDeepSeekBalanceURL is a no-op twin of the public-profile hook
+// (Task 7 addendum): the wallet-endpoint literal must not compile into
+// enterprise/sovereign builds, and injecting it would arm the boot-side tier
+// lock against a URL the user never wrote (ADR G4). The vendor context-window
+// backfill in load.go remains unconditional.
+func backfillLegacyDeepSeekBalanceURL(*ProviderEntry) {}
+
+// isStandardDeepSeekProviderTemplate is always false outside the public
+// profile: no stock DeepSeek template is embedded, so no config — not even a
+// hand-pasted copy — is treated as the stock one.
+func isStandardDeepSeekProviderTemplate(*ProviderEntry) bool { return false }

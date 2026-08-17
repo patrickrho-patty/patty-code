@@ -1,13 +1,16 @@
+//go:build !profile_public
+
 package config
 
 import "testing"
 
 // Official DeepSeek endpoint-default expectations outside the public profile
 // (ADR G4, Task 7 addendum): the wallet-endpoint literal compiles only into
-// public-tagged twins (provider_legacy_deepseek.go), so in this profile the
+// public-tagged twins (provider_legacy_deepseek.go), so in these profiles the
 // loader may backfill the vendor context window but must never write a
 // balance_url the user didn't declare — injecting one would arm the boot-side
-// tier lock against a URL the user never wrote.
+// tier lock against a URL the user never wrote. The public-profile positive
+// twins live in provider_isolation_public_test.go.
 
 // The desktop official-provider injection keeps the 1M window but omits the
 // wallet endpoint.

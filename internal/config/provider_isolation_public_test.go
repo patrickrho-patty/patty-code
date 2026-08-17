@@ -40,6 +40,24 @@ func assertOfficialDeepSeekDefaults(t *testing.T, tag string, p *ProviderEntry) 
 	}
 }
 
+// The desktop official-provider injection path carries the wallet endpoint in
+// the public profile (twin of the outside-public expectations in
+// provider_official_endpoint_profile_test.go).
+func TestOfficialDeepSeekInjectionBackfillsBalanceURLInPublicProfile(t *testing.T) {
+	c := &Config{Desktop: DesktopConfig{ProviderAccess: []string{"deepseek"}}}
+	normalizeDesktopOfficialProviderAccess(c)
+	p, ok := c.Provider("deepseek")
+	if !ok {
+		t.Fatal("deepseek provider missing")
+	}
+	if p.BalanceURL != "https://api.deepseek.com/user/balance" {
+		t.Fatalf("injected balance_url = %q, want the vendor wallet endpoint", p.BalanceURL)
+	}
+	if p.ContextWindow != 1_000_000 {
+		t.Fatalf("injected context_window = %d, want the official 1M default", p.ContextWindow)
+	}
+}
+
 // TestOfficialDeepSeekProviderStillGetsItsDefaults pins the other half of the
 // contract. Isolating the decoded provider list must not strip the defaults a
 // genuinely official endpoint may omit, so they are reapplied by an

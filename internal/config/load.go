@@ -15,7 +15,6 @@ import (
 	"patty/internal/fileutil"
 	fileencoding "patty/internal/fileutil/encoding"
 	"patty/internal/provider"
-	"patty/internal/tier"
 )
 
 // Load builds the configuration: defaults, then user config, then project
@@ -431,12 +430,11 @@ func backfillDeepSeekOfficialEndpointDefaults(p *ProviderEntry) {
 	if p == nil {
 		return
 	}
-	// Balance fetching is a public-profile capability (ADR G4): injecting the
-	// DeepSeek balance endpoint into enterprise/sovereign configs would arm
-	// the boot-side tier lock against a URL the user never wrote.
-	if tier.Default.Allows(tier.CapBalanceFetch) && strings.TrimSpace(p.BalanceURL) == "" {
-		p.BalanceURL = "https://api.deepseek.com/user/balance"
-	}
+	// The wallet endpoint restores only in the public profile via the
+	// profile-gated twin (provider_legacy_deepseek.go, ADR G4): elsewhere the
+	// literal must not compile in, and injecting it would arm the boot-side
+	// tier lock against a URL the user never wrote.
+	backfillLegacyDeepSeekBalanceURL(p)
 	backfillOfficialContextWindow(p, 1_000_000)
 }
 
@@ -1878,10 +1876,14 @@ func ensureDeepSeekOfficialProvider(c *Config) {
 		Models:        []string{"deepseek-v4-flash", "deepseek-v4-pro"},
 		Default:       "deepseek-v4-flash",
 		APIKeyEnv:     "DEEPSEEK_API_KEY",
-		BalanceURL:    "https://api.deepseek.com/user/balance",
 		ContextWindow: 1_000_000,
 		Prices:        deepSeekV4PricesForConfig(c),
 	}
+	// Wallet endpoint only in the public profile (ADR G4): the literal lives
+	// in the profile-gated twin, never in this file. Applied before the
+	// legacy merge so a migrated deepseek-flash's own balance_url — declared
+	// or deliberately stripped — still wins verbatim.
+	backfillLegacyDeepSeekBalanceURL(&entry)
 	if old, ok := c.Provider("deepseek-flash"); ok {
 		entry = officialProviderFromLegacy(entry, old)
 		currency := c.DeepSeekOfficialPricingCurrency()

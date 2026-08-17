@@ -1042,7 +1042,7 @@ type ProviderEntry struct {
 	ResponsesStateful *bool             `toml:"responses_stateful"`
 	resolvedAPIKey    string
 	resolvedSource    CredentialSource
-	BalanceURL        string                       `toml:"balance_url"` // optional; a provider-specific wallet-balance endpoint (DeepSeek: https://api.deepseek.com/user/balance). Empty = no balance readout.
+	BalanceURL        string                       `toml:"balance_url"` // optional; a provider-specific wallet-balance endpoint (public-profile BYOK vendors declare theirs in their preset). Empty = no balance readout.
 	ContextWindow     int                          `toml:"context_window"`
 	MaxOutputTokens   int                          `toml:"max_output_tokens"`
 	Price             *provider.Pricing            `toml:"price"`  // legacy/provider-wide fallback
