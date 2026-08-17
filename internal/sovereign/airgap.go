@@ -224,5 +224,12 @@ func verifyAdvisorySignature(sourcePub []byte, advisory *UpdateAdvisory) bool {
 	return ed25519Verify(sourcePub, advisory.SigningBytes(), advisory.Signature)
 }
 
+// VerifyAdvisorySignature is the exported form used by the CLI's offline
+// update import path (ADR G3: signed offline advisory is the sovereign
+// update channel).
+func VerifyAdvisorySignature(sourcePub []byte, advisory *UpdateAdvisory) bool {
+	return verifyAdvisorySignature(sourcePub, advisory)
+}
+
 // _ keeps the time import visible when tests evolve to use it.
 var _ = time.Now
