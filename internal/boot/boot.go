@@ -2266,11 +2266,12 @@ func tierLockInput(cfg *config.Config) tier.LockInput {
 	if tier.Default.Allows(tier.CapGenericProviders) && tier.Default.Allows(tier.CapBalanceFetch) {
 		return in
 	}
-	// PATTY_ALLOW_GENERIC=1 is the existing dev bypass of the DARI-only
-	// policy (provider.IsBlockedKind). Until Task 5 makes the policy a
-	// build-time property, the opt-in that lets generic kinds register must
-	// also suppress this boot-side lock — otherwise every dev/test boot on
-	// legacy DeepSeek config (balance_url) fails before the bypass applies.
+	// PATTY_ALLOW_GENERIC=1 remains as a TEST-ONLY bridge (boot TestMain sets
+	// it) that suppresses this boot-side lock for legacy-migration fixtures
+	// whose legacy DeepSeek entries carry balance_url under the enterprise
+	// default. provider.IsBlockedKind ignores it since ADR G4 made the policy
+	// a compile-time property; Task 6 stubs the legacy presets and deletes
+	// this early-return together with the test-side Setenv.
 	if os.Getenv("PATTY_ALLOW_GENERIC") == "1" {
 		return in
 	}

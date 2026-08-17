@@ -1,3 +1,5 @@
+//go:build profile_public
+
 package provider_test
 
 import (

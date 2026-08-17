@@ -35,6 +35,9 @@ func TestBuiltinReviewSkillsDeclareReadOnly(t *testing.T) {
 		"review":            true,
 		"security-review":   true,
 		"korean-compliance": true,
+		"pipa-compliance":   true,
+		"kisa-compliance":   true,
+		"csap-compliance":   true,
 	}
 	for _, sk := range builtinSkills() {
 		expected, tracked := want[sk.Name]

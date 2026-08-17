@@ -1,10 +1,10 @@
-//go:build live
+//go:build live && profile_public
 
 // Live network end-to-end test, excluded from the normal suite by the `live`
 // build tag. Run it against a real model with:
 //
 //	set -a; . /path/to/.env; set +a
-//	go test -tags live -run Live ./internal/acp/ -v
+//	go test -tags live,profile_public -run Live ./internal/acp/ -v
 //
 // It drives the full ACP stack — acp.Serve → control.Controller → agent.Agent →
 // the real OpenAI-compatible provider — over a tiny prompt, proving the live

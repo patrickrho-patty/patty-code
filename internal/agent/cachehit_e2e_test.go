@@ -1,3 +1,5 @@
+//go:build profile_public
+
 package agent
 
 import (
@@ -22,22 +24,6 @@ import (
 // echoTool is a trivial read-only tool used to drive a multi-step tool loop:
 // each call appends an assistant(tool_call) + tool(result) pair to the history,
 // growing the request prefix the way a real multi-turn session does.
-type echoTool struct{}
-
-func (echoTool) Name() string        { return "echo" }
-func (echoTool) Description() string { return "echo back the given text" }
-func (echoTool) Schema() json.RawMessage {
-	return json.RawMessage(`{"type":"object","properties":{"text":{"type":"string"}},"required":["text"]}`)
-}
-func (echoTool) ReadOnly() bool { return true }
-func (echoTool) Execute(_ context.Context, args json.RawMessage) (string, error) {
-	var a struct {
-		Text string `json:"text"`
-	}
-	_ = json.Unmarshal(args, &a)
-	return "echoed: " + a.Text, nil
-}
-
 // collectSink captures the per-turn Usage events plus any compaction notices the
 // agent emits, so the test can replay exactly what the status line would show.
 type collectSink struct {

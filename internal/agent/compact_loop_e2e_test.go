@@ -1,3 +1,5 @@
+//go:build profile_public
+
 package agent
 
 import (

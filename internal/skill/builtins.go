@@ -242,7 +242,7 @@ func WithCodeGraphTools(sk Skill, names []string) Skill {
 
 func codeReadingBuiltin(name string) bool {
 	switch name {
-	case "explore", "research", "review", "security-review", "korean-compliance":
+	case "explore", "research", "review", "security-review", "korean-compliance", "pipa-compliance", "kisa-compliance", "csap-compliance":
 		return true
 	default:
 		return false

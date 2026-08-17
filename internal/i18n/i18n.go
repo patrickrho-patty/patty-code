@@ -251,6 +251,9 @@ type Messages struct {
 	CmdLanguage         string // /language
 	CmdSkill            string // /skills
 	CmdCompliance       string // /compliance
+	CmdPipa             string // /pipa
+	CmdKisa             string // /kisa
+	CmdCsap             string // /csap
 	CmdVerbose          string // /verbose
 	CmdReloadCmd        string // /reload-cmd
 	CmdReload           string // /reload

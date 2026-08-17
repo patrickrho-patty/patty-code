@@ -1,3 +1,5 @@
+//go:build profile_public
+
 package agent
 
 import (
@@ -15,48 +17,6 @@ import (
 	"patty/internal/provider/openai"
 	"patty/internal/tool"
 )
-
-type recordSink struct {
-	mu       sync.Mutex
-	evs      []event.Event
-	recovery []event.ProtocolRecoveryAudit
-}
-
-func (s *recordSink) Emit(e event.Event) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.evs = append(s.evs, e)
-}
-
-func (s *recordSink) kinds(k event.Kind) []event.Event {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	var out []event.Event
-	for _, e := range s.evs {
-		if e.Kind == k {
-			out = append(out, e)
-		}
-	}
-	return out
-}
-
-func (s *recordSink) RecordProtocolRecovery(a event.ProtocolRecoveryAudit) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.recovery = append(s.recovery, a)
-}
-
-func (s *recordSink) recoveryCount(kind event.ProtocolRecoveryKind) int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	var count int
-	for _, audit := range s.recovery {
-		if audit.Kind == kind {
-			count++
-		}
-	}
-	return count
-}
 
 // TestAgentEmitsRetryingThenStreams drives the whole chain end-to-end: a real
 // OpenAI-compatible provider hits an httptest server that returns 503 twice then

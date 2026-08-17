@@ -15,7 +15,6 @@ import (
 	"patty/internal/agent"
 	"patty/internal/event"
 	"patty/internal/provider"
-	_ "patty/internal/provider/openai"
 	"patty/internal/tool"
 	"patty/internal/tool/builtin"
 )

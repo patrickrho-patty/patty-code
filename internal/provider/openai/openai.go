@@ -1,3 +1,5 @@
+//go:build profile_public
+
 // Package openai implements the OpenAI-compatible /chat/completions provider.
 // It self-registers under the "openai" kind, so DeepSeek, MiMo, MiniMax-M3, and
 // any other OpenAI-compatible endpoint are just config instances rather than

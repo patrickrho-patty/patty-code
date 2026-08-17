@@ -1,4 +1,4 @@
-//go:build live
+//go:build live && profile_public
 
 package agent
 

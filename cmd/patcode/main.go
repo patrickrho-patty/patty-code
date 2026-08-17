@@ -11,11 +11,11 @@ import (
 
 	// Blank imports wire compile-time built-ins into their registries.
 	//
-	// DARI-only policy (PRD v2 §0.2): the official Harness must not contain
-	// generic OpenAI/Anthropic/Responses providers for Patty service inference.
-	// Only the PAPER provider is registered; the openai/anthropic/responses
-	// packages are still in the source tree for PATTY_ALLOW_GENERIC=1 dev mode
-	// but are NOT imported here, so they cannot be used in official builds.
+	// DARI-only policy (PRD v2 §0.2, ADR G4): the official Harness must not
+	// contain generic OpenAI/Anthropic/Responses providers for Patty service
+	// inference. Only the DARI provider is registered here; the generic
+	// packages compile exclusively into public builds (make build-public)
+	// and are wired from the desktop's profile-tagged file, never here.
 	_ "patty/internal/provider/dari"
 	_ "patty/internal/tool/builtin"
 )

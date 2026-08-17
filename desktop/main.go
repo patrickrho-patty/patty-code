@@ -23,9 +23,7 @@ import (
 
 	// Blank imports wire compile-time built-ins into their registries, exactly as
 	// cmd/patcode does — boot.Build resolves providers/tools from these registries.
-	_ "patty/internal/provider/anthropic"
-	_ "patty/internal/provider/openai"
-	_ "patty/internal/provider/responses"
+	// Generic providers register from providers_public.go in public builds (ADR G4).
 	"patty/internal/repair"
 	_ "patty/internal/tool/builtin"
 )

@@ -1,3 +1,5 @@
+//go:build profile_public
+
 // Package anthropic implements the Anthropic Messages API provider (POST
 // /v1/messages, SSE streaming) with a hand-written net/http client — no SDK. It
 // self-registers under the "anthropic" kind, so any Claude model is a config
