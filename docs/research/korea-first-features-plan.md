@@ -419,61 +419,187 @@ The i18n module (`internal/i18n/messages_ko.go`, 628 lines) provides Korean tran
 
 ---
 
-## 8. DLP Expansion — Full PIPA PII Coverage
+## 8. DLP Rule Catalog Expansion — Multi-Repo Alignment
 
-**Layer**: Harness core (`internal/dlp`)  
-**Priority**: Medium-high — security differentiator for enterprise adoption
+**Layer**: Relay (authoritative) → Harness (mirror) → Admin UI (presets)  
+**Priority**: P0 — security differentiator for enterprise adoption, multi-phase
 
-### Description
+### Architecture
 
-The DLP module (`internal/dlp/scan.go`) already ships with `DefaultKoreanPIIRules()` covering:
-- Resident registration number (RRN) — `kr-rrn` (critical)
-- Business registration number (BRN) — `kr-brn` (high)
-- Bank account number — `kr-bank-account` (high)
-- RRN keyword detection — `kr-rrn-keyword` (low)
+The DLP rule system spans three codebases that must stay aligned:
 
-This is a good start but insufficient for full PIPA compliance. PIPA Article 24-2 specifically defines "unique identification information" that must be protected, and PIPA's enforcement guidelines list additional PII categories that require protection when processed by automated systems.
+```
+PCCP Relay (authoritative source of truth)
+  └─ internal/security/service.go     → rule definitions + detection engine
+  └─ internal/security/workflows.go   → per-org lexicon overrides
+  └─ internal/models/security.go      → SecurityRule, PIILexicon persistence
+  └─ web/src/pages/Security.tsx       → admin UI: rule toggles, builder, tester
+       │
+       │ DARI MsgDLPRulePack (class toggles → extended to per-rule)
+       ▼
+Patty Code Harness (mirrors relay rules)
+  └─ internal/dlp/scan.go             → Scanner, rule definitions
+  └─ internal/dlp/scan_test.go        → positive/negative rule tests
+  └─ internal/dariproto/dlprules.go   → classPrefixes bridge, DLPRulePackWire
+  └─ internal/agent/dlp_wrap.go       → applyPackToScanner sink
+```
 
-### New Detection Rules to Add
+### Current State vs. Target State
 
-| Rule ID | PII Type | Pattern | Severity | Notes |
-|---------|----------|---------|----------|-------|
-| `kr-phone` | Korean mobile phone number | `01[016789]-\d{3,4}-\d{4}` | High | Must handle both `010-1234-5678` and `01012345678` (no dashes). Must NOT match non-phone 11-digit sequences. |
-| `kr-phone-landline` | Korean landline number | `0[2-6][1-5]?-\d{3,4}-\d{4}` | Medium | Seoul (02), other regions (031, 042, etc.). Lower severity because landlines are less personally identifying. |
-| `kr-passport` | Korean passport number | `[A-Z]\d{8}` | High | Single letter + 8 digits. Since 2020, format is `M` + 8 digits, but older passports use other letters. Must require word boundary to avoid matching generic alphanumeric IDs. |
-| `kr-driver-license` | Korean driver's license number | `\d{2}-\d{2}-\d{6}-\d{2}` | High | Region(2) + category(2) + sequence(6) + check(2). The 4-group dash-separated format is distinctive enough to minimize false positives. |
-| `kr-health-insurance` | Korean health insurance number | `\d{10}` with context | Medium | 10-digit number; too generic alone. Only flag when surrounded by context keywords. |
-| `kr-foreign-rrn` | Foreign resident registration number | `\d{6}-[5-8]\d{6}` | Critical | Same format as RRN but the 7th digit is 5-8 (foreign nationals). The current `kr-rrn` regex catches 1-4; this extends to 5-8. |
-| `kr-email-with-name` | Email address with Korean name | Korean name pattern + email | Medium | Detect patterns like "name: email" where the name is in Hangul. |
+| Dimension | Current | Target |
+| :--- | :--- | :--- |
+| Relay rules | 16 (4 PII + 5 secrets + 4 injection + 3 paths) | ~60+ organized hierarchically |
+| Harness rules | 11 (4 PII + 4 secrets + 3 injection) | Mirror relay catalog |
+| Rule ID convention | Relay: `pii-kr-rrn`, Harness: `kr-rrn` | Standardize on relay convention |
+| Sync mechanism | Class-level toggles only (`classPrefixes`) | Per-rule enabled/severity/action |
+| Scope model | Org-wide only | Org → Team → User → Harness (cascading) |
+| Admin UI | Hardcoded `RULE_PRESETS` in Security.tsx | Synced from authoritative catalog |
+| PII Lexicon | DB model exists, not wired to harness | Deferred to Phase 3 |
 
-### User Stories
+### Full Rule Catalog (Category-Subcategory Hierarchy)
 
-- **Preventing PII leakage**: A developer pastes a test user record containing a phone number and RRN into the chat. The DLP scanner catches both before the data reaches the API, redacts them, and shows a warning: "2 PII items detected and redacted: Korean mobile phone number, Korean resident registration number."
-- **Code review safety**: The model reads a file that contains hardcoded test data with real Korean phone numbers. The DLP response inspector catches the phone numbers in the model's output and redacts them.
-- **Enterprise audit trail**: An enterprise admin reviews the DLP findings log and sees that the harness blocked 15 PII transmissions this month, categorized by PII type, with no raw values logged (only redacted samples).
+All rule IDs use the relay convention (`pii-kr-*`, `secret-*`, `injection-*`, `path-*`, `compliance-*`).
 
-### Where This Lives
+```
+korean_pii/                              [class: korean_pii] [prefix: pii-kr-]
+├── national_id/
+│   ├── pii-kr-rrn                       주민등록번호 (Critical)
+│   ├── pii-kr-foreign-rrn               외국인등록번호 (Critical)
+│   └── pii-kr-driver-license            운전면허번호 (High)
+├── contact/
+│   ├── pii-kr-phone                     휴대전화번호 (High)
+│   ├── pii-kr-phone-landline            유선전화번호 (Medium)
+│   └── pii-kr-email                     이메일주소 (Low)
+├── financial/
+│   ├── pii-kr-bank-account              계좌번호 (High)
+│   ├── pii-kr-credit-card               신용카드번호 (Critical)
+│   ├── pii-kr-business                  사업자등록번호 (High)
+│   └── pii-kr-health-insurance          건강보험번호 (Critical)
+├── travel/
+│   └── pii-kr-passport                  여권번호 (High)
+└── digital/
+    ├── pii-kr-ipin                      아이핀 (High)
+    └── pii-kr-certificate               공동인증서 (Medium)
 
-| File | Change |
-|------|--------|
-| `internal/dlp/scan.go` | Add new rules to `DefaultKoreanPIIRules()`. |
-| `internal/dlp/scan_test.go` (or new `kr_pii_test.go`) | Test each new rule with positive and negative cases. |
-| `internal/dlp/response.go` | The response inspector already uses the scanner — no change needed. |
+secret/                                  [class: secret] [prefixes: secret-aws-, secret-gcp-, etc.]
+├── cloud/
+│   ├── secret-aws-key                   (Critical)
+│   ├── secret-gcp-key                   (Critical)
+│   ├── secret-azure-key                 (Critical)
+│   └── secret-ncloud-key                네이버클라우드 API 키 (Critical)
+├── api/
+│   ├── secret-github-pat                (Critical)
+│   ├── secret-gitlab-token              (Critical)
+│   ├── secret-openai-key                (Critical)
+│   ├── secret-slack-webhook             (High)
+│   └── secret-jwt-token                 (High)
+├── crypto/
+│   ├── secret-private-key-pem           (Critical)
+│   ├── secret-ssh-key                   (Critical)
+│   └── secret-pgp-key                   (Critical)
+└── database/
+    ├── secret-mysql-connstring           (High)
+    ├── secret-postgres-connstring        (High)
+    └── secret-redis-connstring           (High)
 
-### Edge Cases
+prompt_injection/                        [class: prompt_injection] [prefix: injection-]
+├── override/
+│   └── injection-override               ignore previous instructions (Critical)
+├── jailbreak/
+│   └── injection-jailbreak              DAN/do anything now (Critical)
+├── system/
+│   └── injection-system-prompt          fake system prompt (High)
+├── exfil/
+│   ├── injection-exfil-email            ask to email output (High)
+│   └── injection-exfil-url              ask to POST output (High)
+└── encoding/
+    └── injection-base64                 base64-encoded instruction (High)
 
-- **Phone number false positives**: 11-digit number sequences appear frequently in code (timestamps, IDs, hashes). The phone regex must require the `010` prefix or `01[016789]` prefix and reasonable grouping. Bare digit sequences without dash separators need additional context (proximity to keywords like "phone", "tel", "mobile", or Korean equivalents).
-- **Bank account false positives**: The current `kr-bank-account` regex (`\d{2,4}-\d{2,4}-\d{2,6}-\d{0,2}`) is very broad and likely fires on version numbers, IP addresses, and date ranges. This should be tightened by requiring specific digit-group lengths that match actual Korean bank account formats (each bank has a specific pattern).
-- **Test data exemption**: Developers frequently use obviously fake PII in tests (e.g., `000000-0000000` for RRN, `010-0000-0000` for phone). The scanner should have a known-test-data allowlist that passes through obviously synthetic patterns without flagging.
-- **Markdown/code fence context**: PII detected inside a code fence or inline code in the model's response may be intentional (e.g., the model is showing how to validate a phone number format). The response inspector should flag but not block PII inside code fences, vs. blocking PII in prose.
-- **Checksum validation**: Korean RRNs have a checksum digit. The current regex doesn't verify it. Adding checksum validation would dramatically reduce false positives at the cost of slightly more CPU per scan. Recommendation: validate checksum for `kr-rrn` and `kr-foreign-rrn` to reduce false positive rate.
+sensitive_path/                          [class: sensitive_path] [prefix: path-]
+├── system/
+│   ├── path-etc-passwd                  /etc/passwd (Critical)
+│   ├── path-etc-shadow                  /etc/shadow (Critical)
+│   └── path-proc-self                   /proc/self/* (High)
+├── credentials/
+│   ├── path-dotenv                      .env file (Critical)
+│   ├── path-aws-credentials             ~/.aws/credentials (Critical)
+│   ├── path-gcp-key                     GCP service account JSON (Critical)
+│   └── path-kube-config                 ~/.kube/config (High)
+└── source/
+    ├── path-git-config                  .git/config (Medium)
+    └── path-npmrc                       .npmrc (Medium)
 
-### Future Upgrades
+compliance/                              [NEW class: compliance] [prefixes: pipa-, kisa-, csap-]
+├── pipa/
+│   ├── pipa-consent-missing             동의 없는 수집 (High)
+│   ├── pipa-retention-violation         보관기간 초과 (High)
+│   ├── pipa-encryption-weak             취약한 암호화 (Critical)
+│   └── pipa-log-plaintext-pii           PII 평문 로깅 (Critical)
+├── kisa/
+│   ├── kisa-sql-injection               SQL 인젝션 패턴 (Critical)
+│   ├── kisa-hardcoded-credential        하드코딩된 자격증명 (Critical)
+│   └── kisa-weak-hash                   MD5/SHA1 해시 사용 (High)
+└── csap/
+    ├── csap-log-retention               로그 보관 1년 미만 (High)
+    ├── csap-data-residency              데이터 국외 이전 (Critical)
+    └── csap-no-mfa                      MFA 미적용 (High)
+```
 
-- **Configurable severity levels**: Allow enterprise admins to adjust severity per rule (e.g., demote `kr-phone` from high to medium for a project that legitimately handles phone numbers).
-- **Machine-learning based detection**: For PII types that can't be reliably detected by regex alone (Korean names, addresses), add a lightweight ML classifier that runs locally without sending data externally.
-- **DLP dashboard**: A `/dlp` command that shows DLP statistics for the current session — how many items were detected, by type, with timing information.
-- **Allowlist management**: A config-file or slash-command way to allowlist specific patterns (e.g., "this phone number is the company's public customer service number and is not PII").
+### Scope Model (Cascading Override)
+
+```
+Organization (default rule pack from relay)
+     │
+     ▼
+Team override: can enable additional rules or disable some
+     │
+     ▼
+User override: further narrows for specific users
+     │
+     ▼
+Harness override: machine-level final override
+
+Rule precedence: Harness > User > Team > Organization
+```
+
+### DARI Protocol Changes
+
+Extend `DLPRulePackWire` (in `internal/dariproto/dlprules.go`) with:
+- `Rules []DLPRuleWire` — per-rule enabled/severity/action overrides (in addition to class toggles)
+- `Scope DLPRuleScope` — Level (org/team/user/harness) + ID
+- `DLPRuleScope` struct: `Level string`, `ID string`
+
+### Implementation Order
+
+| Phase | Issue | What | Repo |
+| :---: | :--- | :--- | :--- |
+| **P0** | PAT-1406 | **Align rule catalog**: standardize IDs, add authoritative `defaultSecurityRuleDefs()` with all ~60 rules | Relay |
+| **P0** | PAT-1407 | **Mirror rules to harness**: create per-category rule files, update `NewScanner()`, extend `classPrefixes`, comprehensive tests | Harness |
+| **P1** | PAT-1408 | **Upgrade sync protocol**: extend `DLPRulePackWire` for per-rule toggles + severity, update `applyPackToScanner` | Both repos |
+| **P1** | PAT-1409 | **Scope model**: add `DLPRuleScope` to protocol, cascade logic in `applyPackToScanner`, org/team/user/harness hierarchy | Both repos |
+| **P2** | PAT-1410 | **Admin UI alignment**: sync `RULE_PRESETS` with authoritative catalog, add scope selector, per-rule severity adjustment | Web |
+| **P3** | FUTURE | **PII Lexicon push**: wire org-custom regex patterns from relay to harness | Both repos |
+
+### Edge Cases (from PAT-1396)
+
+- **Phone number false positives**: 11-digit sequences appear in code (timestamps, IDs, hashes). Require `010` prefix and reasonable grouping.
+- **Bank account false positives**: Current regex too broad. Tighten to actual Korean bank formats.
+- **Test data exemption**: Fake PII (`000000-0000000`, `010-0000-0000`) should pass through via allowlist.
+- **Code fence context**: PII inside markdown code blocks may be intentional (validation regex demos). Flag but don't block.
+- **Checksum validation**: RRN checksum dramatically reduces false positives at minimal CPU cost.
+
+### Reuse Strategy
+
+| Existing Component | How to Reuse |
+| :--- | :--- |
+| Relay's `SecurityRule` model | Already persists per-org rule toggles. Add new rule IDs to `defaultSecurityRuleDefs()`. |
+| Relay's `SetRule()` API | Already lets admins toggle rules. Works with any rule ID. |
+| Relay's `CheckContext()` pipeline | Already runs korean PII + secrets + injection + paths. Add new patterns to arrays. |
+| Harness's `classPrefixes` | Add prefixes for new categories. |
+| Harness's `applyPackToScanner()` | Already disables by prefix. Extend for per-rule toggles. |
+| Harness's `NewScanner()` merge logic | Already appends: `append(append(PII(), secrets()...), injection()...)`. Add new categories. |
+| Admin UI `Security.tsx` | Already has rule builder, tester, toggle, severity selector. Extend `RULE_PRESETS`. |
+| Existing test infrastructure | `mustCompileRegex`, `containsFinding`, `TestClassPrefixesMatchRealRuleIDs`. |
 
 ---
 
@@ -623,7 +749,8 @@ Recommended implementation sequence based on dependencies and impact:
 
 | Phase | Features | Rationale |
 |-------|----------|-----------|
-| **Phase 1** — Quick wins | #1 (KRW), #8 (DLP expansion), #6 (EUC-KR) | Small, contained changes in existing modules. No architectural decisions needed. High correctness impact. |
-| **Phase 2** — Core UX | #5 (Choseong everywhere), #10 (NFC normalization), #7 (i18n audit) | Core Korean UX improvements. #5 requires a refactor (extract to textutil) that #10 benefits from. #7 is labor-intensive but parallelizable. |
-| **Phase 3** — System skills | #4 (Compliance scanning), #9 (Formatting awareness) | Model-driven features that need skill authoring and testing. Can be developed in parallel with Phase 2. |
-| **Phase 4** — Infrastructure | #2 (HWP plugin), #3 (Korean Doc Hub) | Require separate repositories, services, and potentially hosting infrastructure. Longest lead time. Highest differentiation impact. |
+| **Phase 1** — Quick wins | #1 (KRW), #6 (EUC-KR), #7 (i18n audit) | Small, contained changes in existing modules. Already completed. |
+| **Phase 2** — Core UX | #5 (Choseong everywhere), #10 (NFC normalization) | Core Korean UX improvements. #10 completed. |
+| **Phase 3** — System skills | #4 (Compliance scanning), #9 (Formatting awareness) | Model-driven features. Both completed. |
+| **Phase 4** — DLP rule catalog | #8 (DLP expansion — multi-repo catalog alignment) | Expanded scope: relay authoritative catalog → harness mirror → admin UI sync. Multi-phase, P0 priority. See Section 8 for full plan. |
+| **Phase 5** — Infrastructure | #2 (HWP plugin), #3 (Korean Doc Hub) | Require separate repositories, services, and potentially hosting infrastructure. Longest lead time.
