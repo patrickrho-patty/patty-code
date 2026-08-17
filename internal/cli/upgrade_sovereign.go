@@ -6,6 +6,7 @@
 package cli
 
 import (
+	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"testing"
 	"time"
 	"unicode"
 
@@ -57,48 +59,83 @@ offline advisory is the update channel.
 // the payload for the installer is the follow-up installer work; this
 // command is the verification gate.
 func runUpdateImport(args []string) int {
-	fs := pflag.NewFlagSet("update import", pflag.ContinueOnError)
-	keyPath := fs.String("key", "", "path to a hex-encoded ed25519 public key of the issuing source")
-	if err := fs.Parse(args); err != nil {
-		return 1
-	}
-	rest := fs.Args()
-	if len(rest) != 1 || *keyPath == "" {
+	advisoryPath, keyPath, err := parseUpdateImportArgs(args)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "usage: patcode update import <advisory-file> --key <pubkey-file>")
 		return 1
 	}
-	f, err := os.Open(rest[0])
+	adv, err := readUpdateAdvisory(advisoryPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "update import: %v\n", err)
+		fmt.Fprintln(os.Stderr, "update import:", err)
 		return 1
+	}
+	pub, err := loadUpdatePublicKey(keyPath)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "update import:", err)
+		return 1
+	}
+	return reportImport(adv, sovereign.VerifyAdvisorySignature(pub, &adv), adv.IsExpired(nowUnixMilli()))
+}
+
+// parseUpdateImportArgs pulls the advisory path and --key flag out of
+// `patcode update import`'s positional + flag args.
+func parseUpdateImportArgs(args []string) (advisoryPath, keyPath string, err error) {
+	fs := pflag.NewFlagSet("update import", pflag.ContinueOnError)
+	keyFlag := fs.String("key", "", "path to a hex-encoded ed25519 public key of the issuing source")
+	if err = fs.Parse(args); err != nil {
+		return "", "", err
+	}
+	rest := fs.Args()
+	if len(rest) != 1 || *keyFlag == "" {
+		return "", "", errors.New("missing advisory path or --key flag")
+	}
+	return rest[0], *keyFlag, nil
+}
+
+// readUpdateAdvisory opens the advisory file, enforces the 1 MiB size
+// cap, and decodes its JSON.
+func readUpdateAdvisory(path string) (sovereign.UpdateAdvisory, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return sovereign.UpdateAdvisory{}, err
 	}
 	defer f.Close()
 	raw, err := io.ReadAll(io.LimitReader(f, maxAdvisoryBytes+1))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "update import: %v\n", err)
-		return 1
+		return sovereign.UpdateAdvisory{}, err
 	}
 	if len(raw) > maxAdvisoryBytes {
-		fmt.Fprintf(os.Stderr, "update import: advisory too large (>%d bytes)\n", maxAdvisoryBytes)
-		return 1
+		return sovereign.UpdateAdvisory{}, fmt.Errorf("advisory too large (>%d bytes)", maxAdvisoryBytes)
 	}
 	var adv sovereign.UpdateAdvisory
 	if err := json.Unmarshal(raw, &adv); err != nil {
-		fmt.Fprintf(os.Stderr, "update import: malformed advisory: %v\n", err)
-		return 1
+		return sovereign.UpdateAdvisory{}, fmt.Errorf("malformed advisory: %w", err)
 	}
-	keyHex, err := os.ReadFile(*keyPath)
+	return adv, nil
+}
+
+// loadUpdatePublicKey reads the hex-encoded ed25519 public key from
+// path, strips every Unicode whitespace rune (NBSP, line separator,
+// etc.), hex-decodes it, and verifies the resulting length is exactly
+// 32 bytes.
+func loadUpdatePublicKey(path string) ([]byte, error) {
+	keyHex, err := os.ReadFile(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "update import: %v\n", err)
-		return 1
+		return nil, err
 	}
 	pub, err := hex.DecodeString(stripWhitespace(string(keyHex)))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "update import: --key must be hex: %v\n", err)
-		return 1
+		return nil, fmt.Errorf("--key must be hex: %w", err)
 	}
-	sigOK := sovereign.VerifyAdvisorySignature(pub, &adv)
-	expired := adv.IsExpired(nowUnixMilli())
+	if len(pub) != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("--key must decode to %d bytes (ed25519 public key), got %d", ed25519.PublicKeySize, len(pub))
+	}
+	return pub, nil
+}
+
+// reportImport prints the advisory's audit digest and signature/expiry
+// verdict, then returns the process exit code.
+func reportImport(adv sovereign.UpdateAdvisory, sigOK, expired bool) int {
 	fmt.Printf("advisory %s  version=%s\n", adv.AdvisoryID, adv.Version)
 	fmt.Printf("digest  %x\n", adv.Digest())
 	fmt.Printf("signature: %v  expired: %v\n", sigOK, expired)
@@ -128,5 +165,19 @@ func stripWhitespace(s string) string {
 	}, s)
 }
 
-// nowUnixMilli is swappable for tests via swapNowUnixMilli.
+// nowUnixMilli returns the current wall-clock time in milliseconds since
+// the Unix epoch. It is a package-level variable so the expiry test can
+// swap it via setNowUnixMilli (see upgrade_sovereign_test.go).
 var nowUnixMilli = func() int64 { return time.Now().UnixMilli() }
+
+// setNowUnixMilli replaces nowUnixMilli for the lifetime of a test and
+// returns a restore function the test should defer. It is undefined
+// outside the test build because no production code path is allowed to
+// drift the wall clock — the swap exists purely to verify IsExpired
+// behaviour deterministically.
+func setNowUnixMilli(t testing.TB, fn func() int64) func() {
+	t.Helper()
+	prev := nowUnixMilli
+	nowUnixMilli = fn
+	return func() { nowUnixMilli = prev }
+}
