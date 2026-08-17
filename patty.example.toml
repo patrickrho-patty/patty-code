@@ -181,7 +181,12 @@ stalled_warning_seconds = 900   # warn once per background job after this many q
 
 # ---------------------------------------------------------------------------
 # Sovereign / air-gap posture (sovereign builds default this ON; other
-# builds default it off). See docs/adr/2026-08-16-harness-build-profiles.md.
+# builds opt in here). NOTE (ADR 2026-08-16): build profiles are chosen at
+# compile time via `make build-public | build-enterprise | build-sovereign`.
+# Sovereign binaries contain no vendor telemetry, crash upload, online
+# update fetch, generic providers, BYOK presets, or balance endpoints —
+# this section only tunes the air-gap allowlist; it cannot re-enable what
+# the build excludes. See docs/adr/2026-08-16-harness-build-profiles.md.
 # ---------------------------------------------------------------------------
 [sovereign]
 # airgap_enabled = false     # restrict outbound dials to the allowlist below
