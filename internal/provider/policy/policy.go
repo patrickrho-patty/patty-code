@@ -13,11 +13,11 @@ package policy
 
 import "patty/internal/tier"
 
-// GenericBlockedKinds are the generic HTTP-protocol LLM providers
+// genericBlockedKinds are the generic HTTP-protocol LLM providers
 // excluded from non-public build profiles by the DARI-only policy
-// (PRD v2 §0.2, §826). Exported so tests and operator-facing tools
-// can grep for or render the list.
-var GenericBlockedKinds = map[string]bool{
+// (PRD v2 §0.2, §826). Package-private — the only consult path is
+// IsBlockedKind; operators must not enumerate the list directly.
+var genericBlockedKinds = map[string]bool{
 	"openai":              true,
 	"anthropic":           true,
 	"responses":           true,
@@ -35,5 +35,5 @@ func IsBlockedKind(kind string) bool {
 	if tier.Default.Allows(tier.CapGenericProviders) {
 		return false
 	}
-	return GenericBlockedKinds[kind]
+	return genericBlockedKinds[kind]
 }
