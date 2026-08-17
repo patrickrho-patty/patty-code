@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"testing"
 	"unicode"
 
 	"patty/internal/skill"
@@ -26,21 +25,9 @@ var ErrGitHubFetchUnavailable = errors.New("install source: GitHub fetch unavail
 // githubAPIBaseURLFn is the swappable hook tests use to point the
 // fetch at an httptest.Server. Production code calls defaultGitHubAPIBaseURL
 // (declared in plan_github*.go with build tags) which writes this hook
-// at init time. Tests can then re-point the hook via setGitHubAPIBaseURL
+// directly.
 // and restore it on cleanup.
 var githubAPIBaseURLFn = defaultGitHubAPIBaseURL
-
-// setGitHubAPIBaseURL replaces the GitHub base URL hook for the
-// lifetime of a test and returns a restore function the test should
-// defer. It is undefined outside the test build because no production
-// code path is allowed to redirect the GitHub fetch — the swap exists
-// purely to point fetchGitHubContents at an httptest server.
-func setGitHubAPIBaseURL(t testing.TB, fn func() (string, error)) func() {
-	t.Helper()
-	prev := githubAPIBaseURLFn
-	githubAPIBaseURLFn = fn
-	return func() { githubAPIBaseURLFn = prev }
-}
 
 // plan turns a request into a list of actions plus a warnings slice. It
 // does not touch the disk; the apply phase is responsible for side effects.

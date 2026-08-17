@@ -30,3 +30,11 @@ func backfillLegacyDeepSeekBalanceURL(*ProviderEntry) {}
 // profile: no stock DeepSeek template is embedded, so no config — not even a
 // hand-pasted copy — is treated as the stock one.
 func isStandardDeepSeekProviderTemplate(*ProviderEntry) bool { return false }
+
+// deepSeekOfficialTemplateEntry has no stock template outside the public
+// profile (ADR G4): provider_access=["deepseek"] does not materialize a
+// generic provider in enterprise/sovereign builds.
+func deepSeekOfficialTemplateEntry() (ProviderEntry, bool) {
+	tier.AssertDisallowed(tier.CapPublicPresets)
+	return ProviderEntry{}, false
+}

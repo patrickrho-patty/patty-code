@@ -52,3 +52,21 @@ func isStandardDeepSeekProviderTemplate(p *ProviderEntry) bool {
 		strings.TrimSpace(p.BalanceURL) == "https://api.deepseek.com/user/balance" &&
 		p.ContextWindow == 1_000_000
 }
+
+// deepSeekOfficialTemplateEntry returns the stock official DeepSeek entry
+// that desktop provider_access can materialize. Public-profile only (ADR G4):
+// synthesizing a generic openai-kind provider in enterprise/sovereign would
+// both embed the foreign endpoint and arm the boot tier lock against an
+// entry the user never wrote.
+func deepSeekOfficialTemplateEntry() (ProviderEntry, bool) {
+	tier.AssertAllowed(tier.CapPublicPresets)
+	return ProviderEntry{
+		Name:          "deepseek",
+		Kind:          "openai",
+		BaseURL:       "https://api.deepseek.com",
+		Models:        []string{"deepseek-v4-flash", "deepseek-v4-pro"},
+		Default:       "deepseek-v4-flash",
+		APIKeyEnv:     "DEEPSEEK_API_KEY",
+		ContextWindow: 1_000_000,
+	}, true
+}

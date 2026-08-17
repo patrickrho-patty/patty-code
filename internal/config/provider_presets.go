@@ -28,6 +28,7 @@ func CuratedProviderPresets() []ProviderPreset {
 }
 
 func CuratedProviderPreset(id string) (ProviderPreset, bool) {
+	tier.AssertAllowed(tier.CapPublicPresets)
 	id = strings.ToLower(strings.TrimSpace(id))
 	for _, p := range curatedProviderPresets {
 		if p.ID == id {

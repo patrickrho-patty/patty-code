@@ -23,8 +23,12 @@ build:
 build-public:
 	CGO_ENABLED=0 go build -tags profile_public -ldflags "$(LDFLAGS)" -o bin/patcode-public$(GOEXE) ./cmd/patcode
 
+# Enterprise is the no-tags default: a bare `go build` (see
+# internal/tier/tags_enterprise.go). No profile_enterprise tag exists in the
+# source tree, and none may be introduced — enterprise is defined by the
+# ABSENCE of profile_public/profile_sovereign.
 build-enterprise:
-	CGO_ENABLED=0 go build -tags profile_enterprise -ldflags "$(LDFLAGS)" -o bin/patcode$(GOEXE) ./cmd/patcode
+	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/patcode$(GOEXE) ./cmd/patcode
 
 build-sovereign:
 	CGO_ENABLED=0 go build -tags profile_sovereign -ldflags "$(LDFLAGS)" -o bin/patcode-sovereign$(GOEXE) ./cmd/patcode
@@ -33,21 +37,37 @@ build-sovereign:
 # every tag set so unexercised gates cannot rot silently (ADR decision 4).
 test-profiles:
 	go build -tags profile_public ./... && go test -tags profile_public ./...
-	go build -tags profile_enterprise ./... && go test -tags profile_enterprise ./...
+	go build ./... && go test ./...
 	go build -tags profile_sovereign ./... && go test -tags profile_sovereign ./...
-	cd desktop && go build -tags profile_public ./... && go build -tags profile_enterprise ./... && go build -tags profile_sovereign ./...
+	cd desktop && go build -tags profile_public ./... && go build ./... && go build -tags profile_sovereign ./...
 	cd desktop && go test -tags profile_public . && go test -tags profile_sovereign .
 
-# ADR G2/G3 consequence: sovereign binaries must provably lack external
+# ADR G2/G3/G4 consequence: sovereign binaries must provably lack external
 # endpoints. Auditors grep the binary; so does CI.
 #
 # Pattern targets ONLY endpoint-shaped strings (full URLs), not bare hosts.
 # Tightening from bare hosts to full URLs filters out false-positive
 # matches from profile-agnostic host-matching logic (config.go:1640,
 # cache_policy.go:61, web_search.go:31) and from prose mentions in i18n
-# messages_en/ko and the embedded docs corpus (docs/embed.go). The remaining
-# matches are real endpoint literals that should never appear in a sovereign
-# binary.
+# messages_en/ko and the embedded docs corpus (docs/embed.go — e.g.
+# REASONING_PROVIDERS.md mentions https://api.deepseek.com/anthropic as
+# BYOK reference prose).
+#
+# Tolerated in sovereign binaries, by design (ADR gate inventory):
+#   - host-recognition literals (api.deepseek.com, api.xiaomimimo.com,
+#     dashscope.aliyuncs.com, api.moonshot.*) — migration/feature detection
+#     on user-written config entries; they dial nothing.
+#   - i18n + docs-corpus prose — user-facing copy, not endpoints. This
+#     includes GUIDE.md/GUIDE.ko-KR.md/CONFIG_PATHS.md example configs that
+#     reference the omni vLLM-mimic endpoint and REASONING_PROVIDERS.md's
+#     deepseek BYOK examples. (A profile-aware docs corpus is a G5-class
+#     follow-up; the prose dials nothing.)
+#   - internal mirrors — the sovereign update/plugin channel itself.
+#
+# Compile-time exclusion of endpoint CODE is additionally proven by the
+# tier twin files (tier.AssertAllowed/AssertDisallowed at every gate
+# boundary) and the per-gate materialization tests; this grep is the
+# belt-and-suspenders binary check.
 audit-sovereign: build-sovereign
 	@hits=$$(strings bin/patcode-sovereign$(GOEXE) | grep -c -E 'https://crash\.patty\.io|https://api\.github\.com|https://github\.com/pattycorp/PattyCode/releases/download|https://api\.deepseek\.com/user/balance'); \
 	if [ "$$hits" -ne 0 ]; then \

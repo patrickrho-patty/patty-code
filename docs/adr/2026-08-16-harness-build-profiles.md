@@ -39,8 +39,9 @@ runtime-undone by env vars or compromised config.
 
 1. **One repository, one core, three build profiles.** Profiles are Go build
    tag sets producing distinct binaries from the same source:
-   `-tags profile_public`, `-tags profile_enterprise` (default),
-   `-tags profile_sovereign`.
+   `-tags profile_public`, no tags (enterprise default),
+   `-tags profile_sovereign`. Enterprise is defined by the ABSENCE of the
+   other two tags; no `profile_enterprise` tag exists.
 2. **A `profile` package owns the truth.** Each build links exactly one
    `profile.Default` (compile-time constant). `profile.Lock()` semantics:
    features excluded by the linked profile **cannot be enabled at runtime**
@@ -233,7 +234,7 @@ internal/
   auth/                       ← NEW (G1)
     auth.go                   // LoginProvider interface (unconditional)
     oauthpub/…                //go:build profile_public
-    samlent/…                 //go:build profile_enterprise || profile_sovereign
+    samlent/…                 //go:build !profile_public
     adgov/…                   //go:build profile_sovereign
   provider/
     dari/                     // UNCONDITIONAL — the governed data plane

@@ -7,6 +7,8 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+
+	"patty/internal/tier"
 )
 
 // ErrBalanceUnavailable is returned by the stub twins outside the public
@@ -20,6 +22,7 @@ var ErrBalanceUnavailable = errors.New("provider balance fetching is not availab
 // branch they take on the public side. With a non-empty URL the stub
 // returns ErrBalanceUnavailable because the network call cannot happen.
 func Fetch(ctx context.Context, url, apiKey string) (*Balance, error) {
+	tier.AssertDisallowed(tier.CapBalanceFetch)
 	if strings.TrimSpace(url) == "" {
 		return nil, nil
 	}

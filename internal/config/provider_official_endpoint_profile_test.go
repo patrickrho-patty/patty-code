@@ -12,20 +12,16 @@ import "testing"
 // tier lock against a URL the user never wrote. The public-profile positive
 // twins live in provider_isolation_public_test.go.
 
-// The desktop official-provider injection keeps the 1M window but omits the
-// wallet endpoint.
+// The desktop official-provider injection does not materialize a generic
+// DeepSeek provider outside the public profile (ADR G4): synthesizing one
+// would embed the foreign endpoint and arm the boot tier lock against an
+// entry the user never wrote. provider_access=["deepseek"] surfaces as
+// "not added" instead.
 func TestOfficialDeepSeekInjectionOmitsBalanceURLOutsidePublicProfile(t *testing.T) {
 	c := &Config{Desktop: DesktopConfig{ProviderAccess: []string{"deepseek"}}}
 	normalizeDesktopOfficialProviderAccess(c)
-	p, ok := c.Provider("deepseek")
-	if !ok {
-		t.Fatal("deepseek provider missing")
-	}
-	if p.BalanceURL != "" {
-		t.Fatalf("injected balance_url = %q, want empty outside the public profile", p.BalanceURL)
-	}
-	if p.ContextWindow != 1_000_000 {
-		t.Fatalf("injected context_window = %d, want the official 1M default still backfilled", p.ContextWindow)
+	if p, ok := c.Provider("deepseek"); ok {
+		t.Fatalf("deepseek provider materialized outside the public profile: %+v", p)
 	}
 }
 

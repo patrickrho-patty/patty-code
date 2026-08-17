@@ -9,6 +9,8 @@ package billing
 // the network path lives here.
 
 import (
+	"patty/internal/tier"
+
 	"context"
 	"encoding/json"
 	"fmt"
@@ -38,6 +40,7 @@ var httpClient = &http.Client{Timeout: 12 * time.Second}
 // configured", not an error — so callers can treat both the same and just omit
 // the readout.
 func Fetch(ctx context.Context, url, apiKey string) (*Balance, error) {
+	tier.AssertAllowed(tier.CapBalanceFetch)
 	return FetchWithClient(ctx, httpClient, url, apiKey)
 }
 

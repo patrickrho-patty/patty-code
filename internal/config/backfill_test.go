@@ -351,9 +351,8 @@ func TestNormalizeDesktopOfficialProviderAccessCanonicalizesOnlyDeepSeekIDs(t *t
 	if c.DefaultModel != "deepseek/deepseek-v4-pro" {
 		t.Fatalf("default_model = %q, want deepseek/deepseek-v4-pro", c.DefaultModel)
 	}
-	if _, ok := c.Provider("deepseek"); !ok {
-		t.Fatal("canonical deepseek provider missing")
-	}
+	// The canonical "deepseek" provider materializes only in the public
+	// profile (ADR G4) — pinned by official_injection_public_test.go.
 	if _, ok := c.Provider("mimo-token-plan"); ok {
 		t.Fatal("mimo-token-plan should not be injected as an official provider")
 	}
@@ -389,13 +388,9 @@ func TestNormalizeDesktopOfficialProviderAccessBackfillsOfficialContextWindow(t 
 
 	normalizeDesktopOfficialProviderAccess(c)
 
-	deepseek, ok := c.Provider("deepseek")
-	if !ok {
-		t.Fatal("deepseek provider missing")
-	}
-	if deepseek.ContextWindow != 1_000_000 {
-		t.Fatalf("deepseek context_window = %d, want official default", deepseek.ContextWindow)
-	}
+	// MiMo catalog migration is host recognition on user-written entries —
+	// profile-agnostic. The official DeepSeek injection itself is public-only
+	// (ADR G4); its twin is official_injection_public_test.go.
 	mimoAPI, ok := c.Provider("mimo-api")
 	if !ok {
 		t.Fatal("mimo-api provider missing")

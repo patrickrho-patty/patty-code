@@ -14,7 +14,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"testing"
 	"time"
 	"unicode"
 
@@ -167,17 +166,5 @@ func stripWhitespace(s string) string {
 
 // nowUnixMilli returns the current wall-clock time in milliseconds since
 // the Unix epoch. It is a package-level variable so the expiry test can
-// swap it via setNowUnixMilli (see upgrade_sovereign_test.go).
+// swap it directly from upgrade_sovereign_test.go (same package).
 var nowUnixMilli = func() int64 { return time.Now().UnixMilli() }
-
-// setNowUnixMilli replaces nowUnixMilli for the lifetime of a test and
-// returns a restore function the test should defer. It is undefined
-// outside the test build because no production code path is allowed to
-// drift the wall clock — the swap exists purely to verify IsExpired
-// behaviour deterministically.
-func setNowUnixMilli(t testing.TB, fn func() int64) func() {
-	t.Helper()
-	prev := nowUnixMilli
-	nowUnixMilli = fn
-	return func() { nowUnixMilli = prev }
-}

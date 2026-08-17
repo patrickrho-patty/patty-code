@@ -176,3 +176,17 @@ func equalBytes(a, b []byte) bool {
 	}
 	return true
 }
+
+// setNowUnixMilli replaces nowUnixMilli for the lifetime of a test and
+// restores it on cleanup.
+// setNowUnixMilli replaces nowUnixMilli for the lifetime of a test and
+// returns a restore function the test should defer. It is undefined
+// outside the test build because no production code path is allowed to
+// drift the wall clock — the swap exists purely to verify IsExpired
+// behaviour deterministically.
+func setNowUnixMilli(t testing.TB, fn func() int64) func() {
+	t.Helper()
+	prev := nowUnixMilli
+	nowUnixMilli = fn
+	return func() { nowUnixMilli = prev }
+}

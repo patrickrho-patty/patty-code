@@ -1869,16 +1869,14 @@ func ensureDeepSeekOfficialProvider(c *Config) {
 		}
 		return
 	}
-	entry := ProviderEntry{
-		Name:          "deepseek",
-		Kind:          "openai",
-		BaseURL:       "https://api.deepseek.com",
-		Models:        []string{"deepseek-v4-flash", "deepseek-v4-pro"},
-		Default:       "deepseek-v4-flash",
-		APIKeyEnv:     "DEEPSEEK_API_KEY",
-		ContextWindow: 1_000_000,
-		Prices:        deepSeekV4PricesForConfig(c),
+	entry, ok := deepSeekOfficialTemplateEntry()
+	if !ok {
+		// Non-public profiles embed no official DeepSeek template (ADR G4):
+		// provider_access=["deepseek"] surfaces as "not added" instead of
+		// synthesizing a generic provider the boot tier lock would refuse.
+		return
 	}
+	entry.Prices = deepSeekV4PricesForConfig(c)
 	// Wallet endpoint only in the public profile (ADR G4): the literal lives
 	// in the profile-gated twin, never in this file. Applied before the
 	// legacy merge so a migrated deepseek-flash's own balance_url — declared

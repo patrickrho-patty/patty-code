@@ -85,22 +85,8 @@ func AssertDisallowed(c Capability) {
 	}
 }
 
-// DefaultAllows is a test-friendly accessor over Default.Allows. Use it in
-// assertions where reading "Default allows CapX" is clearer than
-// "!Default.Allows(CapX)" — and where a panic would mask the test
-// outcome. Production twin files keep using AssertAllowed / AssertDisallowed
-// because those carry the audit-trail value of an explicit check.
-func DefaultAllows(c Capability) bool {
-	return Default.Allows(c)
-}
-
-// DefaultDisallows is the mirror of DefaultAllows.
-func DefaultDisallows(c Capability) bool {
-	return !Default.Allows(c)
-}
-
 // String returns a stable human-readable label for the capability so
-// assertAllowed's panic message is grep-friendly.
+// AssertAllowed's panic message is grep-friendly.
 func (c Capability) String() string {
 	switch c {
 	case CapGenericProviders:
