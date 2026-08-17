@@ -2263,15 +2263,20 @@ func applyRuntimeAutoPricingCurrency(cfg *config.Config, currency string) {
 // exclude them; public configs pass through untouched.
 func tierLockInput(cfg *config.Config) tier.LockInput {
 	var in tier.LockInput
-	if tier.Default.Allows(tier.CapGenericProviders) && tier.Default.Allows(tier.CapBalanceFetch) {
+	allowsGeneric := tier.Default.Allows(tier.CapGenericProviders)
+	allowsBalance := tier.Default.Allows(tier.CapBalanceFetch)
+	if allowsGeneric && allowsBalance {
 		return in
 	}
 	for _, p := range cfg.Providers {
-		if !tier.Default.Allows(tier.CapGenericProviders) && p.Kind != "dari" && provider.IsBlockedKind(p.Kind) {
+		if !allowsGeneric && p.Kind != "dari" && provider.IsBlockedKind(p.Kind) {
 			in.ExcludedProviders = append(in.ExcludedProviders, p.Name)
 		}
-		if !tier.Default.Allows(tier.CapBalanceFetch) && p.BalanceURL != "" {
+		if !allowsBalance && p.BalanceURL != "" {
 			in.BalanceProviders = append(in.BalanceProviders, p.Name)
+		}
+		if p.Name != "" && p.Kind == "" {
+			in.EmptyKindProviders = append(in.EmptyKindProviders, p.Name)
 		}
 	}
 	return in

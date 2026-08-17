@@ -33,7 +33,7 @@ func postCrashReport(ctx context.Context, c *http.Client, endpoint string, r cra
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("crash endpoint returned %s", resp.Status)
 	}
 	return nil
