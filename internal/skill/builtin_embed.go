@@ -37,11 +37,14 @@ func loadEmbeddedBuiltins() []Skill {
 
 func skillFromEmbedded(item builtincontent.SkillMarkdown) Skill {
 	return Skill{
-		Name:        item.Name,
-		Description: item.Description,
-		Body:        item.Body,
-		Scope:       ScopeBuiltin,
-		Path:        "(builtin:" + item.Path + ")",
-		RunAs:       parseRunAs(item.RunAs, item.Context, item.Agent),
+		Name:         item.Name,
+		Description:  item.Description,
+		Body:         item.Body,
+		Scope:        ScopeBuiltin,
+		Path:         "(builtin:" + item.Path + ")",
+		RunAs:        parseRunAs(item.RunAs, item.Context, item.Agent),
+		ReadOnly:     parseBoolFrontmatter(item.Frontmatter["read-only"]),
+		Triggers:     parseCSVFrontmatter(item.Frontmatter["triggers"]),
+		AllowedTools: parseAllowedTools(item.Frontmatter["allowed-tools"]),
 	}
 }

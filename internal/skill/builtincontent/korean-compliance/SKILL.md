@@ -4,6 +4,7 @@ description: 한국 정보보안 및 개인정보 보호 규제 프레임워크(
 runas: subagent
 agent: review
 context: codebase
+read-only: true
 triggers:
   - compliance
   - pipa

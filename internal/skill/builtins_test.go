@@ -30,10 +30,11 @@ func (t builtinTestTool) ReadOnly() bool { return t.readOnly }
 // subagent registry from this flag, so losing it silently re-opens writer bash.
 func TestBuiltinReviewSkillsDeclareReadOnly(t *testing.T) {
 	want := map[string]bool{
-		"explore":         false,
-		"research":        false,
-		"review":          true,
-		"security-review": true,
+		"explore":           false,
+		"research":          false,
+		"review":            true,
+		"security-review":   true,
+		"korean-compliance": true,
 	}
 	for _, sk := range builtinSkills() {
 		expected, tracked := want[sk.Name]
