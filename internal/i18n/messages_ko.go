@@ -4,7 +4,7 @@ package i18n
 // reflects over its fields and English must populate the same set.
 var Korean = Messages{
 	WelcomeTitleFmt: "%s에 오신 것을 환영합니다",
-	NoConfigYet:     "아직 구성이 없습니다 — 설정해 보세요.",
+	NoConfigYet:     "아직 설정 파일이 없습니다 — patcode setup으로 시작해 보세요.",
 
 	InitHint: "프로젝트 메모리(AGENTS.md)는 세션 중에 생성됩니다: `patcode`를 실행한 후 `/init` — 모델이 코드베이스를 분석해 작성합니다. 구성은 `patcode setup`을 사용하세요.",
 
@@ -41,7 +41,7 @@ var Korean = Messages{
 	RenameDoneFmt:          "세션 이름이 %q(으)로 변경되었습니다",
 	ResumePickTitle:        "저장된 세션 재개",
 	ResumePickHint:         "↑/↓ 이동 · Enter 재개 · Esc 취소",
-	ResumeRecoveryBadgeFmt: "[복구 사본 · 상위 %s]",
+	ResumeRecoveryBadgeFmt: "[복구 백업 · 상위 %s]",
 
 	ChatThinking:                           "생각 중…",
 	ChatThoughtForFmt:                      "%d초 동안 생각함",
@@ -117,7 +117,7 @@ var Korean = Messages{
 	ApprovalNeededWithSubjectFmt:           "승인 필요: %s %s",
 	ToolApprovalSourceFmt:                  "출처: %s",
 	ToolApprovalBuiltIn:                    "내장 도구",
-	ToolApprovalImageUse:                   "이미지 이해를 위해 제공된 이미지 입력을 읽습니다.",
+	ToolApprovalImageUse:                   "이미지 분석을 위해 제공된 첨부 이미지를 읽습니다.",
 	ApprovalToolLabelBash:                  "bash",
 	ApprovalToolLabelEditFile:              "파일 편집",
 	ApprovalToolLabelWriteFile:             "파일 쓰기",
@@ -161,7 +161,7 @@ var Korean = Messages{
 	OutputStyleExplanatoryDesc:   "진행하며 비자명한 구현 선택의 근거를 설명",
 	OutputStyleLearning:          "학습형",
 	OutputStyleLearningDesc:      "협력하며, 사용자가 완성할 TODO(human) 조각을 남김",
-	OutputStyleConcise:           "원시인",
+	OutputStyleConcise:           "간결형",
 	OutputStyleConciseDesc:       "아주 짧게: 문장보다 코드와 불릿 위주",
 	OutputStyleAlreadyFmt:        "이미 적용된 출력 스타일: %s",
 	OutputStyleSwitchUnavailable: "이 세션에서는 출력 스타일 전환을 사용할 수 없습니다",
