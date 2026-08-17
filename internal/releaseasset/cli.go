@@ -21,6 +21,8 @@ import (
 	"path"
 	"regexp"
 	"strings"
+
+	"patty/internal/tier"
 )
 
 const (
@@ -37,6 +39,7 @@ var cliReleaseVersionPattern = regexp.MustCompile(`^v(?:0|[1-9][0-9]*)\.(?:0|[1-
 // the extracted executable bytes. Remote Serve provisioning supports Linux and
 // macOS hosts.
 func DownloadCLI(ctx context.Context, client *http.Client, version, goos, goarch string) ([]byte, error) {
+	tier.AssertAllowed(tier.CapOnlineUpdate)
 	if !cliReleaseVersionPattern.MatchString(strings.TrimSpace(version)) {
 		return nil, fmt.Errorf("remote CLI download requires a released version, got %q", version)
 	}

@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"patty/internal/tier"
 )
 
 // crashEndpoint is the vendor crash collector (public/enterprise; desktop
@@ -16,6 +18,7 @@ import (
 var crashEndpoint = "https://crash.patty.io/v1/report"
 
 func postCrashReport(ctx context.Context, c *http.Client, endpoint string, r crashReport) error {
+	tier.AssertAllowed(tier.CapCrashUpload)
 	body, err := json.Marshal(r)
 	if err != nil {
 		return err

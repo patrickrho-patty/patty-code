@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+
+	"patty/internal/tier"
 )
 
 // crashEndpoint is empty in sovereign builds (ADR G2): the vendor crash
@@ -21,6 +23,7 @@ var errSovereignCrashPost = errors.New("crash report upload is not available in 
 // fails closed. Callers already treat a non-nil error as a failed upload
 // (frontend reports surface the error; flushPendingCrash keeps the file).
 func postCrashReport(ctx context.Context, c *http.Client, endpoint string, r crashReport) error {
+	tier.AssertDisallowed(tier.CapCrashUpload)
 	_ = ctx
 	_ = c
 	_ = endpoint

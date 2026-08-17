@@ -25,6 +25,7 @@ import (
 	"patty/internal/config"
 	"patty/internal/i18n"
 	"patty/internal/netclient"
+	"patty/internal/tier"
 
 	"github.com/spf13/pflag"
 	"golang.org/x/mod/semver"
@@ -180,6 +181,7 @@ var loadCLIUpgradeConfig = config.Load
 
 // upgradeCommand handles `patcode upgrade` (and `patcode update`).
 func upgradeCommand(args []string, version string) int {
+	tier.AssertAllowed(tier.CapOnlineUpdate)
 	syntax, err := parseCLIUpgradeSyntax(args)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"patty/internal/netclient"
+	"patty/internal/tier"
 )
 
 // reportEndpoint is the vendor crash collector (public/enterprise; consent
@@ -21,6 +22,7 @@ var reportEndpoint = "https://crash.patty.io/v1/report"
 // Send uploads a single user-reviewed report. It does not remove local state;
 // callers remove the report only after a successful response.
 func Send(ctx context.Context, report Report, proxy netclient.ProxySpec) error {
+	tier.AssertAllowed(tier.CapCrashUpload)
 	client, err := netclient.NewHTTPClient(proxy, netclient.TransportOptions{
 		DialTimeout:           3 * time.Second,
 		TLSHandshakeTimeout:   3 * time.Second,

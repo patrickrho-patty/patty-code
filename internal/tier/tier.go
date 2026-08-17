@@ -59,3 +59,49 @@ func (t Tier) Allows(c Capability) bool {
 	m, ok := allowed[t]
 	return ok && m[c]
 }
+
+// AssertAllowed panics if Default disallows cap. It exists for the audit
+// trail: build-tagged twins (e.g. the online upgrade file) carry a runtime
+// assertion at function entry, so an auditor grepping for the Capability
+// constant finds the consultation here in addition to the compile-time
+// build-tag exclusion. The assertion is unreachable when the call site is
+// correctly tagged: under the excluded profile, the file simply isn't
+// compiled, so this panic can only fire if a caller invokes the file
+// outside its declared tag set — a programmer error worth surfacing loudly.
+func AssertAllowed(c Capability) {
+	if !Default.Allows(c) {
+		panic("tier: capability " + c.String() + " consulted from a file tagged outside its build profile")
+	}
+}
+
+// AssertDisallowed is the mirror of AssertAllowed for the offline twin:
+// it panics if Default *allows* cap. The stub file is reachable only
+// under the excluded profile, so any other outcome means the build-tag
+// exclusion and the capability table are out of sync — fail loud rather
+// than silently re-enable a forbidden network path.
+func AssertDisallowed(c Capability) {
+	if Default.Allows(c) {
+		panic("tier: capability " + c.String() + " stub consulted from a profile that allows it")
+	}
+}
+
+// String returns a stable human-readable label for the capability so
+// assertAllowed's panic message is grep-friendly.
+func (c Capability) String() string {
+	switch c {
+	case CapGenericProviders:
+		return "CapGenericProviders"
+	case CapPublicPresets:
+		return "CapPublicPresets"
+	case CapBalanceFetch:
+		return "CapBalanceFetch"
+	case CapVendorTelemetry:
+		return "CapVendorTelemetry"
+	case CapCrashUpload:
+		return "CapCrashUpload"
+	case CapOnlineUpdate:
+		return "CapOnlineUpdate"
+	default:
+		return "unknown"
+	}
+}

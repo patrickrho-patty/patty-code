@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"patty/internal/tier"
 )
 
 // endpoint is the vendor telemetry collector. Sovereign builds exclude this
@@ -18,6 +20,7 @@ const endpoint = "https://crash.patty.io/v1"
 
 // post ships a payload to the vendor endpoint (public/enterprise only).
 func (c *Client) post(ctx context.Context, path string, payload any) error {
+	tier.AssertAllowed(tier.CapVendorTelemetry)
 	b, err := json.Marshal(payload)
 	if err != nil {
 		return err

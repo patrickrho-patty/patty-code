@@ -2,6 +2,8 @@
 
 package config
 
+import "patty/internal/tier"
+
 // No legacy DeepSeek defaults exist outside the public profile (ADR G4):
 // enterprise/sovereign builds embed no foreign LLM endpoints. The legacy
 // import path in migrate.go treats these empty values as "nothing to import".
@@ -12,7 +14,10 @@ const (
 
 // legacyDeepSeekProviderEntries is compiled out outside the public profile
 // (ADR G4); callers in load.go/migrate.go treat nil as "no legacy entries".
-func legacyDeepSeekProviderEntries() []ProviderEntry { return nil }
+func legacyDeepSeekProviderEntries() []ProviderEntry {
+	tier.AssertDisallowed(tier.CapPublicPresets)
+	return nil
+}
 
 // backfillLegacyDeepSeekBalanceURL is a no-op twin of the public-profile hook
 // (Task 7 addendum): the wallet-endpoint literal must not compile into

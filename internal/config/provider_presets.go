@@ -13,11 +13,13 @@ import (
 	"strings"
 
 	"patty/internal/provider"
+	"patty/internal/tier"
 )
 
 const deepSeekAnthropicBaseURL = "https://api.deepseek.com/anthropic"
 
 func CuratedProviderPresets() []ProviderPreset {
+	tier.AssertAllowed(tier.CapPublicPresets)
 	presets := cloneProviderPresets(curatedProviderPresets)
 	sort.SliceStable(presets, func(i, j int) bool {
 		return providerPresetDisplayRank(presets[i].ID) < providerPresetDisplayRank(presets[j].ID)
