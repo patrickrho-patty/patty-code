@@ -2272,11 +2272,15 @@ func tierLockInput(cfg *config.Config) tier.LockInput {
 		if !allowsGeneric && p.Kind != "dari" && provider.IsBlockedKind(p.Kind) {
 			in.ExcludedProviders = append(in.ExcludedProviders, p.Name)
 		}
+		// Empty-Kind entries are flagged with a "(empty kind)" annotation
+		// so the operator sees the actionable cause instead of an opaque
+		// "unknown kind" error from provider.New later. Under public the
+		// flag is harmless because CapGenericProviders is allowed.
+		if !allowsGeneric && p.Name != "" && p.Kind == "" {
+			in.ExcludedProviders = append(in.ExcludedProviders, p.Name+" (empty kind)")
+		}
 		if !allowsBalance && p.BalanceURL != "" {
 			in.BalanceProviders = append(in.BalanceProviders, p.Name)
-		}
-		if p.Name != "" && p.Kind == "" {
-			in.EmptyKindProviders = append(in.EmptyKindProviders, p.Name)
 		}
 	}
 	return in

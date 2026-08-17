@@ -1,6 +1,9 @@
 package tier
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestAllowsMatchesADRProfileTable(t *testing.T) {
 	cases := []struct {
@@ -52,5 +55,41 @@ func TestLockFailsClosedOnExcludedCapabilities(t *testing.T) {
 		}
 	} else if err != nil {
 		t.Fatalf("public profile must lock clean for BYOK config: %v", err)
+	}
+}
+
+// TestLockReportsAllProblemsInOneError pins the I4 fix: when several
+// classes of problem are present at once, Lock returns a single error
+// listing each one. Under sovereign every class is a hard failure; the
+// operator must see every fix-up in one boot attempt.
+func TestLockReportsAllProblemsInOneError(t *testing.T) {
+	if Default == Public {
+		t.Skip("public profile allows both CapGenericProviders and CapBalanceFetch; Lock cannot produce a multi-class error here")
+	}
+	err := Lock(LockInput{
+		ExcludedProviders: []string{"alpha", "gamma (empty kind)"},
+		BalanceProviders:  []string{"beta"},
+	})
+	if err == nil {
+		t.Fatal("expected combined error under non-public profile")
+	}
+	msg := err.Error()
+	for _, fragment := range []string{"alpha", "gamma (empty kind)", "beta"} {
+		if !strings.Contains(msg, fragment) {
+			t.Errorf("combined error %q missing %q", msg, fragment)
+		}
+	}
+}
+
+// TestLockIgnoresEmptyClasses pins the corner case: a non-failing
+// class can be non-empty on a profile where that capability is
+// allowed. Under public, CapBalanceFetch is allowed so providing
+// BalanceProviders must not fail boot — only ExcludedProviders would.
+func TestLockIgnoresEmptyClasses(t *testing.T) {
+	if Default != Public {
+		t.Skip("only meaningful under public profile")
+	}
+	if err := Lock(LockInput{BalanceProviders: []string{"a"}}); err != nil {
+		t.Fatalf("BalanceProviders alone must not fail boot under public: %v", err)
 	}
 }
