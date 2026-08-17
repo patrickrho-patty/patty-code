@@ -149,7 +149,11 @@ func TestObserveSettingsSnapshotUsesSafeBuckets(t *testing.T) {
 		"settings_status_bar_style":        "icon",
 		"settings_status_bar_items_count":  "n_3",
 		"settings_check_updates":           "off",
-		"settings_default_model":           "patty_medium",
+		// Runtime-default surface (stays DARI per PRD v2 §0.2): the stock
+		// patty entry is the DARI relay (localhost:8444), which the official
+		// omni recognition deliberately does not match, so it buckets as a
+		// custom provider with its stock model.
+		"settings_default_model":           "custom_patty_patty_code_standard",
 		"settings_planner_model":           metricBucket("custom_" + customProvider + "_" + customModel),
 		"settings_provider_access":         metricBucket("custom_" + customProvider),
 		"settings_bot_enabled":             "off",

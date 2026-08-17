@@ -40,10 +40,34 @@ func TestWithFreshSystemPromptReplacesExistingSystemMessage(t *testing.T) {
 	}
 }
 
+// officialPattyStockEntry is the pre-DARI official Patty stock entry
+// (commit d53bbe282) the desktop official-provider surface reconciles to.
+// The runtime config.Default() keeps its DARI relay default (PRD v2 §0.2);
+// the desktop template, recognition, and these tests key on the omni
+// fixture below. Literals are spelled out so template drift fails here.
+func officialPattyStockEntry() config.ProviderEntry {
+	return config.ProviderEntry{
+		Name:          "patty",
+		Kind:          "openai",
+		BaseURL:       "https://omni.agents.patty.io/v1",
+		Model:         "medium",
+		APIKeyEnv:     "AGENTS_PATTY_API_KEY",
+		ContextWindow: 248124,
+	}
+}
+
 func TestOfficialProviderKindRecognizesPattyStockOnly(t *testing.T) {
-	stock := config.Default().Providers[0]
-	if got := officialProviderKindFromEntry(stock); got != "patty" {
-		t.Fatalf("Patty stock kind = %q, want patty", got)
+	if got := officialProviderKindFromEntry(officialPattyStockEntry()); got != "patty" {
+		t.Fatalf("official Patty entry kind = %q, want patty", got)
+	}
+	// The template and the recognizer must stay consistent: whatever the
+	// template hands out is, by construction, the recognized official entry.
+	entries, _, err := officialProviderTemplate("patty", "en")
+	if err != nil {
+		t.Fatalf("officialProviderTemplate(patty): %v", err)
+	}
+	if got := officialProviderKindFromEntry(entries[0]); got != "patty" {
+		t.Fatalf("Patty template entry kind = %q, want patty", got)
 	}
 	for _, altered := range []config.ProviderEntry{
 		{Name: "patty", BaseURL: "https://relay.example.com/v1"},
@@ -61,11 +85,11 @@ func TestOfficialPattyTemplateRestoresStockProvider(t *testing.T) {
 		t.Fatalf("officialProviderTemplate(patty): %v", err)
 	}
 	if len(entries) != 1 || keyEnv != "AGENTS_PATTY_API_KEY" {
-		t.Fatalf("Patty template = %+v/%q", entries, keyEnv)
+		t.Fatalf("Patty template = %+v/%q, entries/keyEnv", entries, keyEnv)
 	}
-	want := config.Default().Providers[0]
-	if got := entries[0]; got.Name != want.Name || got.BaseURL != want.BaseURL || got.Model != want.Model || got.ContextWindow != want.ContextWindow {
-		t.Fatalf("Patty template = %+v, want stock %+v", got, want)
+	want := officialPattyStockEntry()
+	if got := entries[0]; got.Name != want.Name || got.BaseURL != want.BaseURL || got.Model != want.Model || got.ContextWindow != want.ContextWindow || got.APIKeyEnv != want.APIKeyEnv || got.Kind != want.Kind {
+		t.Fatalf("Patty template = %+v, want official stock %+v", got, want)
 	}
 }
 

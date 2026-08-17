@@ -1,3 +1,12 @@
+//go:build profile_public
+
+// Public-surface desktop tests (ADR G4): every test here needs generic
+// OpenAI/Anthropic-kind provider fixtures (BYOK flows, official-provider
+// surfaces, model/effort/token-mode rebuilds against generic endpoints) or
+// another public-only capability (e.g. balance fetch). The enterprise and
+// sovereign tier locks refuse those configs at boot by design, so these
+// assertions compile and run only in the public-profile leg (see Makefile
+// test-profiles).
 package main
 
 import (

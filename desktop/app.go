@@ -12203,12 +12203,19 @@ var connectKeyModelFetch = func(ctx context.Context, entry config.ProviderEntry,
 }
 
 func onboardingProvider() (config.ProviderEntry, error) {
-	cfg := config.Default()
-	entry, ok := cfg.ResolveModel(cfg.DefaultModel)
-	if !ok || strings.TrimSpace(entry.APIKeyEnv) == "" || strings.TrimSpace(entry.BaseURL) == "" || strings.TrimSpace(entry.Model) == "" {
+	// Desktop onboarding is the official Patty surface and keys on the
+	// pre-DARI omni stock entry (desktop official-provider reconciliation;
+	// the runtime config.Default() keeps its DARI relay default per PRD v2
+	// §0.2). The pasted key is validated against the omni model catalog.
+	entries, _, err := officialProviderTemplate("patty", "")
+	if err != nil || len(entries) == 0 {
 		return config.ProviderEntry{}, fmt.Errorf("stock onboarding provider is not configured")
 	}
-	return *entry, nil
+	entry := entries[0]
+	if strings.TrimSpace(entry.APIKeyEnv) == "" || strings.TrimSpace(entry.BaseURL) == "" || strings.TrimSpace(entry.Model) == "" {
+		return config.ProviderEntry{}, fmt.Errorf("stock onboarding provider is not configured")
+	}
+	return entry, nil
 }
 
 // NativeConfirmRequest is the payload for ConfirmAction — a native OS confirmation
@@ -12285,6 +12292,14 @@ func (a *App) NeedsOnboarding() bool {
 		if !modelProviderAccessAllowed(cfg.Desktop.ProviderAccess, p.Name) || !p.Configured() || len(p.ChatModelList()) == 0 {
 			continue
 		}
+		return false
+	}
+	// The desktop onboarding surface keys on the official omni Patty entry
+	// (pre-DARI stock) while the runtime default stays the DARI relay, so a
+	// saved official key satisfies onboarding even though the stock entry
+	// above carries a different key env. Configured() resolves from patty's
+	// credential store only — an inherited process env key does not count.
+	if entry, err := onboardingProvider(); err == nil && entry.Configured() && len(entry.ChatModelList()) > 0 {
 		return false
 	}
 	return true

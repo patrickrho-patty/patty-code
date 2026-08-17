@@ -272,12 +272,12 @@ func TestProductionSigningRunsOnlyFromProtectedControlPlane(t *testing.T) {
 
 func TestSignPathConfigurationsCoverExactWindowsPayload(t *testing.T) {
 	expected := map[string]bool{
-		"patty-desktop.exe":       true,
-		"patty-code-guard.exe":     true,
-		"patty-code-launcher.exe":  true,
+		"patty-desktop.exe":            true,
+		"patty-code-guard.exe":         true,
+		"patty-code-launcher.exe":      true,
 		"patty-code-update-helper.exe": true,
-		"patty-code-cli.exe":       true,
-		"patty-code-uninstall.exe": true,
+		"patty-code-cli.exe":           true,
+		"patty-code-uninstall.exe":     true,
 	}
 
 	payload := parseSignPathConfiguration(t, "windows-payload.xml")

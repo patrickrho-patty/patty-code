@@ -20,7 +20,6 @@ import (
 	"patty/internal/control"
 )
 
-
 func TestWorkspaceStatePath(t *testing.T) {
 	p1 := workspaceStatePath()
 	p2 := workspaceStatePath()
@@ -35,7 +34,7 @@ func TestWorkspaceStatePath(t *testing.T) {
 // saveWorkspace  loadWorkspace round-trip
 
 func TestSaveLoadWorkspaceRoundTrip(t *testing.T) {
-// %AppData% on Windows); isolate both so the round-trip exercises real
+	// %AppData% on Windows); isolate both so the round-trip exercises real
 	isolateDesktopUserDirs(t)
 	if workspaceStatePath() == "" {
 		t.Fatal("workspaceStatePath() is empty after isolating the user config dir")
@@ -479,12 +478,12 @@ func TestFindTopicSessionAfterCaseFlippedReaddOnWindows(t *testing.T) {
 		t.Fatalf("save branch meta: %v", err)
 	}
 
-// Re-add under the flipped-case spelling  simulates Windows Explorer
+	// Re-add under the flipped-case spelling  simulates Windows Explorer
 	app := NewApp()
 	installNoopRuntimeEvents(app)
 	app.registerProjectRoot(flipped)
 
-// the original case spelling against the registrys new (flipped) root.
+	// the original case spelling against the registrys new (flipped) root.
 	path, _ := app.findTopicSessionForTarget("project", normalizeProjectRoot(flipped), "topic_case")
 	if path == "" {
 		t.Fatal("findTopicSessionForTarget returned empty path; session with old-case root should still match")
@@ -559,7 +558,6 @@ func BenchmarkDesktopSessionDir(b *testing.B) {
 	}
 }
 
-
 func TestCwdWritable(t *testing.T) {
 	if !cwdWritable() {
 		t.Error("cwd should be writable in test environment")
@@ -622,7 +620,7 @@ func TestReadFilePreviewBinaryClassification(t *testing.T) {
 		t.Errorf("NUL-containing file should be binary, got Body=%q", p.Body)
 	}
 
-// U+FFFD where bytes don't map — not hidden behind a binary classification.
+	// U+FFFD where bytes don't map — not hidden behind a binary classification.
 	if err := os.WriteFile("invalid.txt", append([]byte("hello"), 0xff, 'x', 'y'), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -1025,7 +1023,6 @@ func TestReadFileGB18030(t *testing.T) {
 	}
 }
 
-
 func TestRemoveWorkspaceClearsActivePointerWhenRemovingCurrentWorkspace(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	if workspaceStatePath() == "" {
@@ -1038,7 +1035,7 @@ func TestRemoveWorkspaceClearsActivePointerWhenRemovingCurrentWorkspace(t *testi
 		t.Fatalf("precondition: loadWorkspace = %q, want %q", got, dir)
 	}
 
-// Simulate RemoveWorkspaces cleanup logic:
+	// Simulate RemoveWorkspaces cleanup logic:
 	if loadWorkspace() == dir {
 		clearWorkspace()
 	}
@@ -1084,7 +1081,6 @@ func TestClearWorkspace(t *testing.T) {
 		t.Errorf("desktop-workspace file should be removed, stat err = %v", err)
 	}
 }
-
 
 func TestOpenProjectTabUpdatesActiveWorkspacePointer(t *testing.T) {
 	isolateDesktopUserDirs(t)
@@ -1777,7 +1773,6 @@ func gitOutput(t *testing.T, args ...string) string {
 	}
 	return strings.TrimSpace(string(out))
 }
-
 
 func TestOrDefault(t *testing.T) {
 	if orDefault("", "fallback") != "fallback" {
