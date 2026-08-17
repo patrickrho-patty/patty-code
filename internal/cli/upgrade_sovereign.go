@@ -30,7 +30,9 @@ func upgradeCommand(args []string, version string) int {
 	return 1
 }
 
-const sovereignUpgradeHelp = `Apply signed offline updates in this build profile.
+const sovereignUpgradeHelp = `Usage of upgrade:
+
+Apply signed offline updates in this build profile.
 
 Usage:
   patcode update import <advisory-file> --key <pubkey-file>
