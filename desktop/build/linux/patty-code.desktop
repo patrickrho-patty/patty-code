@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Patty Code
+Comment=Patty Code desktop — a Wails shell around the Go kernel
+Exec=patty-code-launcher
+Icon=patty-desktop
+Categories=Development;Utility;
+Terminal=false
+StartupWMClass=patty-desktop

@@ -28,8 +28,8 @@
 !/build/linux
 /build/linux/*
 !/build/linux/nfpm.yaml
-!/build/linux/patty.desktop
-!/build/linux/io.patty.desktop.update.policy
+!/build/linux/patty-code.desktop
+!/build/linux/io.patty-code.desktop.update.policy
 !/build/linux/postinstall.sh
 !/build/linux/icons
 !/build/linux/icons/**
