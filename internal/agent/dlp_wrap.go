@@ -2,6 +2,7 @@ package agent
 
 import (
 	"os"
+	"strings"
 
 	"patty/internal/dariproto"
 	"patty/internal/dlp"
@@ -37,12 +38,68 @@ func wrapProviderWithDLP(inner provider.Provider) provider.Provider {
 	return dlp.NewProvider(inner, hook, inspector)
 }
 
-// applyPackToScanner disables built-in rule groups whose class the
-// org turned off (or omitted) from its pack.
+// relayRuleIDToHarnessIDs maps a relay RuleID to the set of harness
+// RuleIDs that should be toggled. The relay's per-rule override
+// semantically names a specific detection (e.g. "pii-kr-phone"). The
+// harness's built-in lexicon uses shorter names (e.g. "kr-phone").
+// korean_pii relays use the "pii-*" prefix that the harness drops;
+// secret/injection/path classes share the suffix exactly.
+func relayRuleIDToHarnessIDs(ruleID string) []string {
+	// "pii-*" -> strip "pii-" prefix and pass through directly
+	if strings.HasPrefix(ruleID, "pii-") {
+		return []string{strings.TrimPrefix(ruleID, "pii-")}
+	}
+	// Explicit name differences for secrets: relay uses
+	// "secret-aws-key" / "secret-github-pat" / "secret-jwt" etc.;
+	// harness uses "aws-access-key" / "aws-secret-key" / "generic-bearer-token" etc.
+	switch ruleID {
+	case "secret-aws-key":
+		return []string{"aws-access-key", "aws-secret-key"}
+	case "secret-github-pat":
+		return []string{"generic-bearer-token"} // harness has no dedicated github rule
+	case "secret-jwt":
+		return []string{"generic-bearer-token"}
+	case "secret-private-key":
+		return []string{"private-key-pem"}
+	case "secret-generic-api-key":
+		return []string{"generic-bearer-token"}
+	case "secret-gcp-key", "secret-azure-key", "secret-ncloud-key",
+		"secret-gitlab-token", "secret-openai-key", "secret-slack-webhook",
+		"secret-mysql-connstring", "secret-postgres-connstring", "secret-redis-connstring":
+		return nil // harness doesn't have dedicated rules for these; skip
+	}
+	// injection-* and path-* match harness IDs by suffix
+	if strings.HasPrefix(ruleID, "injection-") || strings.HasPrefix(ruleID, "path-") {
+		return []string{ruleID}
+	}
+	return nil
+}
+
+// applyPackToScanner applies the relay's DLP rule pack to the scanner.
+// It handles both class-level toggles (backward compat) and per-rule
+// overrides (PAT-1431). Per-rule overrides take precedence.
 func applyPackToScanner(scanner *dlp.Scanner, pack *dariproto.DLPRulePackWire) {
 	if scanner == nil || pack == nil {
 		return
 	}
+
+	// Per-rule overrides (PAT-1431): translate relay RuleIDs to the
+	// harness's built-in lexicon, then toggle the matched rules.
+	if len(pack.RuleOverrides) > 0 {
+		for _, override := range pack.RuleOverrides {
+			harnessIDs := relayRuleIDToHarnessIDs(override.RuleID)
+			for _, id := range harnessIDs {
+				if override.Enabled {
+					scanner.EnableRule(id)
+				} else {
+					scanner.DisableRule(id)
+				}
+			}
+		}
+		return // per-rule overrides applied; skip class-level fallback
+	}
+
+	// Fallback: class-level toggles (backward compat).
 	disabled := pack.DisabledRulePrefixes()
 	if len(disabled) == 0 {
 		return

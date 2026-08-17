@@ -34,6 +34,17 @@ type DLPRulePackWire struct {
 	NotAfterMs int64         `cbor:"4,keyasint"`
 	Rules      []DLPRuleWire `cbor:"5,keyasint"`
 	Digest     [32]byte      `cbor:"6,keyasint"`
+	// RuleOverrides carries per-rule enabled/severity/action overrides.
+	// When present, these take precedence over class-level toggles.
+	RuleOverrides []DLPRuleOverride `cbor:"7,keyasint,omitempty"`
+}
+
+// DLPRuleOverride is a per-rule override (PAT-1431).
+type DLPRuleOverride struct {
+	RuleID   string `cbor:"1,keyasint"`
+	Enabled  bool   `cbor:"2,keyasint"`
+	Severity string `cbor:"3,keyasint"`
+	Action   string `cbor:"4,keyasint"`
 }
 
 // DecodeDLPRulePack parses a DLP_RULE_PACK body.
