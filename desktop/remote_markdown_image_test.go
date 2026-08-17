@@ -18,13 +18,10 @@ import (
 	"time"
 
 	"patty/internal/netclient"
+	"patty/internal/testenv"
 )
 
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return fn(req)
-}
+type roundTripFunc = testenv.RoundTripFunc
 
 func TestRemoteMarkdownImageUsesPattyCodeProxySpec(t *testing.T) {
 	png := []byte("\x89PNG\r\n\x1a\nproxy-image")

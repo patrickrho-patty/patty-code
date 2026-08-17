@@ -10,14 +10,11 @@ import (
 
 	"patty/internal/event"
 	"patty/internal/provider"
+	"patty/internal/testenv"
 	"patty/internal/tool"
 )
 
-type accountingRoundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f accountingRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
-}
+type accountingRoundTripFunc = testenv.RoundTripFunc
 
 type failedRequestProvider struct{}
 

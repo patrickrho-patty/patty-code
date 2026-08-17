@@ -19,11 +19,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"patty/internal/testenv"
 )
 
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+type roundTripFunc = testenv.RoundTripFunc
 
 func telemetryResponse(status int) *http.Response {
 	return &http.Response{
