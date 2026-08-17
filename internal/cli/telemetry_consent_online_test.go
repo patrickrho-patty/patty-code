@@ -169,3 +169,54 @@ func TestCLITelemetryConsentPromptIsLocalized(t *testing.T) {
 		}
 	}
 }
+
+// A configured consent mode must start the reporter through the stubbed
+// start hook. The stub consults the real telemetry.Enabled, which is
+// compile-time false in sovereign builds — so this is online-path behavior.
+func TestConfiguredCLITelemetryDoesNotPromptAgain(t *testing.T) {
+	isolateCLIConfigHome(t)
+	clearCLITelemetryPolicyEnv(t)
+	previousSave := persistCLITelemetryConsent
+	previousStart := startCLITelemetryReporter
+	t.Cleanup(func() {
+		persistCLITelemetryConsent = previousSave
+		startCLITelemetryReporter = previousStart
+	})
+	persistCalls := 0
+	persistCLITelemetryConsent = func(string) error {
+		persistCalls++
+		return nil
+	}
+	want := &telemetry.Reporter{}
+	startCalls := 0
+	startCLITelemetryReporter = func(opts telemetry.Options) *telemetry.Reporter {
+		startCalls++
+		if telemetry.Enabled(opts.Mode, opts.Version, opts.Interactive) {
+			return want
+		}
+		return nil
+	}
+
+	for _, mode := range []string{"auto", "on", "off"} {
+		cfg := config.Default()
+		if err := cfg.SetCLITelemetryMode(mode); err != nil {
+			t.Fatal(err)
+		}
+		var out bytes.Buffer
+		got := startCLITelemetryWithIO(cfg, telemetry.Options{
+			Version: "v1.20.0", Interactive: true, CLIMode: "tui",
+		}, strings.NewReader("n\n"), &out, io.Discard)
+		if out.Len() != 0 {
+			t.Fatalf("configured mode %q prompted again: %q", mode, out.String())
+		}
+		if mode == "off" && got != nil {
+			t.Fatalf("configured off returned reporter %p", got)
+		}
+		if mode != "off" && got != want {
+			t.Fatalf("configured %s returned %p, want %p", mode, got, want)
+		}
+	}
+	if persistCalls != 0 || startCalls != 3 {
+		t.Fatalf("configured modes persisted=%d started=%d, want 0 and 3", persistCalls, startCalls)
+	}
+}

@@ -2810,8 +2810,6 @@ func TestLanguageCommandRefreshesCurrentController(t *testing.T) {
 	}
 }
 
-
-
 func TestLanguageCommandAutoClearsPinnedLanguage(t *testing.T) {
 	isolateUserConfig(t)
 	i18n.DetectLanguage("en")
