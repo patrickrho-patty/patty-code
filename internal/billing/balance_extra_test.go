@@ -1,10 +1,6 @@
 package billing
 
 import (
-	"context"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -99,64 +95,6 @@ func TestDisplayFallsBackToFirst(t *testing.T) {
 	}
 }
 
-// Fetch edge cases
-
-func TestFetchContextCancelled(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer srv.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancel immediately
-	_, err := Fetch(ctx, srv.URL, "key")
-	if err == nil {
-		t.Fatal("expected error for cancelled context")
-	}
-}
-
-func TestFetchMalformedJSON(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{not valid json`))
-	}))
-	defer srv.Close()
-	_, err := Fetch(context.Background(), srv.URL, "key")
-	if err == nil {
-		t.Fatal("expected error for malformed JSON")
-	}
-	if !strings.Contains(err.Error(), "decode") {
-		t.Errorf("error should mention decode: %v", err)
-	}
-}
-
-func TestFetchNoAPIKey(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"is_available":true,"balance_infos":[]}`))
-	}))
-	defer srv.Close()
-	_, err := Fetch(context.Background(), srv.URL, "")
-	if err != nil {
-		t.Fatalf("Fetch: %v", err)
-	}
-	if gotAuth != "" {
-		t.Errorf("Authorization should be empty when no key, got %q", gotAuth)
-	}
-}
-
-func TestFetchWhitespaceURL(t *testing.T) {
-	b, err := Fetch(context.Background(), "   ", "key")
-	if err != nil || b != nil {
-		t.Fatalf("whitespace URL should return (nil,nil), got (%v, %v)", b, err)
-	}
-}
-
-func TestFetchServerUnavailable(t *testing.T) {
-	// Use a URL that won't connect.
-	_, err := Fetch(context.Background(), "http://127.0.0.1:1", "key")
-	if err == nil {
-		t.Fatal("expected error for unavailable server")
-	}
-}
+// Fetch edge cases live in balance_fetch_test.go (profile_public): the stub
+// twins outside the public profile are covered by
+// balance_fetch_stub_test.go.
