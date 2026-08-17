@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"regexp"
 	"runtime"
 	"strings"
@@ -14,8 +11,8 @@ import (
 // crash_app.go is the crash/feedback/performance reporting surface. Frontend
 // reports are sent on an explicit user click. Native fatal/lifecycle reports are
 // queued locally and sent on a later launch only when desktop telemetry is on.
-
-var crashEndpoint = "https://crash.patty.io/v1/report"
+// The vendor endpoint and poster live in crash_post_online.go; sovereign
+// builds get the fail-closed twin in crash_post_sovereign.go (ADR G2).
 
 const maxCrashDetailBytes = 16 << 10
 const maxCrashStackBytes = 8 << 10
@@ -255,25 +252,4 @@ func (a *App) ReportCrash(kind, detail string) error {
 		return err
 	}
 	return postCrashReport(a.reqCtx(), c, crashEndpoint, r)
-}
-
-func postCrashReport(ctx context.Context, c *http.Client, endpoint string, r crashReport) error {
-	body, err := json.Marshal(r)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("crash endpoint returned %s", resp.Status)
-	}
-	return nil
 }

@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"strings"
 	"sync"
@@ -150,33 +148,6 @@ func TestWritePendingCrashScrubsSensitiveText(t *testing.T) {
 		if strings.Contains(freeText, leaked) {
 			t.Fatalf("sensitive value leaked %q in %+v", leaked, r)
 		}
-	}
-}
-
-func TestFlushPendingCrashSendsAndClears(t *testing.T) {
-	oldVersion, oldEndpoint := version, crashEndpoint
-	t.Cleanup(func() {
-		version, crashEndpoint = oldVersion, oldEndpoint
-		removeAllPendingCrashes()
-	})
-	version = "v9.9.9"
-
-	var hits atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		hits.Add(1)
-		w.WriteHeader(http.StatusAccepted)
-	}))
-	defer srv.Close()
-	crashEndpoint = srv.URL
-
-	writePendingCrash("flush", "boom", []byte("stack"))
-	NewApp().flushPendingCrash()
-
-	if hits.Load() != 1 {
-		t.Errorf("server hits = %d, want 1", hits.Load())
-	}
-	if _, ok := readPending(t); ok {
-		t.Error("pending file should be cleared after a successful send")
 	}
 }
 
