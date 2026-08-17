@@ -6,19 +6,20 @@ import (
 	"patty/internal/tier"
 )
 
-// TestIsBlockedKindFollowsBuildProfile pins the ADR G4 gate: generic kinds
-// are allowed exactly when the linked build profile allows them, with no env
-// hatch — and DARI is never blocked.
+// TestIsBlockedKindFollowsBuildProfile pins the ADR G4 gate: every generic
+// kind is allowed exactly when the linked build profile allows it, with no
+// env hatch — DARI and unknown kinds are never blocked (they fail later in
+// the registry, not here).
 func TestIsBlockedKindFollowsBuildProfile(t *testing.T) {
-	blocked := IsBlockedKind("openai")
-	if tier.Default.Allows(tier.CapGenericProviders) {
-		if blocked {
-			t.Fatal("public profile must allow generic providers by default (BYOK, ADR G4)")
+	generic := tier.Default.Allows(tier.CapGenericProviders)
+	for _, kind := range []string{"openai", "anthropic", "responses", "dashscope-responses"} {
+		if got := IsBlockedKind(kind); got == generic {
+			t.Errorf("IsBlockedKind(%q) = %v under %s profile (ADR G4)", kind, got, tier.Default)
 		}
-	} else if !blocked {
-		t.Fatal("enterprise/sovereign profiles must block generic kinds with no env hatch")
 	}
-	if IsBlockedKind("dari") {
-		t.Fatal("DARI kind is never blocked")
+	for _, kind := range []string{"dari", "", "openai ", "OpenAI", "some-future-kind"} {
+		if IsBlockedKind(kind) {
+			t.Errorf("IsBlockedKind(%q) must be false — non-generic kinds are not policy's concern", kind)
+		}
 	}
 }

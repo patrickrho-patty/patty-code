@@ -16,10 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 )
-
-const ed25519PublicKeySize = 32
 
 func ed25519Verify(pub, msg, sig []byte) bool {
 	return ed25519.Verify(ed25519.PublicKey(pub), msg, sig)
@@ -181,16 +178,7 @@ func (a *AirGapMode) ApplyUpdateAdvisory(advisory *UpdateAdvisory, sourcePub []b
 		a.rejectedAdvisories++
 		return errors.New("sovereign: advisory expired")
 	}
-	// ed25519.Verify expects a 32-byte public key. A custom
-	// source might supply a longer key for downstream tooling;
-	// we require the canonical 32-byte length and reject an
-	// empty signature outright — neither is a legitimate
-	// verification path.
-	if len(sourcePub) != ed25519PublicKeySize || len(advisory.Signature) == 0 {
-		a.rejectedAdvisories++
-		return errors.New("sovereign: advisory signature verification failed")
-	}
-	if !ed25519Verify(sourcePub, advisory.SigningBytes(), advisory.Signature) {
+	if !VerifyAdvisorySignature(sourcePub, advisory) {
 		a.rejectedAdvisories++
 		return errors.New("sovereign: advisory signature verification failed")
 	}
@@ -226,11 +214,10 @@ func VerifyAdvisorySignature(sourcePub []byte, advisory *UpdateAdvisory) bool {
 	if advisory == nil {
 		return false
 	}
-	if len(sourcePub) != ed25519PublicKeySize || len(advisory.Signature) == 0 {
+	if len(sourcePub) != ed25519.PublicKeySize || len(advisory.Signature) == 0 {
 		return false
 	}
 	return ed25519Verify(sourcePub, advisory.SigningBytes(), advisory.Signature)
 }
 
 // _ keeps the time import visible when tests evolve to use it.
-var _ = time.Now

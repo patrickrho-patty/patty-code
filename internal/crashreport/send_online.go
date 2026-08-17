@@ -17,7 +17,7 @@ import (
 
 // reportEndpoint is the vendor crash collector (public/enterprise; consent
 // or org policy gates the call). Sovereign builds exclude this file (ADR G2).
-var reportEndpoint = "https://crash.patty.io/v1/report"
+const reportEndpoint = "https://crash.patty.io/v1/report"
 
 // Send uploads a single user-reviewed report. It does not remove local state;
 // callers remove the report only after a successful response.

@@ -5,7 +5,7 @@ package config
 import "testing"
 
 // Official DeepSeek endpoint-default expectations outside the public profile
-// (ADR G4, Task 7 addendum): the wallet-endpoint literal compiles only into
+// (ADR G4): the wallet-endpoint literal compiles only into
 // public-tagged twins (provider_legacy_deepseek.go), so in these profiles the
 // loader may backfill the vendor context window but must never write a
 // balance_url the user didn't declare — injecting one would arm the boot-side

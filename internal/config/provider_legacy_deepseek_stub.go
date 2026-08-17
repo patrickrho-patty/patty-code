@@ -20,7 +20,7 @@ func legacyDeepSeekProviderEntries() []ProviderEntry {
 }
 
 // backfillLegacyDeepSeekBalanceURL is a no-op twin of the public-profile hook
-// (Task 7 addendum): the wallet-endpoint literal must not compile into
+// (ADR G4): the wallet-endpoint literal must not compile into
 // enterprise/sovereign builds, and injecting it would arm the boot-side tier
 // lock against a URL the user never wrote (ADR G4). The vendor context-window
 // backfill in load.go remains unconditional.

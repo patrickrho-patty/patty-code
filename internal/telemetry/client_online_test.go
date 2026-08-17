@@ -1,6 +1,6 @@
 //go:build !profile_sovereign
 
-// Online egress assertions (ADR G2, Task 8): these exercise the real
+// Online egress assertions (ADR G2): these exercise the real
 // endpoint-roundtripping post path, which compiles only into
 // public/enterprise/default builds. The sovereign no-op twin is covered by
 // sovereign_test.go.

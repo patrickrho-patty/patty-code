@@ -28,7 +28,7 @@ func TestAllowsMatchesADRProfileTable(t *testing.T) {
 	for _, tc := range cases {
 		for _, cap := range all {
 			if got, want := tc.tier.Allows(cap), tc.caps[cap]; got != want {
-				t.Errorf("%s.Allows(%d) = %v, want %v", tc.tier, cap, got, want)
+				t.Errorf("%s.Allows(%s) = %v, want %v", tc.tier, cap, got, want)
 			}
 		}
 	}
@@ -58,7 +58,8 @@ func TestLockFailsClosedOnExcludedCapabilities(t *testing.T) {
 	}
 }
 
-// TestLockReportsAllProblemsInOneError pins the I4 fix: when several
+// TestLockReportsAllProblemsInOneError pins ADR decision 2's fail-closed
+// contract: when several
 // classes of problem are present at once, Lock returns a single error
 // listing each one. Under sovereign every class is a hard failure; the
 // operator must see every fix-up in one boot attempt.
@@ -81,11 +82,11 @@ func TestLockReportsAllProblemsInOneError(t *testing.T) {
 	}
 }
 
-// TestLockIgnoresEmptyClasses pins the corner case: a non-failing
+// TestLockSkipsAllowedClasses pins the corner case: a non-failing
 // class can be non-empty on a profile where that capability is
 // allowed. Under public, CapBalanceFetch is allowed so providing
 // BalanceProviders must not fail boot — only ExcludedProviders would.
-func TestLockIgnoresEmptyClasses(t *testing.T) {
+func TestLockSkipsAllowedClasses(t *testing.T) {
 	if Default != Public {
 		t.Skip("only meaningful under public profile")
 	}

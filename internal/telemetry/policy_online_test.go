@@ -1,6 +1,6 @@
 //go:build !profile_sovereign
 
-// Permissive-policy assertions (ADR G2, Task 8): telemetry may be enabled
+// Permissive-policy assertions (ADR G2): telemetry may be enabled
 // only in profiles that allow CapVendorTelemetry. The sovereign expectation
 // (Enabled always false) lives in sovereign_test.go.
 

@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"patty/internal/config"
+	"patty/internal/testenv"
 )
 
 func TestNormalizeVersion(t *testing.T) {
@@ -540,11 +541,7 @@ func TestFetchCLIReleasePointer(t *testing.T) {
 	}
 }
 
-type upgradeRoundTripFunc func(*http.Request) (*http.Response, error)
-
-func (fn upgradeRoundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
-	return fn(request)
-}
+type upgradeRoundTripFunc = testenv.RoundTripFunc
 
 func TestFetchLatestReleaseFallsThroughIncompletePointerAndGitHubRelease(t *testing.T) {
 	incompletePointer := completeCLIRelease("v1.8.0", false)
