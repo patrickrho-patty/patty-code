@@ -7,7 +7,7 @@ LDFLAGS := -s -w \
 	-X main.buildTimeUTC=$(BUILD_TIME_UTC)
 GOEXE := $(shell go env GOEXE)
 
-.PHONY: build tracked-patcode vet fmt lint lint-cross lint-update test desktop-test desktop-test-short desktop-test-times sdk-test sdk-test-race hooks cross clean
+.PHONY: build build-public build-enterprise build-sovereign test-profiles audit-sovereign tracked-patcode vet fmt lint lint-cross lint-update test desktop-test desktop-test-short desktop-test-times sdk-test sdk-test-race hooks cross clean
 
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/patcode$(GOEXE) ./cmd/patcode
@@ -16,6 +16,36 @@ build:
 		/usr/bin/codesign --force --sign - bin/patcode$(GOEXE); \
 		/usr/bin/codesign --force --sign - bin/patty-plugin-example$(GOEXE); \
 	fi
+
+# Deployment-tier build profiles (ADR 2026-08-16-harness-build-profiles).
+# Enterprise is also the no-tags default (see internal/tier/tags_enterprise.go);
+# passing the tag explicitly keeps release tooling self-documenting.
+build-public:
+	CGO_ENABLED=0 go build -tags profile_public -ldflags "$(LDFLAGS)" -o bin/patcode-public$(GOEXE) ./cmd/patcode
+
+build-enterprise:
+	CGO_ENABLED=0 go build -tags profile_enterprise -ldflags "$(LDFLAGS)" -o bin/patcode$(GOEXE) ./cmd/patcode
+
+build-sovereign:
+	CGO_ENABLED=0 go build -tags profile_sovereign -ldflags "$(LDFLAGS)" -o bin/patcode-sovereign$(GOEXE) ./cmd/patcode
+
+# The non-negotiable CI tax of compile-time gating: run the core suite under
+# every tag set so unexercised gates cannot rot silently (ADR decision 4).
+test-profiles:
+	go build -tags profile_public ./... && go test -tags profile_public ./...
+	go build -tags profile_enterprise ./... && go test -tags profile_enterprise ./...
+	go build -tags profile_sovereign ./... && go test -tags profile_sovereign ./...
+	cd desktop && go build -tags profile_public ./... && go build -tags profile_enterprise ./... && go build -tags profile_sovereign ./...
+
+# ADR G2/G3 consequence: sovereign binaries must provably lack external
+# endpoints. Auditors grep the binary; so does CI.
+audit-sovereign: build-sovereign
+	@hits=$$(strings bin/patcode-sovereign$(GOEXE) | grep -c -E 'crash\.patty\.io|api\.github\.com|github\.com/pattycorp/PattyCode/releases|api\.deepseek\.com'); \
+	if [ "$$hits" -ne 0 ]; then \
+		echo "audit-sovereign: FAIL — $$hits external endpoint string(s) found in sovereign binary"; \
+		exit 1; \
+	fi; \
+	echo "audit-sovereign: OK — no external endpoints in binary"
 
 # Refresh the checked-in macOS launcher from the canonical signed build output.
 # Keeping the copy in one target prevents source fixes from being followed by a
