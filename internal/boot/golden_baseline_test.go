@@ -70,8 +70,8 @@ engine = "native"
 
 [[providers]]
 name = "test-model"
-kind = "openai"
-base_url = "https://example.invalid"
+kind = "dari"
+base_url = "localhost:8444"
 model = "x"
 api_key_env = "PATTY_TEST_KEY_UNSET"
 `)
