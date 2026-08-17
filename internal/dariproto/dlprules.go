@@ -55,9 +55,9 @@ func DecodeDLPRulePack(data []byte) (*DLPRulePackWire, error) {
 // built-in lexicon rule-ID prefixes.
 var classPrefixes = map[string][]string{
 	"korean_pii":       {"kr-"},
-	"secret":           {"aws-", "private-key", "generic-bearer-"},
+	"secret":           {"aws-", "private-key", "generic-bearer-", "gcp-", "azure-", "ncloud-", "gitlab-", "openai-", "slack-webhook", "mysql-", "postgres-", "redis-"},
 	"prompt_injection": {"injection-"},
-	"sensitive_path":   {},
+	"sensitive_path":   {"path-"},
 }
 
 // DisabledRulePrefixes derives the built-in rule-ID prefixes the org

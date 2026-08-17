@@ -85,121 +85,7 @@ type DetectionRule struct {
 	Disabled bool
 }
 
-// DefaultKoreanPIIRules returns the connector's built-in Korean
-// PII detector lexicon. The lexicon covers the most common
-// Korean government identifiers (PRD §16.3) and is intentionally
-// minimal — production deployments override the lexicon via the
-// relay's rule pack.
-func DefaultKoreanPIIRules() []DetectionRule {
-	return []DetectionRule{
-		// Resident registration number (주민등록번호): 6-7 digits.
-		// Format: YYMMDD-GXXXXXX where G encodes century + region.
-		{
-			RuleID:         "kr-rrn",
-			Severity:       SeverityCritical,
-			Regex:          regexp.MustCompile(`\b\d{6}[- ]?[1-4]\d{6}\b`),
-			Description:    "Korean resident registration number",
-			RedactTemplate: "[KR_RRN_REDACTED]",
-		},
-		// Business registration number (사업자등록번호): 10 digits
-		// with optional dashes.
-		{
-			RuleID:         "kr-brn",
-			Severity:       SeverityHigh,
-			Regex:          regexp.MustCompile(`\b\d{3}[- ]?\d{2}[- ]?\d{5}\b`),
-			Description:    "Korean business registration number",
-			RedactTemplate: "[KR_BRN_REDACTED]",
-		},
-		// Bank account number (계좌번호): 10-14 digits in groups.
-		{
-			RuleID:         "kr-bank-account",
-			Severity:       SeverityHigh,
-			Regex:          regexp.MustCompile(`\b\d{2,4}[- ]?\d{2,4}[- ]?\d{2,6}[- ]?\d{0,2}\b`),
-			Description:    "Korean bank account number",
-			RedactTemplate: "[KR_BANK_ACCOUNT_REDACTED]",
-		},
-		// Resident keyword hint (no direct regex): text containing
-		// "주민번호" is flagged at low severity because the model
-		// is about to discuss PII-adjacent content.
-		{
-			RuleID:         "kr-rrn-keyword",
-			Severity:       SeverityLow,
-			Regex:          regexp.MustCompile(`주민등록번호|주민번호`),
-			Description:    "Korean resident registration number keyword",
-			RedactTemplate: "[KR_RRN_KEYWORD_REDACTED]",
-		},
-	}
-}
-
-// DefaultSecretRules returns the connector's built-in secret
-// detector lexicon (AWS keys, generic API tokens, private keys).
-func DefaultSecretRules() []DetectionRule {
-	return []DetectionRule{
-		// AWS access key prefix "AKIA" + 16 alphanumeric.
-		{
-			RuleID:         "aws-access-key",
-			Severity:       SeverityCritical,
-			Regex:          regexp.MustCompile(`\bAKIA[0-9A-Z]{16}\b`),
-			Description:    "AWS access key",
-			RedactTemplate: "[AWS_KEY_REDACTED]",
-		},
-		// AWS secret key prefix "aws_secret_access_key=" + base64.
-		{
-			RuleID:         "aws-secret-key",
-			Severity:       SeverityCritical,
-			Regex:          regexp.MustCompile(`(?i)aws_secret_access_key\s*=\s*[A-Za-z0-9/+=]{40}`),
-			Description:    "AWS secret access key",
-			RedactTemplate: "[AWS_SECRET_REDACTED]",
-		},
-		// Generic API token format: long opaque strings prefixed
-		// with "Bearer " or "Token ".
-		{
-			RuleID:         "generic-bearer-token",
-			Severity:       SeverityHigh,
-			Regex:          regexp.MustCompile(`(?i)(bearer|token)\s+[A-Za-z0-9._~+/=-]{20,}`),
-			Description:    "Generic API bearer token",
-			RedactTemplate: "[BEARER_TOKEN_REDACTED]",
-		},
-		// Private key marker (PEM).
-		{
-			RuleID:         "private-key-pem",
-			Severity:       SeverityCritical,
-			Regex:          regexp.MustCompile(`-----BEGIN (RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----`),
-			Description:    "PEM private key",
-			RedactTemplate: "[PRIVATE_KEY_REDACTED]",
-		},
-	}
-}
-
-// DefaultInjectionRules returns the connector's built-in
-// prompt-injection detector (PRD §16.4). The detector flags
-// canonical override/jailbreak phrases the relay's
-// `detectInjection` also catches.
-func DefaultInjectionRules() []DetectionRule {
-	return []DetectionRule{
-		{
-			RuleID:         "injection-override",
-			Severity:       SeverityCritical,
-			Regex:          regexp.MustCompile(`(?i)ignore (all )?previous instructions`),
-			Description:    "Prompt injection override attempt",
-			RedactTemplate: "",
-		},
-		{
-			RuleID:         "injection-jailbreak",
-			Severity:       SeverityCritical,
-			Regex:          regexp.MustCompile(`(?i)(jailbreak|DAN|do anything now)`),
-			Description:    "Jailbreak attempt",
-			RedactTemplate: "",
-		},
-		{
-			RuleID:         "injection-system",
-			Severity:       SeverityHigh,
-			Regex:          regexp.MustCompile(`(?i)(^|\n)\s*system\s*:\s*you are`),
-			Description:    "Fake system-prompt injection",
-			RedactTemplate: "",
-		},
-	}
-}
+// --- Rule definitions are in rules_*.go ---
 
 // Scanner is the harness-side DLP engine. It owns the active
 // rule pack and runs every outbound message through it before
@@ -210,12 +96,29 @@ type Scanner struct {
 }
 
 // NewScanner constructs a scanner with the connector's built-in
-// lexicon (Korean PII + secrets + injection).
+// lexicon (Korean PII + secrets + injection + sensitive paths).
 func NewScanner() *Scanner {
 	return &Scanner{
-		rules: append(append(DefaultKoreanPIIRules(), DefaultSecretRules()...), DefaultInjectionRules()...),
+		rules: append(append(append(defaultKoreanPIIRules(), defaultSecretRules()...), defaultInjectionRules()...), defaultSensitivePathRules()...),
 	}
 }
+
+// DefaultKoreanPIIRules returns the connector's built-in Korean
+// PII detector lexicon. The lexicon covers the most common
+// Korean government identifiers (PRD §16.3) and is intentionally
+// minimal — production deployments override the lexicon via the
+// relay's rule pack.
+func DefaultKoreanPIIRules() []DetectionRule { return defaultKoreanPIIRules() }
+
+// DefaultSecretRules returns the connector's built-in secret
+// detector lexicon (AWS keys, generic API tokens, private keys).
+func DefaultSecretRules() []DetectionRule { return defaultSecretRules() }
+
+// DefaultInjectionRules returns the connector's built-in
+// prompt-injection detector (PRD §16.4). The detector flags
+// canonical override/jailbreak phrases the relay's
+// `detectInjection` also catches.
+func DefaultInjectionRules() []DetectionRule { return defaultInjectionRules() }
 
 // Rules returns a copy of the active rules for diagnostics.
 func (s *Scanner) Rules() []DetectionRule {
@@ -314,8 +217,12 @@ func (s *Scanner) Scan(text string) ScanResult {
 	}
 
 	// Apply redactions right-to-left to preserve offsets.
+	// Skip overlapping redactions (earlier rule wins).
 	for i := len(pending) - 1; i >= 0; i-- {
 		p := pending[i]
+		if p.offset+p.length > len(mutated) {
+			continue // overlapping match, skip
+		}
 		mutated = append(mutated[:p.offset], append([]byte(p.redact), mutated[p.offset+p.length:]...)...)
 	}
 
