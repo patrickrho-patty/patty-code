@@ -368,9 +368,18 @@ mechanics differ.
   `profile_public` tag. The leaf is `//go:build !profile_sovereign` for
   the Anthropic-translation helper and unconditional for the shape
   parser; downstream consumers are unchanged.
-- **Exported-surface drift in `openaiapi` (G4).** Six capitalization-only
-  renames (`ID` → `Id`, `URL` → `Url`, etc.) landed during the leaf
-  extraction to match the rest of the harness. The ADR was silent on
-  identifier style; the rename keeps linter noise out of the public
-  build, but downstream importers (none in-tree) would have to follow.
-  This is acceptable inside this monorepo.
+- **Exported-surface drift in `openaiapi` (G4).** Six unexported→exported
+  visibility changes (deepSeekPrefixChatURL → DeepSeekPrefixChatURL,
+  usesGeminiThoughtSignatures → UsesGeminiThoughtSignatures,
+  normalizeModelID → NormalizeModelID, cleanCustomHeaders →
+  CleanCustomHeaders, applyCustomHeaders → ApplyCustomHeaders,
+  applyAPIKeyHeader → ApplyAPIKeyHeader) landed during the leaf
+  extraction so external callers (cli, config, provider/anthropic)
+  could use the helpers. Identifiers continue to use the existing
+  ModelID / URL / APIKey all-caps abbreviation style; the rename is
+  purely visibility, not casing. No downstream importers in-tree; this
+  is acceptable inside this monorepo.
+
+## Deferred follow-up plans
+
+- **G8 follow-up:** retire `PATTY_AIRGAP*` env hatches; compile-time default-on posture cannot be env-downgraded.
