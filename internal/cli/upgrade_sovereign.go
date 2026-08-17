@@ -9,13 +9,18 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/spf13/pflag"
 
 	"patty/internal/sovereign"
 )
+
+const maxAdvisoryBytes = 1 << 20 // 1 MiB; signed advisories are KB-range.
 
 func upgradeCommand(args []string, version string) int {
 	_ = version
@@ -56,9 +61,19 @@ func runUpdateImport(args []string) int {
 		fmt.Fprintln(os.Stderr, "usage: patcode update import <advisory-file> --key <pubkey-file>")
 		return 1
 	}
-	raw, err := os.ReadFile(rest[0])
+	f, err := os.Open(rest[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "update import: %v\n", err)
+		return 1
+	}
+	defer f.Close()
+	raw, err := io.ReadAll(io.LimitReader(f, maxAdvisoryBytes+1))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "update import: %v\n", err)
+		return 1
+	}
+	if len(raw) > maxAdvisoryBytes {
+		fmt.Fprintf(os.Stderr, "update import: advisory too large (>%d bytes)\n", maxAdvisoryBytes)
 		return 1
 	}
 	var adv sovereign.UpdateAdvisory
@@ -71,7 +86,7 @@ func runUpdateImport(args []string) int {
 		fmt.Fprintf(os.Stderr, "update import: %v\n", err)
 		return 1
 	}
-	pub, err := hex.DecodeString(string(trimSpaceAll(string(keyHex))))
+	pub, err := hex.DecodeString(stripWhitespace(string(keyHex)))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "update import: --key must be hex: %v\n", err)
 		return 1
@@ -93,15 +108,19 @@ func runUpdateImport(args []string) int {
 	return 0
 }
 
-func trimSpaceAll(s string) string {
-	out := make([]byte, 0, len(s))
-	for i := 0; i < len(s); i++ {
-		if s[i] != ' ' && s[i] != '\n' && s[i] != '\r' && s[i] != '\t' {
-			out = append(out, s[i])
+// stripWhitespace removes every Unicode-space rune (NBSP, line
+// separator, etc.) so a key file containing copy-paste noise from a
+// rendered HTML page does not produce a confusing "invalid hex" error
+// down the line. ASCII-only trimming would silently accept U+00A0 and
+// the like and then fail at hex.DecodeString.
+func stripWhitespace(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
 		}
-	}
-	return string(out)
+		return r
+	}, s)
 }
 
-// nowUnixMilli is swappable for tests.
+// nowUnixMilli is swappable for tests via swapNowUnixMilli.
 var nowUnixMilli = func() int64 { return time.Now().UnixMilli() }
