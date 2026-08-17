@@ -1,5 +1,3 @@
-//go:build profile_public
-
 package openaiapi
 
 import "testing"
