@@ -162,9 +162,11 @@ func (a *App) flushPendingCrash() {
 	if err != nil {
 		return
 	}
+	processedAll := true
 	for _, path := range paths {
 		body, readErr := readFileUTF8(path)
 		if readErr != nil {
+			processedAll = false
 			continue
 		}
 		var r crashReport
@@ -173,9 +175,17 @@ func (a *App) flushPendingCrash() {
 			continue
 		}
 		if postCrashReport(a.bootContext(), c, crashEndpoint, r) != nil {
+			processedAll = false
 			break
 		}
 		_ = os.Remove(path)
 	}
-	_ = os.Remove(pendingCrashDir())
+	// Only wipe the queue directory when every path was processed
+	// successfully. Under sovereign builds every postCrashReport call
+	// fails (the local twin is a no-op), so removing the directory on
+	// the first error would destroy the very records the operator is
+	// supposed to be able to list/show/delete locally (ADR G2).
+	if processedAll {
+		_ = os.Remove(pendingCrashDir())
+	}
 }
