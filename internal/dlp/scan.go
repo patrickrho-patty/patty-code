@@ -244,3 +244,15 @@ func redactForSample(s string) string {
 	}
 	return s[:previewLen] + strings.Repeat("*", len(s)-previewLen)
 }
+
+// ParseSeverity maps a wire severity string onto the Severity type.
+// Unknown or empty values return "" so callers can leave the rule's
+// built-in severity untouched — a malformed override must never
+// invent or downgrade severity silently.
+func ParseSeverity(s string) Severity {
+	switch Severity(s) {
+	case SeverityCritical, SeverityHigh, SeverityMedium, SeverityLow:
+		return Severity(s)
+	}
+	return ""
+}

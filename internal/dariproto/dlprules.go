@@ -37,6 +37,10 @@ type DLPRulePackWire struct {
 	// RuleOverrides carries per-rule enabled/severity/action overrides.
 	// When present, these take precedence over class-level toggles.
 	RuleOverrides []DLPRuleOverride `cbor:"7,keyasint,omitempty"`
+	// Scope names the administrative level this pack applies to
+	// (PAT-1432). Absent scope = org (byte-compatible with the
+	// pre-scope wire format; field is omitempty).
+	Scope DLPRuleScope `cbor:"8,keyasint,omitempty"`
 }
 
 // DLPRuleOverride is a per-rule override (PAT-1431).
@@ -45,6 +49,51 @@ type DLPRuleOverride struct {
 	Enabled  bool   `cbor:"2,keyasint"`
 	Severity string `cbor:"3,keyasint"`
 	Action   string `cbor:"4,keyasint"`
+}
+
+// DLP scope levels (PAT-1432). Precedence when multiple scoped
+// packs arrive: Harness > User > Team > Organization.
+const (
+	ScopeOrg     = "org"
+	ScopeTeam    = "team"
+	ScopeUser    = "user"
+	ScopeHarness = "harness"
+)
+
+// DLPRuleScope names the administrative level a rule pack applies
+// to. ID is the level's subject: the org ID, team ID, user ID, or
+// harness peer ID. A zero Scope (or Level == "") means org —
+// pre-PAT-1432 packs decode that way and stay byte-compatible.
+type DLPRuleScope struct {
+	Level string `cbor:"1,keyasint"`
+	ID    string `cbor:"2,keyasint"`
+}
+
+// EffectiveLevel normalizes an absent level to org.
+func (s DLPRuleScope) EffectiveLevel() string {
+	if s.Level == "" {
+		return ScopeOrg
+	}
+	return s.Level
+}
+
+// scopeRank orders levels by specificity (higher wins). Unknown
+// levels sort below org so a malformed pack can never shadow an
+// explicit org pack.
+var scopeRank = map[string]int{
+	ScopeOrg:     0,
+	ScopeTeam:    1,
+	ScopeUser:    2,
+	ScopeHarness: 3,
+}
+
+// ScopeRank reports the precedence rank of a level (org lowest,
+// harness highest; unknown levels rank below org).
+func ScopeRank(level string) int {
+	if r, ok := scopeRank[level]; ok {
+		return r
+	}
+	return -1
 }
 
 // DecodeDLPRulePack parses a DLP_RULE_PACK body.

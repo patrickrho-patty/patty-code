@@ -51,7 +51,7 @@ func TestPerRuleOverridesTakePrecedence(t *testing.T) {
 			{RuleID: "pii-kr-rrn", Enabled: true, Severity: "critical", Action: "block"},
 		},
 	}
-	applyPackToScanner(scanner, pack)
+	newScopedPackSink(scanner)(pack)
 
 	// Per-rule override disabled kr-phone: scanning a phone number must not
 	// find a kr-phone finding. Pre-existing broad kr-bank-account regex also
@@ -91,7 +91,7 @@ func TestClassLevelFallbackWhenNoOverrides(t *testing.T) {
 		},
 		// No RuleOverrides
 	}
-	applyPackToScanner(scanner, pack)
+	newScopedPackSink(scanner)(pack)
 
 	// All kr-* rules should be disabled (class-level toggle)
 	if res := scanner.Scan("주민등록번호: 901225-1234567"); !res.Passed {
@@ -111,7 +111,7 @@ func TestDisabledPrefixesActuallyDisableScannerRules(t *testing.T) {
 			{RuleID: "cls-pii", Pattern: "korean_pii", Severity: "critical", Disabled: true},
 		},
 	}
-	applyPackToScanner(scanner, pack)
+	newScopedPackSink(scanner)(pack)
 	for _, r := range scanner.Rules() {
 		if dariproto.MatchesPrefix(r.RuleID, pack.DisabledRulePrefixes()) && !r.Disabled {
 			t.Fatalf("rule %s must be disabled after applying the pack", r.RuleID)
@@ -123,5 +123,176 @@ func TestDisabledPrefixesActuallyDisableScannerRules(t *testing.T) {
 	}
 	if res := scanner.Scan("AKIAIOSFODNN7EXAMPLE secret w/ aws-secret-key abcdefghijklmnopqrstuvwxyz1234567890ABCD"); res.Passed {
 		t.Fatal("secret class still enabled and must block")
+	}
+}
+
+// --- PAT-1432: scope cascade (Harness > User > Team > Org) ---
+
+func scopedPack(level, id string, overrides ...dariproto.DLPRuleOverride) *dariproto.DLPRulePackWire {
+	return &dariproto.DLPRulePackWire{
+		Version: 1, EpochID: "e", OrgID: "o",
+		Scope:         dariproto.DLPRuleScope{Level: level, ID: id},
+		RuleOverrides: overrides,
+	}
+}
+
+func ruleState(scanner *dlp.Scanner, ruleID string) (enabled bool, severity string) {
+	for _, r := range scanner.Rules() {
+		if r.RuleID == ruleID {
+			return !r.Disabled, string(r.Severity)
+		}
+	}
+	return false, ""
+}
+
+func TestScopeCascadeUserOverridesOrg(t *testing.T) {
+	scanner := dlp.NewScanner()
+	sink := newScopedPackSink(scanner)
+
+	// Org pack disables kr-phone via per-rule override.
+	sink(scopedPack(dariproto.ScopeOrg, "org-1",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-phone", Enabled: false}))
+	if _, sev := ruleState(scanner, "kr-phone"); sev == "" {
+		t.Fatal("kr-phone must exist in the built-in lexicon")
+	}
+	if enabled, _ := ruleState(scanner, "kr-phone"); enabled {
+		t.Fatal("org pack must disable kr-phone")
+	}
+
+	// User pack re-enables kr-phone: user outranks org.
+	sink(scopedPack(dariproto.ScopeUser, "user-7",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-phone", Enabled: true}))
+	if enabled, _ := ruleState(scanner, "kr-phone"); !enabled {
+		t.Fatal("user pack must outrank org pack and re-enable kr-phone")
+	}
+	// Behavior-level proof: the phone rule fires again.
+	res := scanner.Scan("연락처: 010-1234-5678")
+	found := false
+	for _, f := range res.Findings {
+		if f.RuleID == "kr-phone" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("re-enabled kr-phone must produce a finding")
+	}
+}
+
+func TestScopeCascadeHarnessOverridesUser(t *testing.T) {
+	scanner := dlp.NewScanner()
+	sink := newScopedPackSink(scanner)
+
+	sink(scopedPack(dariproto.ScopeOrg, "org-1",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-rrn", Enabled: true, Severity: "critical"}))
+	sink(scopedPack(dariproto.ScopeUser, "user-7",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-rrn", Enabled: false}))
+	// Harness re-enables with lowered severity: harness outranks user.
+	sink(scopedPack(dariproto.ScopeHarness, "peer-9",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-rrn", Enabled: true, Severity: "low"}))
+
+	enabled, sev := ruleState(scanner, "kr-rrn")
+	if !enabled {
+		t.Fatal("harness pack must outrank user pack: kr-rrn enabled")
+	}
+	if sev != "low" {
+		t.Fatalf("harness severity override must win, got %q", sev)
+	}
+	// The finding itself must carry the overridden severity. (The
+	// overall verdict may still DENY via the broad kr-bank-account
+	// regex matching the same string — that overlap is the separate
+	// PAT-1396 tightening item, not a cascade concern.)
+	res := scanner.Scan("주민등록번호: 901225-1234567")
+	found := false
+	for _, f := range res.Findings {
+		if f.RuleID == "kr-rrn" {
+			found = true
+			if string(f.Severity) != "low" {
+				t.Fatalf("kr-rrn finding severity must be the harness override, got %q", f.Severity)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("kr-rrn must still produce a finding under the harness override")
+	}
+}
+
+func TestScopeCascadeUnscopedPackIsOrg(t *testing.T) {
+	scanner := dlp.NewScanner()
+	sink := newScopedPackSink(scanner)
+
+	// Pre-PAT-1432 shape: no Scope field at all.
+	sink(&dariproto.DLPRulePackWire{
+		Version: 1, EpochID: "e", OrgID: "o",
+		RuleOverrides: []dariproto.DLPRuleOverride{
+			{RuleID: "pii-kr-phone", Enabled: false},
+		},
+	})
+	sink(scopedPack(dariproto.ScopeTeam, "team-1",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-phone", Enabled: true}))
+	if enabled, _ := ruleState(scanner, "kr-phone"); !enabled {
+		t.Fatal("unscoped pack must rank as org; team pack must outrank it")
+	}
+}
+
+func TestScopeCascadeIdempotentRepush(t *testing.T) {
+	scanner := dlp.NewScanner()
+	sink := newScopedPackSink(scanner)
+
+	orgDisable := scopedPack(dariproto.ScopeOrg, "org-1",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-phone", Enabled: false})
+	sink(orgDisable)
+	// Simulate a re-push of the same org pack (e.g. reconnect).
+	sink(orgDisable)
+	if enabled, _ := ruleState(scanner, "kr-phone"); enabled {
+		t.Fatal("re-push must keep kr-phone disabled (idempotent)")
+	}
+	// A later user pack flips it; re-pushing the ORG pack must NOT
+	// clobber the user-level re-enable.
+	sink(scopedPack(dariproto.ScopeUser, "user-7",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-phone", Enabled: true}))
+	sink(orgDisable)
+	if enabled, _ := ruleState(scanner, "kr-phone"); !enabled {
+		t.Fatal("stale org re-push must not override user-level enable")
+	}
+}
+
+func TestScopeCascadeRejectsUnknownLevel(t *testing.T) {
+	scanner := dlp.NewScanner()
+	sink := newScopedPackSink(scanner)
+	before := scanner.Rules()
+
+	sink(scopedPack("galactic", "x",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-rrn", Enabled: false}))
+	after := scanner.Rules()
+	for i := range before {
+		if before[i].Disabled != after[i].Disabled {
+			t.Fatalf("unknown scope level must be ignored, rule %s changed", before[i].RuleID)
+		}
+	}
+}
+
+func TestScopeCascadeClassFallbackPerLevel(t *testing.T) {
+	// Class-level toggles still work per scope: org disables the
+	// whole korean_pii class; user re-enables one rule by override.
+	scanner := dlp.NewScanner()
+	sink := newScopedPackSink(scanner)
+
+	sink(&dariproto.DLPRulePackWire{
+		Version: 1, EpochID: "e", OrgID: "o",
+		Rules: []dariproto.DLPRuleWire{
+			{RuleID: "cls-pii", Pattern: "korean_pii", Severity: "critical", Disabled: true},
+		},
+	})
+	if res := scanner.Scan("주민등록번호: 901225-1234567"); !res.Passed {
+		t.Fatal("org class-level disable must silence kr-rrn")
+	}
+	sink(scopedPack(dariproto.ScopeUser, "user-7",
+		dariproto.DLPRuleOverride{RuleID: "pii-kr-rrn", Enabled: true}))
+	if res := scanner.Scan("주민등록번호: 901225-1234567"); res.Passed {
+		t.Fatal("user override must re-enable kr-rrn on top of org class disable")
+	}
+	// Sibling rule stays disabled (only the named rule was re-enabled).
+	if res := scanner.Scan("연락처: 010-1234-5678"); !res.Passed {
+		t.Fatal("kr-phone must remain disabled by the org class toggle")
 	}
 }
