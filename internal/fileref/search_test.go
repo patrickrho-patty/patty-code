@@ -3,6 +3,7 @@ package fileref
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -153,49 +154,50 @@ func TestSearchSkipsNoiseStillWorks(t *testing.T) {
 	}
 }
 
-// TestSearchChosungBasename verifies that a jamo query matches a Korean
-// basename through its 초성 projection (e.g. ㅎㄱ → 한국어문서.md).
-func TestSearchChosungBasename(t *testing.T) {
+// TestSearchMatchExtraBasenameDir verifies the extra matcher seam: SearchMatch
+// records hits that extra reports at the basename and directory tiers, while
+// Search (no extra) keeps literal behavior and returns nothing.
+func TestSearchMatchExtraBasenameDir(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, filepath.Join(root, "한국어문서.md"))
+	writeFile(t, filepath.Join(root, "Xnote.md"))
+	writeFile(t, filepath.Join(root, "Xdir", "plain.go"))
 
-	got := Search(root, "ㅎㄱ", 50)
-	if !containsPath(got, "한국어문서.md") {
-		t.Fatalf("Search(ㅎㄱ) should return 한국어문서.md via chosung, got %v", resultPaths(got))
+	marker := func(candidate, _ string) bool { return strings.HasPrefix(candidate, "X") }
+
+	if got := Search(root, "zz", 50); len(got) != 0 {
+		t.Fatalf("literal Search must not match the marker files, got %v", resultPaths(got))
 	}
-
-	// A jamo query whose runes are absent from the projection matches nothing.
-	got = Search(root, "ㄷㄷ", 50)
-	if len(got) != 0 {
-		t.Fatalf("Search(ㄷㄷ) should match nothing, got %v", resultPaths(got))
+	if got := SearchMatch(root, "zz", 50, marker); !containsPath(got, "Xnote.md") {
+		t.Fatalf("SearchMatch should hit Xnote.md via basename, got %v", resultPaths(got))
+	}
+	if !containsDirHit(SearchMatch(root, "zz", 50, marker), "Xdir") {
+		t.Fatalf("SearchMatch should hit directory Xdir, got %v", resultPaths(SearchMatch(root, "zz", 50, marker)))
 	}
 }
 
-// TestSearchChosungSegment verifies that a jamo query matches a path segment
-// individually, never across a '/' boundary.
-func TestSearchChosungSegment(t *testing.T) {
+// TestSearchMatchExtraSegment verifies the extra matcher is applied per path
+// segment, so a match never crosses a '/' boundary.
+func TestSearchMatchExtraSegment(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, filepath.Join(root, "docs", "한글", "readme.md"))
+	writeFile(t, filepath.Join(root, "plain", "Xdeep", "note.go"))
 
-	got := Search(root, "ㅎㄱ", 50)
-	if !containsPath(got, "docs/한글/readme.md") {
-		t.Fatalf("Search(ㅎㄱ) should return the file under the 한글 segment, got %v", resultPaths(got))
-	}
-	if !containsDirHit(got, "docs/한글") {
-		t.Fatalf("Search(ㅎㄱ) should return directory docs/한글, got %v", resultPaths(got))
+	marker := func(candidate, _ string) bool { return strings.HasPrefix(candidate, "X") }
+	got := SearchMatch(root, "zz", 50, marker)
+	if !containsPath(got, "plain/Xdeep/note.go") {
+		t.Fatalf("SearchMatch should hit the Xdeep segment file, got %v", resultPaths(got))
 	}
 }
 
-// TestSearchChosungEnglishPassthrough guards D3: literal queries behave
-// exactly as before, and jamo queries never match English-only names.
-func TestSearchChosungEnglishPassthrough(t *testing.T) {
+// TestSearchMatchExtraInertWhenNil guards the default: SearchMatch with a nil
+// extra behaves identically to Search for both literal matches and misses.
+func TestSearchMatchExtraInertWhenNil(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, filepath.Join(root, "README.md"))
 
-	if !containsPath(Search(root, "README", 50), "README.md") {
-		t.Fatalf("literal query README must keep matching, got %v", resultPaths(Search(root, "README", 50)))
+	if !containsPath(SearchMatch(root, "README", 50, nil), "README.md") {
+		t.Fatalf("SearchMatch with nil extra must keep literal matching")
 	}
-	if got := Search(root, "ㅇㅇ", 50); len(got) != 0 {
-		t.Fatalf("jamo query ㅇㅇ must not match README.md, got %v", resultPaths(got))
+	if got := SearchMatch(root, "zz", 50, nil); len(got) != 0 {
+		t.Fatalf("SearchMatch with nil extra must not invent matches, got %v", resultPaths(got))
 	}
 }

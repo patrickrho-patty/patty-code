@@ -54,15 +54,11 @@ func HasJamo(s string) bool {
 	return false
 }
 
-// ChoseongMatch reports whether query matches candidate's 초성 spelling.
-//
-// An empty query matches everything (same contract as the existing filters). A
-// query without Hangul jamo never matches — callers keep their literal matchers
-// and English behavior is unchanged. Otherwise the query is split at script
-// boundaries: each jamo run must appear as a subsequence of ChoseongOf(candidate)
-// and each non-jamo run as a subsequence of the case-folded candidate, in order
-// within each space. This covers pure 초성 ("ㅇㅊ"), slash-prefixed 초성 ("/ㅇㅊ")
-// and mixed queries ("ㅋㅋlogin").
+// ChoseongMatch reports whether query matches candidate's 초성 spelling: an
+// empty query matches all; a jamo-free query never matches (callers keep their
+// literal matchers); otherwise each jamo run of query must appear in order as a
+// subsequence of ChoseongOf(candidate) and each non-jamo run as a subsequence
+// of the case-folded candidate.
 func ChoseongMatch(candidate, query string) bool {
 	if query == "" {
 		return true

@@ -698,7 +698,9 @@ func (m *chatTUI) searchFileRefs(frag string) []string {
 			searchRoot = wr
 		}
 	}
-	results := fileref.Search(searchRoot, frag, maxFileSearchItems)
+	// ChoseongMatch doubles as the MatchFunc seam: it returns false for
+	// jamo-free fragments, so literal search behavior is unchanged (D3).
+	results := fileref.SearchMatch(searchRoot, frag, maxFileSearchItems, textutil.ChoseongMatch)
 	paths := make([]string, 0, len(results))
 	for _, r := range results {
 		paths = append(paths, r.Path)
