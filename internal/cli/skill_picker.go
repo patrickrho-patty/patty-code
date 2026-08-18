@@ -11,6 +11,7 @@ import (
 
 	"patty/internal/i18n"
 	"patty/internal/skill"
+	"patty/internal/textutil"
 )
 
 var scopePriority = map[skill.Scope]int{
@@ -373,7 +374,10 @@ func (p *skillPicker) filteredSkills() []skill.Skill {
 	for _, s := range p.skills {
 		if strings.Contains(strings.ToLower(s.SlashName()), q) ||
 			strings.Contains(strings.ToLower(s.Plugin), q) ||
-			strings.Contains(strings.ToLower(s.Description), q) {
+			strings.Contains(strings.ToLower(s.Description), q) ||
+			textutil.ChoseongMatch(s.SlashName(), p.query) ||
+			textutil.ChoseongMatch(s.Plugin, p.query) ||
+			textutil.ChoseongMatch(s.Description, p.query) {
 			out = append(out, s)
 		}
 	}
