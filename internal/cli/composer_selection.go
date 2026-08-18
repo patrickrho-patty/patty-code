@@ -11,6 +11,8 @@ import (
 	rw "github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
 	"golang.org/x/text/unicode/norm"
+
+	"patty/internal/textutil"
 )
 
 // composerSelection is an editable textarea selection expressed as rune offsets
@@ -477,30 +479,16 @@ func (m *chatTUI) deleteComposerHangulJamo(value string, offset int, associatedT
 }
 
 // Hangul decomposition constants for the composer's IME backspace handling.
+// The leading-consonant (초성) logic lives in textutil.HangulLeadingJamo.
 const (
-	hangulSBase   = 0xAC00
-	hangulSLast   = 0xD7A3
-	hangulVCount  = 21
-	hangulTCount  = 28
-	hangulNCount  = hangulVCount * hangulTCount
-	hangulLeading = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"
+	hangulSBase  = 0xAC00
+	hangulVCount = 21
+	hangulTCount = 28
+	hangulNCount = hangulVCount * hangulTCount
 )
 
-// hangulLeadingRunes is the precomputed rune table for hangulLeading; the
-// conversion runs per Hangul backspace, so it must not reallocate.
-var hangulLeadingRunes = []rune(hangulLeading)
-
-// hangulLeadingJamo returns the leading consonant (초성) of a precomposed
-// Hangul syllable, or 0 when r is not a syllable.
-func hangulLeadingJamo(r rune) rune {
-	if r < hangulSBase || r > hangulSLast {
-		return 0
-	}
-	return hangulLeadingRunes[(r-hangulSBase)/hangulNCount]
-}
-
 func composerHangulBackspaceReplacement(r rune) (rune, bool) {
-	leading := hangulLeadingJamo(r)
+	leading := textutil.HangulLeadingJamo(r)
 	if leading == 0 {
 		return 0, false
 	}

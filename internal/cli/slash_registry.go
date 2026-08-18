@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"patty/internal/i18n"
+	"patty/internal/textutil"
 )
 
 // builtinSlashSpec is the single source of truth for a built-in command's
@@ -73,23 +74,8 @@ func builtinSlashSpecs() []builtinSlashSpec {
 // populateChosung derives each spec's 초성 alias from its Korean name.
 func populateChosung(specs []builtinSlashSpec) {
 	for i := range specs {
-		specs[i].chosung = chosungOf(specs[i].ko)
+		specs[i].chosung = textutil.ChoseongOf(specs[i].ko)
 	}
-}
-
-// chosungOf maps a Hangul syllable string to its leading-jamo (초성) spelling,
-// e.g. "/모델변경" → "/ㅁㄷㅂㄱ". Non-Hangul runes pass through unchanged so a
-// "/" prefix and any Latin command suffix survive.
-func chosungOf(s string) string {
-	var b strings.Builder
-	for _, r := range s {
-		if leading := hangulLeadingJamo(r); leading != 0 {
-			b.WriteRune(leading)
-		} else {
-			b.WriteRune(r)
-		}
-	}
-	return b.String()
 }
 
 // slashDisplayName returns the label shown in the menu for the active locale:
