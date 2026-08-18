@@ -307,3 +307,20 @@ func completionRegistryKnowsRootToken(root *cliCompletionSpec, token string) boo
 	}
 	return cliCompletionLookupSubcommand(root, token) != nil
 }
+
+func TestFilterCompletionPrefixChosung(t *testing.T) {
+	values := []string{"모델변경", "compact", "provider"}
+
+	// jamo query matches the Korean value via 초성
+	if got := filterCompletionPrefix(values, "ㅁㄷ"); len(got) != 1 || got[0] != "모델변경" {
+		t.Fatalf("ㅁㄷ should match 모델변경, got %v", got)
+	}
+	// literal prefix behavior unchanged
+	if got := filterCompletionPrefix(values, "comp"); len(got) != 1 || got[0] != "compact" {
+		t.Fatalf("literal prefix should keep matching, got %v", got)
+	}
+	// runes absent from the projection match nothing
+	if got := filterCompletionPrefix(values, "ㄷㄷ"); len(got) != 0 {
+		t.Fatalf("ㄷㄷ should match nothing, got %v", got)
+	}
+}

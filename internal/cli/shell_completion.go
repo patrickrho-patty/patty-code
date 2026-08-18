@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"patty/internal/agent"
+	"patty/internal/textutil"
 )
 
 type cliCompletionValueKind uint8
@@ -599,7 +600,7 @@ func completionSessionIDs() []string {
 func filterCompletionPrefix(values []string, prefix string) []string {
 	out := make([]string, 0, len(values))
 	for _, value := range values {
-		if strings.HasPrefix(value, prefix) {
+		if strings.HasPrefix(value, prefix) || textutil.ChoseongMatch(value, prefix) {
 			out = append(out, value)
 		}
 	}
