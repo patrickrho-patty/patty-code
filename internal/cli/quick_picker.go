@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"patty/internal/i18n"
+	"patty/internal/textutil"
 )
 
 const quickPickerMaxVisible = 8
@@ -58,7 +59,7 @@ func (p *quickPicker) filteredItems() []quickPickerItem {
 	out := make([]quickPickerItem, 0, len(p.items))
 	for _, item := range p.items {
 		haystack := strings.ToLower(item.Label + " " + item.Description + " " + item.Status)
-		if strings.Contains(haystack, query) {
+		if strings.Contains(haystack, query) || textutil.ChoseongMatch(haystack, p.query) {
 			out = append(out, item)
 		}
 	}

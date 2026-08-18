@@ -230,3 +230,34 @@ func TestQuickPickerProviderSingleModelSwitch(t *testing.T) {
 		t.Fatal("modelSwitchMsg did not carry the expected controllers")
 	}
 }
+
+func TestQuickPickerFilteredItemsChosung(t *testing.T) {
+	p := &quickPicker{
+		items: []quickPickerItem{
+			{ID: "model", Label: "모델변경", Description: "pick a model"},
+			{ID: "provider", Label: "Provider", Description: "공급자 변경"},
+		},
+	}
+
+	// jamo query matches the Korean label via 초성
+	p.query = "ㅁㄷ"
+	if got := p.filteredItems(); len(got) != 1 || got[0].ID != "model" {
+		t.Fatalf("ㅁㄷ should match 모델변경, got %+v", got)
+	}
+
+	// jamo query matching the description's 초성
+	p.query = "ㄱㅈ"
+	if got := p.filteredItems(); len(got) != 1 || got[0].ID != "provider" {
+		t.Fatalf("ㄱㅈ should match 공급자 변경, got %+v", got)
+	}
+
+	// jamo-free query never chosung-matches (D3), literal still works
+	p.query = "pick"
+	if got := p.filteredItems(); len(got) != 1 || got[0].ID != "model" {
+		t.Fatalf("literal query should match via description, got %+v", got)
+	}
+	p.query = "zzz"
+	if got := p.filteredItems(); len(got) != 0 {
+		t.Fatalf("non-matching query should return nothing, got %+v", got)
+	}
+}
