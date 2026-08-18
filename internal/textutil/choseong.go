@@ -71,28 +71,30 @@ func ChoseongMatch(candidate, query string) bool {
 	proj := []rune(ChoseongOf(c))
 	raw := []rune(c)
 	qr := []rune(q)
-	pi, ri := 0, 0
+	// proj and raw are index-parallel rune arrays (ChoseongOf is 1:1 per rune),
+	// so one shared cursor enforces global order across jamo and non-jamo runs.
+	i := 0
 	for qi := 0; qi < len(qr); {
 		if isJamoRune(qr[qi]) {
 			j := qi
 			for j < len(qr) && isJamoRune(qr[j]) {
 				j++
 			}
-			next, ok := subseqAfter(proj, pi, qr[qi:j])
+			next, ok := subseqAfter(proj, i, qr[qi:j])
 			if !ok {
 				return false
 			}
-			pi, qi = next, j
+			i, qi = next, j
 		} else {
 			j := qi
 			for j < len(qr) && !isJamoRune(qr[j]) {
 				j++
 			}
-			next, ok := subseqAfter(raw, ri, qr[qi:j])
+			next, ok := subseqAfter(raw, i, qr[qi:j])
 			if !ok {
 				return false
 			}
-			ri, qi = next, j
+			i, qi = next, j
 		}
 	}
 	return true

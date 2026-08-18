@@ -76,6 +76,8 @@ func TestChoseongMatch(t *testing.T) {
 		{"partial subsequence, not prefix", "모델변경", "ㄷㅂㄱ", true},
 		{"mixed query", "ㅋㅋlogin", "ㅋㅋlogin", true},
 		{"mixed query, missing jamo part", "login", "ㅋㅋlogin", false},
+		{"mixed multi-run, in order", "ㅁbㄷ", "ㅁbㄷ", true},
+		{"mixed multi-run, order violated", "bㅁㄷ", "ㅁbㄷ", false},
 		{"mixed with uppercase Latin (query folded)", "ㅋㅋlogin", "ㅋㅋLOGIN", true},
 		{"mixed with uppercase Latin (candidate folded)", "ㅋㅋLogin", "ㅋㅋlogin", true},
 		{"double consonant: ㄱ must not match ㄲ (D2)", "까치", "ㄱ", false},
