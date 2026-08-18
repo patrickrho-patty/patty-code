@@ -531,3 +531,28 @@ func TestManagementMigrateFromImportsExplicitSessions(t *testing.T) {
 		}
 	}
 }
+
+func TestFilterSlashChosung(t *testing.T) {
+	items := []SlashItem{
+		{Label: "모델변경", Insert: "모델변경"},
+		{Label: "compact", Insert: "compact"},
+	}
+
+	// jamo query matches the Korean label via 초성
+	got := filterSlash(items, "/model ㅁㄷ", len("/model "), "ㅁㄷ")
+	if len(got) != 1 || got[0].Label != "모델변경" {
+		t.Fatalf("ㅁㄷ should match 모델변경, got %+v", got)
+	}
+
+	// jamo-free prefix behavior unchanged
+	got = filterSlash(items, "/model c", len("/model "), "c")
+	if len(got) != 1 || got[0].Label != "compact" {
+		t.Fatalf("literal prefix should keep matching, got %+v", got)
+	}
+
+	// runes absent from the projection match nothing
+	got = filterSlash(items, "/model ㄷㄷ", len("/model "), "ㄷㄷ")
+	if len(got) != 0 {
+		t.Fatalf("ㄷㄷ should match nothing, got %+v", got)
+	}
+}

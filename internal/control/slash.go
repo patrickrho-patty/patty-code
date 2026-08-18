@@ -11,6 +11,7 @@ import (
 	"patty/internal/migration"
 	"patty/internal/pluginpkg"
 	"patty/internal/skill"
+	"patty/internal/textutil"
 )
 
 // SlashItem is one slash-completion suggestion. Insert is the token text placed
@@ -348,7 +349,8 @@ func filterSlash(items []SlashItem, line string, from int, cur string) []SlashIt
 	prefix := line[:from]
 	var out []SlashItem
 	for _, it := range items {
-		if !strings.HasPrefix(strings.ToLower(it.Label), lp) {
+		if !strings.HasPrefix(strings.ToLower(it.Label), lp) &&
+			!textutil.ChoseongMatch(it.Label, cur) {
 			continue
 		}
 		if prefix+it.Insert == line {
