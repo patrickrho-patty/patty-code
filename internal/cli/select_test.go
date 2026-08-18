@@ -124,3 +124,46 @@ func TestFilterMenuItems(t *testing.T) {
 		t.Errorf("claude: got %d, want 0", len(got))
 	}
 }
+
+func TestFilterMenuItemsChosung(t *testing.T) {
+	items := []menuItem{
+		{name: "패키지 배포 수정", desc: "session from today"},
+		{name: "README", desc: "한글 문서"},
+	}
+
+	// jamo query matches the Korean name via 초성 (ㅂㅍ → 패키지 배포 수정)
+	if got := filterMenuItems(items, "ㅂㅍ"); len(got) != 1 || got[0].name != "패키지 배포 수정" {
+		t.Fatalf("ㅂㅍ should match the Korean item, got %+v", got)
+	}
+	// jamo query matching the desc's 초성 also works (ㅎㄱㅁㅅ → 한글 문서)
+	if got := filterMenuItems(items, "ㅎㄱㅁㅅ"); len(got) != 1 || got[0].name != "README" {
+		t.Fatalf("ㅎㄱㅁㅅ should match the README desc (한글 문서), got %+v", got)
+	}
+	// jamo-free query never chosung-matches (D3)
+	if got := filterMenuItems(items, "login"); len(got) != 0 {
+		t.Fatalf("jamo-free query must not chosung-match, got %+v", got)
+	}
+	// literal matching unchanged (name and desc)
+	if got := filterMenuItems(items, "README"); len(got) != 1 {
+		t.Fatalf("literal name matching unchanged, got %+v", got)
+	}
+	if got := filterMenuItems(items, "한글"); len(got) != 1 || got[0].name != "README" {
+		t.Fatalf("literal desc matching unchanged, got %+v", got)
+	}
+}
+
+func TestFilterIndicesChosung(t *testing.T) {
+	items := []menuItem{
+		{name: "모델변경", desc: "pick a model"},
+		{name: "provider", desc: "공급자 변경"},
+	}
+	if got := filterIndices(items, "ㅁㄷ"); len(got) != 1 || got[0] != 0 {
+		t.Fatalf("ㅁㄷ should match index 0 (모델변경), got %v", got)
+	}
+	if got := filterIndices(items, "ㄱㅈ"); len(got) != 1 || got[0] != 1 {
+		t.Fatalf("ㄱㅈ should match index 1 (공급자 변경 desc), got %v", got)
+	}
+	if got := filterIndices(items, "zzz"); len(got) != 0 {
+		t.Fatalf("non-matching query should return no indices, got %v", got)
+	}
+}

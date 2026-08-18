@@ -9,6 +9,7 @@ import (
 	"golang.org/x/term"
 
 	"patty/internal/i18n"
+	"patty/internal/textutil"
 )
 
 // errCancelled is returned by selectOne when the user aborts (q or Ctrl-C).
@@ -54,7 +55,8 @@ func renderSearchBar(w *os.File, query string) {
 	fmt.Fprintf(w, "\r\033[K%s %s\n", accent("🔍"), query+"_")
 }
 
-// filterMenuItems returns items whose name or desc contain the query (case-insensitive).
+// filterMenuItems returns items whose name or desc contain the query
+// (case-insensitive), or match its 초성 spelling when the query contains jamo.
 func filterMenuItems(items []menuItem, query string) []menuItem {
 	if query == "" {
 		return items
@@ -62,7 +64,10 @@ func filterMenuItems(items []menuItem, query string) []menuItem {
 	lq := strings.ToLower(query)
 	var out []menuItem
 	for _, it := range items {
-		if strings.Contains(strings.ToLower(it.name), lq) || strings.Contains(strings.ToLower(it.desc), lq) {
+		if strings.Contains(strings.ToLower(it.name), lq) ||
+			strings.Contains(strings.ToLower(it.desc), lq) ||
+			textutil.ChoseongMatch(it.name, query) ||
+			textutil.ChoseongMatch(it.desc, query) {
 			out = append(out, it)
 		}
 	}
@@ -477,7 +482,8 @@ func selectMany(label string, items []menuItem) ([]int, error) {
 	}
 }
 
-// filterIndices returns the original indices of items matching query.
+// filterIndices returns the original indices of items matching query
+// (literal contains, or 초성 when the query contains jamo).
 func filterIndices(items []menuItem, query string) []int {
 	if query == "" {
 		out := make([]int, len(items))
@@ -489,7 +495,10 @@ func filterIndices(items []menuItem, query string) []int {
 	lq := strings.ToLower(query)
 	var out []int
 	for i, it := range items {
-		if strings.Contains(strings.ToLower(it.name), lq) || strings.Contains(strings.ToLower(it.desc), lq) {
+		if strings.Contains(strings.ToLower(it.name), lq) ||
+			strings.Contains(strings.ToLower(it.desc), lq) ||
+			textutil.ChoseongMatch(it.name, query) ||
+			textutil.ChoseongMatch(it.desc, query) {
 			out = append(out, i)
 		}
 	}
