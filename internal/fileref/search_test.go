@@ -152,3 +152,50 @@ func TestSearchSkipsNoiseStillWorks(t *testing.T) {
 		t.Fatalf("Search should still return legitimate hit, got %v", resultPaths(got))
 	}
 }
+
+// TestSearchChosungBasename verifies that a jamo query matches a Korean
+// basename through its 초성 projection (e.g. ㅎㄱ → 한국어문서.md).
+func TestSearchChosungBasename(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "한국어문서.md"))
+
+	got := Search(root, "ㅎㄱ", 50)
+	if !containsPath(got, "한국어문서.md") {
+		t.Fatalf("Search(ㅎㄱ) should return 한국어문서.md via chosung, got %v", resultPaths(got))
+	}
+
+	// A jamo query whose runes are absent from the projection matches nothing.
+	got = Search(root, "ㄷㄷ", 50)
+	if len(got) != 0 {
+		t.Fatalf("Search(ㄷㄷ) should match nothing, got %v", resultPaths(got))
+	}
+}
+
+// TestSearchChosungSegment verifies that a jamo query matches a path segment
+// individually, never across a '/' boundary.
+func TestSearchChosungSegment(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "docs", "한글", "readme.md"))
+
+	got := Search(root, "ㅎㄱ", 50)
+	if !containsPath(got, "docs/한글/readme.md") {
+		t.Fatalf("Search(ㅎㄱ) should return the file under the 한글 segment, got %v", resultPaths(got))
+	}
+	if !containsDirHit(got, "docs/한글") {
+		t.Fatalf("Search(ㅎㄱ) should return directory docs/한글, got %v", resultPaths(got))
+	}
+}
+
+// TestSearchChosungEnglishPassthrough guards D3: literal queries behave
+// exactly as before, and jamo queries never match English-only names.
+func TestSearchChosungEnglishPassthrough(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "README.md"))
+
+	if !containsPath(Search(root, "README", 50), "README.md") {
+		t.Fatalf("literal query README must keep matching, got %v", resultPaths(Search(root, "README", 50)))
+	}
+	if got := Search(root, "ㅇㅇ", 50); len(got) != 0 {
+		t.Fatalf("jamo query ㅇㅇ must not match README.md, got %v", resultPaths(got))
+	}
+}

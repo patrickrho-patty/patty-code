@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"patty/internal/textutil"
 )
 
 var skipEntryNames = map[string]bool{
@@ -112,7 +114,7 @@ func Search(root, query string, limit int) []SearchResult {
 			}
 			// Allow matching directory names so the user can select a
 			// folder directly from the @-menu instead of only its contents.
-			if strings.Contains(strings.ToLower(name), query) {
+			if strings.Contains(strings.ToLower(name), query) || chosungMatch(name, query) {
 				dirHits = append(dirHits, SearchResult{Path: rel, IsDir: true})
 			}
 			return nil
@@ -135,7 +137,11 @@ func Search(root, query string, limit int) []SearchResult {
 		switch {
 		case strings.Contains(nameLower, query):
 			basenameHits = append(basenameHits, SearchResult{Path: rel})
+		case chosungMatch(name, query):
+			basenameHits = append(basenameHits, SearchResult{Path: rel})
 		case pathSegmentContains(rel, query):
+			segmentHits = append(segmentHits, SearchResult{Path: rel})
+		case chosungSegmentContains(rel, query):
 			segmentHits = append(segmentHits, SearchResult{Path: rel})
 		}
 		return nil
@@ -176,6 +182,27 @@ func Search(root, query string, limit int) []SearchResult {
 func pathSegmentContains(relSlash, queryLower string) bool {
 	for seg := range strings.SplitSeq(relSlash, "/") {
 		if strings.Contains(strings.ToLower(seg), queryLower) {
+			return true
+		}
+	}
+	return false
+}
+
+// chosungMatch applies the 초성 matcher only when the query actually contains
+// jamo; literal queries keep today's exact behavior and cost.
+func chosungMatch(candidate, query string) bool {
+	return textutil.HasJamo(query) && textutil.ChoseongMatch(candidate, query)
+}
+
+// chosungSegmentContains matches a jamo query against each path segment's 초성
+// projection individually, mirroring the literal segment semantics: a match
+// never crosses a '/' boundary.
+func chosungSegmentContains(relSlash, query string) bool {
+	if !textutil.HasJamo(query) {
+		return false
+	}
+	for seg := range strings.SplitSeq(relSlash, "/") {
+		if textutil.ChoseongMatch(seg, query) {
 			return true
 		}
 	}

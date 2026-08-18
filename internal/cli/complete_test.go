@@ -735,29 +735,32 @@ func TestFuzzyFilterSlashCaseInsensitive(t *testing.T) {
 	}
 }
 
-func TestFuzzyFilterSlashChosungMatchesOnlyInitialPrefix(t *testing.T) {
-	previousLanguage := i18n.CurrentLanguage()
-	defer i18n.DetectLanguage(previousLanguage)
-	i18n.DetectLanguage("ko")
-
+// TestFuzzyFilterSlashChosungSubsequence asserts the D1 contract: chosung
+// queries match as a subsequence of an item's 초성 alias (not just an initial
+// prefix), and never match items whose 초성 lacks the query's jamo in order.
+func TestFuzzyFilterSlashChosungSubsequence(t *testing.T) {
 	m := newTestChatTUI()
-	m.input.SetValue("/ㅇㅇ")
-	m.updateCompletion()
 
+	// Prefix case (contract preserved): /ㅇㅊ (압축) matches /compact only.
+	m.input.SetValue("/ㅇㅊ")
+	m.updateCompletion()
 	if !m.completion.active {
-		t.Fatal("menu should open for Korean initial-consonant query /ㅇㅇ")
+		t.Fatal("menu should open for Korean initial-consonant query /ㅇㅊ")
 	}
-	for _, item := range m.completion.items {
-		matchedChosungPrefix := false
-		for _, alias := range item.aliases {
-			if strings.HasPrefix(alias, "/ㅇㅇ") {
-				matchedChosungPrefix = true
-				break
-			}
-		}
-		if !matchedChosungPrefix {
-			t.Fatalf("/ㅇㅇ matched non-prefix item %q aliases=%v; got labels %v", item.label, item.aliases, labels(m.completion.items))
-		}
+	if !hasLabel(m.completion.items, "/compact") { // 압축 → ㅇㅊ
+		t.Fatalf("/ㅇㅊ should match /compact: %v", labels(m.completion.items))
+	}
+	if hasLabel(m.completion.items, "/copy") { // 복사 → ㅂㅅ
+		t.Fatalf("/ㅇㅊ must not match /copy: %v", labels(m.completion.items))
+	}
+
+	// Subsequence case (D1 widening): /ㄷㅂㄱ is a non-prefix subsequence of
+	// /모델변경 → /ㅁㄷㅂㄱ, so /model must match even though no alias starts
+	// with /ㄷㅂㄱ.
+	m.input.SetValue("/ㄷㅂㄱ")
+	m.updateCompletion()
+	if !hasLabel(m.completion.items, "/model") {
+		t.Fatalf("/ㄷㅂㄱ should subsequence-match /model: %v", labels(m.completion.items))
 	}
 }
 
@@ -861,5 +864,62 @@ func TestSubsequenceMatchUnit(t *testing.T) {
 		if got := subsequenceMatch(strings.ToLower(c.target), strings.ToLower(c.query)); got != c.want {
 			t.Errorf("subsequenceMatch(%q, %q) = %v, want %v", c.target, c.query, got, c.want)
 		}
+	}
+}
+
+// TestFileItemsChosungListing verifies the @-reference current-directory
+// listing matches Korean names through their 초성 projection (ㅎㄱ → 한국어문서.md)
+// while literal prefix behavior is unchanged.
+func TestFileItemsChosungListing(t *testing.T) {
+	dir := t.TempDir()
+	writeAt(t, dir, "한국어문서.md", "x")
+	writeAt(t, dir, "alpha.go", "y")
+
+	m := newTestChatTUI()
+
+	// jamo query matches via 초성 (proj: ㅎㄱㅇㅁㅅ.md)
+	items := m.fileItems(dir + "/ㅎㄱ")
+	if !hasLabel(items, "한국어문서.md") {
+		t.Fatalf("@ㅎㄱ should offer 한국어문서.md: %v", labels(items))
+	}
+	if hasLabel(items, "alpha.go") {
+		t.Fatalf("@ㅎㄱ must not offer alpha.go: %v", labels(items))
+	}
+
+	// jamo query with runes absent from the projection matches nothing
+	if got := m.fileItems(dir + "/ㄷㄷ"); len(got) != 0 {
+		t.Fatalf("@ㄷㄷ should match nothing: %v", labels(got))
+	}
+
+	// literal prefix behavior unchanged
+	if got := m.fileItems(dir + "/한"); !hasLabel(got, "한국어문서.md") {
+		t.Fatalf("@한 (literal prefix) should still offer 한국어문서.md: %v", labels(got))
+	}
+	if got := m.fileItems(dir + "/al"); !hasLabel(got, "alpha.go") {
+		t.Fatalf("@al should still offer alpha.go: %v", labels(got))
+	}
+}
+
+// TestFileItemsChosungSearchWalk verifies the top-level @-search walker finds
+// a Korean-named file in a subdirectory via 초성 (the fileref.Search path).
+func TestFileItemsChosungSearchWalk(t *testing.T) {
+	orig, _ := os.Getwd()
+	defer os.Chdir(orig)
+
+	dir := t.TempDir()
+	writeAt(t, dir, "하위/한국어문서.md", "x")
+	writeAt(t, dir, "src/main.go", "y")
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	m := newTestChatTUI()
+	items := m.fileItems("ㅎㄱ")
+
+	if !hasLabel(items, "하위/한국어문서.md") {
+		t.Fatalf("top-level @ㅎㄱ should offer 하위/한국어문서.md, got %v", labels(items))
+	}
+	if hasLabel(items, "src/main.go") {
+		t.Fatalf("@ㅎㄱ must not offer src/main.go: %v", labels(items))
 	}
 }

@@ -16,6 +16,7 @@ import (
 	"patty/internal/i18n"
 	"patty/internal/plugin"
 	"patty/internal/skill"
+	"patty/internal/textutil"
 )
 
 // compKind distinguishes the two completion menus.
@@ -492,26 +493,20 @@ func fuzzyFilterSlash(items []compItem, query string) []compItem {
 }
 
 // aliasMatches reports whether query matches any of an item's alternate
-// spellings as a case-folded prefix or subsequence.
+// spellings as a case-folded prefix or subsequence, or via 초성 matching.
 func aliasMatches(it compItem, query string) bool {
 	for _, a := range it.aliases {
 		la := strings.ToLower(a)
 		if strings.HasPrefix(la, query) {
 			return true
 		}
-		if hasHangulInitialJamo(query) {
-			continue
+		if textutil.HasJamo(query) {
+			if textutil.ChoseongMatch(a, query) {
+				return true
+			}
+			continue // jamo queries match aliases only via chosung, not subsequence
 		}
 		if subsequenceMatch(la, query) {
-			return true
-		}
-	}
-	return false
-}
-
-func hasHangulInitialJamo(s string) bool {
-	for _, r := range s {
-		if r >= 'ㄱ' && r <= 'ㅎ' {
 			return true
 		}
 	}
@@ -645,7 +640,7 @@ func (m *chatTUI) fileItems(token string) []compItem {
 	var items []compItem
 	for _, e := range entries {
 		name := e.Name()
-		if !strings.HasPrefix(name, fsFrag) {
+		if !strings.HasPrefix(name, fsFrag) && !textutil.ChoseongMatch(name, fsFrag) {
 			continue
 		}
 		if !showHidden && strings.HasPrefix(name, ".") {
@@ -741,11 +736,11 @@ func (m *chatTUI) resourceItems(server, frag string) []compItem {
 		ref := r.Server + ":" + r.URI
 		switch {
 		case server == "":
-			if !strings.HasPrefix(ref, frag) {
+			if !strings.HasPrefix(ref, frag) && !textutil.ChoseongMatch(ref, frag) {
 				continue
 			}
 		case r.Server == server:
-			if !strings.HasPrefix(r.URI, frag) {
+			if !strings.HasPrefix(r.URI, frag) && !textutil.ChoseongMatch(r.URI, frag) {
 				continue
 			}
 		default:
