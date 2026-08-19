@@ -15,13 +15,14 @@ import (
 	"patty/internal/textutil"
 )
 
-// compKind distinguishes the two completion menus.
+// compKind distinguishes the completion menus.
 type compKind int
 
 const (
 	compSlash    compKind = iota // slash command names, while the line is a bare "/word"
 	compSlashArg                 // a structured argument of a slash command (e.g. "/mcp remove <name>")
 	compAt                       // @-references (files / MCP resources)
+	compInline                   // a mid-line "/skill" invocation (skills + subagents only)
 )
 
 // compItem is one menu row: label shown, insert applied on accept, hint dimmed.
@@ -77,12 +78,15 @@ func (m *chatTUI) slashItems() []compItem {
 	return m.slashCatalog
 }
 
-// invalidateSlashCatalog drops the cached catalog so the next slashItems call
-// rebuilds it. Call from model switch, skill rescan, /reload-cmd, and any path
-// that mutates commands/skills/host/extension actions.
+// invalidateSlashCatalog drops the cached slash and inline catalogs so the
+// next slashItems / inlineSlashItems call rebuilds them. Call from model
+// switch, skill rescan, /reload-cmd, and any path that mutates
+// commands/skills/host/extension actions.
 func (m *chatTUI) invalidateSlashCatalog() {
 	m.slashCatalogOnce = false
 	m.slashCatalog = nil
+	m.inlineSlashCatalogOnce = false
+	m.inlineSlashCatalog = nil
 }
 
 // refreshHostAndInvalidateSlashCatalog reloads m.host from the controller and
@@ -201,8 +205,9 @@ func removeHiddenBuiltinSlashItems(items []compItem, docsBuiltin string) []compI
 }
 
 // updateCompletion recomputes the menu from the current input: a slash menu
-// while the line is a single "/word" token, or an @-reference menu while the
-// token under the cursor is "@…".
+// while the line is a single "/word" token, an @-reference menu while the
+// token under the cursor is "@…", or an inline skill/subagent menu while a
+// mid-line "/name" token sits at a valid token boundary.
 func (m *chatTUI) updateCompletion() {
 	val := m.input.Value()
 	cursor := m.inputCursorByteOffset()
@@ -212,6 +217,17 @@ func (m *chatTUI) updateCompletion() {
 	if at, end, token, ok := activeAtToken(val, cursor); ok {
 		if items := m.atItems(token); len(items) > 0 {
 			m.setCompletion(compAt, items, at, end)
+			return
+		}
+	}
+
+	// Inline skill/subagent autocomplete: a "/name" token at a valid mid-line
+	// boundary (after whitespace or opening punctuation — not at message start,
+	// not inside a URL/path/escaped text/code span) opens a menu of skills and
+	// subagent skills only. Start-of-message slash keeps the full catalog.
+	if from, to, query, ok := activeInlineSlashToken(val, cursor); ok {
+		if items := fuzzyFilterSlash(m.inlineSlashItems(), "/"+query); len(items) > 0 {
+			m.setCompletion(compInline, items, from, to)
 			return
 		}
 	}
@@ -531,6 +547,184 @@ func subsequenceMatch(target, query string) bool {
 		}
 	}
 	return false
+}
+
+// isInlineTokenBoundary reports whether b can start an inline slash token in
+// prose: whitespace or an opening-punctuation character. URL scheme colons and
+// path separators are deliberately excluded so "https://x" or "/etc/passwd"
+// never trigger inline skill completion.
+func isInlineTokenBoundary(b byte) bool {
+	switch b {
+	case ' ', '\t', '\n', '(', '[', '{', '<', '"', '\'', ',', ';', '!':
+		return true
+	default:
+		return false
+	}
+}
+
+// isInlineTokenChar reports whether b may appear inside a skill slash name:
+// the same [A-Za-z0-9_.:-] class the desktop invocation-name pattern accepts.
+// Everything else (whitespace, closing punctuation, path separators) ends the
+// token.
+func isInlineTokenChar(b byte) bool {
+	return b == '_' || b == '.' || b == ':' || b == '-' ||
+		(b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
+}
+
+// inInlineCodeSpan reports whether index sits inside an unescaped backtick
+// span (odd number of backticks before it in val).
+func inInlineCodeSpan(val string, index int) bool {
+	n := 0
+	for i := 0; i < index; i++ {
+		if val[i] == '`' && (i == 0 || val[i-1] != '\\') {
+			n++
+		}
+	}
+	return n%2 == 1
+}
+
+// activeInlineSlashToken finds a mid-line "/name" token under the cursor at a
+// valid inline boundary. cursor is a byte offset into val; when out of range
+// the scan uses the end of the string.
+//
+// Returns (from, to, query, ok):
+//   - [from, to] is the full token span to replace on accept (starting at '/'),
+//     extending past the caret to the first non-name character.
+//   - query is only the text after '/' up to the caret, used for menu filtering.
+//
+// The slash must NOT start the message (message-start slash is owned by the
+// full start-of-message catalog), must be unescaped, must not sit inside a
+// backtick code span, and the token may not contain a nested path separator.
+func activeInlineSlashToken(val string, cursor int) (from, to int, query string, ok bool) {
+	if cursor < 0 || cursor > len(val) {
+		cursor = len(val)
+	}
+	slash := -1
+	for i := cursor - 1; i >= 0; i-- {
+		c := val[i]
+		if c == '\\' && i+1 < len(val) && val[i+1] == '/' {
+			return 0, 0, "", false // escaped literal slash
+		}
+		if c == '/' && i > 0 && isInlineTokenBoundary(val[i-1]) {
+			slash = i
+			break
+		}
+		if isInlineTokenBoundary(c) {
+			return 0, 0, "", false // crossed a boundary before reaching a slash
+		}
+	}
+	if slash < 0 {
+		return 0, 0, "", false
+	}
+	// The token extends through name characters only; a nested '/' or a closing
+	// punctuation character ends it. A nested '/' means a filesystem path.
+	end := slash + 1
+	for end < len(val) && isInlineTokenChar(val[end]) {
+		end++
+	}
+	if end < len(val) && val[end] == '/' {
+		return 0, 0, "", false // path-like token (a/b/c)
+	}
+	if inInlineCodeSpan(val, slash) {
+		return 0, 0, "", false
+	}
+	queryEnd := min(max(cursor, slash+1), end)
+	return slash, end, val[slash+1 : queryEnd], true
+}
+
+// inlineSlashItems returns the menu for mid-line "/name" completion: only
+// ordinary skills and subagent skills. Built-in management commands, custom
+// commands, MCP prompts, and extension actions stay start-of-message only.
+// Cached like slashItems so keystroke filtering never re-walks m.skills.
+func (m *chatTUI) inlineSlashItems() []compItem {
+	if m.inlineSlashCatalogOnce && m.inlineSlashCatalog != nil {
+		return m.inlineSlashCatalog
+	}
+	items := m.buildInlineSlashCatalog()
+	out := make([]compItem, len(items))
+	copy(out, items)
+	m.inlineSlashCatalog = out
+	m.inlineSlashCatalogOnce = true
+	return m.inlineSlashCatalog
+}
+
+func (m *chatTUI) buildInlineSlashCatalog() []compItem {
+	// Mirror buildSlashCatalog's docs-owner handling so a runtime-owned /docs
+	// never collides with a same-named skill in the inline menu either.
+	docsOwner := control.ResolveSlashCommandOwner(control.DocsSlashName, m.commands, m.skills)
+	out := make([]compItem, 0, len(m.skills))
+	for _, s := range m.skills {
+		if docsOwner == control.SlashOwnerCustom && s.SlashName() == control.DocsSlashName {
+			continue
+		}
+		hint := s.Description
+		if s.RunAs == skill.RunSubagent {
+			hint = "🧬 " + hint
+		}
+		out = append(out, compItem{
+			label:  "/" + s.SlashName(),
+			insert: "/" + s.SlashName() + " ",
+			hint:   skillCommandHint(s, hint),
+		})
+	}
+	return out
+}
+
+// inlineSlashNameAt validates that line[i] is a '/' starting a token at a
+// valid boundary and, if so, returns the end of the name token and the name
+// itself. It shares the boundary/name-char rules with activeInlineSlashToken so
+// the submit-time parse and the completion menu never disagree about what a
+// mid-line skill token is. ok=false when line[i] is not a scannable skill token
+// (message start, escaped, inside a code span, or a path-like a/b/c token).
+func inlineSlashNameAt(line string, i int) (end int, name string, ok bool) {
+	if i <= 0 || line[i] != '/' || !isInlineTokenBoundary(line[i-1]) || inInlineCodeSpan(line, i) {
+		return 0, "", false
+	}
+	j := i + 1
+	for j < len(line) && isInlineTokenChar(line[j]) {
+		j++
+	}
+	if j < len(line) && line[j] == '/' {
+		return 0, "", false // path-like token (a/b/c)
+	}
+	return j, line[i+1 : j], true
+}
+
+// inlineSkillInvocationTurn parses a prose line for mid-line "/name" tokens at
+// valid boundaries that resolve to a skill or subagent, routing them through the
+// structured controller invocation path. It returns the InvocationRequests plus
+// the task prose with the token text removed (display keeps the tokens). ok is
+// false when the line carries no inline skill/subagent invocation.
+func (m *chatTUI) inlineSkillInvocationTurn(line string) ([]control.InvocationRequest, string, bool) {
+	kindByName := map[string]string{}
+	for _, s := range m.skills {
+		k := "skill"
+		if s.RunAs == skill.RunSubagent {
+			k = "subagent"
+		}
+		kindByName[s.SlashName()] = k
+		kindByName[s.Name] = k
+	}
+	invocations := []control.InvocationRequest{}
+	var prose strings.Builder
+	i := 0
+	for i < len(line) {
+		if end, name, ok := inlineSlashNameAt(line, i); ok {
+			if kind, known := kindByName[name]; known && name != "" {
+				invocations = append(invocations, control.InvocationRequest{
+					Name: name, Kind: kind, Offset: prose.Len(),
+				})
+				i = end
+				continue
+			}
+		}
+		prose.WriteByte(line[i])
+		i++
+	}
+	if len(invocations) == 0 {
+		return nil, "", false
+	}
+	return invocations, prose.String(), true
 }
 
 // activeAtToken finds the @-reference token under the cursor. cursor is a byte

@@ -1,4 +1,4 @@
-export const TYPOGRAPHY_REGIONS = ["interface", "conversation", "composer", "code", "metadata"] as const;
+export const TYPOGRAPHY_REGIONS = ["interface", "conversation", "composer", "code", "terminal", "metadata"] as const;
 
 export type TypographyRegion = (typeof TYPOGRAPHY_REGIONS)[number];
 
@@ -32,8 +32,52 @@ export const TYPOGRAPHY_REGION_META: Record<TypographyRegion, { baseSize: number
   conversation: { baseSize: 14, min: 12, max: 24 },
   composer: { baseSize: 14, min: 12, max: 24 },
   code: { baseSize: 12, min: 10, max: 22 },
+  terminal: { baseSize: 13, min: 9, max: 24 },
   metadata: { baseSize: 12, min: 9, max: 18 },
 };
+
+// TERMINAL_MONO_STACK is the fallback default terminal font when no mono family
+// is configured — the stack TerminalView previously hardcoded at 13px. Keeping
+// it here means the terminal always resolves to a real mono face, never to the
+// proportional UI font.
+export const TERMINAL_MONO_STACK =
+  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+
+function terminalStackForFamily(family: RegionFontFamily): string {
+  switch (family) {
+    case "cascadia":
+      return FONT_STACKS.cascadia;
+    case "jetbrains":
+      return FONT_STACKS.jetbrains;
+    case "sfmono":
+      return FONT_STACKS.sfmono;
+    default:
+      return TERMINAL_MONO_STACK;
+  }
+}
+
+// terminalFontStackFor resolves the xterm font-family stack from a terminal
+// region preference. Inherit/system (and any proportional pick) fall back to
+// the mono default so a terminal never loses its monospace guarantee; custom
+// uses the sanitized custom name.
+export function terminalFontStackFor(preference: RegionTypography): string {
+  if (preference.fontFamily === "custom") {
+    return sanitizeCustomFontName(preference.customFontName) || TERMINAL_MONO_STACK;
+  }
+  return terminalStackForFamily(preference.fontFamily);
+}
+
+// terminalFontSizeFor resolves the terminal font size. Following global
+// (inherit) uses the terminal region's base size; otherwise the configured px.
+// The value is bounded by the region's declared min/max via normalize.
+export function terminalFontSizeFor(preference: RegionTypography): number {
+  if (preference.followGlobal) {
+    return TYPOGRAPHY_REGION_META.terminal.baseSize;
+  }
+  const meta = TYPOGRAPHY_REGION_META.terminal;
+  return Math.round(Math.min(meta.max, Math.max(meta.min, preference.fontSize)));
+}
+
 
 const FONT_STACKS: Record<RegionFontFamily, string> = {
   inherit: "",
@@ -104,6 +148,20 @@ export function getTypographyPreferences(): TypographyPreferences {
   }
 }
 
+// Typography change notification: the terminal (and any other live surface)
+// subscribes so a preference edit re-applies without a reload. applyTypography
+// broadcasts after each write.
+const typographyListeners = new Set<() => void>();
+
+export function onTypographyPreferencesChange(listener: () => void): () => void {
+  typographyListeners.add(listener);
+  return () => typographyListeners.delete(listener);
+}
+
+function notifyTypographyPreferencesChange(): void {
+  for (const listener of typographyListeners) listener();
+}
+
 export function fontStackForPreference(preference: RegionTypography): string {
   if (preference.fontFamily === "custom") return sanitizeCustomFontName(preference.customFontName);
   return FONT_STACKS[preference.fontFamily];
@@ -137,6 +195,7 @@ export function applyTypographyPreferences(preferences: TypographyPreferences): 
   } catch {
     /* private mode / no storage */
   }
+  notifyTypographyPreferencesChange();
 }
 
 export function initTypographyPreferences(): void {

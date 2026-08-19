@@ -19,6 +19,7 @@ const REGION_KEYS: Record<TypographyRegion, Parameters<ReturnType<typeof useT>>[
   conversation: "settings.typography.region.conversation",
   composer: "settings.typography.region.composer",
   code: "settings.typography.region.code",
+  terminal: "settings.typography.region.terminal",
   metadata: "settings.typography.region.metadata",
 };
 
@@ -33,6 +34,12 @@ const FONT_OPTIONS: Array<{ value: RegionFontFamily; key: Parameters<ReturnType<
   { value: "sfmono", key: "settings.monoFontFamilySFMono" },
   { value: "custom", key: "settings.fontFamilyCustom" },
 ];
+
+// The terminal region offers only mono-friendly faces (plus inherit/custom) so
+// a user cannot accidentally pick the proportional UI font for a terminal.
+const TERMINAL_FONT_OPTIONS = FONT_OPTIONS.filter((option) =>
+  option.value === "inherit" || ["system", "cascadia", "jetbrains", "sfmono", "custom"].includes(option.value),
+);
 
 type PreviewTab = "body" | "reasoning" | "tools";
 
@@ -147,7 +154,7 @@ export function TypographySettings({ onBack }: { onBack: () => void }) {
                 disabled={preference.followGlobal}
                 onChange={(event) => updateSelected({ fontFamily: event.target.value as RegionFontFamily })}
               >
-                {FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.key)}</option>)}
+                {(selected === "terminal" ? TERMINAL_FONT_OPTIONS : FONT_OPTIONS).map((option) => <option key={option.value} value={option.value}>{t(option.key)}</option>)}
               </select>
             </label>
             {preference.fontFamily === "custom" && !preference.followGlobal ? (

@@ -6,6 +6,12 @@ import "@xterm/xterm/css/xterm.css";
 import { useTerminalStore } from "../store/terminal";
 import { registerTerminalSink, startTerminalEventBridge } from "../lib/terminalEvents";
 import { observeTerminalTheme, terminalThemeForElement } from "../lib/terminalTheme";
+import {
+  getTypographyPreferences,
+  onTypographyPreferencesChange,
+  terminalFontSizeFor,
+  terminalFontStackFor,
+} from "../lib/typographyPreferences";
 import type { TerminalSessionView } from "../lib/types";
 
 export function TerminalView({ tabId, session }: { tabId: string; session: TerminalSessionView }) {
@@ -17,11 +23,12 @@ export function TerminalView({ tabId, session }: { tabId: string; session: Termi
     startTerminalEventBridge();
     const host = hostRef.current;
     if (!host) return;
+    const typography = getTypographyPreferences().terminal;
     const terminal = new Terminal({
       convertEol: true,
       cursorBlink: true,
-      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-      fontSize: 13,
+      fontFamily: terminalFontStackFor(typography),
+      fontSize: terminalFontSizeFor(typography),
       theme: terminalThemeForElement(host),
     });
     const fit = new FitAddon();
@@ -31,6 +38,13 @@ export function TerminalView({ tabId, session }: { tabId: string; session: Termi
       terminal.options.theme = terminalThemeForElement(host);
     };
     const stopObservingTheme = observeTerminalTheme(host, updateTheme);
+    const applyTerminalTypography = () => {
+      const preference = getTypographyPreferences().terminal;
+      terminal.options.fontFamily = terminalFontStackFor(preference);
+      terminal.options.fontSize = terminalFontSizeFor(preference);
+      fit.fit();
+    };
+    const stopObservingTypography = onTypographyPreferencesChange(applyTerminalTypography);
     const unregister = registerTerminalSink(session.id, (bytes) => terminal.write(bytes));
     const input = terminal.onData((data) => { void write(tabId, session.id, data).catch(() => {}); });
     const outputResize = terminal.onResize(({ cols, rows }) => { void resize(tabId, session.id, cols, rows).catch(() => {}); });
@@ -45,6 +59,7 @@ export function TerminalView({ tabId, session }: { tabId: string; session: Termi
     return () => {
       observer?.disconnect();
       stopObservingTheme();
+      stopObservingTypography();
       input.dispose();
       outputResize.dispose();
       unregister();

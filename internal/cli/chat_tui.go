@@ -370,6 +370,12 @@ type chatTUI struct {
 	slashCatalog     []compItem
 	slashCatalogOnce bool // true when slashCatalog holds a valid snapshot
 
+	// inlineSlashCatalog is the skills/subagents-only subset of the slash catalog
+	// for mid-line "/name" completion, cached with the same lifetime as
+	// slashCatalog (both are invalidated together).
+	inlineSlashCatalog     []compItem
+	inlineSlashCatalogOnce bool // true when inlineSlashCatalog holds a valid snapshot
+
 	// skillPick is the interactive skill picker overlay for /skills. nil when closed.
 	skillPick *skillPicker
 
@@ -1820,6 +1826,24 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.input.Reset()
 					m.pastedBlocks = nil
 					cmds = append(cmds, m.runSlashCommand(line))
+					return m, finalize(m, cmds)
+				}
+			}
+
+			// Inline skill/subagent invocations in prose (mid-line "/name" at a valid
+			// boundary) route through the structured controller path, so the surrounding
+			// prose stays the task and the skill/subagent executes through the same
+			// invocation machinery the desktop composer uses. Lines carrying
+			// @-references or pasted blocks keep their resolution/expansion paths,
+			// so a mixed line doesn't lose its refs or pastes.
+			if len(m.pastedBlocks) == 0 && !m.ctrl.HasRefs(line) {
+				if requests, prose, ok := m.inlineSkillInvocationTurn(line); ok {
+					m.input.Reset()
+					m.pastedBlocks = nil
+					display := line
+					cmds = append(cmds, m.startControllerTurn(display, line, func() {
+						m.ctrl.SubmitInvocationDisplay(display, prose, requests)
+					}))
 					return m, finalize(m, cmds)
 				}
 			}

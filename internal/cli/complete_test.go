@@ -870,3 +870,127 @@ func TestSubsequenceMatchUnit(t *testing.T) {
 // TestFileItemsChosungListing verifies the @-reference current-directory
 // listing matches Korean names through their 초성 projection (ㅎㄱ → 한국어문서.md)
 // while literal prefix behavior is unchanged.
+
+func TestInlineSlashTokenBoundaries(t *testing.T) {
+	cases := []struct {
+		val      string
+		cursor   int
+		expected bool
+		from, to int
+		query    string
+	}{
+		// Valid mid-line token after whitespace.
+		{"please use /secur", 17, true, 11, 17, "secur"},
+		{"please use /security_review to check", 27, true, 11, 27, "security_review"},
+		// After opening punctuation; the closing paren ends the token.
+		{"(use /review)", 12, true, 5, 12, "review"},
+		// Empty query still matches the boundary.
+		{"please use /", 12, true, 11, 12, ""},
+		// Message-start slash is NOT inline (owned by the full slash catalog).
+		{"/review auth", 8, false, 0, 0, ""},
+		// URL schemes and path separators never trigger inline completion.
+		{"see https://example.com", 23, false, 0, 0, ""},
+		{"see /etc/passwd", 15, false, 0, 0, ""},
+		// Escaped literal slash stays text.
+		{"use \\/review", 12, false, 0, 0, ""},
+		// Inside a backtick code span.
+		{"use `select /from`", 17, false, 0, 0, ""},
+		// A slash mid-word (not a token boundary) is ignored.
+		{"read path/to", 12, false, 0, 0, ""},
+	}
+	for _, c := range cases {
+		from, to, query, ok := activeInlineSlashToken(c.val, c.cursor)
+		if ok != c.expected {
+			t.Errorf("activeInlineSlashToken(%q, %d) ok = %v, want %v", c.val, c.cursor, ok, c.expected)
+			continue
+		}
+		if ok && (from != c.from || to != c.to || query != c.query) {
+			t.Errorf("activeInlineSlashToken(%q, %d) = (%d,%d,%q), want (%d,%d,%q)",
+				c.val, c.cursor, from, to, query, c.from, c.to, c.query)
+		}
+	}
+}
+
+func TestInlineSlashMenuSkillsOnly(t *testing.T) {
+	m := newTestChatTUI()
+	m.skills = []skill.Skill{
+		{Name: "security_review", Description: "review the auth flow", RunAs: skill.RunSubagent},
+		{Name: "draft", Description: "draft prose", RunAs: skill.RunInline},
+	}
+	m.input.SetValue("please use /secur")
+	m.updateCompletion()
+
+	if !m.completion.active || m.completion.kind != compInline {
+		t.Fatalf("inline slash should open the inline menu: %+v", m.completion)
+	}
+	if len(m.completion.items) != 1 || m.completion.items[0].label != "/security_review" {
+		t.Fatalf("inline filter = %v, want only /security_review", labels(m.completion.items))
+	}
+	if m.completion.replaceFrom != 11 || m.completion.replaceTo != 17 {
+		t.Fatalf("inline replace span = [%d,%d), want [11,17)", m.completion.replaceFrom, m.completion.replaceTo)
+	}
+
+	// Accepting inserts the slash token with a trailing space and closes the menu.
+	m.acceptCompletion()
+	if got := m.input.Value(); got != "please use /security_review " {
+		t.Errorf("accept should keep surrounding prose, got %q", got)
+	}
+	if m.completion.active {
+		t.Error("menu should close after inline accept")
+	}
+}
+
+func TestInlineInvocationTurnStructured(t *testing.T) {
+	m := newTestChatTUI()
+	m.skills = []skill.Skill{
+		{Name: "security_review", Description: "review", RunAs: skill.RunSubagent},
+		{Name: "draft", Description: "draft", RunAs: skill.RunInline},
+	}
+
+	reqs, prose, ok := m.inlineSkillInvocationTurn("please use /security_review to check auth")
+	if !ok {
+		t.Fatal("expected an inline invocation")
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("requests = %+v, want 1", reqs)
+	}
+	if reqs[0].Name != "security_review" || reqs[0].Kind != "subagent" {
+		t.Errorf("request = %+v, want /security_review subagent", reqs[0])
+	}
+	if prose != "please use  to check auth" {
+		t.Errorf("prose = %q", prose)
+	}
+
+	// URL/path slashes are not turned into invocations.
+	if _, _, ok := m.inlineSkillInvocationTurn("see https://example.com"); ok {
+		t.Error("URL must not produce an inline invocation")
+	}
+	if _, _, ok := m.inlineSkillInvocationTurn("see /etc/passwd"); ok {
+		t.Error("path must not produce an inline invocation")
+	}
+	// Unknown names stay ordinary prose.
+	if _, _, ok := m.inlineSkillInvocationTurn("use /not-a-skill here"); ok {
+		t.Error("unknown slash must not produce an invocation")
+	}
+	// Multiple accepted invocations keep left-to-right order.
+	reqs, _, ok = m.inlineSkillInvocationTurn("do /draft then /security_review now")
+	if !ok || len(reqs) != 2 {
+		t.Fatalf("expect 2 requests, got %+v ok=%v", reqs, ok)
+	}
+	if reqs[0].Name != "draft" || reqs[1].Name != "security_review" {
+		t.Errorf("order = %+v, want draft then security_review", reqs)
+	}
+
+	// A mixed line keeps every prose character: the path's leading slash must
+	// not be swallowed when a skill sits earlier in the same line.
+	reqs, prose, ok = m.inlineSkillInvocationTurn("use /draft then read /etc/passwd")
+	if !ok || len(reqs) != 1 {
+		t.Fatalf("expect 1 request, got %+v ok=%v", reqs, ok)
+	}
+	if reqs[0].Name != "draft" {
+		t.Errorf("request = %+v, want /draft", reqs[0])
+	}
+	if prose != "use  then read /etc/passwd" {
+		t.Errorf("mixed prose = %q", prose)
+	}
+}
