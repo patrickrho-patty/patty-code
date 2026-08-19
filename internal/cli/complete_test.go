@@ -930,9 +930,11 @@ func TestInlineSlashMenuSkillsOnly(t *testing.T) {
 		t.Fatalf("inline replace span = [%d,%d), want [11,17)", m.completion.replaceFrom, m.completion.replaceTo)
 	}
 
-	// Accepting inserts the slash token with a trailing space and closes the menu.
+	// Accepting inserts the slash token (no hardcoded trailing space, so a
+	// mid-line accept never leaves a double space before following prose) and
+	// closes the menu via the single-item self-close path.
 	m.acceptCompletion()
-	if got := m.input.Value(); got != "please use /security_review " {
+	if got := m.input.Value(); got != "please use /security_review" {
 		t.Errorf("accept should keep surrounding prose, got %q", got)
 	}
 	if m.completion.active {

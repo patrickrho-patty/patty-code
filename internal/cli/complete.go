@@ -223,12 +223,15 @@ func (m *chatTUI) updateCompletion() {
 
 	// Inline skill/subagent autocomplete: a "/name" token at a valid mid-line
 	// boundary (after whitespace or opening punctuation — not at message start,
-	// not inside a URL/path/escaped text/code span) opens a menu of skills and
-	// subagent skills only. Start-of-message slash keeps the full catalog.
-	if from, to, query, ok := activeInlineSlashToken(val, cursor); ok {
-		if items := fuzzyFilterSlash(m.inlineSlashItems(), "/"+query); len(items) > 0 {
-			m.setCompletion(compInline, items, from, to)
-			return
+	// not inside a URL/path/escaped text/code span, and never inside a
+	// slash-command line where the start-of-message machinery owns args) opens a
+	// menu of skills and subagent skills only.
+	if !strings.HasPrefix(val, "/") {
+		if from, to, query, ok := activeInlineSlashToken(val, cursor); ok {
+			if items := fuzzyFilterSlash(m.inlineSlashItems(), "/"+query); len(items) > 0 {
+				m.setCompletion(compInline, items, from, to)
+				return
+			}
 		}
 	}
 
@@ -663,7 +666,7 @@ func (m *chatTUI) buildInlineSlashCatalog() []compItem {
 		}
 		out = append(out, compItem{
 			label:  "/" + s.SlashName(),
-			insert: "/" + s.SlashName() + " ",
+			insert: "/" + s.SlashName(),
 			hint:   skillCommandHint(s, hint),
 		})
 	}

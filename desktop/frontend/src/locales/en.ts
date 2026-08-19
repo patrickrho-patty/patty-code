@@ -2404,7 +2404,7 @@ export const en = {
   "settings.monoFontFamilyCustomPlaceholder": "Monospace stack, e.g. \"Maple Mono\", \"Cascadia Code\", monospace",
   "settings.typography.title": "Detailed typography",
   "settings.typography.subtitle": "Set fonts and text sizes independently by area.",
-  "settings.typography.entrySummary": "Override conversation, composer, code, and supporting text independently.",
+  "settings.typography.entrySummary": "Override conversation, composer, code, terminal, and supporting text independently.",
   "settings.typography.open": "Configure",
   "settings.typography.back": "Appearance",
   "settings.typography.resetAll": "Reset all",
