@@ -384,3 +384,41 @@ mechanics differ.
 ## Deferred follow-up plans
 
 - **G8 follow-up:** retire `PATTY_AIRGAP*` env hatches; compile-time default-on posture cannot be env-downgraded.
+
+---
+
+## Amendment 2026-08-19 — DARI-only in every tier (BYOK withdrawal)
+
+**Decision.** The public profile's BYOK surface (`CapGenericProviders`,
+`CapPublicPresets`, `CapBalanceFetch`) is withdrawn. **No distribution of the
+harness terminates foreign model protocols.** Public users are managed by
+Patty's pccp relay, which speaks DARI; enterprise and sovereign were already
+DARI-only. The provider-catalog row of the profile table becomes:
+
+| | public | enterprise | sovereign |
+|---|---|---|---|
+| Model providers | DARI relay only | DARI relay (org catalog) | DARI relay (on-prem) only |
+
+**Code changes.**
+- `internal/tier/tier.go`: public's allow set drops the three BYOK
+  capabilities; telemetry/crash/online-update remain (OAuth, auto-update).
+- The curated BYOK preset catalog, legacy DeepSeek import hooks, and their
+  public-profile tests are deleted (`provider_presets.go`,
+  `provider_legacy_deepseek.go`); the nil-returning stubs are now the only
+  implementation and compile unconditionally.
+- Legacy-config migration imports no generic providers in any profile; a
+  leftover legacy `apiKey` may still migrate into the credentials file where
+  it is inert (no consumer).
+- `profile_public` remains the build tag for the public *distribution
+  surface*; it no longer widens the provider catalog.
+
+**Testing consequence.** Local model-path testing must run the real path —
+`kind = "dari"` against a local pccp relay whose PIA adapter terminates to
+the engine (yolo-auto today, vLLM in prod). A temporary `generics_enabled`
+escape hatch was considered and rejected; there is no sanctioned generic
+termination anywhere.
+
+**Rationale.** One protocol, one governance path: encryption, provenance,
+and compliance attach in DARI and the relay. A public build that could also
+speak OpenAI/Anthropic directly would fork the trust model exactly where it
+must stay unified.

@@ -11,7 +11,7 @@ func TestAllowsMatchesADRProfileTable(t *testing.T) {
 		caps map[Capability]bool
 	}{
 		{Public, map[Capability]bool{
-			CapGenericProviders: true, CapPublicPresets: true, CapBalanceFetch: true,
+			CapGenericProviders: false, CapPublicPresets: false, CapBalanceFetch: false,
 			CapVendorTelemetry: true, CapCrashUpload: true, CapOnlineUpdate: true,
 		}},
 		{Enterprise, map[Capability]bool{
@@ -45,16 +45,13 @@ func TestTierString(t *testing.T) {
 func TestLockFailsClosedOnExcludedCapabilities(t *testing.T) {
 	// Lock is tier-driven, not Default-driven: test each tier's rules directly
 	// by simulating its allow set via the exported rules in lock.go.
+	// 2026-08-19 amendment: every Default (public included) fails closed.
 	if err := Lock(LockInput{}); err != nil {
 		t.Fatalf("empty input must lock clean under %s: %v", Default, err)
 	}
 	err := Lock(LockInput{ExcludedProviders: []string{"x"}, BalanceProviders: []string{"y"}})
-	if wantFail := !Default.Allows(CapGenericProviders) || !Default.Allows(CapBalanceFetch); wantFail {
-		if err == nil {
-			t.Fatalf("excluded providers/balances must fail under %s", Default)
-		}
-	} else if err != nil {
-		t.Fatalf("public profile must lock clean for BYOK config: %v", err)
+	if err == nil {
+		t.Fatalf("excluded providers/balances must fail under %s", Default)
 	}
 }
 
@@ -64,15 +61,14 @@ func TestLockFailsClosedOnExcludedCapabilities(t *testing.T) {
 // listing each one. Under sovereign every class is a hard failure; the
 // operator must see every fix-up in one boot attempt.
 func TestLockReportsAllProblemsInOneError(t *testing.T) {
-	if Default == Public {
-		t.Skip("public profile allows both CapGenericProviders and CapBalanceFetch; Lock cannot produce a multi-class error here")
-	}
+	// 2026-08-19 amendment: no profile allows generic providers, so the
+	// multi-class lock error is reachable from every Default.
 	err := Lock(LockInput{
 		ExcludedProviders: []string{"alpha", "gamma (empty kind)"},
 		BalanceProviders:  []string{"beta"},
 	})
 	if err == nil {
-		t.Fatal("expected combined error under non-public profile")
+		t.Fatal("expected combined error listing every excluded class")
 	}
 	msg := err.Error()
 	for _, fragment := range []string{"alpha", "gamma (empty kind)", "beta"} {
@@ -82,15 +78,18 @@ func TestLockReportsAllProblemsInOneError(t *testing.T) {
 	}
 }
 
-// TestLockSkipsAllowedClasses pins the corner case: a non-failing
-// class can be non-empty on a profile where that capability is
-// allowed. Under public, CapBalanceFetch is allowed so providing
-// BalanceProviders must not fail boot — only ExcludedProviders would.
-func TestLockSkipsAllowedClasses(t *testing.T) {
-	if Default != Public {
-		t.Skip("only meaningful under public profile")
+// TestLockFailsClosedOnEveryDefault pins the amendment's fail-closed
+// surface directly: excluded providers and balance URLs are hard lock
+// failures regardless of the linked Default.
+func TestLockFailsClosedOnEveryDefault(t *testing.T) {
+	if err := Lock(LockInput{ExcludedProviders: []string{"x"}}); err == nil {
+		t.Fatalf("generic providers must fail the lock under %s", Default)
 	}
-	if err := Lock(LockInput{BalanceProviders: []string{"a"}}); err != nil {
-		t.Fatalf("BalanceProviders alone must not fail boot under public: %v", err)
+	if err := Lock(LockInput{BalanceProviders: []string{"y"}}); err == nil {
+		t.Fatalf("balance providers must fail the lock under %s", Default)
 	}
 }
+
+// TestLockSkipsAllowedClasses was removed by the 2026-08-19 DARI-only
+// amendment: no tier allows CapBalanceFetch anymore, so the "allowed
+// class stays non-failing" corner case no longer exists.

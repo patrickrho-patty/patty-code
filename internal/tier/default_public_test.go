@@ -10,17 +10,22 @@ func TestDefaultTierIsPublic(t *testing.T) {
 	}
 }
 
-// TestAssertDisallowedPanicsOutsideItsBuildTag pins the audit-trail
-// guarantee on the offline-stub side: a sovereign stub consulted from
-// profile_public must panic because the profile already allows the
-// capability. The twin file is excluded by build tag here, but invoking
-// AssertDisallowed directly simulates the "wrong tag set" programmer
-// error — the panic is the loud failure mode that surfaces it.
-func TestAssertDisallowedPanicsOutsideItsBuildTag(t *testing.T) {
+// TestAssertAllowedPanicsUnderDARIOnly pins the audit-trail guarantee
+// after the 2026-08-19 DARI-only amendment: profile_public no longer
+// allows CapGenericProviders, so AssertAllowed must panic if some
+// build-tag-excluded generic file is ever consulted from a public
+// build. AssertDisallowed is the quiet path now — it must not panic.
+func TestAssertAllowedPanicsUnderDARIOnly(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
-			t.Fatal("AssertDisallowed(CapGenericProviders) did not panic under profile_public — audit-trail regression")
+			t.Fatal("AssertAllowed(CapGenericProviders) did not panic under profile_public — audit-trail regression")
 		}
 	}()
+	AssertAllowed(CapGenericProviders)
+}
+
+func TestAssertDisallowedQuietUnderDARIOnly(t *testing.T) {
+	// Must not panic: public disallows generics, so the offline stub's
+	// assertion holds.
 	AssertDisallowed(CapGenericProviders)
 }

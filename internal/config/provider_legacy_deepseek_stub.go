@@ -1,4 +1,3 @@
-//go:build !profile_public
 
 package config
 

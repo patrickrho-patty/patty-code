@@ -42,9 +42,14 @@ const (
 
 // allowed mirrors the ADR profile-semantics table. Sovereign excludes all
 // six; enterprise excludes the BYOK surface; public excludes nothing.
+//
+// 2026-08-19 amendment: the BYOK surface is withdrawn from public as well.
+// Public users are managed by Patty's pccp relay, which speaks DARI; the
+// harness terminates foreign model protocols (OpenAI/Anthropic/Responses)
+// in NO distribution. Every tier is DARI-only for model providers.
 var allowed = map[Tier]map[Capability]bool{
 	Public: {
-		CapGenericProviders: true, CapPublicPresets: true, CapBalanceFetch: true,
+		CapGenericProviders: false, CapPublicPresets: false, CapBalanceFetch: false,
 		CapVendorTelemetry: true, CapCrashUpload: true, CapOnlineUpdate: true,
 	},
 	Enterprise: {
