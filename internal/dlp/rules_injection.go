@@ -17,7 +17,10 @@ func defaultInjectionRules() []DetectionRule {
 		{
 			RuleID:         "injection-jailbreak",
 			Severity:       SeverityCritical,
-			Regex:          regexp.MustCompile(`(?i)(jailbreak|DAN|do anything now)`),
+			// Word-bounded: an unanchored (?i)DAN also matched ordinary
+			// English words ("abundance", "redundant data") in serialized
+			// prompts, blocking every outbound request.
+			Regex:          regexp.MustCompile(`(?i)\b(jailbreak|dan|do anything now)\b`),
 			Description:    "Jailbreak attempt",
 			RedactTemplate: "",
 		},
