@@ -30,8 +30,8 @@ const (
 // pluginEnvVarPrefix is the well-known environment block every sidecar sees.
 const (
 	envPluginRoot    = "PATTY_CODE_PLUGIN_ROOT"
-	envPluginName    = "PATTY_PLUGIN_NAME"
-	envPluginVersion = "PATTY_PLUGIN_VERSION"
+	envPluginName    = "PATTY_CODE_PLUGIN_NAME"
+	envPluginVersion = "PATTY_CODE_PLUGIN_VERSION"
 )
 
 // shellExecutables are interpreter names a runtime command may not resolve

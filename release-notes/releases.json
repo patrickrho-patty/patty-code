@@ -7881,7 +7881,7 @@
             "en": "Windows plugin hook compatibility"
           },
           "body": {
-            "en": "Plugin hooks on Windows now correctly expand aliases like ${REASONIX_PLUGIN_ROOT}, support bash hooks, and handle non-UTF-8 output."
+            "en": "Plugin hooks on Windows now correctly expand aliases like ${PATTY_CODE_PLUGIN_ROOT}, support bash hooks, and handle non-UTF-8 output."
           },
           "refs": [
             6550

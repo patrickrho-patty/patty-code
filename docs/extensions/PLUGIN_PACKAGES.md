@@ -505,8 +505,8 @@ run third-party install scripts.
 Plugin hooks receive these environment variables:
 
 - `PATTY_CODE_PLUGIN_ROOT`
-- `PATTY_PLUGIN_NAME`
-- `PATTY_PLUGIN_VERSION`
+- `PATTY_CODE_PLUGIN_NAME`
+- `PATTY_CODE_PLUGIN_VERSION`
 - `PATTY_HOME`
 - `PATTY_WORKSPACE_ROOT`
 - `CLAUDE_PROJECT_DIR`

@@ -49,7 +49,7 @@ func TestLoadMergesInstalledPluginSkillRootsAndMCP(t *testing.T) {
 			if p.Command != filepath.Join(root, "bin", "helper") {
 				t.Fatalf("plugin command = %q", p.Command)
 			}
-			if p.Env["PATTY_PLUGIN_NAME"] != "superpowers" {
+			if p.Env["PATTY_CODE_PLUGIN_NAME"] != "superpowers" {
 				t.Fatalf("plugin env = %#v", p.Env)
 			}
 		}

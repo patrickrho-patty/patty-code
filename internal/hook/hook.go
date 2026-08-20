@@ -302,13 +302,13 @@ func appendPluginHooks(out *[]ResolvedHook, pattyHomeDir, projectRoot string) {
 					env[key] = expandPluginRoot(value, pkg.Root)
 				}
 				env["PATTY_CODE_PLUGIN_ROOT"] = pkg.Root
-				env["PATTY_PLUGIN_NAME"] = item.Installed.Name
+				env["PATTY_CODE_PLUGIN_NAME"] = item.Installed.Name
 				env["PATTY_HOME"] = pattyHomeDir
 				env["PATTY_WORKSPACE_ROOT"] = projectRoot
 				env["CLAUDE_PROJECT_DIR"] = projectRoot
 				env["CLAUDE_PLUGIN_ROOT"] = pkg.Root
 				if item.Installed.Version != "" {
-					env["PATTY_PLUGIN_VERSION"] = item.Installed.Version
+					env["PATTY_CODE_PLUGIN_VERSION"] = item.Installed.Version
 				}
 				*out = append(*out, ResolvedHook{
 					HookConfig: HookConfig{

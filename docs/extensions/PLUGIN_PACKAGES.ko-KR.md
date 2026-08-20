@@ -284,8 +284,8 @@ Patty Code는 `.codex-plugin/plugin.json`의 Codex 플러그인 매니페스트�
 플러그인 hooks는 다음 환경 변수를 받습니다:
 
 - `PATTY_CODE_PLUGIN_ROOT`
-- `PATTY_PLUGIN_NAME`
-- `PATTY_PLUGIN_VERSION`
+- `PATTY_CODE_PLUGIN_NAME`
+- `PATTY_CODE_PLUGIN_VERSION`
 - `PATTY_HOME`
 - `PATTY_WORKSPACE_ROOT`
 - `CLAUDE_PROJECT_DIR`

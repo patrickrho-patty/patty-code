@@ -87,3 +87,6 @@ site/.generated/
 
 # Committed pointer at PATTY_CODE.md; overrides a global CLAUDE.md ignore rule.
 !/CLAUDE.md
+
+# Local harness/tool config
+.pi/

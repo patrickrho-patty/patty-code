@@ -18,7 +18,7 @@
 //
 // Environment:
 //
-//	PATTY_PLUGIN_NAME   plugin ID, set by the host at launch (provider
+//	PATTY_CODE_PLUGIN_NAME   plugin ID, set by the host at launch (provider
 //	                       refs must live in the plugin/<id>/ namespace);
 //	                       defaults to "fullsidecar" when run standalone
 //	FULLSIDECAR_STREAM_INTERVAL_MS
@@ -68,7 +68,7 @@ type plugin struct {
 
 func main() {
 	logger := log.New(os.Stderr, "fullsidecar: ", log.LstdFlags)
-	id := strings.TrimSpace(os.Getenv("PATTY_PLUGIN_NAME"))
+	id := strings.TrimSpace(os.Getenv("PATTY_CODE_PLUGIN_NAME"))
 	if id == "" {
 		id = defaultPluginID
 	}

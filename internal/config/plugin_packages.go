@@ -165,12 +165,12 @@ func pluginPackageEnv(installed pluginpkg.InstalledPlugin, root, workspaceRoot s
 		out = map[string]string{}
 	}
 	out["PATTY_CODE_PLUGIN_ROOT"] = root
-	out["PATTY_PLUGIN_NAME"] = installed.Name
+	out["PATTY_CODE_PLUGIN_NAME"] = installed.Name
 	out["CLAUDE_PLUGIN_ROOT"] = root
 	out["CLAUDE_PROJECT_DIR"] = workspaceRoot
 	out["PATTY_WORKSPACE_ROOT"] = workspaceRoot
 	if installed.Version != "" {
-		out["PATTY_PLUGIN_VERSION"] = installed.Version
+		out["PATTY_CODE_PLUGIN_VERSION"] = installed.Version
 	}
 	return out
 }
@@ -254,8 +254,8 @@ func pluginPackageEntriesEqual(a, b PluginEntry) bool {
 	b.Env = cloneStringMap(b.Env)
 	for _, env := range []map[string]string{a.Env, b.Env} {
 		delete(env, "PATTY_CODE_PLUGIN_ROOT")
-		delete(env, "PATTY_PLUGIN_NAME")
-		delete(env, "PATTY_PLUGIN_VERSION")
+		delete(env, "PATTY_CODE_PLUGIN_NAME")
+		delete(env, "PATTY_CODE_PLUGIN_VERSION")
 		delete(env, "CLAUDE_PLUGIN_ROOT")
 	}
 	return reflect.DeepEqual(a, b)

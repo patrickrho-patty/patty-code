@@ -539,7 +539,7 @@ func TestLoadIncludesPluginSessionStartHook(t *testing.T) {
 	if got[0].Scope != ScopePlugin || got[0].Event != SessionStart {
 		t.Fatalf("first hook = %+v, want plugin SessionStart", got[0])
 	}
-	if got[0].Env["PATTY_PLUGIN_NAME"] != "superpowers" || got[0].Env["PATTY_WORKSPACE_ROOT"] != "/workspace" {
+	if got[0].Env["PATTY_CODE_PLUGIN_NAME"] != "superpowers" || got[0].Env["PATTY_WORKSPACE_ROOT"] != "/workspace" {
 		t.Fatalf("plugin env = %#v", got[0].Env)
 	}
 	if got[1].Scope != ScopeGlobal {
@@ -655,7 +655,7 @@ func TestLoadIncludesPluginClaudeCompatibilityHooks(t *testing.T) {
 	if h := byEvent[UserPromptSubmit]; h.Command != "node hooks/prompt.js" || h.Cwd != root {
 		t.Fatalf("UserPromptSubmit hook = %+v", h)
 	}
-	if h := byEvent[PostToolUse]; h.Env["CLAUDE_PROJECT_DIR"] != "/workspace" || h.Env["PATTY_PLUGIN_NAME"] != "claude-pack" {
+	if h := byEvent[PostToolUse]; h.Env["CLAUDE_PROJECT_DIR"] != "/workspace" || h.Env["PATTY_CODE_PLUGIN_NAME"] != "claude-pack" {
 		t.Fatalf("plugin env = %#v", h.Env)
 	}
 	if h := byEvent[PostToolUse]; h.PayloadFormat != "claude" || h.Env["CLAUDE_PLUGIN_ROOT"] != root {
