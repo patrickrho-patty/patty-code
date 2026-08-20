@@ -21,7 +21,7 @@
     }
   ],
   "runtime": {
-    "command": "${PATTY_PLUGIN_ROOT}/bin/example",
+    "command": "${PATTY_CODE_PLUGIN_ROOT}/bin/example",
     "intercepts": ["input.receive"],
     "replaces": [],
     "capabilities": ["providers"]

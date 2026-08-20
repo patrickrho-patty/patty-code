@@ -712,10 +712,10 @@ func TestLoadExpandsPattyCodePluginRootBeforeShellLaunch(t *testing.T) {
   "hooks": {
     "PostToolUse": [{
       "match": "edit",
-      "command": "node \"${PATTY_PLUGIN_ROOT}/skills/impeccable/scripts/hook.mjs\"",
+      "command": "node \"${PATTY_CODE_PLUGIN_ROOT}/skills/impeccable/scripts/hook.mjs\"",
       "shellCommand": true,
-      "cwd": "${PATTY_PLUGIN_ROOT}/work",
-      "env": {"IMPECCABLE_CACHE": "%PATTY_PLUGIN_ROOT%/cache"}
+      "cwd": "${PATTY_CODE_PLUGIN_ROOT}/work",
+      "env": {"IMPECCABLE_CACHE": "%PATTY_CODE_PLUGIN_ROOT%/cache"}
     }]
   }
 }`)
@@ -752,7 +752,7 @@ func TestExpandPluginRootSupportsClaudePattyCodeAndCmdAliases(t *testing.T) {
 	root := `C:\Program Files\Patty Code\plugins\impeccable`
 	for _, token := range []string{
 		"${CLAUDE_PLUGIN_ROOT}", "$CLAUDE_PLUGIN_ROOT", "%CLAUDE_PLUGIN_ROOT%",
-		"${PATTY_PLUGIN_ROOT}", "$PATTY_PLUGIN_ROOT", "%PATTY_PLUGIN_ROOT%",
+		"${PATTY_CODE_PLUGIN_ROOT}", "$PATTY_CODE_PLUGIN_ROOT", "%PATTY_CODE_PLUGIN_ROOT%",
 	} {
 		t.Run(token, func(t *testing.T) {
 			command := `node "` + token + `/skills/impeccable/scripts/hook.mjs"`
@@ -768,7 +768,7 @@ func TestExpandPluginRootSupportsClaudePattyCodeAndCmdAliases(t *testing.T) {
 	}
 	for _, longerName := range []string{
 		"$CLAUDE_PLUGIN_ROOT_SUFFIX",
-		"$PATTY_PLUGIN_ROOT_OLD",
+		"$PATTY_CODE_PLUGIN_ROOT_OLD",
 		"$CLAUDE_PLUGIN_ROOT2",
 	} {
 		if got := expandPluginRoot(longerName, root); got != longerName {
@@ -778,14 +778,14 @@ func TestExpandPluginRootSupportsClaudePattyCodeAndCmdAliases(t *testing.T) {
 	if got, want := expandPluginRoot(`$CLAUDE_PLUGIN_ROOT-child`, root), root+"-child"; got != want {
 		t.Fatalf("delimited unbraced variable = %q, want %q", got, want)
 	}
-	if got, want := expandPluginRoot(`$CLAUDE_PLUGIN_ROOT/$PATTY_PLUGIN_ROOT`, root), root+"/"+root; got != want {
+	if got, want := expandPluginRoot(`$CLAUDE_PLUGIN_ROOT/$PATTY_CODE_PLUGIN_ROOT`, root), root+"/"+root; got != want {
 		t.Fatalf("both root aliases = %q, want %q", got, want)
 	}
 }
 
 func TestExpandPluginRootDoesNotReprocessResolvedRoot(t *testing.T) {
-	root := `/tmp/$PATTY_PLUGIN_ROOT/%CLAUDE_PLUGIN_ROOT%/${CLAUDE_PLUGIN_ROOT}`
-	value := `${CLAUDE_PLUGIN_ROOT}|$PATTY_PLUGIN_ROOT|%CLAUDE_PLUGIN_ROOT%`
+	root := `/tmp/$PATTY_CODE_PLUGIN_ROOT/%CLAUDE_PLUGIN_ROOT%/${CLAUDE_PLUGIN_ROOT}`
+	value := `${CLAUDE_PLUGIN_ROOT}|$PATTY_CODE_PLUGIN_ROOT|%CLAUDE_PLUGIN_ROOT%`
 	want := root + "|" + root + "|" + root
 	if got := expandPluginRoot(value, root); got != want {
 		t.Fatalf("resolved root was expanded again: got %q, want %q", got, want)

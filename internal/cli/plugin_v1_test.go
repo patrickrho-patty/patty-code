@@ -23,7 +23,7 @@ func installV2RuntimePlugin(t *testing.T, home string) string {
     "themes": ["themes/*.patty-theme"]
   },
   "runtime": {
-    "command": "${PATTY_PLUGIN_ROOT}/bin/example",
+    "command": "${PATTY_CODE_PLUGIN_ROOT}/bin/example",
     "args": ["--serve"],
     "required": true,
     "intercepts": ["input.receive", "tool.before"],
@@ -56,7 +56,7 @@ func TestPluginShowRendersRuntimeFullTrust(t *testing.T) {
 		"prompts: 1",
 		"themes: 1",
 		"runtime: FULL TRUST",
-		"command: ${PATTY_PLUGIN_ROOT}/bin/example --serve",
+		"command: ${PATTY_CODE_PLUGIN_ROOT}/bin/example --serve",
 		"intercepts: input.receive, tool.before",
 		"replaces: system_prompt",
 		"capabilities: interceptors, ui",

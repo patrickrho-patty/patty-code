@@ -40,7 +40,7 @@ const v2ExampleManifest = `{
     "themes": ["themes/*.patty-theme"]
   },
   "runtime": {
-    "command": "${PATTY_PLUGIN_ROOT}/bin/example",
+    "command": "${PATTY_CODE_PLUGIN_ROOT}/bin/example",
     "args": ["--serve"],
     "env": {"MODE": "plugin"},
     "required": true,
@@ -100,8 +100,8 @@ func TestManifestV2FullParse(t *testing.T) {
 	if rt == nil {
 		t.Fatal("Runtime is nil, want the declared runtime spec")
 	}
-	if rt.Command != "${PATTY_PLUGIN_ROOT}/bin/example" {
-		t.Fatalf("Runtime.Command = %q, want the unexpanded ${PATTY_PLUGIN_ROOT} form", rt.Command)
+	if rt.Command != "${PATTY_CODE_PLUGIN_ROOT}/bin/example" {
+		t.Fatalf("Runtime.Command = %q, want the unexpanded ${PATTY_CODE_PLUGIN_ROOT} form", rt.Command)
 	}
 	if !reflect.DeepEqual(rt.Args, []string{"--serve"}) || rt.Env["MODE"] != "plugin" {
 		t.Fatalf("Runtime args/env: %+v", rt)
@@ -508,7 +508,7 @@ func TestManifestV2DescribeRendersPromptsThemesRuntime(t *testing.T) {
 	for _, want := range []string{
 		"capabilities: 1 skills, 1 commands, 1 prompts, 0 hooks, 0 MCP servers, 1 themes",
 		"runtime: FULL TRUST",
-		"command: ${PATTY_PLUGIN_ROOT}/bin/example --serve",
+		"command: ${PATTY_CODE_PLUGIN_ROOT}/bin/example --serve",
 		"intercepts: input.receive, tool.before",
 		"replaces: system_prompt",
 		"capabilities: interceptors, strategies, providers, ui",
@@ -534,7 +534,7 @@ func TestManifestV2DescribeRendersPromptsThemesRuntime(t *testing.T) {
 
 func TestExpandRuntimeCommand(t *testing.T) {
 	root := filepath.Join(string(filepath.Separator), "plugins", "example")
-	if got := ExpandRuntimeCommand("${PATTY_PLUGIN_ROOT}/bin/example", root); got != filepath.Join(root, "bin", "example") {
+	if got := ExpandRuntimeCommand("${PATTY_CODE_PLUGIN_ROOT}/bin/example", root); got != filepath.Join(root, "bin", "example") {
 		t.Fatalf("ExpandRuntimeCommand = %q", got)
 	}
 	if got := ExpandRuntimeCommand("plugin-runtime", root); got != "plugin-runtime" {

@@ -14,7 +14,7 @@
 // loads the state itself instead of accepting caller-supplied command specs.
 //
 // FULL-TRUST CONTRACT: a sidecar process inherits the UNFILTERED Patty Code
-// environment (os.Environ), plus its manifest env and PATTY_PLUGIN_ROOT /
+// environment (os.Environ), plus its manifest env and PATTY_CODE_PLUGIN_ROOT /
 // PATTY_PLUGIN_NAME / PATTY_PLUGIN_VERSION. Sidecars can read
 // credentials, the session, and the workspace and can act with the user's
 // full authority — the same contract an installed v2 runtime already accepted

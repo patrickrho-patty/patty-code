@@ -20,7 +20,7 @@ func writeRuntimePlugin(t *testing.T, root string) {
     "themes": ["themes/*.patty-theme"]
   },
   "runtime": {
-    "command": "${PATTY_PLUGIN_ROOT}/bin/rtsync",
+    "command": "${PATTY_CODE_PLUGIN_ROOT}/bin/rtsync",
     "args": ["--serve"],
     "required": true,
     "intercepts": ["input.receive", "tool.before"],
@@ -57,7 +57,7 @@ func TestPluginRuntimePlanCarriesFullTrust(t *testing.T) {
 	for _, reason := range act.RiskReasons {
 		if strings.HasPrefix(reason, "FULL TRUST:") {
 			fullTrust = true
-			if !strings.Contains(reason, "${PATTY_PLUGIN_ROOT}/bin/rtsync --serve") {
+			if !strings.Contains(reason, "${PATTY_CODE_PLUGIN_ROOT}/bin/rtsync --serve") {
 				t.Fatalf("FULL TRUST reason should describe the runtime command line: %q", reason)
 			}
 		}
@@ -69,7 +69,7 @@ func TestPluginRuntimePlanCarriesFullTrust(t *testing.T) {
 	if rt == nil {
 		t.Fatal("action.Runtime is nil, want the runtime plan info")
 	}
-	if rt.Command != "${PATTY_PLUGIN_ROOT}/bin/rtsync" || !rt.FullTrust {
+	if rt.Command != "${PATTY_CODE_PLUGIN_ROOT}/bin/rtsync" || !rt.FullTrust {
 		t.Fatalf("Runtime = %+v", rt)
 	}
 	if len(rt.Args) != 1 || rt.Args[0] != "--serve" {
@@ -95,7 +95,7 @@ func TestPluginRuntimePlanCarriesFullTrust(t *testing.T) {
 	if !ok {
 		t.Fatalf("plan JSON missing runtime block: %s", raw)
 	}
-	if rtJSON["fullTrust"] != true || rtJSON["command"] != "${PATTY_PLUGIN_ROOT}/bin/rtsync" {
+	if rtJSON["fullTrust"] != true || rtJSON["command"] != "${PATTY_CODE_PLUGIN_ROOT}/bin/rtsync" {
 		t.Fatalf("runtime JSON = %v", rtJSON)
 	}
 }

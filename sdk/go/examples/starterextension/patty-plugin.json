@@ -13,7 +13,7 @@
   ],
   "contributes": {},
   "runtime": {
-    "command": "${PATTY_PLUGIN_ROOT}/bin/starter-extension.exe",
+    "command": "${PATTY_CODE_PLUGIN_ROOT}/bin/starter-extension.exe",
     "args": [],
     "env": {},
     "required": false,

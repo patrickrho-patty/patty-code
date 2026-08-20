@@ -39,7 +39,7 @@ func TestResolveRuntimeCommandContract(t *testing.T) {
 
 func TestResolveRuntimeCommandExpandsPluginRoot(t *testing.T) {
 	root := t.TempDir()
-	got, err := resolveRuntimeCommand(&pluginpkg.RuntimeSpec{Command: "${PATTY_PLUGIN_ROOT}/bin/sidecar"}, root)
+	got, err := resolveRuntimeCommand(&pluginpkg.RuntimeSpec{Command: "${PATTY_CODE_PLUGIN_ROOT}/bin/sidecar"}, root)
 	if err != nil {
 		t.Fatalf("resolveRuntimeCommand: %v", err)
 	}

@@ -28,7 +28,7 @@ func TestPluginPackageV2FieldsAreReported(t *testing.T) {
     "prompts": ["prompts"],
     "themes": ["themes/*.patty-theme"]
   },
-  "runtime": {"command": "${PATTY_PLUGIN_ROOT}/bin/demo", "intercepts": ["input.receive"]}
+  "runtime": {"command": "${PATTY_CODE_PLUGIN_ROOT}/bin/demo", "intercepts": ["input.receive"]}
 }`)
 	write(t, filepath.Join(pluginRoot, "prompts", "plan.md"), "---\ndescription: plan\n---\nPlan $ARGUMENTS\n")
 	write(t, filepath.Join(pluginRoot, "themes", "neon.patty-theme"), "theme bytes")

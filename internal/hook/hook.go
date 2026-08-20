@@ -301,7 +301,7 @@ func appendPluginHooks(out *[]ResolvedHook, pattyHomeDir, projectRoot string) {
 				for key, value := range env {
 					env[key] = expandPluginRoot(value, pkg.Root)
 				}
-				env["PATTY_PLUGIN_ROOT"] = pkg.Root
+				env["PATTY_CODE_PLUGIN_ROOT"] = pkg.Root
 				env["PATTY_PLUGIN_NAME"] = item.Installed.Name
 				env["PATTY_HOME"] = pattyHomeDir
 				env["PATTY_WORKSPACE_ROOT"] = projectRoot
@@ -382,9 +382,9 @@ var pluginRootTokens = [...]struct {
 	{value: "${CLAUDE_PLUGIN_ROOT}"},
 	{value: "$CLAUDE_PLUGIN_ROOT", needsBoundary: true},
 	{value: "%CLAUDE_PLUGIN_ROOT%"},
-	{value: "${PATTY_PLUGIN_ROOT}"},
-	{value: "$PATTY_PLUGIN_ROOT", needsBoundary: true},
-	{value: "%PATTY_PLUGIN_ROOT%"},
+	{value: "${PATTY_CODE_PLUGIN_ROOT}"},
+	{value: "$PATTY_CODE_PLUGIN_ROOT", needsBoundary: true},
+	{value: "%PATTY_CODE_PLUGIN_ROOT%"},
 }
 
 func pluginRootTokenLen(value string) int {
