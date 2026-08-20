@@ -1,2 +1,0 @@
-{"sequence":1,"timestamp":"2026-08-09T08:33:08.942782-04:00","event_type":"state_change","task_id":"20260809-094502.265997000-deepseek-v4-flash--fleet-6","session_id":"20260809-094502.265997000-deepseek-v4-flash","state":"running","runtime_state":"alive"}
-{"sequence":2,"timestamp":"2026-08-09T10:03:28.957123-04:00","event_type":"state_change","task_id":"20260809-094502.265997000-deepseek-v4-flash--fleet-6","session_id":"20260809-094502.265997000-deepseek-v4-flash","state":"cancelled","runtime_state":"exited","error_code":"job_failed"}

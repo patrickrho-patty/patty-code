@@ -1,2 +1,0 @@
-{"sequence":1,"timestamp":"2026-08-09T03:48:51.108671-04:00","event_type":"state_change","task_id":"20260809-053657.549542000-cline-pass-deepseek-v4-flash--fleet-2","session_id":"20260809-053657.549542000-cline-pass-deepseek-v4-flash","state":"running","runtime_state":"alive"}
-{"sequence":2,"timestamp":"2026-08-09T04:10:01.991091-04:00","event_type":"state_change","task_id":"20260809-053657.549542000-cline-pass-deepseek-v4-flash--fleet-2","session_id":"20260809-053657.549542000-cline-pass-deepseek-v4-flash","state":"succeeded","runtime_state":"exited"}

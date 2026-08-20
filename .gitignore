@@ -46,6 +46,9 @@ node_modules/
 .pnpm-store/
 .npm/
 
+# Pre-rebrand project-state folder kept on disk for local history; never commit.
+/.reasonix/
+
 # Project-local Patty Code state; keep the checked-in review command.
 /.patty/*
 !/.patty/commands/
